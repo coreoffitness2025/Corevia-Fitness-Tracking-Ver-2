@@ -1,5 +1,3 @@
-/* src/pages/SelectPage.tsx ― Corevia 로고 & 즉시 전환 버전 */
-
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExercisePart } from '../types';
@@ -7,7 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { getLastSession } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
-import logoSrc from '../assets/Corevia-logo.png';      // ← 여기! (대소문자 그대로)
+import logoSrc from '../assets/Corevia-logo.png'; // ← 대소문자까지 실제 경로 그대로!
 
 const exercisePartOptions = [
   { value: 'chest',    label: '가슴',   icon: '💪' },
@@ -27,18 +25,16 @@ const SelectPage = () => {
     lastSessionCache
   } = useSessionStore();
 
-  /* 페이지 진입 시 세션만 초기화(캐시는 유지) */
   useEffect(() => {
     resetSession();
   }, [resetSession]);
 
-  /* 파트 선택 → 화면 먼저 전환 → 백그라운드 프리패치 */
   const handleSelect = (part: ExercisePart) => {
     setPart(part);
-    navigate('/record');                       // ① 즉시 이동
+    navigate('/record'); // 즉시 페이지 전환
 
     if (lastSessionCache[part] === undefined && user) {
-      getLastSession(user.uid, part)           // ② 이동 후 비동기 캐싱
+      getLastSession(user.uid, part)
         .then((s) => cacheLastSession(part, s ?? null))
         .catch(console.error);
     }
@@ -53,7 +49,7 @@ const SelectPage = () => {
 
   return (
     <Layout>
-      {/* ───── Corevia 로고 ───── */}
+      {/* ✅ Corevia 로고 */}
       <img src={logoSrc} alt="Corevia Fitness" className="mx-auto mb-6 w-48" />
 
       {/* 인사말 */}
