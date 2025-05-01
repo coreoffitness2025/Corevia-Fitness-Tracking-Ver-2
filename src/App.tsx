@@ -1,15 +1,5 @@
-// useEffect(() => {
-//   const unsubscribe = onAuthStateChanged(auth, (user) => {
-//     if (user) {
-//       setUser({
-//         uid: user.uid,
-//         displayName: user.displayName || '사용자',
-//         email: user.email || '',
-//         photoURL: user.photoURL || undefined
-//       });
-//     } else {
-//       setUser(null);
-//     }
-//   });
-//   return () => unsubscribe();
-// }, [setUser]);
+// import { onAuthStateChanged } from 'firebase/auth';
+// import { auth } from './firebase';
+import { useAuthStore } from './stores/authStore';
+...
+// useEffect 전체 삭제 — 자동 로그인이라 필요 없음
