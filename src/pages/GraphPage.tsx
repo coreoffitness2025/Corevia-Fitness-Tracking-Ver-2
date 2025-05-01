@@ -20,24 +20,21 @@ const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하�
 
 export default function GraphPage() {
   const { user } = useAuthStore();
-
   const [part, setPart] = useState<ExercisePart>('chest');
   const [rows, setRows] = useState<Progress[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Progress | null>(null);
 
-  /* 데이터 가져오기 */
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    getProgressData(user.uid, part, 20).then((data: Progress[]) => {
-      setRows(data.reverse());   // 오래된 → 최신
+    getProgressData(user.uid, part, 10).then((data: Progress[]) => {
+      setRows(data.reverse());
       setLoading(false);
       setSelected(null);
     });
   }, [user, part]);
 
-  /* 차트 데이터 구성 */
   const chartData = useMemo(() => {
     if (!rows.length) return null;
     return {
@@ -58,13 +55,11 @@ export default function GraphPage() {
     };
   }, [rows]);
 
-  /* 점 클릭 → 상세 패널 */
-  const handlePointClick = (_: unknown, elements: any[]) => {
-    if (!elements.length) return;
-    setSelected(rows[elements[0].index]);
+  const handlePointClick = (_: unknown, el: any[]) => {
+    if (!el.length) return;
+    setSelected(rows[el[0].index]);
   };
 
-  /* 성공/실패 라벨 플러그인 */
   const labelPlugin = {
     id: 'labelPlugin',
     afterDatasetDraw(chart: any) {
@@ -89,7 +84,6 @@ export default function GraphPage() {
         <p className="text-gray-600 dark:text-gray-400">날짜별 운동 진행을 확인하세요</p>
       </div>
 
-      {/* 부위 선택 */}
       <select
         value={part}
         onChange={(e) => setPart(e.target.value as ExercisePart)}
@@ -100,7 +94,6 @@ export default function GraphPage() {
         ))}
       </select>
 
-      {/* 그래프 + 상세 */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* 그래프 */}
         <div className="bg-white dark:bg-gray-800 rounded shadow p-4 h-72">
@@ -128,15 +121,10 @@ export default function GraphPage() {
             <p className="text-gray-600 dark:text-gray-400">
               그래프의 점을 클릭하면<br />해당 날짜의 세트 현황이 표시됩니다.
             </p>
-          ) : selected.isSuccess ? (
-            <p className="text-green-600 dark:text-green-400 text-sm">
-              {new Date(selected.date).toLocaleDateString('ko-KR')}<br />
-              모든 세트를 성공했습니다! 🎉
-            </p>
           ) : (
             <>
               <h2 className="text-sm font-semibold mb-2">
-                {new Date(selected.date).toLocaleDateString('ko-KR')} 실패 세트
+                {new Date(selected.date).toLocaleDateString('ko-KR')} 상세
               </h2>
               <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
                 {selected.sets.map((s, i) => (
@@ -145,6 +133,18 @@ export default function GraphPage() {
                   </li>
                 ))}
               </ul>
+
+              {/* 🔹 보조 운동 */}
+              {selected.accessoryNames.length > 0 && (
+                <>
+                  <h3 className="mt-4 font-semibold text-sm">보조 운동</h3>
+                  <ul className="list-disc list-inside text-sm">
+                    {selected.accessoryNames.map((n) => (
+                      <li key={n}>{n}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </>
           )}
         </div>
