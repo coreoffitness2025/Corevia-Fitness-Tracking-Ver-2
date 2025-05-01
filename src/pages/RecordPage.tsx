@@ -15,6 +15,13 @@ const partNames = {
   leg: '하체'
 };
 
+const coreExerciseNames = {
+  chest: '벤치프레스',
+  back: '데드리프트',
+  shoulder: '오버헤드 프레스',
+  leg: '스쿼트'
+};
+
 const RecordPage = () => {
   const { user } = useAuthStore();
   const { part, mainExercise, accessoryExercises, notes, setNotes, setMainExercise } = useSessionStore();
@@ -23,7 +30,6 @@ const RecordPage = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // 부위가 선택되지 않았으면 선택 페이지로 리다이렉트
     if (!part) {
       navigate('/');
       return;
@@ -35,9 +41,7 @@ const RecordPage = () => {
         const session = await getLastSession(user.uid, part);
         setLastSession(session);
         
-        // 이전 세션이 있으면 무게 정보 가져오기
         if (session && session.mainExercise) {
-          // 모든 세트가 성공이면 2.5kg 증량 제안
           const allSuccess = session.mainExercise.sets.every(set => set.isSuccess);
           const suggestedWeight = allSuccess
             ? session.mainExercise.weight + 2.5
@@ -101,6 +105,16 @@ const RecordPage = () => {
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           {new Date().toLocaleDateString('ko-KR')}
+        </p>
+      </div>
+
+      {/* 핵심 운동명 표시 */}
+      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          오늘의 핵심 운동: <span className="text-blue-600 dark:text-blue-300">{coreExerciseNames[part!]}</span>
+        </h2>
+        <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">
+          {partNames[part!]} 부위의 대표적인 복합 운동이에요. 집중해서 진행해보세요!
         </p>
       </div>
       
