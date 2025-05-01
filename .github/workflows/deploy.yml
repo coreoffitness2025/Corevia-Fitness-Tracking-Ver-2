@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write  # ✅ 이 줄 꼭 추가!
+  contents: write  # ✅ 꼭 있어야 함
 
 jobs:
   build-and-deploy:
@@ -35,6 +35,6 @@ jobs:
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
 
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.1.1
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist
