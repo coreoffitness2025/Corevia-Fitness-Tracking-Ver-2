@@ -7,7 +7,7 @@ interface User {
 }
 
 interface AuthState {
-  user: User;
+  user: User;      // null 대신 기본 사용자
   logout: () => void;
 }
 
@@ -18,6 +18,6 @@ export const useAuthStore = create<AuthState>(() => ({
     email: 'dev@corevia.app',
   },
   logout: () => {
-    /* 빈 함수: 로그아웃 버튼을 눌러도 아무 일 안 함 */
+    /* 혼자 쓰는 버전은 로그아웃 불필요 */
   },
 }));
