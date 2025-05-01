@@ -7,143 +7,122 @@ import {
   PointElement,
   LineElement,
   Title,
-  Tooltip,
-  Legend
+  Tooltip
 } from 'chart.js';
 import { ExercisePart, Progress } from '../types';
 import { useAuthStore } from '../stores/authStore';
-import { useSessionStore } from '../stores/sessionStore';
 import { getProgressData } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip);
 
 const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' };
 
-const GraphPage = () => {
+export default function GraphPage() {
   const { user } = useAuthStore();
-  const { progressCache, cacheProgress } = useSessionStore();
-
-  const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
+  const [part, setPart] = useState<ExercisePart>('chest');
+  const [data, setData] = useState<Progress[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const progressData: Progress[] | undefined = progressCache[selectedPart];
+  const [detail, setDetail] = useState<Progress | null>(null); // 팝업용
 
   useEffect(() => {
     if (!user) return;
-    if (progressData !== undefined) {
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
-    getProgressData(user.uid, selectedPart, 10)          // 최근 10회만
-      .then((data) => {
-        cacheProgress(selectedPart, data);
-        setLoading(false);
-      })
-      .catch((e) => {
-        console.error(e);
-        cacheProgress(selectedPart, []);
-        setLoading(false);
-      });
-  }, [user, selectedPart, progressData, cacheProgress]);
+    getProgressData(user.uid, part, 20).then((d) => {
+      setData(d.reverse()); // 오래된 → 최근
+      setLoading(false);
+    });
+  }, [user, part]);
 
+  /* 차트 데이터 */
   const chartData = useMemo(() => {
-    if (!progressData?.length) return null;
-
-    const labels = [...progressData]
-      .reverse()
-      .map((d) => new Date(d.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }));
-
-    const weights = progressData.map((d) => d.weight).reverse();
-    const success = progressData.map((d) => d.successSets).reverse();
-
+    if (!data.length) return null;
     return {
-      labels,
+      labels: data.map((d) =>
+        d.date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+      ),
       datasets: [
         {
-          label: '무게 (kg)',
-          data: weights,
-          borderColor: 'rgb(53,162,235)',
-          backgroundColor: 'rgba(53,162,235,0.5)',
-          yAxisID: 'y'
-        },
-        {
-          label: '성공 세트 수',
-          data: success,
-          borderColor: 'rgb(255,99,132)',
-          backgroundColor: 'rgba(255,99,132,0.5)',
-          yAxisID: 'y1'
+          label: '무게(kg)',
+          data: data.map((d) => d.weight),
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderColor: '#3B82F6',
+          backgroundColor: '#3B82F6'
         }
       ]
     };
-  }, [progressData]);
+  }, [data]);
 
-  const options = {
-    responsive: true,
-    interaction: { mode: 'index' as const, intersect: false },
-    stacked: false,
-    scales: {
-      y: {
-        type: 'linear' as const,
-        position: 'left' as const,
-        title: { display: true, text: '무게 (kg)' }
-      },
-      y1: {
-        type: 'linear' as const,
-        position: 'right' as const,
-        title: { display: true, text: '성공 세트 수' },
-        grid: { drawOnChartArea: false },
-        min: 0,
-        max: 5
-      }
-    }
-  } as const;
+  /* 클릭 이벤트: pointIndex → detail 세트 열기 */
+  const onClick = (_: unknown, elements: any[]) => {
+    if (!elements.length) return;
+    const idx = elements[0].index;
+    setDetail(data[idx]);
+  };
 
   return (
     <Layout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">진행 상황</h1>
-        <p className="text-gray-600 dark:text-gray-400">나의 운동 성과를 확인하세요</p>
-      </div>
+      <h1 className="text-2xl font-bold mb-4">진행 상황</h1>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <label className="block font-medium mb-2 text-gray-700 dark:text-gray-300">부위 선택</label>
-        <select
-          value={selectedPart}
-          onChange={(e) => setSelectedPart(e.target.value as ExercisePart)}
-          className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-        >
-          {Object.entries(partNames).map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
-          ))}
-        </select>
-      </div>
+      {/* 부위 선택 */}
+      <select
+        className="border p-2 rounded mb-6 dark:bg-gray-700 dark:text-white"
+        value={part}
+        onChange={(e) => setPart(e.target.value as ExercisePart)}
+      >
+        {Object.entries(partNames).map(([v, l]) => (
+          <option key={v} value={v}>{l}</option>
+        ))}
+      </select>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 h-64 md:h-80">
+      {/* 그래프 */}
+      <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-8 h-72">
         {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-400">📊 로딩 중...</div>
+          <p className="text-center text-gray-400 mt-24">로딩 중...</p>
         ) : chartData ? (
-          <Line options={options} data={chartData} />
+          <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              onClick,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { beginAtZero: false, title: { display: true, text: '무게(kg)' } }
+              }
+            }}
+          />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-            데이터가 없습니다. 운동을 기록해주세요.
-          </div>
+          <p className="text-center text-gray-400 mt-24">데이터가 없습니다.</p>
         )}
       </div>
 
-      {/* 해석 블록은 필요 시 그대로 유지 */}
+      {/* 상세 팝업 */}
+      {detail && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-20">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow max-w-xs w-full">
+            <h2 className="font-semibold mb-4">
+              {detail.date.toLocaleDateString('ko-KR')} 세트 상세
+            </h2>
+            <ul className="space-y-1 mb-4">
+              {detail.sets.map((s, i) => (
+                <li key={i}>
+                  {i + 1}세트 – {s.reps} reps (
+                  {s.isSuccess ? '성공' : '실패'})
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setDetail(null)}
+              className="w-full bg-blue-500 text-white py-2 rounded"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
-};
-
-export default GraphPage;
+}
