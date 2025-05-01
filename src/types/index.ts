@@ -1,16 +1,55 @@
-export interface Progress {
-  /** 세션 날짜 */
-  date: Date | string;
+// src/types/index.ts (혹은 types.ts)
 
-  /** 메인 운동 무게(kg) */
-  weight: number;
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
 
-  /** 성공 세트 수(0 ~ 5) */
-  successSets: number;
-
-  /** 모든 세트 상세 */
-  sets: { reps: number; isSuccess: boolean }[];
-
-  /** 🔥 추가: 그날 전체 성공 여부 (successSets === 5) */
+export interface ExerciseSet {
+  reps: number;
   isSuccess: boolean;
+}
+
+export interface MainExercise {
+  part: ExercisePart;
+  weight: number;
+  sets: ExerciseSet[];
+}
+
+export interface AccessoryExercise {
+  name: string;
+  weight: number;
+  reps: number;
+  sets: number;
+}
+
+export interface Session {
+  id?: string;
+  userId: string;
+  date: Date | string;
+  part: ExercisePart;
+  mainExercise: MainExercise;
+  accessoryExercises?: AccessoryExercise[];
+  notes?: string;
+  isAllSuccess?: boolean;
+}
+
+export interface Progress {
+  date: Date | string;
+  weight: number;
+  successSets: number;
+  sets: ExerciseSet[];
+  isSuccess: boolean;
+}
+
+export interface FAQ {
+  id: string;
+  part: ExercisePart;
+  question: string;
+  answer: string;
+  videoUrl?: string;
+}
+
+export interface User {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
 }
