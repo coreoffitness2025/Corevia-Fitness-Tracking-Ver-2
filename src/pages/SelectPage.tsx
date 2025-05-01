@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { getLastSession } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
-import logoSrc from '../assets/Corevia-logo.png'; // ← 대소문자까지 실제 경로 그대로!
+import logoSrc from '../assets/Corevia-logo.png';
 
 const exercisePartOptions = [
   { value: 'chest',    label: '가슴',   icon: '💪' },
@@ -25,15 +25,24 @@ const SelectPage = () => {
     lastSessionCache
   } = useSessionStore();
 
+  // ✅ 1. user가 아직 없으면 렌더링 지연
+  if (!user) {
+    return (
+      <Layout>
+        <div className="text-center py-10 text-gray-500">로그인 정보를 불러오는 중...</div>
+      </Layout>
+    );
+  }
+
   useEffect(() => {
     resetSession();
   }, [resetSession]);
 
   const handleSelect = (part: ExercisePart) => {
     setPart(part);
-    navigate('/record'); // 즉시 페이지 전환
+    navigate('/record');
 
-    if (lastSessionCache[part] === undefined && user) {
+    if (lastSessionCache[part] === undefined) {
       getLastSession(user.uid, part)
         .then((s) => cacheLastSession(part, s ?? null))
         .catch(console.error);
@@ -49,18 +58,15 @@ const SelectPage = () => {
 
   return (
     <Layout>
-      {/* ✅ Corevia 로고 */}
       <img src={logoSrc} alt="Corevia Fitness" className="mx-auto mb-6 w-48" />
 
-      {/* 인사말 */}
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-          안녕하세요, {user?.displayName || '회원'}님!
+          안녕하세요, {user.displayName || '회원'}님!
         </h1>
         <p className="text-gray-600 dark:text-gray-400">{today}</p>
       </div>
 
-      {/* 운동 파트 선택 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
           오늘은 어떤 운동을 하시나요?
