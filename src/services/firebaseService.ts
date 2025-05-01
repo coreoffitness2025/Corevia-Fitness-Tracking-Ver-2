@@ -1,3 +1,16 @@
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  Timestamp
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import { ExercisePart, Progress, Session } from '../types';
+
+/** 진행 데이터: 최근 N회(기본 20) */
 export const getProgressData = async (
   uid: string,
   part: ExercisePart,
@@ -12,12 +25,12 @@ export const getProgressData = async (
   );
 
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
-    const s = d.data() as Session & { date: Timestamp };
+  return snap.docs.map((doc) => {
+    const d = doc.data() as Session & { date: Timestamp };
     return {
-      date: s.date.toDate(),
-      weight: s.mainExercise.weight,
-      sets: s.mainExercise.sets            // ⬅️ 그대로 내려줌
+      date: d.date.toDate(),
+      weight: d.mainExercise.weight,
+      sets: d.mainExercise.sets
     };
   });
 };
