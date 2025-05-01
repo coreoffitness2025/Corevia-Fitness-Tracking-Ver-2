@@ -29,7 +29,7 @@ export default function RecordPage() {
   const [done, setDone] = useState(false);
   const navigate = useNavigate();
 
-  /* ───── 이전 세션 불러오기 ───── */
+  // 세션 로딩
   useEffect(() => {
     if (!part) { navigate('/'); return; }
     if (!user) return;
@@ -47,7 +47,7 @@ export default function RecordPage() {
     });
   }, [user, part, navigate, setMainExercise]);
 
-  /* ───── 25초 타임아웃 래퍼 ───── */
+  // 타임아웃 래퍼
   const withTimeout = <T,>(p: Promise<T>, ms = 25_000): Promise<T> =>
     new Promise((res, rej) => {
       const t = setTimeout(() => rej(new Error('timeout')), ms);
@@ -55,7 +55,7 @@ export default function RecordPage() {
        .catch((e) => { clearTimeout(t); rej(e); });
     });
 
-  /* ───── 저장 ───── */
+  // 저장
   const handleSave = async () => {
     if (!user || !part || !mainExercise) return;
 
@@ -67,18 +67,19 @@ export default function RecordPage() {
       date: new Date(),
       part,
       mainExercise,
-      accessoryExercises,         // ✅ 보조 운동도 함께 저장
+      accessoryExercises,
       notes,
       isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
     };
 
     try {
-      await withTimeout(saveSession(sess));        // 25초 제한
+      await withTimeout(saveSession(sess));
       setDone(true);
       setSaving(false);
 
       toast.success('✅ 저장 완료!');
-      setTimeout(() => navigate('/feedback', { replace: true }), 0);
+      await new Promise(res => setTimeout(res, 1000)); // ✅ 토스트 보이도록 대기
+      navigate('/feedback', { replace: true });
     } catch (e: any) {
       console.error('[saveSession error]', e?.message || e);
       setSaving(false);
@@ -100,8 +101,61 @@ export default function RecordPage() {
         </div>
       )}
 
-      {/* --- 나머지 JSX(헤더·폼·버튼) 동일 --- */}
-      {/* …중략 (기존 코드 그대로)… */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          {partNames[part!] || '운동'} 기록하기
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          {new Date().toLocaleDateString('ko-KR')}
+        </p>
+      </div>
+
+      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+        <h2 className="font-semibold text-gray-900 dark:text-white">
+          오늘의 핵심 운동:{' '}
+          <span className="text-blue-600 dark:text-blue-300">
+            {coreExerciseNames[part!]}
+          </span>
+        </h2>
+      </div>
+
+      {lastSession && (
+        <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
+          <p className="text-blue-700 dark:text-blue-300">
+            일자: {new Date(lastSession.date).toLocaleDateString('ko-KR')}
+          </p>
+          <p className="text-blue-700 dark:text-blue-300">
+            무게: {lastSession.mainExercise.weight}kg
+          </p>
+          <p className="text-blue-700 dark:text-blue-300">
+            성공 세트: {lastSession.mainExercise.sets.filter(s => s.isSuccess).length}/5
+          </p>
+        </div>
+      )}
+
+      <MainExerciseForm
+        initialWeight={
+          lastSession?.mainExercise.weight
+            ? lastSession.mainExercise.sets.every(s => s.isSuccess)
+              ? lastSession.mainExercise.weight + 2.5
+              : lastSession.mainExercise.weight
+            : 20
+        }
+      />
+
+      {part && <AccessoryExerciseForm part={part} />}
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">메모</h3>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="오늘의 컨디션이나 특이사항을 기록해보세요."
+          className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+          rows={3}
+        />
+      </div>
+
       <div className="fixed bottom-20 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
         <button
           onClick={handleSave}
