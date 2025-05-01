@@ -17,34 +17,26 @@ interface SessionState {
   resetSession: () => void;
 }
 
-const DEFAULT_SETS: ExerciseSet[] = [
-  { reps: 0, isSuccess: false },
-  { reps: 0, isSuccess: false },
-  { reps: 0, isSuccess: false },
-  { reps: 0, isSuccess: false },
-  { reps: 0, isSuccess: false }
-];
-
 export const useSessionStore = create<SessionState>((set, get) => ({
   part: null,
   mainExercise: null,
   accessoryExercises: [],
   notes: '',
-  
+
   setPart: (part) => set({ part }),
-  
+
   setMainExercise: (mainExercise) => set({ mainExercise }),
-  
+
   updateReps: (setIndex, reps) => set((state) => {
     if (!state.mainExercise) return state;
-    
+
     const updatedSets = [...state.mainExercise.sets];
-    updatedSets[setIndex] = { 
+    updatedSets[setIndex] = {
       ...updatedSets[setIndex],
       reps,
       isSuccess: reps >= 10 // 10회 이상이면 성공으로 간주
     };
-    
+
     return {
       mainExercise: {
         ...state.mainExercise,
@@ -52,16 +44,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       }
     };
   }),
-  
+
   toggleSuccess: (setIndex) => set((state) => {
     if (!state.mainExercise) return state;
-    
+
     const updatedSets = [...state.mainExercise.sets];
-    updatedSets[setIndex] = { 
+    updatedSets[setIndex] = {
       ...updatedSets[setIndex],
       isSuccess: !updatedSets[setIndex].isSuccess
     };
-    
+
     return {
       mainExercise: {
         ...state.mainExercise,
@@ -69,23 +61,23 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       }
     };
   }),
-  
+
   addAccessoryExercise: (exercise) => set((state) => ({
     accessoryExercises: [...state.accessoryExercises, exercise]
   })),
-  
+
   removeAccessoryExercise: (index) => set((state) => ({
     accessoryExercises: state.accessoryExercises.filter((_, i) => i !== index)
   })),
-  
+
   setNotes: (notes) => set({ notes }),
-  
+
   getSuccessSets: () => {
     const { mainExercise } = get();
     if (!mainExercise) return 0;
     return mainExercise.sets.filter(set => set.isSuccess).length;
   },
-  
+
   resetSession: () => set({
     part: null,
     mainExercise: null,
