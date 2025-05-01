@@ -1,0 +1,1720 @@
+// src/firebase.ts
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAVTueD8Zu_yWoSH4FLMx-Sd5KZpqzu-dk",
+  authDomain: "corevia-fitness-tracking.firebaseapp.com",
+  projectId: "corevia-fitness-tracking",
+  storageBucket: "corevia-fitness-tracking.firebasestorage.app",
+  messagingSenderId: "118613268034",
+  appId: "1:118613268034:web:eb0c8db85ee52b60f8ffdb",
+  measurementId: "G-3HT5SN1CDP"
+};
+
+// Firebase 초기화
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+export { app, analytics, db, auth };
+
+// src/types/index.ts
+export interface User {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+}
+
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
+
+export interface ExerciseSet {
+  reps: number;
+  isSuccess: boolean;
+}
+
+export interface MainExercise {
+  part: ExercisePart;
+  weight: number;
+  sets: ExerciseSet[];
+}
+
+export interface AccessoryExercise {
+  name: string;
+  weight: number;
+  reps: number;
+  sets: number;
+}
+
+export interface Session {
+  id?: string;
+  userId: string;
+  date: Date | string;
+  part: ExercisePart;
+  mainExercise: MainExercise;
+  accessoryExercises?: AccessoryExercise[];
+  notes?: string;
+  isAllSuccess?: boolean;
+}
+
+export interface Progress {
+  date: Date | string;
+  weight: number;
+  successSets: number;
+}
+
+export interface FAQ {
+  id: string;
+  part: ExercisePart;
+  question: string;
+  answer: string;
+  videoUrl?: string;
+}
+
+// src/services/firebaseService.ts
+import { signInWithPopup, GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
+import { collection, addDoc, query, where, orderBy, getDocs, limit, Timestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import { User, Session, ExercisePart, Progress, FAQ } from '../types';
+
+// 로그인 함수
+export const signInWithGoogle = async (): Promise<User | null> => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    
+    return {
+      uid: user.uid,
+      displayName: user.displayName || '사용자',
+      email: user.email || '',
+      photoURL: user.photoURL || undefined
+    };
+  } catch (error) {
+    console.error('Google 로그인 에러:', error);
+    return null;
+  }
+};
+
+export const signInWithKakao = async (): Promise<User | null> => {
+  try {
+    const provider = new OAuthProvider('oidc.kakao');
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    
+    return {
+      uid: user.uid,
+      displayName: user.displayName || '사용자',
+      email: user.email || '',
+      photoURL: user.photoURL || undefined
+    };
+  } catch (error) {
+    console.error('Kakao 로그인 에러:', error);
+    return null;
+  }
+};
+
+// 로그아웃 함수
+export const signOut = async (): Promise<void> => {
+  try {
+    await auth.signOut();
+  } catch (error) {
+    console.error('로그아웃 에러:', error);
+  }
+};
+
+// 세션 저장
+export const saveSession = async (session: Session): Promise<string | null> => {
+  try {
+    const sessionData = {
+      ...session,
+      date: Timestamp.fromDate(new Date(session.date))
+    };
+    
+    const docRef = await addDoc(collection(db, 'sessions'), sessionData);
+    return docRef.id;
+  } catch (error) {
+    console.error('세션 저장 에러:', error);
+    return null;
+  }
+};
+
+// 최근 세션 조회
+export const getLastSession = async (userId: string, part: ExercisePart): Promise<Session | null> => {
+  try {
+    const q = query(
+      collection(db, 'sessions'),
+      where('userId', '==', userId),
+      where('part', '==', part),
+      orderBy('date', 'desc'),
+      limit(1)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return null;
+    }
+    
+    const doc = querySnapshot.docs[0];
+    const data = doc.data() as Omit<Session, 'id' | 'date'> & { date: Timestamp };
+    
+    return {
+      ...data,
+      id: doc.id,
+      date: data.date.toDate()
+    };
+  } catch (error) {
+    console.error('최근 세션 조회 에러:', error);
+    return null;
+  }
+};
+
+// 진행 상황 데이터 조회
+export const getProgressData = async (userId: string, part: ExercisePart): Promise<Progress[]> => {
+  try {
+    const q = query(
+      collection(db, 'sessions'),
+      where('userId', '==', userId),
+      where('part', '==', part),
+      orderBy('date', 'asc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as Session & { date: Timestamp };
+      const successSets = data.mainExercise.sets.filter(set => set.isSuccess).length;
+      
+      return {
+        date: data.date.toDate(),
+        weight: data.mainExercise.weight,
+        successSets
+      };
+    });
+  } catch (error) {
+    console.error('진행 상황 데이터 조회 에러:', error);
+    return [];
+  }
+};
+
+// FAQ 데이터 조회
+export const getFAQs = async (part: ExercisePart): Promise<FAQ[]> => {
+  try {
+    const q = query(
+      collection(db, 'faqs'),
+      where('part', '==', part)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as Omit<FAQ, 'id'>;
+      return {
+        id: doc.id,
+        ...data
+      };
+    });
+  } catch (error) {
+    console.error('FAQ 조회 에러:', error);
+    return [];
+  }
+};
+
+// src/stores/authStore.ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { User } from '../types';
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  setUser: (user: User | null) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      logout: () => set({ user: null, isAuthenticated: false })
+    }),
+    {
+      name: 'auth-storage'
+    }
+  )
+);
+
+// src/stores/sessionStore.ts
+import { create } from 'zustand';
+import { ExercisePart, MainExercise, AccessoryExercise, ExerciseSet } from '../types';
+
+interface SessionState {
+  part: ExercisePart | null;
+  mainExercise: MainExercise | null;
+  accessoryExercises: AccessoryExercise[];
+  notes: string;
+  setPart: (part: ExercisePart) => void;
+  setMainExercise: (mainExercise: MainExercise) => void;
+  updateReps: (setIndex: number, reps: number) => void;
+  toggleSuccess: (setIndex: number) => void;
+  addAccessoryExercise: (exercise: AccessoryExercise) => void;
+  removeAccessoryExercise: (index: number) => void;
+  setNotes: (notes: string) => void;
+  getSuccessSets: () => number;
+  resetSession: () => void;
+}
+
+const DEFAULT_SETS: ExerciseSet[] = [
+  { reps: 0, isSuccess: false },
+  { reps: 0, isSuccess: false },
+  { reps: 0, isSuccess: false },
+  { reps: 0, isSuccess: false },
+  { reps: 0, isSuccess: false }
+];
+
+export const useSessionStore = create<SessionState>((set, get) => ({
+  part: null,
+  mainExercise: null,
+  accessoryExercises: [],
+  notes: '',
+  
+  setPart: (part) => set({ part }),
+  
+  setMainExercise: (mainExercise) => set({ mainExercise }),
+  
+  updateReps: (setIndex, reps) => set((state) => {
+    if (!state.mainExercise) return state;
+    
+    const updatedSets = [...state.mainExercise.sets];
+    updatedSets[setIndex] = { 
+      ...updatedSets[setIndex],
+      reps,
+      isSuccess: reps >= 10 // 10회 이상이면 성공으로 간주
+    };
+    
+    return {
+      mainExercise: {
+        ...state.mainExercise,
+        sets: updatedSets
+      }
+    };
+  }),
+  
+  toggleSuccess: (setIndex) => set((state) => {
+    if (!state.mainExercise) return state;
+    
+    const updatedSets = [...state.mainExercise.sets];
+    updatedSets[setIndex] = { 
+      ...updatedSets[setIndex],
+      isSuccess: !updatedSets[setIndex].isSuccess
+    };
+    
+    return {
+      mainExercise: {
+        ...state.mainExercise,
+        sets: updatedSets
+      }
+    };
+  }),
+  
+  addAccessoryExercise: (exercise) => set((state) => ({
+    accessoryExercises: [...state.accessoryExercises, exercise]
+  })),
+  
+  removeAccessoryExercise: (index) => set((state) => ({
+    accessoryExercises: state.accessoryExercises.filter((_, i) => i !== index)
+  })),
+  
+  setNotes: (notes) => set({ notes }),
+  
+  getSuccessSets: () => {
+    const { mainExercise } = get();
+    if (!mainExercise) return 0;
+    return mainExercise.sets.filter(set => set.isSuccess).length;
+  },
+  
+  resetSession: () => set({
+    part: null,
+    mainExercise: null,
+    accessoryExercises: [],
+    notes: ''
+  })
+}));
+
+// src/components/auth/ProtectedRoute.tsx
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated } = useAuthStore();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+export default ProtectedRoute;
+
+// src/components/common/Layout.tsx
+import { ReactNode } from 'react';
+import BottomNavBar from './BottomNavBar';
+
+interface LayoutProps {
+  children: ReactNode;
+  hideNav?: boolean;
+}
+
+const Layout = ({ children, hideNav = false }: LayoutProps) => {
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <main className="container mx-auto px-4 py-6 pb-20">
+        {children}
+      </main>
+      {!hideNav && <BottomNavBar />}
+    </div>
+  );
+};
+
+export default Layout;
+
+// src/components/common/BottomNavBar.tsx
+import { Link, useLocation } from 'react-router-dom';
+
+const BottomNavBar = () => {
+  const location = useLocation();
+  
+  const isActive = (path: string) => {
+    return location.pathname === path ? 'text-blue-500' : 'text-gray-500';
+  };
+  
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-3">
+      <div className="container mx-auto flex justify-around items-center">
+        <Link to="/" className={`flex flex-col items-center ${isActive('/')}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <span className="text-xs mt-1">홈</span>
+        </Link>
+        
+        <Link to="/graph" className={`flex flex-col items-center ${isActive('/graph')}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span className="text-xs mt-1">그래프</span>
+        </Link>
+        
+        <Link to="/qna" className={`flex flex-col items-center ${isActive('/qna')}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-xs mt-1">Q&A</span>
+        </Link>
+        
+        <Link to="/settings" className={`flex flex-col items-center ${isActive('/settings')}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-xs mt-1">설정</span>
+        </Link>
+      </div>
+    </nav>
+  );
+};
+
+export default BottomNavBar;
+
+// src/components/exercise/MainExerciseForm.tsx
+import { useState, useEffect } from 'react';
+import { useSessionStore } from '../../stores/sessionStore';
+
+interface MainExerciseFormProps {
+  initialWeight?: number;
+}
+
+const MainExerciseForm = ({ initialWeight = 20 }: MainExerciseFormProps) => {
+  const { mainExercise, updateReps, toggleSuccess } = useSessionStore();
+  const [weight, setWeight] = useState(initialWeight);
+  
+  useEffect(() => {
+    if (!mainExercise && weight) {
+      useSessionStore.setState({
+        mainExercise: {
+          part: useSessionStore.getState().part!,
+          weight,
+          sets: [
+            { reps: 0, isSuccess: false },
+            { reps: 0, isSuccess: false },
+            { reps: 0, isSuccess: false },
+            { reps: 0, isSuccess: false },
+            { reps: 0, isSuccess: false }
+          ]
+        }
+      });
+    }
+  }, [mainExercise, weight]);
+  
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newWeight = Number(e.target.value);
+    setWeight(newWeight);
+    if (mainExercise) {
+      useSessionStore.setState({
+        mainExercise: {
+          ...mainExercise,
+          weight: newWeight
+        }
+      });
+    }
+  };
+  
+  const handleRepsChange = (setIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const reps = Number(e.target.value);
+    updateReps(setIndex, reps);
+  };
+  
+  if (!mainExercise) return null;
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+      <div className="mb-4">
+        <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+          무게 (kg)
+        </label>
+        <input
+          type="number"
+          value={weight}
+          onChange={handleWeightChange}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          min="0"
+          step="2.5"
+        />
+      </div>
+      
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">세트</h3>
+        
+        {mainExercise.sets.map((set, index) => (
+          <div key={index} className="flex items-center space-x-4">
+            <div className="flex-shrink-0 w-8">
+              <span className="font-medium text-gray-700 dark:text-gray-300">{index + 1}</span>
+            </div>
+            
+            <div className="flex-grow">
+              <input
+                type="number"
+                value={set.reps || ''}
+                onChange={(e) => handleRepsChange(index, e)}
+                placeholder="반복 횟수"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                min="0"
+              />
+            </div>
+            
+            <div className="flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => toggleSuccess(index)}
+                className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  set.isSuccess
+                    ? 'bg-green-500 text-white focus:ring-green-500'
+                    : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 focus:ring-gray-500'
+                }`}
+              >
+                {set.isSuccess ? '성공' : '실패'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default MainExerciseForm;
+
+// src/components/exercise/AccessoryExerciseForm.tsx
+import { useState } from 'react';
+import { AccessoryExercise } from '../../types';
+import { useSessionStore } from '../../stores/sessionStore';
+
+interface AccessoryExercisesProps {
+  part: string;
+}
+
+const accessoryExerciseOptions: Record<string, string[]> = {
+  chest: ['인클라인 덤벨 프레스', '케이블 플라이', '푸시업', '펙덱 플라이'],
+  back: ['턱걸이', '시티드 로우', '랫풀다운', '페이스풀'],
+  shoulder: ['사이드 레터럴 레이즈', '프론트 레이즈', '리버스 플라이', '오버헤드 프레스'],
+  leg: ['레그 익스텐션', '레그 컬', '카프 레이즈', '불가리안 스플릿 스쿼트']
+};
+
+const AccessoryExerciseForm = ({ part }: AccessoryExercisesProps) => {
+  const { accessoryExercises, addAccessoryExercise, removeAccessoryExercise } = useSessionStore();
+  const [newExercise, setNewExercise] = useState<AccessoryExercise>({
+    name: accessoryExerciseOptions[part][0] || '',
+    weight: 10,
+    reps: 12,
+    sets: 3
+  });
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setNewExercise({
+      ...newExercise,
+      [name]: name === 'name' ? value : Number(value)
+    });
+  };
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addAccessoryExercise(newExercise);
+    setNewExercise({
+      ...newExercise,
+      name: accessoryExerciseOptions[part][0] || ''
+    });
+  };
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+      <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">보조 운동</h3>
+      
+      {accessoryExercises.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">추가된 보조 운동</h4>
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {accessoryExercises.map((exercise, index) => (
+              <li key={index} className="py-3 flex justify-between items-center">
+                <div>
+                  <span className="font-medium">{exercise.name}</span>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {exercise.weight}kg x {exercise.reps}회 x {exercise.sets}세트
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeAccessoryExercise(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  삭제
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+            운동 선택
+          </label>
+          <select
+            name="name"
+            value={newExercise.name}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          >
+            {accessoryExerciseOptions[part]?.map((exercise) => (
+              <option key={exercise} value={exercise}>
+                {exercise}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+              무게 (kg)
+            </label>
+            <input
+              type="number"
+              name="weight"
+              value={newExercise.weight}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              min="0"
+              step="2.5"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+              반복
+            </label>
+            <input
+              type="number"
+              name="reps"
+              value={newExercise.reps}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              min="0"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+              세트
+            </label>
+            <input
+              type="number"
+              name="sets"
+              value={newExercise.sets}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              min="1"
+            />
+          </div>
+        </div>
+        
+        <div>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            추가하기
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default AccessoryExerciseForm;
+
+// src/pages/SelectPage.tsx
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ExercisePart } from '../types';
+import { useAuthStore } from '../stores/authStore';
+import { useSessionStore } from '../stores/sessionStore';
+import Layout from '../components/common/Layout';
+
+const exercisePartOptions = [
+  { value: 'chest', label: '가슴', icon: '💪' },
+  { value: 'back', label: '등', icon: '🔙' },
+  { value: 'shoulder', label: '어깨', icon: '🏋️' },
+  { value: 'leg', label: '하체', icon: '🦵' }
+];
+
+const SelectPage = () => {
+  const { user } = useAuthStore();
+  const { setPart, resetSession } = useSessionStore();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // 세션 초기화 (이전 세션 데이터 제거)
+    resetSession();
+  }, [resetSession]);
+  
+  const handleSelect = (part: ExercisePart) => {
+    setPart(part);
+    navigate('/record');
+  };
+  
+  const today = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
+  });
+  
+  return (
+    <Layout>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          안녕하세요, {user?.displayName || '회원'}님!
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">{today}</p>
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
+          오늘은 어떤 운동을 하시나요?
+        </h2>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {exercisePartOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => handleSelect(option.value as ExercisePart)}
+              className="flex flex-col items-center justify-center p-6 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              <span className="text-4xl mb-3">{option.icon}</span>
+              <span className="text-lg font-medium text-gray-800 dark:text-white">
+                {option.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default SelectPage;
+
+// src/pages/RecordPage.tsx
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Session } from '../types';
+import { useAuthStore } from '../stores/authStore';
+import { useSessionStore } from '../stores/sessionStore';
+import { getLastSession, saveSession } from '../services/firebaseService';
+import Layout from '../components/common/Layout';
+import MainExerciseForm from '../components/exercise/MainExerciseForm';
+import AccessoryExerciseForm from '../components/exercise/AccessoryExerciseForm';
+
+const partNames = {
+  chest: '가슴',
+  back: '등',
+  shoulder: '어깨',
+  leg: '하체'
+};
+
+const RecordPage = () => {
+  const { user } = useAuthStore();
+  const { part, mainExercise, accessoryExercises, notes, setNotes, setMainExercise } = useSessionStore();
+  const [lastSession, setLastSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // 부위가 선택되지 않았으면 선택 페이지로 리다이렉트
+    if (!part) {
+      navigate('/');
+      return;
+    }
+    
+    const fetchLastSession = async () => {
+      if (user && part) {
+        setIsLoading(true);
+        const session = await getLastSession(user.uid, part);
+        setLastSession(session);
+        
+        // 이전 세션이 있으면 무게 정보 가져오기
+        if (session && session.mainExercise) {
+          // 모든 세트가 성공이면 2.5kg 증량 제안
+          const allSuccess = session.mainExercise.sets.every(set => set.isSuccess);
+          const suggestedWeight = allSuccess
+            ? session.mainExercise.weight + 2.5
+            : session.mainExercise.weight;
+          
+          setMainExercise({
+            part,
+            weight: suggestedWeight,
+            sets: [
+              { reps: 0, isSuccess: false },
+              { reps: 0, isSuccess: false },
+              { reps: 0, isSuccess: false },
+              { reps: 0, isSuccess: false },
+              { reps: 0, isSuccess: false }
+            ]
+          });
+        }
+        
+        setIsLoading(false);
+      }
+    };
+    
+    fetchLastSession();
+  }, [user, part, navigate, setMainExercise]);
+  
+  const handleSave = async () => {
+    if (!user || !part || !mainExercise) return;
+    
+    const session: Session = {
+      userId: user.uid,
+      date: new Date(),
+      part,
+      mainExercise,
+      accessoryExercises,
+      notes,
+      isAllSuccess: mainExercise.sets.every(set => set.isSuccess)
+    };
+    
+    const sessionId = await saveSession(session);
+    
+    if (sessionId) {
+      navigate('/feedback');
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="spinner"></div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  return (
+    <Layout>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          {partNames[part!] || '운동'} 기록하기
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          {new Date().toLocaleDateString('ko-KR')}
+        </p>
+      </div>
+      
+      {lastSession && (
+        <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
+          <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
+            이전 세션 정보
+          </h3>
+          <p className="text-blue-700 dark:text-blue-300">
+            일자: {new Date(lastSession.date).toLocaleDateString('ko-KR')}
+          </p>
+          <p className="text-blue-700 dark:text-blue-300">
+            무게: {lastSession.mainExercise.weight}kg
+          </p>
+          <p className="text-blue-700 dark:text-blue-300">
+            성공 세트: {lastSession.mainExercise.sets.filter(set => set.isSuccess).length}/
+            {lastSession.mainExercise.sets.length}
+          </p>
+        </div>
+      )}
+      
+      <MainExerciseForm
+        initialWeight={
+          lastSession?.mainExercise.weight
+            ? lastSession.mainExercise.sets.every(set => set.isSuccess)
+              ? lastSession.mainExercise.weight + 2.5
+              : lastSession.mainExercise.weight
+            : 20
+        }
+      />
+      
+      {part && <AccessoryExerciseForm part={part} />}
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">메모</h3>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="오늘의 컨디션이나 특이사항을 기록해보세요."
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          rows={3}
+        ></textarea>
+      </div>
+      
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={handleSave}
+          disabled={!mainExercise || mainExercise.sets.every(set => set.reps === 0)}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          저장하기
+        </button>
+      </div>
+    </Layout>
+  );
+};
+
+export default RecordPage;
+
+// src/pages/FeedbackPage.tsx
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+import { useSessionStore } from '../stores/sessionStore';
+import Layout from '../components/common/Layout';
+
+const partNames = {
+  chest: '가슴',
+  back: '등',
+  shoulder: '어깨',
+  leg: '하체'
+};
+
+const FeedbackPage = () => {
+  const { user } = useAuthStore();
+  const { part, mainExercise, getSuccessSets, resetSession } = useSessionStore();
+  const navigate = useNavigate();
+  
+  if (!part || !mainExercise) {
+    navigate('/');
+    return null;
+  }
+  
+  const successSets = getSuccessSets();
+  const isAllSuccess = successSets === mainExercise.sets.length;
+  const nextWeight = isAllSuccess ? mainExercise.weight + 2.5 : mainExercise.weight;
+  
+  const getFeedback = () => {
+    if (isAllSuccess) {
+      return '축하합니다! 모든 세트를 성공적으로 완료했습니다. 다음 세션에는 무게를 증가시켜보세요.';
+    } else if (successSets >= 3) {
+      return '좋은 퍼포먼스입니다! 대부분의 세트를 성공했습니다. 다음 세션에서도 같은 무게로 도전해보세요.';
+    } else if (successSets >= 1) {
+      return '몇 세트를 성공했습니다. 다음 세션에서도 같은 무게로 도전하고 더 많은 세트를 성공해보세요.';
+    } else {
+      return '이번 세션에서는 모든 세트를 완료하지 못했습니다. 다음 세션에서는 무게를 줄이는 것을 고려해보세요.';
+    }
+  };
+  
+  const handleFinish = () => {
+    resetSession();
+    navigate('/');
+  };
+  
+  return (
+    <Layout>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          피드백
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          {new Date().toLocaleDateString('ko-KR')}
+        </p>
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <div className={`p-4 mb-6 rounded-lg ${
+          isAllSuccess ? 'bg-green-100 dark:bg-green-900' : 'bg-yellow-100 dark:bg-yellow-900'
+        }`}>
+          <h2 className={`text-xl font-semibold mb-2 ${
+            isAllSuccess ? 'text-green-800 dark:text-green-200' : 'text-yellow-800 dark:text-yellow-200'
+          }`}>
+            {isAllSuccess ? '🎉 완벽한 세션!' : '🔥 노력하는 중!'}
+          </h2>
+          <p className={
+            isAllSuccess ? 'text-green-700 dark:text-green-300' : 'text-yellow-700 dark:text-yellow-300'
+          }>
+            {getFeedback()}
+          </p>
+        </div>
+        
+        <div className="mb-6">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+            세션 요약
+          </h3>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">운동 부위</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {partNames[part]}
+              </span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">무게</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {mainExercise.weight} kg
+              </span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-gray-400">성공 세트</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {successSets} / {mainExercise.sets.length}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+            다음 목표
+          </h3>
+          
+          <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
+            <p className="text-blue-700 dark:text-blue-300">
+              다음 {partNames[part]} 운동 세션에서는 <strong>{nextWeight} kg</strong>으로 도전해보세요!
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={handleFinish}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          완료
+        </button>
+      </div>
+    </Layout>
+  );
+};
+
+export default FeedbackPage;
+
+// src/pages/GraphPage.tsx
+import { useState, useEffect } from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { ExercisePart } from '../types';
+import { useAuthStore } from '../stores/authStore';
+import { getProgressData } from '../services/firebaseService';
+import Layout from '../components/common/Layout';
+
+// Chart.js 등록
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const partNames = {
+  chest: '가슴',
+  back: '등',
+  shoulder: '어깨',
+  leg: '하체'
+};
+
+const GraphPage = () => {
+  const { user } = useAuthStore();
+  const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
+  const [chartData, setChartData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return;
+      
+      setIsLoading(true);
+      const progressData = await getProgressData(user.uid, selectedPart);
+      
+      if (progressData.length > 0) {
+        const labels = progressData.map(item => 
+          new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+        );
+        
+        const weights = progressData.map(item => item.weight);
+        const successSets = progressData.map(item => item.successSets);
+        
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: '무게 (kg)',
+              data: weights,
+              borderColor: 'rgb(53, 162, 235)',
+              backgroundColor: 'rgba(53, 162, 235, 0.5)',
+              yAxisID: 'y'
+            },
+            {
+              label: '성공 세트 수',
+              data: successSets,
+              borderColor: 'rgb(255, 99, 132)',
+              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+              yAxisID: 'y1'
+            }
+          ]
+        });
+      } else {
+        setChartData(null);
+      }
+      
+      setIsLoading(false);
+    };
+    
+    fetchData();
+  }, [user, selectedPart]);
+  
+  const options = {
+    responsive: true,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
+    stacked: false,
+    scales: {
+      y: {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
+        title: {
+          display: true,
+          text: '무게 (kg)'
+        }
+      },
+      y1: {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        title: {
+          display: true,
+          text: '성공 세트 수'
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+        min: 0,
+        max: 5
+      },
+    },
+  };
+  
+  return (
+    <Layout>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          진행 상황
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          나의 운동 성과를 확인하세요
+        </p>
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div className="mb-4">
+          <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+            부위 선택
+          </label>
+          <select
+            value={selectedPart}
+            onChange={(e) => setSelectedPart(e.target.value as ExercisePart)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          >
+            {Object.entries(partNames).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="h-64 md:h-80">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="spinner"></div>
+            </div>
+          ) : chartData ? (
+            <Line options={options} data={chartData} />
+          ) : (
+            <div className="flex justify-center items-center h-full">
+              <p className="text-gray-500 dark:text-gray-400">
+                데이터가 없습니다. 운동을 기록해주세요.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+          데이터 해석
+        </h2>
+        
+        <div className="space-y-4 text-gray-600 dark:text-gray-400">
+          <p>
+            <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+            <strong>파란색 선</strong>: 사용한 무게(kg)를 나타냅니다.
+          </p>
+          
+          <p>
+            <span className="inline-block w-3 h-3 bg-pink-500 rounded-full mr-2"></span>
+            <strong>분홍색 선</strong>: 각 세션에서 성공한 세트 수를 나타냅니다.
+          </p>
+          
+          <p className="mt-4">
+            <strong>💡 팁:</strong> 모든 세트를 성공적으로 완료한 후에 무게를 증가시키는 것이 이상적입니다.
+            그래프에서 분홍색 선이 5에 도달한 후 파란색 선이 상승하는 패턴이 보이면 
+            올바른 진행 방향입니다.
+          </p>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default GraphPage;
+
+// src/pages/QnaPage.tsx
+import { useState, useEffect } from 'react';
+import { ExercisePart, FAQ } from '../types';
+import { getFAQs } from '../services/firebaseService';
+import Layout from '../components/common/Layout';
+
+const partNames = {
+  chest: '가슴',
+  back: '등',
+  shoulder: '어깨',
+  leg: '하체'
+};
+
+const QnaPage = () => {
+  const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchFAQs = async () => {
+      setIsLoading(true);
+      const data = await getFAQs(selectedPart);
+      setFaqs(data);
+      setIsLoading(false);
+    };
+    
+    fetchFAQs();
+  }, [selectedPart]);
+  
+  return (
+    <Layout>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          자주 묻는 질문
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          올바른 운동 방법 정보
+        </p>
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div className="mb-6">
+          <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+            부위 선택
+          </label>
+          <select
+            value={selectedPart}
+            onChange={(e) => setSelectedPart(e.target.value as ExercisePart)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          >
+            {Object.entries(partNames).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {isLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <div className="spinner"></div>
+          </div>
+        ) : faqs.length > 0 ? (
+          <div className="space-y-6">
+            {faqs.map((faq) => (
+              <div key={faq.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0 last:pb-0">
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">
+                  {faq.question}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-3">
+                  {faq.answer}
+                </p>
+                {faq.videoUrl && (
+                  <a
+                    href={faq.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-blue-500 hover:text-blue-700"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    영상 보기
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-gray-500 dark:text-gray-400">
+              이 부위에 대한 Q&A가 없습니다.
+            </p>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+};
+
+export default QnaPage;
+
+// src/pages/SettingsPage.tsx
+import { useNavigate } from 'react-router-dom';
+import { signOut } from '../services/firebaseService';
+import { useAuthStore } from '../stores/authStore';
+import Layout from '../components/common/Layout';
+
+const SettingsPage = () => {
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  
+  const handleLogout = async () => {
+    await signOut();
+    logout();
+    navigate('/login');
+  };
+  
+  return (
+    <Layout>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          설정
+        </h1>
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || '사용자'}
+                className="w-12 h-12 rounded-full mr-4"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold mr-4">
+                {user?.displayName?.[0] || 'U'}
+              </div>
+            )}
+            
+            <div>
+              <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                {user?.displayName || '사용자'}
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">{user?.email}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          <button
+            onClick={handleLogout}
+            className="w-full text-left px-6 py-4 text-red-500 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+          >
+            로그아웃
+          </button>
+          
+          <a
+            href="https://corevia.com/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            개인정보 처리방침
+          </a>
+          
+          <a
+            href="https://corevia.com/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            이용약관
+          </a>
+        </div>
+      </div>
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+          앱 정보
+        </h3>
+        
+        <div className="space-y-2 text-gray-600 dark:text-gray-400">
+          <p>Corevia Training Tracker</p>
+          <p>버전: 1.0.0</p>
+          <p>© 2025 Corevia. All rights reserved.</p>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default SettingsPage;
+
+// src/App.tsx
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase';
+import { useAuthStore } from './stores/authStore';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
+// Pages
+import LoginPage from './pages/LoginPage';
+import SelectPage from './pages/SelectPage';
+import RecordPage from './pages/RecordPage';
+import FeedbackPage from './pages/FeedbackPage';
+import GraphPage from './pages/GraphPage';
+import QnaPage from './pages/QnaPage';
+import SettingsPage from './pages/SettingsPage';
+
+const App = () => {
+  const { setUser } = useAuthStore();
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser({
+          uid: user.uid,
+          displayName: user.displayName || '사용자',
+          email: user.email || '',
+          photoURL: user.photoURL || undefined
+        });
+      } else {
+        setUser(null);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [setUser]);
+  
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        
+        <Route path="/" element={
+          <ProtectedRoute>
+            <SelectPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/record" element={
+          <ProtectedRoute>
+            <RecordPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/feedback" element={
+          <ProtectedRoute>
+            <FeedbackPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/graph" element={
+          <ProtectedRoute>
+            <GraphPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/qna" element={
+          <ProtectedRoute>
+            <QnaPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
+
+// src/main.tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// 404.html (GitHub Pages SPA 라우팅을 위한 파일)
+// 프로젝트 루트에 위치
+/* 
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Corevia Training Tracker</title>
+  <script>
+    // GitHub Pages SPA 라우팅 해결책
+    sessionStorage.redirect = location.href;
+  </script>
+  <meta http-equiv="refresh" content="0;URL='/'">
+</head>
+<body>
+  리다이렉트 중...
+</body>
+</html>
+*/
+
+// index.html에 GitHub Pages SPA 리다이렉트 스크립트 추가
+// head 태그 내에 추가
+/*
+<script>
+  // GitHub Pages 리다이렉트 처리
+  (function() {
+    var redirect = sessionStorage.redirect;
+    delete sessionStorage.redirect;
+    if (redirect && redirect !== location.href) {
+      history.replaceState(null, null, redirect);
+    }
+  })();
+</script>
+*/
+
+// .github/workflows/deploy.yml (GitHub Actions 배포 설정)
+/*
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+          
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+*/
+
+// src/pages/LoginPage.tsx
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signInWithGoogle, signInWithKakao } from '../services/firebaseService';
+import { useAuthStore } from '../stores/authStore';
+import Layout from '../components/common/Layout';
+
+const LoginPage = () => {
+  const { isAuthenticated, setUser } = useAuthStore();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+  
+  const handleGoogleSignIn = async () => {
+    const user = await signInWithGoogle();
+    if (user) {
+      setUser(user);
+      navigate('/');
+    }
+  };
+  
+  const handleKakaoSignIn = async () => {
+    const user = await signInWithKakao();
+    if (user) {
+      setUser(user);
+      navigate('/');
+    }
+  };
+  
+  return (
+    <Layout hideNav>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Corevia Training Tracker</h1>
+            <p className="text-gray-600 dark:text-gray-400">효율적인 운동 관리를 위한 앱</p>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 text-center">로그인</h2>
+            
+            <div className="space-y-4">
+              <button
+                onClick={handleGoogleSignIn}
+                className="w-full flex items-center justify-center bg-white text-gray-800 border border-gray-300 rounded-md px-4 py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+                Google로 로그인
+              </button>
+              
+              <button
+                onClick={handleKakaoSignIn}
+                className="w-full flex items-center justify-center bg-yellow-400 text-gray-900 rounded-md px-4 py-2 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none">
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M12 2.1875C6.47812 2.1875 2 5.6875 2 10C2 12.7344 3.65625 15.0938 6.1875 16.4844C5.84375 17.6719 5.14062 20.0625 5.03125 20.5312C4.90625 21.0938 5.28125 21.0938 5.53125 20.9219C5.71875 20.7969 8.58125 18.8906 9.78125 18.1094C10.5 18.2031 11.2344 18.25 12 18.25C17.5219 18.25 22 14.75 22 10C22 5.6875 17.5219 2.1875 12 2.1875Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                카카오로 로그인
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default LoginPage;
