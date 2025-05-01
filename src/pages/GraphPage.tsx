@@ -28,7 +28,7 @@ export default function GraphPage() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    getProgressData(user.uid, part, 10).then((data: Progress[]) => {
+    getProgressData(user.uid, part, 10).then((data) => {
       setRows(data.reverse());
       setLoading(false);
       setSelected(null);
@@ -134,12 +134,12 @@ export default function GraphPage() {
                 ))}
               </ul>
 
-              {/* 🔹 보조 운동 */}
+              {/* 보조 운동 목록 */}
               {selected.accessoryNames.length > 0 && (
                 <>
                   <h3 className="mt-4 font-semibold text-sm">보조 운동</h3>
                   <ul className="list-disc list-inside text-sm">
-                    {selected.accessoryNames.map((n) => (
+                    {selected.accessoryNames.map((n: string) => (
                       <li key={n}>{n}</li>
                     ))}
                   </ul>
