@@ -9,8 +9,8 @@ import MainExerciseForm from '../components/exercise/MainExerciseForm';
 import AccessoryExerciseForm from '../components/exercise/AccessoryExerciseForm';
 import toast, { Toaster } from 'react-hot-toast';
 
-const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' } as const;
-const coreExerciseNames = {
+const PART_LABEL = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' } as const;
+const CORE_LABEL = {
   chest: '벤치프레스',
   back: '데드리프트',
   shoulder: '오버헤드 프레스',
@@ -25,30 +25,28 @@ export default function RecordPage() {
   } = useSessionStore();
 
   const [lastSession, setLastSession] = useState<Session | null>(null);
-  const [saving, setSaving] = useState(false);   // 저장 요청 플래그
-  const [done, setDone]     = useState(false);   // 저장 완료 플래그
+  const [saving, setSaving] = useState(false);
+  const [done, setDone]     = useState(false);
   const navigate = useNavigate();
 
-  /* ───────── 이전 세션 로드 ───────── */
+  /* ───── 이전 세션 로드 ───── */
   useEffect(() => {
-    if (!part) { navigate('/'); return; }
-    if (!user) return;
+    if (!part || !user) return;
 
-    getLastSession(user.uid, part).then((session) => {
-      setLastSession(session);
-
-      if (session?.mainExercise) {
-        const inc = session.mainExercise.sets.every(s => s.isSuccess) ? 2.5 : 0;
+    getLastSession(user.uid, part).then((s) => {
+      setLastSession(s);
+      if (s?.mainExercise) {
+        const inc = s.mainExercise.sets.every(x => x.isSuccess) ? 2.5 : 0;
         setMainExercise({
           part,
-          weight: session.mainExercise.weight + inc,
+          weight: s.mainExercise.weight + inc,
           sets: Array(5).fill({ reps: 0, isSuccess: false })
         });
       }
     });
-  }, [user, part, navigate, setMainExercise]);
+  }, [user, part, setMainExercise]);
 
-  /* ───────── 저장 핸들러 ───────── */
+  /* ───── 저장 핸들러 ───── */
   const handleSave = async () => {
     if (!user || !part || !mainExercise) return;
 
@@ -62,115 +60,102 @@ export default function RecordPage() {
       mainExercise,
       accessoryExercises,
       notes,
-      isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
+      isAllSuccess: mainExercise.sets.every(x => x.isSuccess)
     };
 
-    /* 10초 타임아웃 래퍼 */
+    /* 10 초 타임아웃 */
     const withTimeout = <T,>(p: Promise<T>, ms = 10_000) =>
       Promise.race([
         p,
-        new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error('timeout')), ms))
       ]);
 
     try {
-      await withTimeout(saveSession(sess));          // Firestore write
-      setDone(true);                                 // 스피너 OFF
+      await withTimeout(saveSession(sess));
+      setDone(true);
       setSaving(false);
       toast.success('✅ 저장 완료!');
-      setTimeout(() => navigate('/feedback', { replace: true }), 0); // 한 프레임 뒤 이동
+      setTimeout(() => navigate('/feedback', { replace: true }), 0);
     } catch (e: any) {
-      console.error('[saveSession error]', e?.message || e);
+      console.error('[saveSession]', e);
       setSaving(false);
       toast.error(
         e?.message === 'timeout'
-          ? '⏱️ 서버 응답이 느립니다. 잠시 후 다시 시도하세요.'
-          : '❌ 저장 실패! 네트워크를 확인하세요.'
+          ? '⏱️ 서버 응답 지연 중입니다.'
+          : '❌ 저장 실패! 다시 시도하세요.'
       );
     }
   };
 
+  /* ───── JSX ───── */
   return (
     <Layout>
       <Toaster position="top-center" gutter={12} />
 
-      {/* 저장 중 오버레이 */}
       {saving && !done && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="h-12 w-12 border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
-      {/* ─── 헤더 ─── */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-          {part ? partNames[part] : '운동'} 기록하기
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold dark:text-white mb-2">
+          {part ? PART_LABEL[part] : '운동'} 기록하기
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           {new Date().toLocaleDateString('ko-KR')}
         </p>
-      </div>
+      </header>
 
-      {/* 핵심 운동 안내 */}
       {part && (
-        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
-          <h2 className="font-semibold text-gray-900 dark:text-white">
-            오늘의 핵심 운동:&nbsp;
-            <span className="text-blue-600 dark:text-blue-300">
-              {coreExerciseNames[part]}
-            </span>
-          </h2>
-        </div>
+        <section className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+          오늘의 핵심 운동:&nbsp;
+          <span className="text-blue-600 dark:text-blue-300">
+            {CORE_LABEL[part]}
+          </span>
+        </section>
       )}
 
-      {/* 이전 세션 정보 */}
       {lastSession && (
-        <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
-          <p className="text-blue-700 dark:text-blue-300">
-            일자: {new Date(lastSession.date).toLocaleDateString('ko-KR')}
+        <section className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
+          <p>일자: {new Date(lastSession.date).toLocaleDateString('ko-KR')}</p>
+          <p>무게: {lastSession.mainExercise.weight}kg</p>
+          <p>
+            성공 세트:{' '}
+            {lastSession.mainExercise.sets.filter(x => x.isSuccess).length}/5
           </p>
-          <p className="text-blue-700 dark:text-blue-300">
-            무게: {lastSession.mainExercise.weight}kg
-          </p>
-          <p className="text-blue-700 dark:text-blue-300">
-            성공 세트: {lastSession.mainExercise.sets.filter(s => s.isSuccess).length}/5
-          </p>
-        </div>
+        </section>
       )}
 
-      {/* 메인 운동 입력 */}
       <MainExerciseForm
         initialWeight={
           lastSession?.mainExercise.weight
-            ? lastSession.mainExercise.sets.every(s => s.isSuccess)
+            ? lastSession.mainExercise.sets.every(x => x.isSuccess)
               ? lastSession.mainExercise.weight + 2.5
               : lastSession.mainExercise.weight
             : 20
         }
       />
 
-      {/* 보조 운동 입력 */}
       {part && <AccessoryExerciseForm part={part} />}
 
-      {/* 메모 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">메모</h3>
+      <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h3 className="text-lg font-medium mb-4">메모</h3>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="오늘의 컨디션이나 특이사항을 기록해보세요."
           className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
           rows={3}
+          placeholder="오늘의 컨디션이나 특이사항을 기록해보세요."
         />
-      </div>
+      </section>
 
-      {/* 저장 버튼 */}
       <div className="fixed bottom-20 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
         <button
           onClick={handleSave}
           disabled={
-            saving ||
-            !mainExercise ||
-            mainExercise.sets.every(s => s.reps === 0)
+            saving || !mainExercise || mainExercise.sets.every(x => x.reps === 0)
           }
           className={
             saving
@@ -184,3 +169,6 @@ export default function RecordPage() {
     </Layout>
   );
 }
+
+/* 🛡️ isolatedModules + noUnusedLocals 방어용 명시적 export */
+export {};
