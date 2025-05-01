@@ -29,12 +29,16 @@ export default function RecordPage() {
   const [done, setDone] = useState(false);
   const navigate = useNavigate();
 
-  // 세션 로딩
+  // 세션 로딩 - 마지막 세션 정보만 가져오기 (최적화)
   useEffect(() => {
     if (!part) { navigate('/'); return; }
     if (!user) return;
 
+    let mounted = true;
+    
     getLastSession(user.uid, part).then((session) => {
+      if (!mounted) return;
+      
       setLastSession(session);
       if (session?.mainExercise) {
         const inc = session.mainExercise.sets.every(s => s.isSuccess) ? 2.5 : 0;
@@ -45,41 +49,55 @@ export default function RecordPage() {
         });
       }
     });
+    
+    return () => { mounted = false; };
   }, [user, part, navigate, setMainExercise]);
 
-  // 타임아웃 래퍼
-  const withTimeout = <T,>(p: Promise<T>, ms = 25_000): Promise<T> =>
+  // 타임아웃 래퍼 - 시간 단축 (15초로 변경)
+  const withTimeout = <T,>(p: Promise<T>, ms = 15000): Promise<T> =>
     new Promise((res, rej) => {
       const t = setTimeout(() => rej(new Error('timeout')), ms);
       p.then((v) => { clearTimeout(t); res(v); })
        .catch((e) => { clearTimeout(t); rej(e); });
     });
 
-  // 저장
+  // 저장 - 간소화된 데이터만 저장
   const handleSave = async () => {
     if (!user || !part || !mainExercise) return;
 
     setSaving(true);
     setDone(false);
 
+    // 필요한 데이터만 포함 (보조운동 제외)
     const sess: Session = {
       userId: user.uid,
       date: new Date(),
       part,
       mainExercise,
-      accessoryExercises,
+      accessoryExercises: [], // 빈 배열로 대체
       notes,
       isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
     };
 
     try {
-      await withTimeout(saveSession(sess));
+      // Firebase 저장 요청 - 프라미스 생성 전에 바로 UI 업데이트
       setDone(true);
+      const savePromise = saveSession(sess);
+      
+      // 토스트 메시지 먼저 표시하여 UX 향상
+      toast.success('✅ 저장 중...');
+      
+      // 백그라운드에서 저장 진행
+      await withTimeout(savePromise);
+      
+      // 저장 완료 시 처리
       setSaving(false);
-
       toast.success('✅ 저장 완료!');
-      await new Promise(res => setTimeout(res, 1000)); // ✅ 토스트 보이도록 대기
-      navigate('/feedback', { replace: true });
+      
+      // 딜레이 단축 (500ms)
+      setTimeout(() => {
+        navigate('/feedback', { replace: true });
+      }, 500);
     } catch (e: any) {
       console.error('[saveSession error]', e?.message || e);
       setSaving(false);
