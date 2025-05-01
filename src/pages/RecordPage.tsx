@@ -48,34 +48,49 @@ export default function RecordPage() {
   }, [user, part, navigate, setMainExercise]);
 
   /* 저장 */
-  const handleSave = async () => {
-    if (!user || !part || !mainExercise) return;
+const handleSave = async () => {
+  if (!user || !part || !mainExercise) return;
 
-    setSaving(true);
+  setSaving(true);
+  setDone(false);
+
+  const sess: Session = {
+    userId: user.uid,
+    date: new Date(),
+    part,
+    mainExercise,
+    accessoryExercises,
+    notes,
+    isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
+  };
+
+  /* ───────── ① Firestore 쓰기에 10초 제한 ───────── */
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000); // 10 000ms
+
+  try {
+    await saveSession(sess, { signal: controller.signal } as any); // signal 전달
+    clearTimeout(timer);
+
+    setDone(true);      // 스피너 끄는 두 플래그
+    setSaving(false);
+
+    toast.success('✅ 저장 완료!');
+    setTimeout(() => navigate('/feedback', { replace: true }), 0); // 한 프레임 뒤 이동
+  } catch (e: any) {
+    clearTimeout(timer);
+    console.error('[saveSession error]', e?.message || e);
+
+    setSaving(false);
     setDone(false);
 
-    const sess: Session = {
-      userId: user.uid,
-      date: new Date(),
-      part,
-      mainExercise,
-      accessoryExercises,
-      notes,
-      isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
-    };
-
-    try {
-      await saveSession(sess);            // Firestore write
-      setDone(true);                      // ✅ 스피너 끌 플래그
-      toast.success('✅ 저장 완료!');
-      navigate('/feedback');
-    } catch (e) {
-      console.error(e);
-      toast.error('❌ 저장 실패! 다시 시도하세요.');
-    } finally {
-      setSaving(false);                   // saving=false (overlay 조건 해제)
-    }
-  };
+    const msg =
+      e?.name === 'AbortError'
+        ? '⏱️ 서버 응답이 느립니다. 잠시 후 다시 시도하세요.'
+        : '❌ 저장 실패! 네트워크를 확인하세요.';
+    toast.error(msg);
+  }
+};
 
   return (
     <Layout>
