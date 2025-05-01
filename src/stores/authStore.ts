@@ -1,24 +1,24 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { User } from '../types';
+
+interface User {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+}
 
 interface AuthState {
   user: User | null;
-  isAuthenticated: boolean;
   setUser: (user: User | null) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      logout: () => set({ user: null, isAuthenticated: false })
-    }),
-    {
-      name: 'auth-storage'
-    }
-  )
-);
+export const useAuthStore = create<AuthState>((set) => ({
+  user: {
+    uid: 'dev-user',
+    displayName: '개발자',
+    email: 'dev@corevia.app',
+  }, // 항상 로그인된 상태처럼
+  setUser: (user) => set({ user }),
+  logout: () => set({ user: null }),
+}));
