@@ -1,28 +1,23 @@
 export const getProgressData = async (
-  userId: string,
+  uid: string,
   part: ExercisePart,
-  limitCount = 50        // 기본 50, GraphPage는 10으로 호출
+  limitCount = 20
 ): Promise<Progress[]> => {
-  try {
-    const q = query(
-      collection(db, 'sessions'),
-      where('userId', '==', userId),
-      where('part', '==', part),
-      orderBy('date', 'desc'),
-      limit(limitCount)   // 🔥
-    );
+  const q = query(
+    collection(db, 'sessions'),
+    where('userId', '==', uid),
+    where('part', '==', part),
+    orderBy('date', 'desc'),
+    limit(limitCount)
+  );
 
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const data = d.data() as Session & { date: Timestamp };
-      return {
-        date: data.date.toDate(),
-        weight: data.mainExercise.weight,
-        successSets: data.mainExercise.sets.filter((s) => s.isSuccess).length
-      };
-    });
-  } catch (e) {
-    console.error('progress fetch error', e);
-    return [];
-  }
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const s = d.data() as Session & { date: Timestamp };
+    return {
+      date: s.date.toDate(),
+      weight: s.mainExercise.weight,
+      sets: s.mainExercise.sets            // ⬅️ 그대로 내려줌
+    };
+  });
 };
