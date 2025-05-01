@@ -1,153 +1,185 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip
-} from 'chart.js';
-import { ExercisePart, Progress } from '../types';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Session } from '../types';
 import { useAuthStore } from '../stores/authStore';
-import { getProgressData } from '../services/firebaseService';
+import { useSessionStore } from '../stores/sessionStore';
+import { getLastSession, saveSession } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
+import MainExerciseForm from '../components/exercise/MainExerciseForm';
+import AccessoryExerciseForm from '../components/exercise/AccessoryExerciseForm';
+import toast, { Toaster } from 'react-hot-toast';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip);
+const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' } as const;
+const coreExerciseNames = {
+  chest: '벤치프레스',
+  back: '데드리프트',
+  shoulder: '오버헤드 프레스',
+  leg: '스쿼트'
+} as const;
 
-const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' };
-
-export default function GraphPage() {
+export default function RecordPage() {
   const { user } = useAuthStore();
-  const [part, setPart] = useState<ExercisePart>('chest');
-  const [rows, setRows] = useState<Progress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<Progress | null>(null);
+  const {
+    part, mainExercise, accessoryExercises, notes,
+    setNotes, setMainExercise
+  } = useSessionStore();
 
+  const [lastSession, setLastSession] = useState<Session | null>(null);
+  const [saving, setSaving] = useState(false);   // 저장 요청 플래그
+  const [done, setDone]     = useState(false);   // 저장 완료 플래그
+  const navigate = useNavigate();
+
+  /* ───────── 이전 세션 로드 ───────── */
   useEffect(() => {
+    if (!part) { navigate('/'); return; }
     if (!user) return;
-    setLoading(true);
-    getProgressData(user.uid, part, 10).then((data) => {
-      setRows(data.reverse());
-      setLoading(false);
-      setSelected(null);
+
+    getLastSession(user.uid, part).then((session) => {
+      setLastSession(session);
+
+      if (session?.mainExercise) {
+        const inc = session.mainExercise.sets.every(s => s.isSuccess) ? 2.5 : 0;
+        setMainExercise({
+          part,
+          weight: session.mainExercise.weight + inc,
+          sets: Array(5).fill({ reps: 0, isSuccess: false })
+        });
+      }
     });
-  }, [user, part]);
+  }, [user, part, navigate, setMainExercise]);
 
-  const chartData = useMemo(() => {
-    if (!rows.length) return null;
-    return {
-      labels: rows.map((p) =>
-        new Date(p.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-      ),
-      datasets: [
-        {
-          label: '무게(kg)',
-          data: rows.map((p) => p.weight),
-          borderColor: '#3B82F6',
-          backgroundColor: '#3B82F6',
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          tension: 0.3
-        }
-      ]
+  /* ───────── 저장 핸들러 ───────── */
+  const handleSave = async () => {
+    if (!user || !part || !mainExercise) return;
+
+    setSaving(true);
+    setDone(false);
+
+    const sess: Session = {
+      userId: user.uid,
+      date: new Date(),
+      part,
+      mainExercise,
+      accessoryExercises,
+      notes,
+      isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
     };
-  }, [rows]);
 
-  const handlePointClick = (_: unknown, el: any[]) => {
-    if (!el.length) return;
-    setSelected(rows[el[0].index]);
-  };
+    /* 10초 타임아웃 래퍼 */
+    const withTimeout = <T,>(p: Promise<T>, ms = 10_000) =>
+      Promise.race([
+        p,
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
+      ]);
 
-  const labelPlugin = {
-    id: 'labelPlugin',
-    afterDatasetDraw(chart: any) {
-      const ctx = chart.ctx;
-      const meta = chart.getDatasetMeta(0);
-      rows.forEach((p, i) => {
-        const { x, y } = meta.data[i].tooltipPosition();
-        ctx.save();
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = p.isSuccess ? '#22c55e' : '#ef4444';
-        ctx.fillText(p.isSuccess ? '성공' : '실패', x, y - 10);
-        ctx.restore();
-      });
+    try {
+      await withTimeout(saveSession(sess));          // Firestore write
+      setDone(true);                                 // 스피너 OFF
+      setSaving(false);
+      toast.success('✅ 저장 완료!');
+      setTimeout(() => navigate('/feedback', { replace: true }), 0); // 한 프레임 뒤 이동
+    } catch (e: any) {
+      console.error('[saveSession error]', e?.message || e);
+      setSaving(false);
+      toast.error(
+        e?.message === 'timeout'
+          ? '⏱️ 서버 응답이 느립니다. 잠시 후 다시 시도하세요.'
+          : '❌ 저장 실패! 네트워크를 확인하세요.'
+      );
     }
   };
 
   return (
     <Layout>
+      <Toaster position="top-center" gutter={12} />
+
+      {/* 저장 중 오버레이 */}
+      {saving && !done && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="h-12 w-12 border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* ─── 헤더 ─── */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">진행 상황</h1>
-        <p className="text-gray-600 dark:text-gray-400">날짜별 운동 진행을 확인하세요</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+          {part ? partNames[part] : '운동'} 기록하기
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          {new Date().toLocaleDateString('ko-KR')}
+        </p>
       </div>
 
-      <select
-        value={part}
-        onChange={(e) => setPart(e.target.value as ExercisePart)}
-        className="border px-3 py-2 rounded mb-6 dark:bg-gray-700 dark:text-white"
-      >
-        {Object.entries(partNames).map(([v, l]) => (
-          <option key={v} value={v}>{l}</option>
-        ))}
-      </select>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* 그래프 */}
-        <div className="bg-white dark:bg-gray-800 rounded shadow p-4 h-72">
-          {loading ? (
-            <p className="text-center text-gray-400 mt-24">로딩 중...</p>
-          ) : chartData ? (
-            <Line
-              data={chartData}
-              options={{
-                responsive: true,
-                onClick: handlePointClick,
-                plugins: { legend: { display: false } },
-                scales: { y: { title: { display: true, text: '무게(kg)' } } }
-              }}
-              plugins={[labelPlugin]}
-            />
-          ) : (
-            <p className="text-center text-gray-400 mt-24">데이터가 없습니다.</p>
-          )}
+      {/* 핵심 운동 안내 */}
+      {part && (
+        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+          <h2 className="font-semibold text-gray-900 dark:text-white">
+            오늘의 핵심 운동:&nbsp;
+            <span className="text-blue-600 dark:text-blue-300">
+              {coreExerciseNames[part]}
+            </span>
+          </h2>
         </div>
+      )}
 
-        {/* 상세 패널 */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded shadow p-4 min-h-72">
-          {!selected ? (
-            <p className="text-gray-600 dark:text-gray-400">
-              그래프의 점을 클릭하면<br />해당 날짜의 세트 현황이 표시됩니다.
-            </p>
-          ) : (
-            <>
-              <h2 className="text-sm font-semibold mb-2">
-                {new Date(selected.date).toLocaleDateString('ko-KR')} 상세
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                {selected.sets.map((s, i) => (
-                  <li key={i}>
-                    {i + 1}세트 – {s.reps} reps ({s.isSuccess ? '성공' : '실패'})
-                  </li>
-                ))}
-              </ul>
-
-              {/* 보조 운동 목록 */}
-              {selected.accessoryNames.length > 0 && (
-                <>
-                  <h3 className="mt-4 font-semibold text-sm">보조 운동</h3>
-                  <ul className="list-disc list-inside text-sm">
-                    {selected.accessoryNames.map((n: string) => (
-                      <li key={n}>{n}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </>
-          )}
+      {/* 이전 세션 정보 */}
+      {lastSession && (
+        <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
+          <p className="text-blue-700 dark:text-blue-300">
+            일자: {new Date(lastSession.date).toLocaleDateString('ko-KR')}
+          </p>
+          <p className="text-blue-700 dark:text-blue-300">
+            무게: {lastSession.mainExercise.weight}kg
+          </p>
+          <p className="text-blue-700 dark:text-blue-300">
+            성공 세트: {lastSession.mainExercise.sets.filter(s => s.isSuccess).length}/5
+          </p>
         </div>
+      )}
+
+      {/* 메인 운동 입력 */}
+      <MainExerciseForm
+        initialWeight={
+          lastSession?.mainExercise.weight
+            ? lastSession.mainExercise.sets.every(s => s.isSuccess)
+              ? lastSession.mainExercise.weight + 2.5
+              : lastSession.mainExercise.weight
+            : 20
+        }
+      />
+
+      {/* 보조 운동 입력 */}
+      {part && <AccessoryExerciseForm part={part} />}
+
+      {/* 메모 */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">메모</h3>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="오늘의 컨디션이나 특이사항을 기록해보세요."
+          className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+          rows={3}
+        />
+      </div>
+
+      {/* 저장 버튼 */}
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
+        <button
+          onClick={handleSave}
+          disabled={
+            saving ||
+            !mainExercise ||
+            mainExercise.sets.every(s => s.reps === 0)
+          }
+          className={
+            saving
+              ? 'w-full bg-gray-400 cursor-wait text-white py-3 rounded'
+              : 'w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded'
+          }
+        >
+          {saving ? '저장 중…' : '저장하기'}
+        </button>
       </div>
     </Layout>
   );
