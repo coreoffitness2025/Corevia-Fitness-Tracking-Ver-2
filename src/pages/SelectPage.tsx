@@ -3,37 +3,53 @@ import { useNavigate } from 'react-router-dom';
 import { ExercisePart } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
+import { getLastSession } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
 
 const exercisePartOptions = [
-  { value: 'chest', label: '가슴', icon: '💪' },
-  { value: 'back', label: '등', icon: '🔙' },
-  { value: 'shoulder', label: '어깨', icon: '🏋️' },
-  { value: 'leg', label: '하체', icon: '🦵' }
+  { value: 'chest',    label: '가슴',   icon: '💪' },
+  { value: 'back',     label: '등',     icon: '🔙' },
+  { value: 'shoulder', label: '어깨',   icon: '🏋️' },
+  { value: 'leg',      label: '하체',   icon: '🦵' }
 ];
 
 const SelectPage = () => {
-  const { user } = useAuthStore();
-  const { setPart, resetSession } = useSessionStore();
   const navigate = useNavigate();
-  
+  const { user } = useAuthStore();
+
+  const {
+    setPart,
+    resetSession,
+    cacheLastSession,
+    lastSessionCache
+  } = useSessionStore();
+
+  /* ✅ 페이지 진입 시 세션 상태만 초기화(캐시는 보존) */
   useEffect(() => {
-    // 세션 초기화 (이전 세션 데이터 제거)
     resetSession();
   }, [resetSession]);
-  
-  const handleSelect = (part: ExercisePart) => {
+
+  /* ✅ 파트 선택 → 캐시 없으면 Firestore 프리패치 후 즉시 이동 */
+  const handleSelect = async (part: ExercisePart) => {
     setPart(part);
-    navigate('/record');
+
+    // 캐시에 없으면 한 번만 호출
+    if (lastSessionCache[part] === undefined && user) {
+      const session = await getLastSession(user.uid, part);
+      cacheLastSession(part, session ?? null);
+    }
+
+    navigate('/record');            // 화면은 지연 없이 전환
   };
-  
+
   const today = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     weekday: 'long'
   });
-  
+
+  /* ------------------ JSX ------------------ */
   return (
     <Layout>
       <div className="mb-8">
@@ -42,22 +58,22 @@ const SelectPage = () => {
         </h1>
         <p className="text-gray-600 dark:text-gray-400">{today}</p>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
           오늘은 어떤 운동을 하시나요?
         </h2>
-        
+
         <div className="grid grid-cols-2 gap-4">
-          {exercisePartOptions.map((option) => (
+          {exercisePartOptions.map((o) => (
             <button
-              key={option.value}
-              onClick={() => handleSelect(option.value as ExercisePart)}
+              key={o.value}
+              onClick={() => handleSelect(o.value as ExercisePart)}
               className="flex flex-col items-center justify-center p-6 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors"
             >
-              <span className="text-4xl mb-3">{option.icon}</span>
+              <span className="text-4xl mb-3">{o.icon}</span>
               <span className="text-lg font-medium text-gray-800 dark:text-white">
-                {option.label}
+                {o.label}
               </span>
             </button>
           ))}
