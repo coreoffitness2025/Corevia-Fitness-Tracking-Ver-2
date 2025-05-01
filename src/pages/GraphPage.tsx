@@ -25,15 +25,18 @@ export default function GraphPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Progress | null>(null);
 
+  /* 데이터 fetch */
   useEffect(() => {
     if (!user) return;
     setLoading(true);
     getProgressData(user.uid, part, 20).then((d) => {
-      setRows(d.reverse());
+      setRows(d.reverse());   // 오래된 → 최신
       setLoading(false);
+      setSelected(null);      // 부위 변경 시 상세 초기화
     });
   }, [user, part]);
 
+  /* 차트 데이터 */
   const chartData = useMemo(() => {
     if (!rows.length) return null;
     return {
@@ -46,24 +49,25 @@ export default function GraphPage() {
           data: rows.map((p) => p.weight),
           borderColor: '#3B82F6',
           backgroundColor: '#3B82F6',
-          pointRadius: 6,
-          pointHoverRadius: 8,
+          pointRadius: 5,
+          pointHoverRadius: 7,
           tension: 0.3
         }
       ]
     };
   }, [rows]);
 
-  const onPointClick = (_: any, el: any[]) => {
+  /* 점 클릭 → 상세 패널 */
+  const handlePointClick = (_: unknown, el: any[]) => {
     if (!el.length) return;
-    const idx = el[0].index;
-    setSelected(rows[idx]);
+    setSelected(rows[el[0].index]);
   };
 
+  /* 점 위 성공/실패 라벨 */
   const labelPlugin = {
     id: 'labelPlugin',
     afterDatasetDraw(chart: any) {
-      const { ctx } = chart;
+      const ctx = chart.ctx;
       const meta = chart.getDatasetMeta(0);
       rows.forEach((p, i) => {
         const { x, y } = meta.data[i].tooltipPosition();
@@ -84,6 +88,7 @@ export default function GraphPage() {
         <p className="text-gray-600 dark:text-gray-400">날짜별 운동 진행을 확인하세요</p>
       </div>
 
+      {/* 부위 선택 */}
       <select
         value={part}
         onChange={(e) => setPart(e.target.value as ExercisePart)}
@@ -94,8 +99,9 @@ export default function GraphPage() {
         ))}
       </select>
 
-      {/* 그래프 + 상세 레이아웃 분리 */}
+      {/* 그래프 + 상세 패널 */}
       <div className="grid md:grid-cols-2 gap-6">
+        {/* 그래프 영역 */}
         <div className="bg-white dark:bg-gray-800 rounded shadow p-4 h-72">
           {loading ? (
             <p className="text-center text-gray-400 mt-24">로딩 중...</p>
@@ -104,7 +110,7 @@ export default function GraphPage() {
               data={chartData}
               options={{
                 responsive: true,
-                onClick: onPointClick,
+                onClick: handlePointClick,
                 plugins: { legend: { display: false } },
                 scales: {
                   y: { title: { display: true, text: '무게(kg)' } }
@@ -117,24 +123,31 @@ export default function GraphPage() {
           )}
         </div>
 
+        {/* 상세 패널 */}
         <div className="bg-gray-50 dark:bg-gray-800 rounded shadow p-4 min-h-72">
-          <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-            {selected
-              ? `${new Date(selected.date).toLocaleDateString('ko-KR')} 진행 결과`
-              : '세트를 확인하려면 그래프 점을 선택하세요'}
-          </h2>
-
-          {selected && !selected.isSuccess ? (
-            <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-              {selected.sets.map((s, i) => (
-                <li key={i}>
-                  {i + 1}세트 – {s.reps} reps ({s.isSuccess ? '성공' : '실패'})
-                </li>
-              ))}
-            </ul>
-          ) : selected && selected.isSuccess ? (
-            <p className="text-green-600 dark:text-green-400 text-sm">모든 세트를 성공했습니다!</p>
-          ) : null}
+          {!selected ? (
+            <p className="text-gray-600 dark:text-gray-400">
+              그래프의 점을 클릭하면<br />해당 날짜의 세트 진행 현황이 표시됩니다.
+            </p>
+          ) : selected.isSuccess ? (
+            <p className="text-green-600 dark:text-green-400 text-sm">
+              {new Date(selected.date).toLocaleDateString('ko-KR')}<br />
+              모든 세트를 성공했습니다! 🎉
+            </p>
+          ) : (
+            <>
+              <h2 className="text-sm font-semibold mb-2">
+                {new Date(selected.date).toLocaleDateString('ko-KR')} 실패 세트
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                {selected.sets.map((s, i) => (
+                  <li key={i}>
+                    {i + 1}세트 – {s.reps} reps ({s.isSuccess ? '성공' : '실패'})
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       </div>
     </Layout>
