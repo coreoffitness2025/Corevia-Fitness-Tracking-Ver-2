@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { getLastSession } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
+import logoSrc from '../assets/corevia-logo.png';   // ← src/assets 폴더 안의 로고
 
 const exercisePartOptions = [
   { value: 'chest',    label: '가슴',   icon: '💪' },
@@ -29,17 +30,17 @@ const SelectPage = () => {
     resetSession();
   }, [resetSession]);
 
-  /* 파트 선택 */
-  const handleSelect = async (part: ExercisePart) => {
+  /* 파트 선택 → 화면 즉시 전환 → 백그라운드 프리패치 */
+  const handleSelect = (part: ExercisePart) => {
     setPart(part);
+    navigate('/record');                         // ① 먼저 이동
 
-    // 캐시에 없으면 Firestore 한 번만 호출
+    /* ② 이동 이후에 캐시 없으면 한 번만 페치 */
     if (lastSessionCache[part] === undefined && user) {
-      const session = await getLastSession(user.uid, part);
-      cacheLastSession(part, session ?? null);
+      getLastSession(user.uid, part)
+        .then((s) => cacheLastSession(part, s ?? null))
+        .catch(console.error);
     }
-
-    navigate('/record');            // 즉시 페이지 전환
   };
 
   const today = new Date().toLocaleDateString('ko-KR', {
@@ -49,15 +50,10 @@ const SelectPage = () => {
     weekday: 'long'
   });
 
-  /* ---------------- JSX ---------------- */
   return (
     <Layout>
       {/* ───── Corevia 로고 ───── */}
-      <img
-        src="/corevia-logo.png"          /* public 폴더 경로 */
-        alt="Corevia Fitness Logo"
-        className="mx-auto mb-6 w-48"    /* 가운데 정렬 · 아래 여백 · 폭 12rem */
-      />
+      <img src={logoSrc} alt="Corevia Fitness" className="mx-auto mb-6 w-48" />
 
       {/* 인사말 */}
       <div className="mb-8 text-center">
