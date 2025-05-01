@@ -49,10 +49,10 @@ export const signOut = async (): Promise<void> => {
 /* ───────── 세션 저장 (고속) ───────── */
 
 export const saveSession = async (session: Session): Promise<string> => {
-  const id = crypto.randomUUID();                       // ① 클라이언트에서 ID 생성
+  const id = crypto.randomUUID();                               // 클라이언트에서 ID 생성
   await setDoc(doc(db, 'sessions', id), {
     ...session,
-    date: serverTimestamp()                             // ② 서버 타임스탬프
+    date: serverTimestamp()                                     // 서버 타임스탬프
   });
   return id;
 };
@@ -73,8 +73,10 @@ export const getLastSession = async (
     );
     const snap = await getDocs(q);
     if (snap.empty) return null;
+
     const docSnap = snap.docs[0];
     const data = docSnap.data() as Omit<Session, 'id' | 'date'> & { date: Timestamp };
+
     return {
       ...data,
       id: docSnap.id,
@@ -101,16 +103,19 @@ export const getProgressData = async (
     limit(limitCount)
   );
   const snap = await getDocs(q);
+
   return snap.docs.map((docSnap) => {
     const d = docSnap.data() as Session & { date: Timestamp };
     const successSets = d.mainExercise.sets.filter((s) => s.isSuccess).length;
+
     return {
       date: d.date.toDate(),
       weight: d.mainExercise.weight,
       successSets,
       isSuccess: successSets === 5,
-      accessoryNames: d.accessoryExercises?.map((a) => a.name) ?? []   // 🔹 추가
-    };
+      sets: d.mainExercise.sets,
+      accessoryNames: d.accessoryExercises?.map((a) => a.name) ?? []
+    } as Progress;
   });
 };
 
