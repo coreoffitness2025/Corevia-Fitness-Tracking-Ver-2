@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import Layout from '../components/common/Layout';
 
@@ -11,19 +10,18 @@ const partNames = {
 };
 
 const FeedbackPage = () => {
-  const { user } = useAuthStore();
   const { part, mainExercise, getSuccessSets, resetSession } = useSessionStore();
   const navigate = useNavigate();
-  
+
   if (!part || !mainExercise) {
     navigate('/');
     return null;
   }
-  
+
   const successSets = getSuccessSets();
   const isAllSuccess = successSets === mainExercise.sets.length;
   const nextWeight = isAllSuccess ? mainExercise.weight + 2.5 : mainExercise.weight;
-  
+
   const getFeedback = () => {
     if (isAllSuccess) {
       return '축하합니다! 모든 세트를 성공적으로 완료했습니다. 다음 세션에는 무게를 증가시켜보세요.';
@@ -35,12 +33,12 @@ const FeedbackPage = () => {
       return '이번 세션에서는 모든 세트를 완료하지 못했습니다. 다음 세션에서는 무게를 줄이는 것을 고려해보세요.';
     }
   };
-  
+
   const handleFinish = () => {
     resetSession();
     navigate('/');
   };
-  
+
   return (
     <Layout>
       <div className="mb-6">
@@ -51,7 +49,7 @@ const FeedbackPage = () => {
           {new Date().toLocaleDateString('ko-KR')}
         </p>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
         <div className={`p-4 mb-6 rounded-lg ${
           isAllSuccess ? 'bg-green-100 dark:bg-green-900' : 'bg-yellow-100 dark:bg-yellow-900'
@@ -67,12 +65,12 @@ const FeedbackPage = () => {
             {getFeedback()}
           </p>
         </div>
-        
+
         <div className="mb-6">
           <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
             세션 요약
           </h3>
-          
+
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">운동 부위</span>
@@ -80,14 +78,14 @@ const FeedbackPage = () => {
                 {partNames[part]}
               </span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">무게</span>
               <span className="font-medium text-gray-800 dark:text-gray-200">
                 {mainExercise.weight} kg
               </span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">성공 세트</span>
               <span className="font-medium text-gray-800 dark:text-gray-200">
@@ -96,12 +94,12 @@ const FeedbackPage = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
           <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
             다음 목표
           </h3>
-          
+
           <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
             <p className="text-blue-700 dark:text-blue-300">
               다음 {partNames[part]} 운동 세션에서는 <strong>{nextWeight} kg</strong>으로 도전해보세요!
@@ -109,7 +107,7 @@ const FeedbackPage = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="fixed bottom-20 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={handleFinish}
