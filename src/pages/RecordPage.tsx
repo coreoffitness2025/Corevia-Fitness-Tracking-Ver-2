@@ -7,7 +7,7 @@ import { getLastSession, saveSession } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
 import MainExerciseForm from '../components/exercise/MainExerciseForm';
 import AccessoryExerciseForm from '../components/exercise/AccessoryExerciseForm';
-import toast, { Toaster } from 'react-hot-toast';          // ⭐️ 추가
+import toast, { Toaster } from 'react-hot-toast';          // ⭐ toast
 
 const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' };
 const coreExerciseNames = {
@@ -24,23 +24,21 @@ export default function RecordPage() {
     setNotes, setMainExercise
   } = useSessionStore();
   const [lastSession, setLastSession] = useState<Session | null>(null);
-  const [saving, setSaving] = useState(false);            // ⭐️ 저장 상태
+  const [saving, setSaving] = useState(false);            // ❶ 저장 상태
   const navigate = useNavigate();
 
-  /* 세션 불러오기 */
+  /* ───────── 이전 세션 불러오기 ───────── */
   useEffect(() => {
     if (!part) { navigate('/'); return; }
-
     if (user) {
       getLastSession(user.uid, part).then((session) => {
         setLastSession(session);
         if (session?.mainExercise) {
-          const allSuccess = session.mainExercise.sets.every(s => s.isSuccess);
-          const suggested = allSuccess ? session.mainExercise.weight + 2.5
-                                       : session.mainExercise.weight;
+          const up = session.mainExercise;
+          const inc = up.sets.every(s => s.isSuccess) ? 2.5 : 0;
           setMainExercise({
             part,
-            weight: suggested,
+            weight: up.weight + inc,
             sets: Array(5).fill({ reps: 0, isSuccess: false })
           });
         }
@@ -48,11 +46,11 @@ export default function RecordPage() {
     }
   }, [user, part, navigate, setMainExercise]);
 
-  /* 저장 */
+  /* ───────── 저장 핸들러 ───────── */
   const handleSave = async () => {
     if (!user || !part || !mainExercise) return;
+    setSaving(true);                                      // ❷ 로딩 시작
 
-    setSaving(true);
     const sess: Session = {
       userId: user.uid,
       date: new Date(),
@@ -66,20 +64,29 @@ export default function RecordPage() {
     try {
       const id = await saveSession(sess);
       if (!id) throw new Error('세션 ID 누락');
-      toast.success('✅ 저장이 완료되었습니다!');
-      navigate('/feedback');
+
+      toast.success('✅ 저장 완료!');                     // ❸ 성공 토스트
+      setTimeout(() => navigate('/feedback'), 1000);      // ❹ 1초 후 이동
     } catch (e) {
       console.error(e);
       toast.error('❌ 저장 실패! 잠시 후 다시 시도하세요.');
-      setSaving(false);
+      setSaving(false);                                   // 실패 → 복구
     }
   };
 
   return (
     <Layout>
-      {/* 토스트 컨테이너 */}
-      <Toaster position="top-center" gutter={12} />
+      <Toaster position="top-center" gutter={12} />        {/* 토스트 컨테이너 */}
 
+      {/* ❺ 저장 중 오버레이 스피너 */}
+      {saving && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="h-12 w-12 border-4 border-white/60 border-t-transparent
+                          rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* ─── 이하 기존 JSX 그대로 ─── */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           {partNames[part!] || '운동'} 기록하기
@@ -92,13 +99,13 @@ export default function RecordPage() {
       {/* 핵심 운동 안내 */}
       <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
         <h2 className="font-semibold text-gray-900 dark:text-white">
-          오늘의 핵심 운동: <span className="text-blue-600 dark:text-blue-300">
+          오늘의 핵심 운동:&nbsp;
+          <span className="text-blue-600 dark:text-blue-300">
             {coreExerciseNames[part!]}
           </span>
         </h2>
       </div>
 
-      {/* 이전 세션 정보 */}
       {lastSession && (
         <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
           <p className="text-blue-700 dark:text-blue-300">
@@ -125,7 +132,7 @@ export default function RecordPage() {
 
       {part && <AccessoryExerciseForm part={part} />}
 
-      {/* 메모 */}
+      {/* 메모 입력 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">메모</h3>
         <textarea
