@@ -23,8 +23,10 @@ export default function RecordPage() {
     part, mainExercise, accessoryExercises, notes,
     setNotes, setMainExercise
   } = useSessionStore();
+
   const [lastSession, setLastSession] = useState<Session | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);   // 네트워크 요청 플래그
+  const [done, setDone]     = useState(false);   // 저장 완료 플래그
   const navigate = useNavigate();
 
   /* 이전 세션 불러오기 */
@@ -50,6 +52,8 @@ export default function RecordPage() {
     if (!user || !part || !mainExercise) return;
 
     setSaving(true);
+    setDone(false);
+
     const sess: Session = {
       userId: user.uid,
       date: new Date(),
@@ -61,16 +65,15 @@ export default function RecordPage() {
     };
 
     try {
-      const id = await saveSession(sess);
-      if (!id) throw new Error('세션 ID 누락');
-
-      setSaving(false);                       // ✅ 스피너 먼저 끄기
-      toast.success('✅ 저장이 완료되었습니다!');
-      navigate('/feedback');                  // 바로 이동
+      await saveSession(sess);            // Firestore write
+      setDone(true);                      // ✅ 스피너 끌 플래그
+      toast.success('✅ 저장 완료!');
+      navigate('/feedback');
     } catch (e) {
       console.error(e);
-      toast.error('❌ 저장 실패! 잠시 후 다시 시도하세요.');
-      setSaving(false);
+      toast.error('❌ 저장 실패! 다시 시도하세요.');
+    } finally {
+      setSaving(false);                   // saving=false (overlay 조건 해제)
     }
   };
 
@@ -79,12 +82,13 @@ export default function RecordPage() {
       <Toaster position="top-center" gutter={12} />
 
       {/* 저장 중 오버레이 */}
-      {saving && (
+      {saving && !done && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="h-12 w-12 border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
+      {/* --- 페이지 헤더 --- */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           {partNames[part!] || '운동'} 기록하기
@@ -94,6 +98,7 @@ export default function RecordPage() {
         </p>
       </div>
 
+      {/* 핵심 운동 안내 */}
       <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
         <h2 className="font-semibold text-gray-900 dark:text-white">
           오늘의 핵심 운동:&nbsp;
@@ -103,6 +108,7 @@ export default function RecordPage() {
         </h2>
       </div>
 
+      {/* 이전 세션 정보 */}
       {lastSession && (
         <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
           <p className="text-blue-700 dark:text-blue-300">
@@ -129,6 +135,7 @@ export default function RecordPage() {
 
       {part && <AccessoryExerciseForm part={part} />}
 
+      {/* 메모 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">메모</h3>
         <textarea
