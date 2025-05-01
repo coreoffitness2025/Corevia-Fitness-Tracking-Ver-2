@@ -1,12 +1,14 @@
 import {
   collection,
-  addDoc,
+  doc,
+  setDoc,
   query,
   where,
   orderBy,
   getDocs,
   limit,
-  Timestamp
+  Timestamp,
+  serverTimestamp
 } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../firebase';
@@ -44,20 +46,18 @@ export const signOut = async (): Promise<void> => {
   }
 };
 
-/* ───────── 세션 CRUD ───────── */
+/* ───────── 세션 저장 (고속) ───────── */
 
-export const saveSession = async (session: Session): Promise<string | null> => {
-  try {
-    const docRef = await addDoc(collection(db, 'sessions'), {
-      ...session,
-      date: Timestamp.fromDate(new Date(session.date))
-    });
-    return docRef.id;
-  } catch (e) {
-    console.error('세션 저장 에러:', e);
-    return null;
-  }
+export const saveSession = async (session: Session): Promise<string> => {
+  const id = crypto.randomUUID();                       // ① 클라이언트에서 ID 생성
+  await setDoc(doc(db, 'sessions', id), {
+    ...session,
+    date: serverTimestamp()                             // ② 서버 타임스탬프
+  });
+  return id;
 };
+
+/* ───────── 최근 세션 조회 ───────── */
 
 export const getLastSession = async (
   userId: string,
@@ -73,11 +73,11 @@ export const getLastSession = async (
     );
     const snap = await getDocs(q);
     if (snap.empty) return null;
-    const doc = snap.docs[0];
-    const data = doc.data() as Omit<Session, 'id' | 'date'> & { date: Timestamp };
+    const docSnap = snap.docs[0];
+    const data = docSnap.data() as Omit<Session, 'id' | 'date'> & { date: Timestamp };
     return {
       ...data,
-      id: doc.id,
+      id: docSnap.id,
       date: data.date.toDate()
     };
   } catch (e) {
@@ -101,15 +101,15 @@ export const getProgressData = async (
     limit(limitCount)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((doc) => {
-    const d = doc.data() as Session & { date: Timestamp };
+  return snap.docs.map((docSnap) => {
+    const d = docSnap.data() as Session & { date: Timestamp };
     const successSets = d.mainExercise.sets.filter((s) => s.isSuccess).length;
     return {
       date: d.date.toDate(),
       weight: d.mainExercise.weight,
       successSets,
-      sets: d.mainExercise.sets,
-      isSuccess: successSets === 5
+      isSuccess: successSets === 5,
+      accessoryNames: d.accessoryExercises?.map((a) => a.name) ?? []   // 🔹 추가
     };
   });
 };
@@ -120,9 +120,9 @@ export const getFAQs = async (part: ExercisePart): Promise<FAQ[]> => {
   try {
     const q = query(collection(db, 'faqs'), where('part', '==', part));
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as Omit<FAQ, 'id'>)
+    return snap.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as Omit<FAQ, 'id'>)
     }));
   } catch (e) {
     console.error('FAQ 조회 에러:', e);
