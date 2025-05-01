@@ -24,22 +24,22 @@ const SelectPage = () => {
     lastSessionCache
   } = useSessionStore();
 
-  /* ✅ 페이지 진입 시 세션 상태만 초기화(캐시는 보존) */
+  /* 페이지 진입 시 세션 상태 초기화(캐시는 유지) */
   useEffect(() => {
     resetSession();
   }, [resetSession]);
 
-  /* ✅ 파트 선택 → 캐시 없으면 Firestore 프리패치 후 즉시 이동 */
+  /* 파트 선택 */
   const handleSelect = async (part: ExercisePart) => {
     setPart(part);
 
-    // 캐시에 없으면 한 번만 호출
+    // 캐시에 없으면 Firestore 한 번만 호출
     if (lastSessionCache[part] === undefined && user) {
       const session = await getLastSession(user.uid, part);
       cacheLastSession(part, session ?? null);
     }
 
-    navigate('/record');            // 화면은 지연 없이 전환
+    navigate('/record');            // 즉시 페이지 전환
   };
 
   const today = new Date().toLocaleDateString('ko-KR', {
@@ -49,18 +49,27 @@ const SelectPage = () => {
     weekday: 'long'
   });
 
-  /* ------------------ JSX ------------------ */
+  /* ---------------- JSX ---------------- */
   return (
     <Layout>
-      <div className="mb-8">
+      {/* ───── Corevia 로고 ───── */}
+      <img
+        src="/corevia-logo.png"          /* public 폴더 경로 */
+        alt="Corevia Fitness Logo"
+        className="mx-auto mb-6 w-48"    /* 가운데 정렬 · 아래 여백 · 폭 12rem */
+      />
+
+      {/* 인사말 */}
+      <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           안녕하세요, {user?.displayName || '회원'}님!
         </h1>
         <p className="text-gray-600 dark:text-gray-400">{today}</p>
       </div>
 
+      {/* 운동 파트 선택 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
           오늘은 어떤 운동을 하시나요?
         </h2>
 
