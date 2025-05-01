@@ -5,12 +5,12 @@ export interface Progress {
   /** 메인 운동 무게(kg) */
   weight: number;
 
-  /** (기존) 성공 세트 수 */
+  /** 성공 세트 수(0 ~ 5) */
   successSets: number;
 
-  /** 🔥 새 필드 – 세트 상세 */
-  sets: {
-    reps: number;
-    isSuccess: boolean;
-  }[];
+  /** 모든 세트 상세 */
+  sets: { reps: number; isSuccess: boolean }[];
+
+  /** 🔥 추가: 그날 전체 성공 여부 (successSets === 5) */
+  isSuccess: boolean;
 }
