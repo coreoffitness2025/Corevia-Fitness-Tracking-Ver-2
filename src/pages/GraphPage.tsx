@@ -1,3 +1,5 @@
+/* src/pages/GraphPage.tsx */
+
 import { useState, useEffect, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -20,79 +22,75 @@ const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하�
 
 export default function GraphPage() {
   const { user } = useAuthStore();
+
   const [part, setPart] = useState<ExercisePart>('chest');
-  const [data, setData] = useState<Progress[]>([]);
+  const [rows, setRows] = useState<Progress[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<Progress | null>(null);
 
-  /* fetch */
+  /* 1. 데이터 fetch (최근 20회) */
   useEffect(() => {
     if (!user) return;
     setLoading(true);
     getProgressData(user.uid, part, 20).then((d) => {
-      setData(d.reverse());          // 오래된 → 최근
+      setRows(d.reverse());          // 오래된 → 최신
       setLoading(false);
     });
   }, [user, part]);
 
-  /* chart data */
+  /* 2. 차트 데이터 */
   const chartData = useMemo(() => {
-    if (!data.length) return null;
+    if (!rows.length) return null;
 
     return {
-      labels: data.map((d) =>
-        new Date(d.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+      labels: rows.map((p) =>
+        new Date(p.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
       ),
       datasets: [
         {
           label: '무게(kg)',
-          data: data.map((d) => d.weight),
+          data: rows.map((p) => p.weight),
           borderColor: '#3B82F6',
-          backgroundColor: data.map((d) => (d.isSuccess ? '#3B82F6' : '#EF4444')),
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          backgroundColor: '#3B82F6',
+          pointRadius: 6,
+          pointHoverRadius: 8,
           tension: 0.3
         }
       ]
     };
-  }, [data]);
+  }, [rows]);
 
-  /* point 클릭 */
-  const onPointClick = (_: unknown, elems: any[]) => {
-    if (!elems.length) return;
-    setDetail(data[elems[0].index]);
+  /* 3. 포인트 클릭 => 실패일 경우 팝업 */
+  const onPointClick = (_: any, el: any[]) => {
+    if (!el.length) return;
+    const idx = el[0].index;
+    if (!rows[idx].isSuccess) setDetail(rows[idx]);
   };
 
-  /* 실패 텍스트 표시용 커스텀 플러그인 */
-  const failLabelPlugin = {
-    id: 'failLabel',
+  /* 4. 커스텀 플러그인: 점 위에 “성공 / 실패” 텍스트 */
+  const labelPlugin = {
+    id: 'labelPlugin',
     afterDatasetDraw(chart: any) {
-      const {
-        ctx,
-        chartArea: { top },
-        data: { datasets }
-      } = chart;
+      const { ctx } = chart;
       const meta = chart.getDatasetMeta(0);
-      datasets[0].data.forEach((_point: any, i: number) => {
-        if (data[i] && !data[i].isSuccess) {
-          const { x, y } = meta.data[i].tooltipPosition();
-          ctx.save();
-          ctx.fillStyle = '#EF4444';
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('실패', x, y - 8); // 점 위에 텍스트
-          ctx.restore();
-        }
+
+      rows.forEach((p, i) => {
+        const { x, y } = meta.data[i].tooltipPosition();
+        ctx.save();
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = p.isSuccess ? '#22c55e' : '#ef4444';
+        ctx.fillText(p.isSuccess ? '성공' : '실패', x, y - 10);
+        ctx.restore();
       });
     }
   };
 
   return (
     <Layout>
-      {/* 헤더 */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">진행 상황</h1>
-        <p className="text-gray-600 dark:text-gray-400">나의 운동 성과를 확인하세요</p>
+        <p className="text-gray-600 dark:text-gray-400">날짜별 운동 진행을 확인하세요</p>
       </div>
 
       {/* 부위 선택 */}
@@ -116,27 +114,19 @@ export default function GraphPage() {
             options={{
               responsive: true,
               onClick: onPointClick,
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    afterBody: (tt) =>
-                      data[tt[0].dataIndex].isSuccess ? '' : '❗ 실패 세션'
-                  }
-                }
-              },
+              plugins: { legend: { display: false } },
               scales: {
                 y: { title: { display: true, text: '무게(kg)' } }
               }
             }}
-            plugins={[failLabelPlugin]}
+            plugins={[labelPlugin]}
           />
         ) : (
           <p className="text-center text-gray-400 mt-24">데이터가 없습니다.</p>
         )}
       </div>
 
-      {/* 세트 상세 팝업 */}
+      {/* 실패일 상세 팝업 */}
       {detail && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-20">
           <div className="bg-white dark:bg-gray-800 p-6 rounded shadow max-w-xs w-full">
