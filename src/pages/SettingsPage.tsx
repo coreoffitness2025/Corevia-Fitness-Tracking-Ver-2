@@ -6,13 +6,13 @@ import Layout from '../components/common/Layout';
 const SettingsPage = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  
+
   const handleLogout = async () => {
     await signOut();
     logout();
     navigate('/login');
   };
-  
+
   return (
     <Layout>
       <div className="mb-6">
@@ -20,7 +20,7 @@ const SettingsPage = () => {
           설정
         </h1>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
@@ -35,7 +35,7 @@ const SettingsPage = () => {
                 {user?.displayName?.[0] || 'U'}
               </div>
             )}
-            
+
             <div>
               <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200">
                 {user?.displayName || '사용자'}
@@ -44,7 +44,7 @@ const SettingsPage = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           <button
             onClick={handleLogout}
@@ -52,8 +52,8 @@ const SettingsPage = () => {
           >
             로그아웃
           </button>
-          
-          
+
+          <a
             href="https://corevia.com/privacy"
             target="_blank"
             rel="noopener noreferrer"
@@ -61,8 +61,8 @@ const SettingsPage = () => {
           >
             개인정보 처리방침
           </a>
-          
-          
+
+          <a
             href="https://corevia.com/terms"
             target="_blank"
             rel="noopener noreferrer"
@@ -72,12 +72,12 @@ const SettingsPage = () => {
           </a>
         </div>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
           앱 정보
         </h3>
-        
+
         <div className="space-y-2 text-gray-600 dark:text-gray-400">
           <p>Corevia Training Tracker</p>
           <p>버전: 1.0.0</p>
