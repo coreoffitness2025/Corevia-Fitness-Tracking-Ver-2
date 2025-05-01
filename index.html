@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corevia Training Tracker</title>
+  <script>
+    // GitHub Pages 리다이렉트 처리
+    (function() {
+      var redirect = sessionStorage.redirect;
+      delete sessionStorage.redirect;
+      if (redirect && redirect !== location.href) {
+        history.replaceState(null, null, redirect);
+      }
+    })();
+  </script>
+  <script type="module" crossorigin src="/Corevia-Fitness-Tracking-Ver-2/assets/index-2d409872.js"></script>
+  <link rel="stylesheet" href="/Corevia-Fitness-Tracking-Ver-2/assets/index-8d5d4e7c.css">
+</head>
+<body>
+  <div id="root"></div>
+  
+</body>
+</html>
