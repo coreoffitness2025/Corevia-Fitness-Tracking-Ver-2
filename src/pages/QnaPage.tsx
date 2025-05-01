@@ -14,7 +14,7 @@ const QnaPage = () => {
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     const fetchFAQs = async () => {
       setIsLoading(true);
@@ -22,10 +22,10 @@ const QnaPage = () => {
       setFaqs(data);
       setIsLoading(false);
     };
-    
+
     fetchFAQs();
   }, [selectedPart]);
-  
+
   return (
     <Layout>
       <div className="mb-6">
@@ -36,7 +36,7 @@ const QnaPage = () => {
           올바른 운동 방법 정보
         </p>
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="mb-6">
           <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
@@ -54,7 +54,7 @@ const QnaPage = () => {
             ))}
           </select>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
             <div className="spinner"></div>
@@ -62,7 +62,10 @@ const QnaPage = () => {
         ) : faqs.length > 0 ? (
           <div className="space-y-6">
             {faqs.map((faq) => (
-              <div key={faq.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0 last:pb-0">
+              <div
+                key={faq.id}
+                className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0 last:pb-0"
+              >
                 <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">
                   {faq.question}
                 </h3>
@@ -70,15 +73,31 @@ const QnaPage = () => {
                   {faq.answer}
                 </p>
                 {faq.videoUrl && (
-                  
+                  <a
                     href={faq.videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-blue-500 hover:text-blue-700"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     영상 보기
                   </a>
