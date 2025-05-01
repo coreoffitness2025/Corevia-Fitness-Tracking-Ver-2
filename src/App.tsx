@@ -1,3 +1,6 @@
+// App.tsx 상단 주석 추가
+// Updated to trigger redeploy
+
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
