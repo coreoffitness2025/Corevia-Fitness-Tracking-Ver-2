@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write  # ✅ 이 줄 꼭 추가!
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -32,7 +35,6 @@ jobs:
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
 
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@v4.1.1
         with:
           folder: dist
-          token: ${{ secrets.GITHUB_TOKEN }}  # ✅ 이 줄 추가!
