@@ -7,14 +7,13 @@ import {
 } from '../types';
 
 interface SessionState {
-  /* ---------- 기존 상태 ---------- */
+  /* ---------- 상태 ---------- */
   part: ExercisePart | null;
   mainExercise: MainExercise | null;
   accessoryExercises: AccessoryExercise[];
   notes: string;
 
-  /* ---------- 🔥 새로 추가 ---------- */
-  /** 파트별 최근 세션 캐시 (중복 네트워크 호출 제거용) */
+  /** 파트별 최근 세션 캐시 */
   lastSessionCache: Partial<Record<ExercisePart, Session | null>>;
 
   /* ---------- setters ---------- */
@@ -22,7 +21,7 @@ interface SessionState {
   setMainExercise: (mainExercise: MainExercise) => void;
   cacheLastSession: (part: ExercisePart, session: Session | null) => void;
 
-  /* ---------- 기존 메서드 ---------- */
+  /* ---------- 메서드 ---------- */
   updateReps: (setIndex: number, reps: number) => void;
   toggleSuccess: (setIndex: number) => void;
   addAccessoryExercise: (exercise: AccessoryExercise) => void;
@@ -33,7 +32,7 @@ interface SessionState {
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
-  /* ---------- 상태 초기값 ---------- */
+  /* ---------- 초기값 ---------- */
   part: null,
   mainExercise: null,
   accessoryExercises: [],
@@ -45,13 +44,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   setMainExercise: (mainExercise) => set({ mainExercise }),
 
-  /** 🔥 파트별 최근 세션을 메모리에 캐싱 */
+  /** 파트별 최근 세션 캐시 */
   cacheLastSession: (part, session) =>
     set((state) => ({
       lastSessionCache: { ...state.lastSessionCache, [part]: session }
     })),
 
-  /* ---------- 세트 반복/성공 토글 ---------- */
+  /* ---------- 세트 반복/성공 ---------- */
   updateReps: (setIndex, reps) =>
     set((state) => {
       if (!state.mainExercise) return state;
@@ -60,14 +59,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       updatedSets[setIndex] = {
         ...updatedSets[setIndex],
         reps,
-        isSuccess: reps >= 10 // 10회 이상이면 성공
+        isSuccess: reps >= 10
       };
 
       return {
-        mainExercise: {
-          ...state.mainExercise,
-          sets: updatedSets
-        }
+        mainExercise: { ...state.mainExercise, sets: updatedSets }
       };
     }),
 
@@ -81,15 +77,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         isSuccess: !updatedSets[setIndex].isSuccess
       };
 
-      return {
-        mainExercise: {
-          ...state.mainExercise,
-          sets: updatedSets
-        }
-      };
+      return { mainExercise: { ...state.mainExercise, sets: updatedSets } };
     }),
 
-  /* ---------- 액세서리 운동 ---------- */
+  /* ---------- 액세서리 ---------- */
   addAccessoryExercise: (exercise) =>
     set((state) => ({
       accessoryExercises: [...state.accessoryExercises, exercise]
@@ -106,14 +97,15 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   /* ---------- 유틸 ---------- */
   getSuccessSets: () => {
     const { mainExercise } = get();
-    if (!mainExercise) return 0;
-    return mainExercise.sets.filter((set) => set.isSuccess).length;
+    return mainExercise
+      ? mainExercise.sets.filter((set) => set.isSuccess).length
+      : 0;
   },
 
-  /* ---------- 세션 초기화 (캐시는 보존) ---------- */
+  /* ---------- 세션 초기화 (캐시는 보존, part 유지) ---------- */
   resetSession: () =>
     set((state) => ({
-      part: null,
+      part: state.part,                 // ❗ part 유지
       mainExercise: null,
       accessoryExercises: [],
       notes: '',
