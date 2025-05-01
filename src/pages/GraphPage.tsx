@@ -20,23 +20,24 @@ const partNames = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하�
 
 export default function GraphPage() {
   const { user } = useAuthStore();
+
   const [part, setPart] = useState<ExercisePart>('chest');
   const [rows, setRows] = useState<Progress[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Progress | null>(null);
 
-  /* 데이터 fetch */
+  /* 데이터 가져오기 */
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    getProgressData(user.uid, part, 20).then((d) => {
-      setRows(d.reverse());   // 오래된 → 최신
+    getProgressData(user.uid, part, 20).then((data: Progress[]) => {
+      setRows(data.reverse());   // 오래된 → 최신
       setLoading(false);
-      setSelected(null);      // 부위 변경 시 상세 초기화
+      setSelected(null);
     });
   }, [user, part]);
 
-  /* 차트 데이터 */
+  /* 차트 데이터 구성 */
   const chartData = useMemo(() => {
     if (!rows.length) return null;
     return {
@@ -58,12 +59,12 @@ export default function GraphPage() {
   }, [rows]);
 
   /* 점 클릭 → 상세 패널 */
-  const handlePointClick = (_: unknown, el: any[]) => {
-    if (!el.length) return;
-    setSelected(rows[el[0].index]);
+  const handlePointClick = (_: unknown, elements: any[]) => {
+    if (!elements.length) return;
+    setSelected(rows[elements[0].index]);
   };
 
-  /* 점 위 성공/실패 라벨 */
+  /* 성공/실패 라벨 플러그인 */
   const labelPlugin = {
     id: 'labelPlugin',
     afterDatasetDraw(chart: any) {
@@ -99,9 +100,9 @@ export default function GraphPage() {
         ))}
       </select>
 
-      {/* 그래프 + 상세 패널 */}
+      {/* 그래프 + 상세 */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* 그래프 영역 */}
+        {/* 그래프 */}
         <div className="bg-white dark:bg-gray-800 rounded shadow p-4 h-72">
           {loading ? (
             <p className="text-center text-gray-400 mt-24">로딩 중...</p>
@@ -112,9 +113,7 @@ export default function GraphPage() {
                 responsive: true,
                 onClick: handlePointClick,
                 plugins: { legend: { display: false } },
-                scales: {
-                  y: { title: { display: true, text: '무게(kg)' } }
-                }
+                scales: { y: { title: { display: true, text: '무게(kg)' } } }
               }}
               plugins={[labelPlugin]}
             />
@@ -127,7 +126,7 @@ export default function GraphPage() {
         <div className="bg-gray-50 dark:bg-gray-800 rounded shadow p-4 min-h-72">
           {!selected ? (
             <p className="text-gray-600 dark:text-gray-400">
-              그래프의 점을 클릭하면<br />해당 날짜의 세트 진행 현황이 표시됩니다.
+              그래프의 점을 클릭하면<br />해당 날짜의 세트 현황이 표시됩니다.
             </p>
           ) : selected.isSuccess ? (
             <p className="text-green-600 dark:text-green-400 text-sm">
