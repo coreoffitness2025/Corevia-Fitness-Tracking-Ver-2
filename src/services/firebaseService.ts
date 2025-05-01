@@ -1,15 +1,3 @@
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  Timestamp
-} from 'firebase/firestore';
-import { db } from '../firebase';
-import { ExercisePart, Progress, Session } from '../types';
-
 /** 진행 데이터: 최근 N회(기본 20) */
 export const getProgressData = async (
   uid: string,
@@ -25,12 +13,19 @@ export const getProgressData = async (
   );
 
   const snap = await getDocs(q);
+
   return snap.docs.map((doc) => {
     const d = doc.data() as Session & { date: Timestamp };
+
+    /** 그날 성공 세트 수 계산 */
+    const successSets = d.mainExercise.sets.filter((s) => s.isSuccess).length;
+
     return {
-      date: d.date.toDate(),
-      weight: d.mainExercise.weight,
-      sets: d.mainExercise.sets
+      date: d.date.toDate(),            // 날짜
+      weight: d.mainExercise.weight,    // 무게
+      successSets,                      // ✅ 성공 세트 수
+      sets: d.mainExercise.sets,        // ✅ 세트 상세
+      isSuccess: successSets === 5      // ✅ 5세트 모두 성공 여부
     };
   });
 };
