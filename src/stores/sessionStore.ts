@@ -3,112 +3,94 @@ import {
   ExercisePart,
   MainExercise,
   AccessoryExercise,
-  Session
+  Session,
+  Progress          // 🔥 추가
 } from '../types';
 
 interface SessionState {
-  /* ---------- 상태 ---------- */
+  /* 기존 상태 */
   part: ExercisePart | null;
   mainExercise: MainExercise | null;
   accessoryExercises: AccessoryExercise[];
   notes: string;
 
-  /** 파트별 최근 세션 캐시 */
+  /* 🔥 새 캐시 */
   lastSessionCache: Partial<Record<ExercisePart, Session | null>>;
+  progressCache: Partial<Record<ExercisePart, Progress[]>>;
 
-  /* ---------- setters ---------- */
+  /* setters */
   setPart: (part: ExercisePart) => void;
-  setMainExercise: (mainExercise: MainExercise) => void;
-  cacheLastSession: (part: ExercisePart, session: Session | null) => void;
+  setMainExercise: (m: MainExercise) => void;
+  cacheLastSession: (p: ExercisePart, s: Session | null) => void;
+  cacheProgress: (p: ExercisePart, d: Progress[]) => void;
 
-  /* ---------- 메서드 ---------- */
-  updateReps: (setIndex: number, reps: number) => void;
-  toggleSuccess: (setIndex: number) => void;
-  addAccessoryExercise: (exercise: AccessoryExercise) => void;
-  removeAccessoryExercise: (index: number) => void;
-  setNotes: (notes: string) => void;
+  /* 기존 메서드 */
+  updateReps: (idx: number, reps: number) => void;
+  toggleSuccess: (idx: number) => void;
+  addAccessoryExercise: (e: AccessoryExercise) => void;
+  removeAccessoryExercise: (i: number) => void;
+  setNotes: (n: string) => void;
   getSuccessSets: () => number;
   resetSession: () => void;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
-  /* ---------- 초기값 ---------- */
   part: null,
   mainExercise: null,
   accessoryExercises: [],
   notes: '',
   lastSessionCache: {},
+  progressCache: {},                                      // 🔥
 
-  /* ---------- 기본 setters ---------- */
   setPart: (part) => set({ part }),
+  setMainExercise: (m) => set({ mainExercise: m }),
 
-  setMainExercise: (mainExercise) => set({ mainExercise }),
+  cacheLastSession: (part, s) =>
+    set((st) => ({ lastSessionCache: { ...st.lastSessionCache, [part]: s } })),
 
-  /** 파트별 최근 세션 캐시 */
-  cacheLastSession: (part, session) =>
-    set((state) => ({
-      lastSessionCache: { ...state.lastSessionCache, [part]: session }
-    })),
+  cacheProgress: (part, d) =>                             // 🔥
+    set((st) => ({ progressCache: { ...st.progressCache, [part]: d } })),
 
-  /* ---------- 세트 반복/성공 ---------- */
-  updateReps: (setIndex, reps) =>
-    set((state) => {
-      if (!state.mainExercise) return state;
-
-      const updatedSets = [...state.mainExercise.sets];
-      updatedSets[setIndex] = {
-        ...updatedSets[setIndex],
-        reps,
-        isSuccess: reps >= 10
-      };
-
-      return {
-        mainExercise: { ...state.mainExercise, sets: updatedSets }
-      };
+  /* 이하 기존 로직 그대로 … */
+  updateReps: (idx, reps) =>
+    set((st) => {
+      if (!st.mainExercise) return st;
+      const sets = [...st.mainExercise.sets];
+      sets[idx] = { ...sets[idx], reps, isSuccess: reps >= 10 };
+      return { mainExercise: { ...st.mainExercise, sets } };
     }),
 
-  toggleSuccess: (setIndex) =>
-    set((state) => {
-      if (!state.mainExercise) return state;
-
-      const updatedSets = [...state.mainExercise.sets];
-      updatedSets[setIndex] = {
-        ...updatedSets[setIndex],
-        isSuccess: !updatedSets[setIndex].isSuccess
-      };
-
-      return { mainExercise: { ...state.mainExercise, sets: updatedSets } };
+  toggleSuccess: (idx) =>
+    set((st) => {
+      if (!st.mainExercise) return st;
+      const sets = [...st.mainExercise.sets];
+      sets[idx] = { ...sets[idx], isSuccess: !sets[idx].isSuccess };
+      return { mainExercise: { ...st.mainExercise, sets } };
     }),
 
-  /* ---------- 액세서리 ---------- */
-  addAccessoryExercise: (exercise) =>
-    set((state) => ({
-      accessoryExercises: [...state.accessoryExercises, exercise]
+  addAccessoryExercise: (e) =>
+    set((st) => ({ accessoryExercises: [...st.accessoryExercises, e] })),
+
+  removeAccessoryExercise: (i) =>
+    set((st) => ({
+      accessoryExercises: st.accessoryExercises.filter((_, idx) => idx !== i)
     })),
 
-  removeAccessoryExercise: (index) =>
-    set((state) => ({
-      accessoryExercises: state.accessoryExercises.filter((_, i) => i !== index)
-    })),
+  setNotes: (n) => set({ notes: n }),
 
-  /* ---------- 메모 ---------- */
-  setNotes: (notes) => set({ notes }),
-
-  /* ---------- 유틸 ---------- */
   getSuccessSets: () => {
-    const { mainExercise } = get();
-    return mainExercise
-      ? mainExercise.sets.filter((set) => set.isSuccess).length
-      : 0;
+    const m = get().mainExercise;
+    return m ? m.sets.filter((s) => s.isSuccess).length : 0;
   },
 
-  /* ---------- 세션 초기화 (캐시는 보존, part 유지) ---------- */
+  /* part 값과 두 캐시 유지 */
   resetSession: () =>
-    set((state) => ({
-      part: state.part,                 // ❗ part 유지
+    set((st) => ({
+      part: st.part,
       mainExercise: null,
       accessoryExercises: [],
       notes: '',
-      lastSessionCache: state.lastSessionCache
+      lastSessionCache: st.lastSessionCache,
+      progressCache: st.progressCache
     }))
 }));
