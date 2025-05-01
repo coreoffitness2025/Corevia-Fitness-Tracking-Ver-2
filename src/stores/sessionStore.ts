@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ExercisePart, MainExercise, AccessoryExercise, ExerciseSet } from '../types';
+import { ExercisePart, MainExercise, AccessoryExercise } from '../types';
 
 interface SessionState {
   part: ExercisePart | null;
