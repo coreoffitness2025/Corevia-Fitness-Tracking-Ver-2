@@ -1,3 +1,5 @@
+/* src/pages/SelectPage.tsx ― Corevia 로고 & 즉시 전환 버전 */
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExercisePart } from '../types';
@@ -5,7 +7,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { getLastSession } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
-import logoSrc from '../assets/corevia-logo.png';   // ← src/assets 폴더 안의 로고
+import logoSrc from '../assets/Corevia-logo.png';      // ← 여기! (대소문자 그대로)
 
 const exercisePartOptions = [
   { value: 'chest',    label: '가슴',   icon: '💪' },
@@ -25,19 +27,18 @@ const SelectPage = () => {
     lastSessionCache
   } = useSessionStore();
 
-  /* 페이지 진입 시 세션 상태 초기화(캐시는 유지) */
+  /* 페이지 진입 시 세션만 초기화(캐시는 유지) */
   useEffect(() => {
     resetSession();
   }, [resetSession]);
 
-  /* 파트 선택 → 화면 즉시 전환 → 백그라운드 프리패치 */
+  /* 파트 선택 → 화면 먼저 전환 → 백그라운드 프리패치 */
   const handleSelect = (part: ExercisePart) => {
     setPart(part);
-    navigate('/record');                         // ① 먼저 이동
+    navigate('/record');                       // ① 즉시 이동
 
-    /* ② 이동 이후에 캐시 없으면 한 번만 페치 */
     if (lastSessionCache[part] === undefined && user) {
-      getLastSession(user.uid, part)
+      getLastSession(user.uid, part)           // ② 이동 후 비동기 캐싱
         .then((s) => cacheLastSession(part, s ?? null))
         .catch(console.error);
     }
