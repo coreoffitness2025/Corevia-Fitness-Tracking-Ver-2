@@ -62,52 +62,46 @@ export default function RecordPage() {
     });
 
   // 저장 - 간소화된 데이터만 저장
-  const handleSave = async () => {
-    if (!user || !part || !mainExercise) return;
+const handleSave = async () => {
+  if (!user || !part || !mainExercise) return;
 
-    setSaving(true);
-    setDone(false);
+  setSaving(true);
+  setDone(false);
 
-    // 필요한 데이터만 포함 (보조운동 제외)
-    const sess: Session = {
-      userId: user.uid,
-      date: new Date(),
-      part,
-      mainExercise,
-      accessoryExercises: [], // 빈 배열로 대체
-      notes,
-      isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
-    };
-
-    try {
-      // Firebase 저장 요청 - 프라미스 생성 전에 바로 UI 업데이트
-      setDone(true);
-      const savePromise = saveSession(sess);
-      
-      // 토스트 메시지 먼저 표시하여 UX 향상
-      toast.success('✅ 저장 중...');
-      
-      // 백그라운드에서 저장 진행
-      await withTimeout(savePromise);
-      
-      // 저장 완료 시 처리
-      setSaving(false);
-      toast.success('✅ 저장 완료!');
-      
-      // 딜레이 단축 (500ms)
-      setTimeout(() => {
-        navigate('/feedback', { replace: true });
-      }, 500);
-    } catch (e: any) {
-      console.error('[saveSession error]', e?.message || e);
-      setSaving(false);
-      toast.error(
-        e?.message === 'timeout'
-          ? '⏱️ 서버 응답 지연, 잠시 후 다시 시도하세요.'
-          : '❌ 저장 실패! 네트워크를 확인하세요.'
-      );
-    }
+  const sess: Session = {
+    userId: user.uid,
+    date: new Date(),
+    part,
+    mainExercise,
+    accessoryExercises: accessoryExercises, // 실제 accessoryExercises 데이터 사용
+    notes,
+    isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
   };
+
+  try {
+    toast.success('✅ 저장 중...');
+    
+    // Firebase에 저장하고 결과 기다리기
+    const id = await withTimeout(saveSession(sess));
+    
+    // 저장 성공 후 UI 업데이트
+    setSaving(false);
+    setDone(true);
+    toast.success('✅ 저장 완료!');
+    
+    setTimeout(() => {
+      navigate('/feedback', { replace: true });
+    }, 500);
+  } catch (e: any) {
+    console.error('[saveSession error]', e?.message || e);
+    setSaving(false);
+    toast.error(
+      e?.message === 'timeout'
+        ? '⏱️ 서버 응답 지연, 잠시 후 다시 시도하세요.'
+        : '❌ 저장 실패! 네트워크를 확인하세요.'
+    );
+  }
+};
 
   return (
     <Layout>
