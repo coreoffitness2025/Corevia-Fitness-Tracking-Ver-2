@@ -52,8 +52,9 @@ export interface Progress {
 /* ---------- FAQ ---------- */
 export interface FAQ {
   id: string;
-  part: ExercisePart;
   question: string;
   answer: string;
   videoUrl?: string;
+  type: 'method' | 'sets';
+  part?: ExercisePart;
 }
