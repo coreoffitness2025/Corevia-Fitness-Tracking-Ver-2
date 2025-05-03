@@ -120,7 +120,7 @@ const isSameSession = (a: Progress, b: Progress): boolean => {
   );
 };
 
-// 최근 데이터 카드 컴포넌트
+// 최근 데이터 카드 컴포넌트 - 보조 운동과 메모를 항상 표시
 const RecentSessionCard = ({ data, part }: { data: Progress | null, part: ExercisePart }) => {
   if (!data) {
     return (
@@ -161,7 +161,7 @@ const RecentSessionCard = ({ data, part }: { data: Progress | null, part: Exerci
         </div>
       </div>
       
-      {/* 운동 종목 표시 추가 */}
+      {/* 운동 종목 표시 */}
       <div className="mb-3 bg-blue-50 dark:bg-blue-900 p-2 rounded-md">
         <div className="flex items-center text-blue-800 dark:text-blue-200">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -184,7 +184,7 @@ const RecentSessionCard = ({ data, part }: { data: Progress | null, part: Exerci
         </div>
       </div>
       
-      <div className="grid grid-cols-5 gap-2 mt-4">
+      <div className="grid grid-cols-5 gap-2 mb-4">
         {data.sets.map((set, i) => (
           <div key={i} className={`border p-2 rounded text-center ${
             set.isSuccess ? 'bg-green-100 dark:bg-green-900 border-green-400' : 
@@ -198,40 +198,41 @@ const RecentSessionCard = ({ data, part }: { data: Progress | null, part: Exerci
           </div>
         ))}
       </div>
-    </div>
-  );
-};
-
-// 세트 상세 정보 컴포넌트
-const SetDetails = ({ session }: { session: Progress | null }) => {
-  if (!session) return null;
-  
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4">
-      <h3 className="text-lg font-medium mb-2">세트 상세 정보</h3>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-gray-700 dark:text-gray-300">
-          {new Date(session.date).toLocaleDateString('ko-KR', { 
-            year: 'numeric', month: 'long', day: 'numeric' 
-          })}
-        </span>
-        <span className="font-bold text-lg">{session.weight}kg</span>
-      </div>
       
-      <div className="grid grid-cols-5 gap-2 mt-3">
-        {session.sets.map((set: any, i: number) => (
-          <div key={i} className={`border p-2 rounded text-center ${
-            set.isSuccess ? 'bg-green-100 dark:bg-green-900 border-green-400' : 
-                          'bg-red-100 dark:bg-red-900 border-red-400'
-          }`}>
-            <div className="text-xs text-gray-600 dark:text-gray-400">{i+1}세트</div>
-            <div className="font-bold">{set.reps}회</div>
-            <div className="text-xs">
-              {set.isSuccess ? '성공' : '실패'}
-            </div>
+      {/* 보조 운동 섹션 - 데이터가 있을 때만 표시 */}
+      {data.accessoryExercises && data.accessoryExercises.length > 0 && (
+        <div className="mb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">보조 운동</h4>
+          <div className="space-y-3">
+            {data.accessoryExercises.map((exercise, i) => (
+              <div key={i} className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                <div className="font-medium">{exercise.name}</div>
+                {exercise.sets && exercise.sets.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {exercise.sets.map((set, j) => (
+                      <div key={j} className="text-xs bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded">
+                        {set.weight}kg × {set.reps}회
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 mt-1">세트 정보 없음</div>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+      
+      {/* 메모 섹션 - 데이터가 있을 때만 표시 */}
+      {data.notes && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">메모</h4>
+          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 text-gray-600 dark:text-gray-300 rounded">
+            {data.notes}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
