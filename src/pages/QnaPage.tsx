@@ -3,14 +3,17 @@ import { ExercisePart, FAQ } from '../types';
 import { getFAQs } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
 
-const partNames = {
+const partNames: Record<ExercisePart, string> = {
   chest: '가슴',
   back: '등',
   shoulder: '어깨',
-  leg: '하체'
+  leg: '하체',
 };
 
+type FAQType = 'method' | 'sets';
+
 const QnaPage = () => {
+  const [faqType, setFaqType] = useState<FAQType>('method');
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,13 +21,14 @@ const QnaPage = () => {
   useEffect(() => {
     const fetchFAQs = async () => {
       setIsLoading(true);
-      const data = await getFAQs(selectedPart);
+      // getFAQs now accepts part and type for filtering
+      const data = await getFAQs(selectedPart, faqType);
       setFaqs(data);
       setIsLoading(false);
     };
 
     fetchFAQs();
-  }, [selectedPart]);
+  }, [selectedPart, faqType]);
 
   return (
     <Layout>
@@ -33,28 +37,61 @@ const QnaPage = () => {
           자주 묻는 질문
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          올바른 운동 방법 정보
+          올바른 운동 정보 및 세트 가이드
         </p>
       </div>
 
+      {/* Q&A 타입 선택 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="mb-6">
-          <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-            부위 선택
+        <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+          문의 유형 선택
+        </label>
+        <div className="flex items-center space-x-4 mb-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="faqType"
+              value="method"
+              checked={faqType === 'method'}
+              onChange={() => setFaqType('method')}
+              className="mr-2"
+            />
+            운동 방법
           </label>
-          <select
-            value={selectedPart}
-            onChange={(e) => setSelectedPart(e.target.value as ExercisePart)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          >
-            {Object.entries(partNames).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="faqType"
+              value="sets"
+              checked={faqType === 'sets'}
+              onChange={() => setFaqType('sets')}
+              className="mr-2"
+            />
+            운동 세트 수
+          </label>
         </div>
 
+        {/* 부위 선택 (운동 방법일 때만) */}
+        {faqType === 'method' && (
+          <div className="mb-6">
+            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+              부위 선택
+            </label>
+            <select
+              value={selectedPart}
+              onChange={(e) => setSelectedPart(e.target.value as ExercisePart)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              {Object.entries(partNames).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* FAQ 리스트 */}
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
             <div className="spinner"></div>
@@ -108,7 +145,9 @@ const QnaPage = () => {
         ) : (
           <div className="text-center py-10">
             <p className="text-gray-500 dark:text-gray-400">
-              이 부위에 대한 Q&A가 없습니다.
+              {faqType === 'method'
+                ? '이 부위에 대한 Q&A가 없습니다.'
+                : '운동 세트 수 안내 정보가 없습니다.'}
             </p>
           </div>
         )}
@@ -118,3 +157,4 @@ const QnaPage = () => {
 };
 
 export default QnaPage;
+0
