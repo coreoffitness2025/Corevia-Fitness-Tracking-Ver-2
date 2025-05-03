@@ -244,25 +244,42 @@ const faqCache: Record<string, { data: FAQ[]; timestamp: number }> = {};
 /**
  * FAQ를 가져옵니다. 'method' 또는 'sets' 타입과 부위(part)를 넘겨주세요.
  */
-export const getFAQs = async (
-  part: ExercisePart,
-  type: 'method' | 'sets'
-): Promise<FAQ[]> => {
+
+// firebaseService.ts 파일에서 getFAQs 함수를 찾아 다음과 같이 수정하세요
+export const getFAQs = async (part: ExercisePart, type: 'method' | 'sets' = 'method'): Promise<FAQ[]> => {
   try {
-    const cacheKey = `faq-${part}-${type}`;
-    const now = Date.now();
-    if (faqCache[cacheKey] && now - faqCache[cacheKey].timestamp < CACHE_DURATION) {
-      return faqCache[cacheKey].data;
+    const faqCollection = collection(db, 'faqs');
+    let q;
+    
+    if (type === 'method') {
+      // method 타입은 부위별 필터링
+      q = query(
+        faqCollection, 
+        where('type', '==', 'method'),
+        where('part', '==', part)
+      );
+    } else {
+      // sets 타입은 부위 관계없이 필터링
+      q = query(
+        faqCollection, 
+        where('type', '==', 'sets')
+      );
     }
-    const filters = [where('type', '==', type)];
-    if (type === 'method') filters.push(where('part', '==', part));
-    const q = query(collection(db, 'faqs'), ...filters);
-    const snap = await getDocs(q);
-    const results = snap.docs.map(docSnap => ({ id: docSnap.id, ...(docSnap.data() as FAQ) }));
-    faqCache[cacheKey] = { data: results, timestamp: now };
-    return results;
-  } catch (e) {
-    console.error('FAQ 조회 에러:', e);
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        question: data.question,
+        answer: data.answer,
+        videoUrl: data.videoUrl,
+        type: data.type,
+        part: data.part
+      } as FAQ;
+    });
+  } catch (error) {
+    console.error('Error fetching FAQs:', error);
     return [];
   }
 };
