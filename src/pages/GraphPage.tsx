@@ -30,7 +30,6 @@ const getLatestSessionFromLocalStorage = (userId: string, part: ExercisePart): P
   }
 };
 
-// 기본 내보내기(default export) - 중요!
 export default function GraphPage() {
   const { user } = useAuthStore();
   const [part, setPart] = useState<ExercisePart>('chest');
@@ -38,61 +37,88 @@ export default function GraphPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedSession, setSelectedSession] = useState<Progress | null>(null);
   const itemsPerPage = 10;
+
+  // 데이터 병합 및 중복 제거 함수
+  const mergeAndDeduplicate = (localData: Progress[], remoteData: Progress[]): Progress[] => {
+    const allData = [...localData, ...remoteData];
+    // 무게, 성공여부, 날짜를 기준으로 중복 제거
+    const uniqueMap = new Map();
+    
+    allData.forEach(item => {
+      const key = `${item.weight}-${item.isSuccess}-${new Date(item.date).toDateString()}`;
+      if (!uniqueMap.has(key) || new Date(item.date) > new Date(uniqueMap.get(key).date)) {
+        uniqueMap.set(key, item);
+      }
+    });
+    
+    return Array.from(uniqueMap.values());
+  };
+
+  // 세션 비교 함수
+  const isSameSession = (a: Progress, b: Progress): boolean => {
+    return a.weight === b.weight && 
+           a.isSuccess === b.isSuccess && 
+           new Date(a.date).toDateString() === new Date(b.date).toDateString();
+  };
 
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
     if (!user) return;
     
-    setLoading(true);
-    setData([]);
-    setPage(1);
-    setHasMore(true);
-    
-    console.log('그래프 페이지 데이터 로딩 시작:', part);
-    
-    // 먼저 로컬 스토리지에서 최신 세션 가져오기
-    const latestSession = getLatestSessionFromLocalStorage(user.uid, part);
-    console.log('로컬 스토리지 최신 세션:', latestSession);
-    
-    // Firebase에서 데이터 가져오기
-    getProgressData(user.uid, part, itemsPerPage, 0, true)
-      .then((rows) => {
-        console.log('Firebase에서 가져온 데이터:', rows.length, '개');
-        
-        if (rows.length > 0) {
-          // 로컬 스토리지에 최신 세션이 있고 Firebase 데이터에 없는 경우 병합
-          if (latestSession && !rows.some(r => 
-              r.weight === latestSession.weight && 
-              r.isSuccess === latestSession.isSuccess)) {
-            console.log('로컬 스토리지 데이터 병합');
-            setData([latestSession, ...rows]);
-          } else {
-            setData(rows);
-          }
-          setHasMore(rows.length === itemsPerPage);
-        } else if (latestSession) {
-          // Firebase에 데이터가 없고 로컬 스토리지에만 있는 경우
-          console.log('로컬 스토리지 데이터만 사용');
-          setData([latestSession]);
-          setHasMore(false);
-        } else {
-          setData([]);
+    // 이전 데이터가 있으면 먼저 보여주기 (빠른 UX)
+    const localKey = `session-${user.uid}-${part}`;
+    const cachedData = localStorage.getItem(localKey);
+    if (cachedData) {
+      try {
+        const parsedData = JSON.parse(cachedData);
+        if (Array.isArray(parsedData)) {
+          setData(parsedData);
+          setLoading(false); // 로딩 상태 즉시 해제
+        } else if (parsedData) {
+          // 단일 세션인 경우
+          setData([parsedData]);
+          setLoading(false);
         }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("데이터 로딩 중 오류:", err);
+      } catch (e) {
+        console.error('캐시 파싱 오류:', e);
+      }
+    }
+    
+    // 백그라운드에서 데이터 로드 (사용자는 이미 캐시된 데이터를 볼 수 있음)
+    const fetchData = async () => {
+      try {
+        console.log('백그라운드 데이터 로드 시작');
+        // 로컬 스토리지 데이터와 병합
+        const latestSession = getLatestSessionFromLocalStorage(user.uid, part);
         
-        // 오류 발생 시 로컬 스토리지 데이터로 폴백
-        if (latestSession) {
-          console.log('오류 발생, 로컬 스토리지 데이터 사용');
-          setData([latestSession]);
+        // Promise.all로 병렬 처리
+        const [firebaseData] = await Promise.all([
+          getProgressData(user.uid, part, 10, 0, true)
+        ]);
+        
+        // 데이터 병합 및 중복 제거
+        if (firebaseData.length > 0) {
+          const mergedData = mergeAndDeduplicate(
+            latestSession ? [latestSession] : [], 
+            firebaseData
+          );
+          
+          setData(mergedData);
+          setHasMore(firebaseData.length === 10);
+        } else if (latestSession && !data.some(d => isSameSession(d, latestSession))) {
+          setData(prev => [latestSession, ...prev]);
         }
+      } catch (err) {
+        console.error("백그라운드 데이터 로드 오류:", err);
+      } finally {
         setLoading(false);
-        setHasMore(false);
-      });
-      
+      }
+    };
+    
+    fetchData();
+    
     // 그래프 새로고침 플래그 제거
     localStorage.removeItem('shouldRefreshGraph');
   }, [user, part]);
@@ -152,6 +178,108 @@ export default function GraphPage() {
     }
   }, [data]);
 
+  // 커스텀 툴팁 플러그인
+  const customTooltip = {
+    id: 'customTooltip',
+    afterDraw: (chart: any) => {
+      const ctx = chart.ctx;
+      const meta = chart.getDatasetMeta(0);
+      const activeElement = chart.tooltip?.getActiveElements()[0];
+      
+      if (activeElement) {
+        const dataIndex = activeElement.index;
+        const dataPoint = data[dataIndex];
+        
+        if (dataPoint?.sets) {
+          // 툴팁 배경
+          const x = activeElement.element.x;
+          const y = activeElement.element.y - 5;
+          
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.fillRect(x - 60, y - 80, 130, 75);
+          
+          // 성공/실패 세트 정보
+          ctx.fillStyle = 'white';
+          ctx.font = '11px sans-serif';
+          ctx.textAlign = 'left';
+          
+          const successSets = dataPoint.sets.filter((s: any) => s.isSuccess).length;
+          ctx.fillText(`세트: ${successSets}/5 성공`, x - 55, y - 65);
+          
+          // 각 세트 상세 정보
+          dataPoint.sets.forEach((set: any, i: number) => {
+            ctx.fillStyle = set.isSuccess ? '#22c55e' : '#ef4444';
+            ctx.fillText(`${i+1}세트: ${set.reps}회`, x - 55, y - 45 + i * 15);
+          });
+          
+          ctx.restore();
+        }
+      }
+    }
+  };
+
+  // 차트 클릭 이벤트 핸들러
+  const handleChartClick = (event: any, elements: any) => {
+    if (elements.length) {
+      const clickedIndex = elements[0].index;
+      setSelectedSession(data[clickedIndex]);
+    }
+  };
+
+  // 세트 상세 정보 컴포넌트
+  const SetDetails = ({ session }: { session: Progress }) => {
+    if (!session) return null;
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4">
+        <h3 className="text-lg font-medium mb-2">세트 상세 정보</h3>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-gray-700 dark:text-gray-300">
+            {new Date(session.date).toLocaleDateString('ko-KR', { 
+              year: 'numeric', month: 'long', day: 'numeric' 
+            })}
+          </span>
+          <span className="font-bold text-lg">{session.weight}kg</span>
+        </div>
+        
+        <div className="grid grid-cols-5 gap-2 mt-3">
+          {session.sets.map((set: any, i: number) => (
+            <div key={i} className={`border p-2 rounded text-center ${
+              set.isSuccess ? 'bg-green-100 dark:bg-green-900 border-green-400' : 
+                            'bg-red-100 dark:bg-red-900 border-red-400'
+            }`}>
+              <div className="text-xs text-gray-600 dark:text-gray-400">{i+1}세트</div>
+              <div className="font-bold">{set.reps}회</div>
+              <div className="text-xs">
+                {set.isSuccess ? '성공' : '실패'}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: { 
+      legend: { display: false },
+      tooltip: { 
+        enabled: false // 기본 툴팁 비활성화 (커스텀 툴팁 사용)
+      }
+    },
+    scales: {
+      y: {
+        title: { display: true, text: '무게(kg)' }
+      }
+    },
+    onHover: (event: any, elements: any) => {
+      // 호버 시 커서 변경
+      event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+    }
+  };
+
   const labelPlugin = {
     id: 'labelPlugin',
     afterDatasetDraw(chart: any) {
@@ -178,14 +306,6 @@ export default function GraphPage() {
     }
   };
 
-  // 데이터 디버깅
-  useEffect(() => {
-    console.log('현재 그래프 데이터:', data.length, '개');
-    if (data.length > 0) {
-      console.log('첫 번째 데이터:', data[0]);
-    }
-  }, [data]);
-
   return (
     <Layout>
       <h1 className="text-2xl font-bold mb-6">운동 그래프</h1>
@@ -202,7 +322,7 @@ export default function GraphPage() {
         ))}
       </select>
       
-      <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-8 h-72">
+      <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4 h-72">
         {loading && data.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
@@ -219,19 +339,15 @@ export default function GraphPage() {
         ) : (
           <Line
             data={chartData}
-            options={{
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: {
-                y: {
-                  title: { display: true, text: '무게(kg)' }
-                }
-              }
-            }}
-            plugins={[labelPlugin]}
+            options={chartOptions}
+            plugins={[labelPlugin, customTooltip]}
+            onClick={handleChartClick}
           />
         )}
       </div>
+      
+      {/* 선택된 세션 상세 정보 */}
+      {selectedSession && <SetDetails session={selectedSession} />}
       
       {hasMore && data.length > 0 && (
         <button 
