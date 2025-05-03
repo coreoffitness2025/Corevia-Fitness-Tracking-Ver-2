@@ -121,7 +121,7 @@ const isSameSession = (a: Progress, b: Progress): boolean => {
 };
 
 // 최근 데이터 카드 컴포넌트
-const RecentSessionCard = ({ data }: { data: Progress | null }) => {
+const RecentSessionCard = ({ data, part }: { data: Progress | null, part: ExercisePart }) => {
   if (!data) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4 flex items-center justify-center h-40">
@@ -129,6 +129,14 @@ const RecentSessionCard = ({ data }: { data: Progress | null }) => {
       </div>
     );
   }
+  
+  // 운동 부위별 주요 운동 종목 매핑
+  const exerciseNameByPart: Record<ExercisePart, string> = {
+    chest: '벤치 프레스',
+    back: '데드리프트',
+    shoulder: '오버헤드 프레스',
+    leg: '스쿼트'
+  };
   
   const date = new Date(data.date);
   const formattedDate = date.toLocaleDateString('ko-KR', {
@@ -140,7 +148,7 @@ const RecentSessionCard = ({ data }: { data: Progress | null }) => {
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-2">
         <div>
           <h3 className="text-lg font-medium">가장 최근 운동 기록</h3>
           <p className="text-sm text-gray-500">{formattedDate}</p>
@@ -153,7 +161,17 @@ const RecentSessionCard = ({ data }: { data: Progress | null }) => {
         </div>
       </div>
       
-      <div className="mb-2">
+      {/* 운동 종목 표시 추가 */}
+      <div className="mb-3 bg-blue-50 dark:bg-blue-900 p-2 rounded-md">
+        <div className="flex items-center text-blue-800 dark:text-blue-200">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+          <span className="font-medium">{exerciseNameByPart[part]}</span>
+        </div>
+      </div>
+      
+      <div className="mb-3">
         <div className="flex justify-between text-sm mb-1">
           <span>세트 성공률</span>
           <span>{successSets}/{totalSets} 세트</span>
