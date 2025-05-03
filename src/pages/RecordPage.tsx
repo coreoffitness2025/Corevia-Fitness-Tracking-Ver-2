@@ -29,27 +29,49 @@ const updateLocalCache = (session: Session) => {
   try {
     // Progress 캐시 키
     const cacheKey = `${session.userId}-${session.part}-0-10`;
+    console.log('updateLocalCache 호출됨, 키:', cacheKey);
+    
+    // 새 세션 데이터를 Progress 형태로 변환
+    const newProgress: Progress = {
+      date: session.date,
+      weight: session.mainExercise.weight,
+      successSets: session.mainExercise.sets.filter(s => s.isSuccess).length,
+      isSuccess: session.mainExercise.sets.filter(s => s.isSuccess).length === 5,
+      sets: session.mainExercise.sets,
+      accessoryNames: session.accessoryExercises ? session.accessoryExercises.map(a => a.name) : []
+    };
     
     // 기존 캐시 데이터 가져오기
-    const existingCache = localStorage.getItem(`progress-${cacheKey}`);
-    if (existingCache) {
-      const cacheData = JSON.parse(existingCache);
-      
-      // 새 세션 데이터를 Progress 형태로 변환
-      const newProgress: Progress = {
-        date: session.date,
-        weight: session.mainExercise.weight,
-        successSets: session.mainExercise.sets.filter(s => s.isSuccess).length,
-        isSuccess: session.mainExercise.sets.filter(s => s.isSuccess).length === 5,
-        sets: session.mainExercise.sets,
-        accessoryNames: session.accessoryExercises ? session.accessoryExercises.map(a => a.name) : []
+    const existingCacheStr = localStorage.getItem(`progress-${cacheKey}`);
+    
+    if (existingCacheStr) {
+      try {
+        const cacheData = JSON.parse(existingCacheStr);
+        
+        // 캐시 데이터 앞에 새 데이터 추가
+        cacheData.data = [newProgress, ...(cacheData.data || [])];
+        
+        // 캐시 갱신
+        localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(cacheData));
+        console.log('로컬 캐시 업데이트 성공');
+      } catch (parseError) {
+        console.error('캐시 파싱 오류:', parseError);
+        
+        // 캐시가 손상된 경우 새로 생성
+        const newCache = {
+          data: [newProgress],
+          timestamp: Date.now()
+        };
+        localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(newCache));
+      }
+    } else {
+      // 캐시가 없는 경우 새로 생성
+      const newCache = {
+        data: [newProgress],
+        timestamp: Date.now()
       };
-      
-      // 캐시 데이터 앞에 새 데이터 추가
-      cacheData.data = [newProgress, ...cacheData.data];
-      
-      // 캐시 갱신
-      localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(cacheData));
+      localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(newCache));
+      console.log('새 로컬 캐시 생성됨');
     }
   } catch (e) {
     console.error('캐시 갱신 실패:', e);
@@ -434,14 +456,21 @@ export default function RecordPage() {
 
       {/* 동기화 필요 알림 */}
       {localStorage.getItem('hasPendingSessions') === 'true' && isOnline && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-2 mb-4 rounded flex justify-between items-center">
-          <p className="text-sm">동기화되지 않은 데이터가 있습니다</p>
-          <button 
-            onClick={syncOfflineSessions}
-            className="text-xs bg-blue-500 text-white px-2 py-1 rounded"
-          >
-            지금 동기화
-          </button>
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4 rounded">
+          <div className="flex justify-between items-center">
+            <p className="text-sm font-medium">
+              동기화되지 않은 데이터가 있습니다
+              <span className="text-xs ml-2">
+                ({offlineStorage.getPendingCount()}개)
+              </span>
+            </p>
+            <button 
+              onClick={syncOfflineSessions}
+              className="ml-4 bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded"
+            >
+              지금 동기화
+            </button>
+          </div>
         </div>
       )}
 
