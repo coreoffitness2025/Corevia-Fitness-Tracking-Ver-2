@@ -19,7 +19,8 @@ import {
   Session,
   FAQ,
   User,
-  Progress
+  Progress,
+  AccessoryExercise
 } from '../types';
 
 /* ───────── 로그인 & 로그아웃 ───────── */
@@ -67,13 +68,13 @@ export const saveSession = async (session: Session): Promise<string> => {
         }))
       },
       // 보조 운동 데이터 최소화
-      accessoryExercises: session.accessoryExercises.map(a => ({
+      accessoryExercises: session.accessoryExercises ? session.accessoryExercises.map(a => ({
         name: a.name,
         sets: a.sets.map(s => ({
           reps: s.reps, 
           weight: s.weight
         }))
-      })),
+      })) : [],
       // 노트 길이 제한
       notes: session.notes ? session.notes.substring(0, 300) : '',
       isAllSuccess: session.mainExercise.sets.every(s => s.isSuccess)
