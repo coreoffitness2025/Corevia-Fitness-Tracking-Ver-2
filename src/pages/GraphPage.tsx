@@ -218,13 +218,15 @@ export default function GraphPage() {
     }
   };
 
-  // 차트 클릭 이벤트 핸들러
-  const handleChartClick = (event: React.MouseEvent<HTMLCanvasElement>, elements: any) => {
-    if (elements && elements.length) {
-      const clickedIndex = elements[0].index;
-      setSelectedSession(data[clickedIndex]);
-    }
-  };
+const handleChartClick = (
+  _event: React.MouseEvent<HTMLCanvasElement>,
+  elements: any
+) => {
+  if (elements && elements.length) {
+    const clickedIndex = elements[0].index;
+    setSelectedSession(data[clickedIndex]);
+  }
+};
 
   // 세트 상세 정보 컴포넌트
   const SetDetails = ({ session }: { session: Progress }) => {
