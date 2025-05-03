@@ -17,6 +17,69 @@ const coreExerciseNames = {
   leg: '스쿼트'
 };
 
+// 오프라인 데이터 관리 유틸리티
+const offlineStorage = {
+  // 세션 저장
+  saveSession: (session) => {
+    try {
+      const offlineSessions = offlineStorage.getAllSessions();
+      offlineSessions.push({
+        ...session,
+        offlineId: Date.now().toString(),
+        pendingSync: true,
+        createdAt: new Date().toISOString()
+      });
+      
+      localStorage.setItem('offlineSessions', JSON.stringify(offlineSessions));
+      localStorage.setItem('hasPendingSessions', 'true');
+      return true;
+    } catch (e) {
+      console.error('오프라인 저장 실패:', e);
+      return false;
+    }
+  },
+  
+  // 모든 세션 가져오기
+  getAllSessions: () => {
+    try {
+      const data = localStorage.getItem('offlineSessions');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('오프라인 데이터 조회 실패:', e);
+      return [];
+    }
+  },
+  
+  // 동기화 대기 중인 세션 수
+  getPendingCount: () => {
+    try {
+      const sessions = offlineStorage.getAllSessions();
+      return sessions.filter(s => s.pendingSync).length;
+    } catch (e) {
+      return 0;
+    }
+  },
+  
+  // 저장 공간 정리 (너무 오래된 데이터 제거)
+  cleanupOldData: () => {
+    try {
+      const sessions = offlineStorage.getAllSessions();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const filtered = sessions.filter(s => {
+        const createdAt = new Date(s.createdAt || 0);
+        return createdAt > thirtyDaysAgo;
+      });
+      
+      localStorage.setItem('offlineSessions', JSON.stringify(filtered));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+};
+
 export default function RecordPage() {
   const { user } = useAuthStore();
   const {
@@ -27,7 +90,31 @@ export default function RecordPage() {
   const [lastSession, setLastSession] = useState<Session | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const navigate = useNavigate();
+
+  // 네트워크 상태 감지
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('인터넷에 다시 연결되었습니다');
+      // 온라인으로 전환되면 동기화 시도
+      syncOfflineSessions();
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.warning('오프라인 모드로 전환되었습니다');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // 세션 로딩 - 마지막 세션 정보만 가져오기 (최적화)
   useEffect(() => {
@@ -53,6 +140,19 @@ export default function RecordPage() {
     return () => { mounted = false; };
   }, [user, part, navigate, setMainExercise]);
 
+  // 로그인 시 오프라인 데이터 동기화
+  useEffect(() => {
+    if (!user) return;
+    
+    // 오프라인 데이터가 있으면 동기화 시도
+    if (localStorage.getItem('hasPendingSessions') === 'true' && navigator.onLine) {
+      syncOfflineSessions();
+    }
+    
+    // 30일 이상 된 오래된 데이터 정리
+    offlineStorage.cleanupOldData();
+  }, [user]);
+
   // 타임아웃 래퍼 - 시간 단축 (15초로 변경)
   const withTimeout = <T,>(p: Promise<T>, ms = 15000): Promise<T> =>
     new Promise((res, rej) => {
@@ -61,22 +161,118 @@ export default function RecordPage() {
        .catch((e) => { clearTimeout(t); rej(e); });
     });
 
-  // 저장 - 간소화된 데이터만 저장
+  // 오프라인 데이터 동기화 함수
+  const syncOfflineSessions = async () => {
+    if (!navigator.onLine || !user) return;
+    
+    const hasPendingSessions = localStorage.getItem('hasPendingSessions') === 'true';
+    if (!hasPendingSessions) return;
+    
+    try {
+      const offlineSessions = offlineStorage.getAllSessions();
+      const pendingSessions = offlineSessions.filter(s => s.pendingSync);
+      
+      if (pendingSessions.length === 0) {
+        localStorage.removeItem('hasPendingSessions');
+        return;
+      }
+      
+      const toastId = toast.loading(`오프라인 데이터 동기화 중... (0/${pendingSessions.length})`);
+      
+      let syncedCount = 0;
+      const failedSessions = [];
+      
+      for (const session of pendingSessions) {
+        try {
+          await saveSession(session);
+          syncedCount++;
+          toast.loading(`오프라인 데이터 동기화 중... (${syncedCount}/${pendingSessions.length})`, { id: toastId });
+          session.pendingSync = false;
+        } catch (e) {
+          console.error('동기화 실패:', e);
+          failedSessions.push(session);
+        }
+      }
+      
+      // 동기화 성공한 세션과 실패한 세션 분리
+      const updatedSessions = offlineSessions.filter(s => !s.pendingSync || failedSessions.includes(s));
+      localStorage.setItem('offlineSessions', JSON.stringify(updatedSessions));
+      
+      if (failedSessions.length === 0) {
+        localStorage.removeItem('hasPendingSessions');
+        toast.success(`✅ ${syncedCount}개 세션 동기화 완료!`, { id: toastId });
+      } else {
+        localStorage.setItem('hasPendingSessions', 'true');
+        toast.success(`✅ ${syncedCount}개 동기화, ${failedSessions.length}개 실패`, { id: toastId });
+      }
+    } catch (e) {
+      console.error('동기화 과정 오류:', e);
+      toast.error('❌ 동기화 중 오류가 발생했습니다');
+    }
+  };
+
+  // 세션 오프라인 저장
+  const saveSessionOffline = (session) => {
+    try {
+      if (offlineStorage.saveSession(session)) {
+        toast.success('✅ 오프라인에 저장되었습니다');
+        setSaving(false);
+        setDone(true);
+        
+        setTimeout(() => {
+          navigate('/feedback', { replace: true });
+        }, 500);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('오프라인 저장 실패:', e);
+      toast.error('❌ 저장에 실패했습니다');
+      setSaving(false);
+      return false;
+    }
+  };
+
+  // 저장 - 데이터 최소화
   const handleSave = async () => {
     if (!user || !part || !mainExercise) return;
 
     setSaving(true);
     setDone(false);
 
-    const sess: Session = {
+    // 데이터 최소화
+    const minimizedMainExercise = {
+      part,
+      weight: mainExercise.weight,
+      sets: mainExercise.sets.map(set => ({
+        reps: set.reps,
+        isSuccess: set.isSuccess
+      }))
+    };
+
+    // 보조 운동 데이터 최소화
+    const minimizedAccessoryExercises = accessoryExercises.map(acc => ({
+      name: acc.name,
+      sets: acc.sets.map(set => ({
+        reps: set.reps,
+        weight: set.weight
+      }))
+    }));
+
+    const sess = {
       userId: user.uid,
       date: new Date(),
       part,
-      mainExercise,
-      accessoryExercises: accessoryExercises, // 실제 accessoryExercises 데이터 사용
-      notes,
+      mainExercise: minimizedMainExercise,
+      accessoryExercises: minimizedAccessoryExercises,
+      notes: notes ? notes.substring(0, 300) : '', // 노트 길이 제한
       isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
     };
+
+    // 오프라인 상태면 즉시 오프라인 저장
+    if (!navigator.onLine) {
+      return saveSessionOffline(sess);
+    }
 
     try {
       toast.success('✅ 저장 중...');
@@ -94,12 +290,10 @@ export default function RecordPage() {
       }, 500);
     } catch (e: any) {
       console.error('[saveSession error]', e?.message || e);
-      setSaving(false);
-      toast.error(
-        e?.message === 'timeout'
-          ? '⏱️ 서버 응답 지연, 잠시 후 다시 시도하세요.'
-          : '❌ 저장 실패! 네트워크를 확인하세요.'
-      );
+      
+      // 저장 실패 시 오프라인 저장 시도
+      toast.error('❌ 저장 실패! 오프라인으로 저장합니다.');
+      saveSessionOffline(sess);
     }
   };
 
@@ -110,6 +304,27 @@ export default function RecordPage() {
       {saving && !done && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="h-12 w-12 border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* 오프라인 모드 알림 */}
+      {!isOnline && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 mb-4 rounded">
+          <p className="text-sm font-medium">오프라인 모드 - 인터넷 연결이 없습니다</p>
+          <p className="text-xs">데이터는 기기에 임시 저장되고 인터넷 연결 시 동기화됩니다</p>
+        </div>
+      )}
+
+      {/* 동기화 필요 알림 */}
+      {localStorage.getItem('hasPendingSessions') === 'true' && isOnline && (
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-2 mb-4 rounded flex justify-between items-center">
+          <p className="text-sm">동기화되지 않은 데이터가 있습니다</p>
+          <button 
+            onClick={syncOfflineSessions}
+            className="text-xs bg-blue-500 text-white px-2 py-1 rounded"
+          >
+            지금 동기화
+          </button>
         </div>
       )}
 
@@ -165,7 +380,11 @@ export default function RecordPage() {
           placeholder="오늘의 컨디션이나 특이사항을 기록해보세요."
           className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
           rows={3}
+          maxLength={300}
         />
+        <p className="text-xs text-gray-500 mt-1 text-right">
+          {notes ? notes.length : 0}/300
+        </p>
       </div>
 
       <div className="fixed bottom-20 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
@@ -178,13 +397,62 @@ export default function RecordPage() {
           }
           className={
             saving
-              ? 'w-full bg-gray-400 cursor-wait text-white py-3 rounded'
-              : 'w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded'
+              ? 'w-full bg-gray-400 cursor-wait text-white py-3 rounded flex justify-center items-center'
+              : `w-full ${isOnline ? 'bg-blue-500 hover:bg-blue-600' : 'bg-yellow-500 hover:bg-yellow-600'} text-white py-3 rounded`
           }
         >
-          {saving ? '저장 중…' : '저장하기'}
+          {saving ? (
+            <>
+              <span>저장 중</span>
+              <span className="ml-2 dot-flashing"></span>
+            </>
+          ) : isOnline ? '저장하기' : '오프라인 저장'}
         </button>
       </div>
+
+      <style jsx>{`
+        .dot-flashing {
+          position: relative;
+          width: 6px;
+          height: 6px;
+          border-radius: 3px;
+          background-color: #fff;
+          animation: dot-flashing 1s infinite linear alternate;
+          animation-delay: .5s;
+        }
+        
+        .dot-flashing::before, .dot-flashing::after {
+          content: '';
+          display: inline-block;
+          position: absolute;
+          top: 0;
+        }
+        
+        .dot-flashing::before {
+          left: -10px;
+          width: 6px;
+          height: 6px;
+          border-radius: 3px;
+          background-color: #fff;
+          animation: dot-flashing 1s infinite alternate;
+          animation-delay: 0s;
+        }
+        
+        .dot-flashing::after {
+          left: 10px;
+          width: 6px;
+          height: 6px;
+          border-radius: 3px;
+          background-color: #fff;
+          animation: dot-flashing 1s infinite alternate;
+          animation-delay: 1s;
+        }
+        
+        @keyframes dot-flashing {
+          0% { background-color: #fff; }
+          50%, 100% { background-color: rgba(255, 255, 255, 0.2); }
+        }
+      `}</style>
     </Layout>
   );
 }
