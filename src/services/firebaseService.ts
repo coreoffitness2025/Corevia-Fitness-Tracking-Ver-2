@@ -63,7 +63,7 @@ export const saveSession = async (session: Session): Promise<string> => {
     // 데이터 최소화 - 필요한 데이터만 저장
     const minimalSession = {
       userId: session.userId,
-      date: serverTimestamp(),
+      date: new Date(), // serverTimestamp() 대신 클라이언트 타임스탬프 사용
       part: session.part,
       // 메인 운동 데이터 최소화
       mainExercise: {
@@ -156,6 +156,35 @@ export const getLastSession = async (
   }
 };
 
+// 캐시 무효화 함수 추가
+export const invalidateCache = (userId: string, part?: ExercisePart) => {
+  if (part) {
+    // 특정 부위 캐시만 무효화
+    const cacheKey = `${userId}-${part}`;
+    delete sessionCache[cacheKey];
+    
+    // Progress 캐시도 무효화
+    Object.keys(progressCache).forEach(key => {
+      if (key.startsWith(`${userId}-${part}`)) {
+        delete progressCache[key];
+      }
+    });
+  } else {
+    // 사용자의 모든 캐시 무효화
+    Object.keys(sessionCache).forEach(key => {
+      if (key.startsWith(`${userId}`)) {
+        delete sessionCache[key];
+      }
+    });
+    
+    Object.keys(progressCache).forEach(key => {
+      if (key.startsWith(`${userId}`)) {
+        delete progressCache[key];
+      }
+    });
+  }
+};
+
 /* ───────── 진행 데이터 (그래프) ───────── */
 // 페이지네이션을 위한 마지막 문서 캐시
 const lastDocMap: Record<string, QueryDocumentSnapshot | null> = {};
@@ -166,16 +195,18 @@ export const getProgressData = async (
   uid: string,
   part: ExercisePart,
   limitCount = 10,
-  startAfterIndex = 0
+  startAfterIndex = 0,
+  forceRefresh = false  // 강제 새로고침 옵션 추가
 ): Promise<Progress[]> => {
   try {
     const cacheKey = `${uid}-${part}-${startAfterIndex}-${limitCount}`;
     const now = Date.now();
     
-    // 초기 로드이고 캐시가 유효하면 캐시된 데이터 반환
+    // 초기 로드이고 캐시가 유효하고 강제 새로고침이 아닌 경우 캐시된 데이터 반환
     if (startAfterIndex === 0 && 
         progressCache[cacheKey] && 
-        now - progressCache[cacheKey].timestamp < CACHE_DURATION) {
+        now - progressCache[cacheKey].timestamp < CACHE_DURATION &&
+        !forceRefresh) {
       return progressCache[cacheKey].data;
     }
     
@@ -235,6 +266,16 @@ export const getProgressData = async (
     // 결과 캐싱 (초기 로드만)
     if (startAfterIndex === 0) {
       progressCache[cacheKey] = { data: progressData, timestamp: now };
+      
+      // LocalStorage에도 캐싱 (RecordPage와 연동을 위해)
+      try {
+        localStorage.setItem(`progress-${cacheKey}`, JSON.stringify({ 
+          data: progressData, 
+          timestamp: now 
+        }));
+      } catch (e) {
+        console.log('LocalStorage 캐시 저장 실패:', e);
+      }
     }
     
     return progressData;
