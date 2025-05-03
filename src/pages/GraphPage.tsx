@@ -99,8 +99,8 @@ const mergeAndDeduplicate = (localData: Progress[], remoteData: Progress[]): Pro
   const uniqueMap = new Map();
   
   allData.forEach(item => {
-    // 중복 기준 변경: ID가 있으면 ID 기준, 없으면 날짜+무게+성공여부 조합
-    const key = item.id || `${item.weight}-${item.isSuccess}-${new Date(item.date).toDateString()}`;
+    // 날짜+무게+성공여부 조합으로 고유 키 생성
+    const key = `${item.weight}-${item.isSuccess}-${new Date(item.date).toDateString()}`;
     if (!uniqueMap.has(key) || new Date(item.date) > new Date(uniqueMap.get(key).date)) {
       uniqueMap.set(key, item);
     }
@@ -113,7 +113,7 @@ const mergeAndDeduplicate = (localData: Progress[], remoteData: Progress[]): Pro
 
 // 세션 비교 함수
 const isSameSession = (a: Progress, b: Progress): boolean => {
-  return a.id === b.id || (
+  return (
     a.weight === b.weight && 
     a.isSuccess === b.isSuccess && 
     new Date(a.date).toDateString() === new Date(b.date).toDateString()
@@ -373,7 +373,7 @@ export default function GraphPage() {
       },
       maintainAspectRatio: false,
       devicePixelRatio: typeof window !== 'undefined' && window.devicePixelRatio > 1 ? 2 : 1,
-      onClick: (event: any, elements: any) => {
+      onClick: (_: any, elements: any) => {
         if (elements && elements.length) {
           const clickedIndex = elements[0].index;
           handlePointClick(clickedIndex);
