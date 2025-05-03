@@ -48,6 +48,13 @@ export const signOut = async (): Promise<void> => {
   }
 };
 
+// 세트 타입 정의
+interface ExerciseSet {
+  reps: number;
+  isSuccess?: boolean;
+  weight?: number;
+}
+
 /* ───────── 세션 저장 (고속화) ───────── */
 export const saveSession = async (session: Session): Promise<string> => {
   try {
@@ -62,22 +69,26 @@ export const saveSession = async (session: Session): Promise<string> => {
       mainExercise: {
         part: session.mainExercise.part,
         weight: session.mainExercise.weight,
-        sets: session.mainExercise.sets.map(s => ({
+        sets: session.mainExercise.sets.map((s: any) => ({
           reps: s.reps,
           isSuccess: s.isSuccess
         }))
       },
       // 보조 운동 데이터 최소화
-      accessoryExercises: session.accessoryExercises ? session.accessoryExercises.map(a => ({
-        name: a.name,
-        sets: a.sets.map(s => ({
-          reps: s.reps, 
-          weight: s.weight
-        }))
-      })) : [],
+      accessoryExercises: Array.isArray(session.accessoryExercises) 
+        ? session.accessoryExercises.map((a: any) => ({
+            name: a.name,
+            sets: Array.isArray(a.sets) 
+              ? a.sets.map((s: any) => ({
+                  reps: s.reps, 
+                  weight: s.weight
+                })) 
+              : []
+          })) 
+        : [],
       // 노트 길이 제한
       notes: session.notes ? session.notes.substring(0, 300) : '',
-      isAllSuccess: session.mainExercise.sets.every(s => s.isSuccess)
+      isAllSuccess: session.mainExercise.sets.every((s: any) => s.isSuccess)
     };
     
     // Firebase에 최소화된 데이터 저장
@@ -165,7 +176,7 @@ export const getProgressData = async (
     
     return snap.docs.map((docSnap) => {
       const d = docSnap.data() as Session & { date: Timestamp };
-      const successSets = d.mainExercise.sets.filter((s) => s.isSuccess).length;
+      const successSets = d.mainExercise.sets.filter((s: any) => s.isSuccess).length;
       
       // 그래프 데이터로 변환 (필요한 정보만)
       return {
@@ -174,7 +185,9 @@ export const getProgressData = async (
         successSets,
         isSuccess: successSets === 5,
         sets: d.mainExercise.sets,
-        accessoryNames: d.accessoryExercises?.map((a) => a.name) ?? []
+        accessoryNames: Array.isArray(d.accessoryExercises)
+          ? d.accessoryExercises.map((a: any) => a.name) 
+          : []
       } as Progress;
     });
   } catch (error) {
