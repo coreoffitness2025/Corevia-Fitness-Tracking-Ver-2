@@ -628,7 +628,7 @@ export default function GraphPage() {
         <LoadingState />
       ) : viewMode === 'recent' ? (
         // 최근 기록 모드 - 카드 형태로 표시
-        <RecentSessionCard data={latestSession} />
+        <RecentSessionCard data={latestSession} part={part} />
       ) : (
         // 전체 기록 모드 - 그래프로 표시
         <>
