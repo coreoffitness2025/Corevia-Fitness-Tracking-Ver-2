@@ -118,7 +118,7 @@ const QnaPage = () => {
                   {faq.answer}
                 </p>
                 {faq.videoUrl && (
-                  
+                  <a
                     href={faq.videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
