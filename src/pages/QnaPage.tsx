@@ -21,9 +21,17 @@ const QnaPage = () => {
   useEffect(() => {
     const fetchFAQs = async () => {
       setIsLoading(true);
-      // getFAQs now accepts part and type for filtering
-      const data = await getFAQs(selectedPart, faqType);
-      setFaqs(data);
+      // getFAQs 함수에 인자 하나만 전달
+      const data = await getFAQs(selectedPart);
+      
+      // 클라이언트 측에서 필터링
+      const filteredData = data.filter(faq => 
+        faqType === 'method' 
+          ? (faq.type === 'method' && faq.part === selectedPart)
+          : faq.type === 'sets'
+      );
+      
+      setFaqs(filteredData);
       setIsLoading(false);
     };
 
@@ -110,7 +118,7 @@ const QnaPage = () => {
                   {faq.answer}
                 </p>
                 {faq.videoUrl && (
-                  <a
+                  
                     href={faq.videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -157,4 +165,3 @@ const QnaPage = () => {
 };
 
 export default QnaPage;
-0
