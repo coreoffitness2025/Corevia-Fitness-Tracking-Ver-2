@@ -1,4 +1,3 @@
-// src/pages/GraphPage.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -10,7 +9,7 @@ import {
   Tooltip
 } from 'chart.js';
 import { useAuthStore } from '../stores/authStore';
-import { getProgressData } from '../services/firebaseService';
+import { getProgressData, invalidateCache } from '../services/firebaseService';
 import { ExercisePart, Progress } from '../types';
 import Layout from '../components/common/Layout';
 
@@ -26,7 +25,7 @@ export default function GraphPage() {
   const [hasMore, setHasMore] = useState(true);
   const itemsPerPage = 10;
 
-  // 데이터 초기 로드
+  // 컴포넌트 마운트 시 캐시 무효화 및 데이터 로드
   useEffect(() => {
     if (!user) return;
     
@@ -35,7 +34,14 @@ export default function GraphPage() {
     setPage(1);
     setHasMore(true);
     
-    getProgressData(user.uid, part, itemsPerPage).then((rows) => {
+    // 세션 저장 후 GraphPage로 이동한 경우 캐시 무효화
+    if (localStorage.getItem('shouldRefreshGraph') === 'true') {
+      invalidateCache(user.uid, part);
+      localStorage.removeItem('shouldRefreshGraph');
+    }
+    
+    // 항상 최신 데이터를 표시하기 위해 forceRefresh=true로 설정
+    getProgressData(user.uid, part, itemsPerPage, 0, true).then((rows) => {
       setData(rows.reverse());
       setLoading(false);
       setHasMore(rows.length === itemsPerPage);
