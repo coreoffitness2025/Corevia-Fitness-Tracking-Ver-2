@@ -1,246 +1,326 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip
-} from 'chart.js';
-import { useAuthStore } from '../stores/authStore';
-import { getProgressData } from '../services/firebaseService';
-import { ExercisePart, Progress } from '../types';
-import Layout from '../components/common/Layout';
+  collection,
+  doc,
+  setDoc,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  limit,
+  Timestamp,
+  serverTimestamp,
+  startAfter,
+  QueryDocumentSnapshot
+} from 'firebase/firestore';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth, db } from '../firebase';
+import {
+  ExercisePart,
+  Session,
+  FAQ,
+  User,
+  Progress,
+  AccessoryExercise
+} from '../types';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
-const PART_LABEL = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' };
-
-// 로컬 스토리지에서 직접 데이터 가져오기
-const getLatestSessionFromLocalStorage = (userId: string, part: ExercisePart): Progress | null => {
+/* ───────── 로그인 & 로그아웃 ───────── */
+export const signInWithGoogle = async (): Promise<User | null> => {
   try {
-    const key = `session-${userId}-${part}`;
-    const sessionData = localStorage.getItem(key);
-    if (!sessionData) return null;
-    
-    return JSON.parse(sessionData) as Progress;
+    const provider = new GoogleAuthProvider();
+    const { user } = await signInWithPopup(auth, provider);
+    return {
+      uid: user.uid,
+      displayName: user.displayName || '사용자',
+      email: user.email || '',
+      photoURL: user.photoURL || undefined
+    };
   } catch (e) {
-    console.error('로컬 스토리지 데이터 로드 실패:', e);
+    console.error('Google 로그인 에러:', e);
     return null;
   }
 };
 
-export default function GraphPage() {
-  const { user } = useAuthStore();
-  const [part, setPart] = useState<ExercisePart>('chest');
-  const [data, setData] = useState<Progress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const itemsPerPage = 10;
+export const signOut = async (): Promise<void> => {
+  try {
+    await auth.signOut();
+  } catch (e) {
+    console.error('로그아웃 에러:', e);
+  }
+};
 
-  // 컴포넌트 마운트 시 데이터 로드
-  useEffect(() => {
-    if (!user) return;
-    
-    setLoading(true);
-    setData([]);
-    setPage(1);
-    setHasMore(true);
-    
-    console.log('그래프 페이지 데이터 로딩 시작:', part);
-    
-    // 먼저 로컬 스토리지에서 최신 세션 가져오기
-    const latestSession = getLatestSessionFromLocalStorage(user.uid, part);
-    console.log('로컬 스토리지 최신 세션:', latestSession);
-    
-    // Firebase에서 데이터 가져오기
-    getProgressData(user.uid, part, itemsPerPage, 0, true)
-      .then((rows) => {
-        console.log('Firebase에서 가져온 데이터:', rows.length, '개');
-        
-        if (rows.length > 0) {
-          // 로컬 스토리지에 최신 세션이 있고 Firebase 데이터에 없는 경우 병합
-          if (latestSession && !rows.some(r => 
-              r.weight === latestSession.weight && 
-              r.isSuccess === latestSession.isSuccess)) {
-            console.log('로컬 스토리지 데이터 병합');
-            setData([latestSession, ...rows]);
-          } else {
-            setData(rows);
-          }
-          setHasMore(rows.length === itemsPerPage);
-        } else if (latestSession) {
-          // Firebase에 데이터가 없고 로컬 스토리지에만 있는 경우
-          console.log('로컬 스토리지 데이터만 사용');
-          setData([latestSession]);
-          setHasMore(false);
-        } else {
-          setData([]);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("데이터 로딩 중 오류:", err);
-        
-        // 오류 발생 시 로컬 스토리지 데이터로 폴백
-        if (latestSession) {
-          console.log('오류 발생, 로컬 스토리지 데이터 사용');
-          setData([latestSession]);
-        }
-        setLoading(false);
-        setHasMore(false);
-      });
-      
-    // 그래프 새로고침 플래그 제거
-    localStorage.removeItem('shouldRefreshGraph');
-  }, [user, part]);
-
-  // 더 많은 데이터 로드
-  const loadMore = () => {
-    if (!user || !hasMore || loading) return;
-    
-    setLoading(true);
-    
-    getProgressData(user.uid, part, itemsPerPage, page)
-      .then((rows) => {
-        if (rows.length > 0) {
-          setData(prev => [...prev, ...rows]);
-          setPage(prev => prev + 1);
-        }
-        setHasMore(rows.length === itemsPerPage);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("추가 데이터 로딩 중 오류:", err);
-        setLoading(false);
-      });
-  };
-
-  const chartData = useMemo(() => {
-    if (data.length === 0) return { labels: [], datasets: [] };
-    
-    try {
-      // 날짜 포맷 안전하게 처리
-      const labels = data.map(p => {
-        try {
-          const date = p.date instanceof Date ? p.date : new Date(p.date);
-          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-        } catch (e) {
-          return '날짜 오류';
-        }
-      });
-      
-      return {
-        labels,
-        datasets: [
-          {
-            label: '무게(kg)',
-            data: data.map(p => p.weight),
-            borderColor: '#3B82F6',
-            backgroundColor: '#3B82F6',
-            pointRadius: 6,
-            pointHoverRadius: 8,
-            tension: 0.3
-          }
-        ]
-      };
-    } catch (e) {
-      console.error('차트 데이터 생성 오류:', e);
-      return { labels: [], datasets: [] };
-    }
-  }, [data]);
-
-  const labelPlugin = {
-    id: 'labelPlugin',
-    afterDatasetDraw(chart: any) {
-      if (!chart || !chart.ctx || data.length === 0) return;
-      
-      try {
-        const { ctx } = chart;
-        const meta = chart.getDatasetMeta(0);
-        
-        data.forEach((p, i) => {
-          if (!meta.data[i]) return;
-          
-          const { x, y } = meta.data[i].tooltipPosition();
-          ctx.save();
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillStyle = p.isSuccess ? '#22c55e' : '#ef4444';
-          ctx.fillText(p.isSuccess ? '성공' : '실패', x, y - 10);
-          ctx.restore();
-        });
-      } catch (e) {
-        console.error('라벨 플러그인 오류:', e);
-      }
-    }
-  };
-
-  // 데이터 디버깅
-  useEffect(() => {
-    console.log('현재 그래프 데이터:', data.length, '개');
-    if (data.length > 0) {
-      console.log('첫 번째 데이터:', data[0]);
-    }
-  }, [data]);
-
-  return (
-    <Layout>
-      <h1 className="text-2xl font-bold mb-6">운동 그래프</h1>
-      
-      <select
-        value={part}
-        onChange={(e) => setPart(e.target.value as ExercisePart)}
-        className="border px-3 py-2 rounded mb-6 dark:bg-gray-700 dark:text-white"
-      >
-        {Object.entries(PART_LABEL).map(([k, v]) => (
-          <option key={k} value={k}>
-            {v}
-          </option>
-        ))}
-      </select>
-      
-      <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-8 h-72">
-        {loading && data.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-            <p className="text-gray-500">데이터를 불러오는 중...</p>
-          </div>
-        ) : data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-gray-500 text-lg font-medium">기록된 데이터가 없습니다</p>
-            <p className="text-gray-400 text-sm">운동을 기록하면 그래프가 표시됩니다</p>
-          </div>
-        ) : (
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: {
-                y: {
-                  title: { display: true, text: '무게(kg)' }
-                }
-              }
-            }}
-            plugins={[labelPlugin]}
-          />
-        )}
-      </div>
-      
-      {hasMore && data.length > 0 && (
-        <button 
-          onClick={loadMore} 
-          className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md w-full"
-          disabled={loading}
-        >
-          {loading ? '로딩 중...' : '더 많은 데이터 보기'}
-        </button>
-      )}
-    </Layout>
-  );
+// 세트 타입 정의
+interface ExerciseSet {
+  reps: number;
+  isSuccess?: boolean;
+  weight?: number;
 }
+
+/* ───────── 세션 저장 (고속화) ───────── */
+export const saveSession = async (session: Session): Promise<string> => {
+  try {
+    const id = crypto.randomUUID();
+    
+    // 데이터 최소화 - 필요한 데이터만 저장
+    const minimalSession = {
+      userId: session.userId,
+      date: new Date(), // serverTimestamp() 대신 클라이언트 타임스탬프 사용
+      part: session.part,
+      // 메인 운동 데이터 최소화
+      mainExercise: {
+        part: session.mainExercise.part,
+        weight: session.mainExercise.weight,
+        sets: Array.isArray(session.mainExercise.sets) 
+          ? session.mainExercise.sets.map((s: any) => ({
+              reps: s.reps,
+              isSuccess: s.isSuccess
+            }))
+          : []
+      },
+      // 보조 운동 데이터 최소화 - 타입 수정
+      accessoryExercises: Array.isArray(session.accessoryExercises) 
+        ? session.accessoryExercises.map((a: any) => ({
+            name: a.name,
+            weight: a.weight || 0,
+            reps: a.reps || 0,
+            sets: Array.isArray(a.sets) 
+              ? a.sets.map((s: any) => ({
+                  reps: s.reps, 
+                  weight: s.weight
+                })) 
+              : []
+          }))
+        : [],
+      // 노트 길이 제한
+      notes: session.notes ? session.notes.substring(0, 300) : '',
+      isAllSuccess: session.mainExercise.sets.every((s: any) => s.isSuccess)
+    };
+    
+    // Firebase에 최소화된 데이터 저장
+    await setDoc(doc(db, 'sessions', id), minimalSession);
+    
+    return id;
+  } catch (error) {
+    console.error('세션 저장 중 오류:', error);
+    throw error;
+  }
+};
+
+/* ───────── 최근 세션 조회 - 최적화 ───────── */
+// 세션 캐시 (메모리)
+const sessionCache: Record<string, { data: Session | null, timestamp: number }> = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
+
+export const getLastSession = async (
+  userId: string,
+  part: ExercisePart
+): Promise<Session | null> => {
+  try {
+    const cacheKey = `${userId}-${part}`;
+    const now = Date.now();
+    
+    // 캐시된 데이터가 있고 유효한지 확인
+    if (sessionCache[cacheKey] && now - sessionCache[cacheKey].timestamp < CACHE_DURATION) {
+      return sessionCache[cacheKey].data;
+    }
+    
+    const q = query(
+      collection(db, 'sessions'),
+      where('userId', '==', userId),
+      where('part', '==', part),
+      orderBy('date', 'desc'),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    
+    if (snap.empty) {
+      sessionCache[cacheKey] = { data: null, timestamp: now };
+      return null;
+    }
+    
+    const docSnap = snap.docs[0];
+    const data = docSnap.data() as Omit<Session, 'id' | 'date'> & { date: Timestamp };
+    
+    const session = {
+      ...data,
+      id: docSnap.id,
+      date: data.date.toDate()
+    };
+    
+    // 결과 캐싱
+    sessionCache[cacheKey] = { data: session, timestamp: now };
+    
+    return session;
+  } catch (e) {
+    console.error('최근 세션 조회 에러:', e);
+    return null;
+  }
+};
+
+// 캐시 무효화 함수 추가
+export const invalidateCache = (userId: string, part?: ExercisePart) => {
+  console.log('캐시 무효화 요청:', userId, part);
+  
+  if (part) {
+    // 특정 부위 캐시만 무효화
+    const cacheKey = `${userId}-${part}`;
+    delete sessionCache[cacheKey];
+    
+    // Progress 캐시도 무효화
+    Object.keys(progressCache).forEach(key => {
+      if (key.startsWith(`${userId}-${part}`)) {
+        delete progressCache[key];
+      }
+    });
+    console.log(`${part} 부위 캐시 무효화 완료`);
+  } else {
+    // 사용자의 모든 캐시 무효화
+    Object.keys(sessionCache).forEach(key => {
+      if (key.startsWith(`${userId}`)) {
+        delete sessionCache[key];
+      }
+    });
+    
+    Object.keys(progressCache).forEach(key => {
+      if (key.startsWith(`${userId}`)) {
+        delete progressCache[key];
+      }
+    });
+    console.log('모든 캐시 무효화 완료');
+  }
+};
+
+/* ───────── 진행 데이터 (그래프) ───────── */
+// 페이지네이션을 위한 마지막 문서 캐시
+const lastDocMap: Record<string, QueryDocumentSnapshot | null> = {};
+// 진행 데이터 캐시
+const progressCache: Record<string, { data: Progress[], timestamp: number }> = {};
+
+export const getProgressData = async (
+  uid: string,
+  part: ExercisePart,
+  limitCount = 10,
+  startAfterIndex = 0,
+  forceRefresh = false  // 강제 새로고침 옵션 추가
+): Promise<Progress[]> => {
+  try {
+    const cacheKey = `${uid}-${part}-${startAfterIndex}-${limitCount}`;
+    const now = Date.now();
+    
+    // 초기 로드이고 캐시가 유효하고 강제 새로고침이 아닌 경우 캐시된 데이터 반환
+    if (startAfterIndex === 0 && 
+        progressCache[cacheKey] && 
+        now - progressCache[cacheKey].timestamp < CACHE_DURATION &&
+        !forceRefresh) {
+      console.log('캐시된 데이터 반환:', progressCache[cacheKey].data.length);
+      return progressCache[cacheKey].data;
+    }
+    
+    // 초기 쿼리 또는 처음부터 시작하는 경우 마지막 문서 캐시 초기화
+    if (startAfterIndex === 0) {
+      lastDocMap[`${uid}-${part}`] = null;
+    }
+    
+    let q = query(
+      collection(db, 'sessions'),
+      where('userId', '==', uid),
+      where('part', '==', part),
+      orderBy('date', 'desc'),
+      limit(limitCount)
+    );
+    
+    // 페이지네이션을 위해 이전 마지막 문서 이후부터 쿼리
+    const lastDocKey = `${uid}-${part}`;
+    if (startAfterIndex > 0 && lastDocMap[lastDocKey]) {
+      q = query(
+        collection(db, 'sessions'),
+        where('userId', '==', uid),
+        where('part', '==', part),
+        orderBy('date', 'desc'),
+        startAfter(lastDocMap[lastDocKey]),
+        limit(limitCount)
+      );
+    }
+    
+    const snap = await getDocs(q);
+    console.log('Firebase 쿼리 완료, 결과 개수:', snap.docs.length);
+    
+    // 마지막 문서 저장 (다음 쿼리를 위해)
+    if (!snap.empty) {
+      lastDocMap[lastDocKey] = snap.docs[snap.docs.length - 1];
+    }
+    
+    // 데이터 변환 및 최적화
+    const progressData = snap.docs.map((docSnap) => {
+      try {
+        const d = docSnap.data() as Session & { date: Timestamp };
+        
+        // 데이터 유효성 검사
+        if (!d.mainExercise || !d.mainExercise.sets) {
+          console.warn('유효하지 않은 세션 데이터:', docSnap.id);
+          return null;
+        }
+        
+        const successSets = Array.isArray(d.mainExercise.sets) 
+          ? d.mainExercise.sets.filter((s: any) => s.isSuccess).length
+          : 0;
+        
+        // 그래프 데이터로 변환 (필요한 정보만)
+        return {
+          date: d.date.toDate(),
+          weight: d.mainExercise.weight,
+          successSets,
+          isSuccess: successSets === 5,
+          sets: d.mainExercise.sets,
+          accessoryNames: Array.isArray(d.accessoryExercises)
+            ? d.accessoryExercises.map((a: any) => a.name) 
+            : []
+        } as Progress;
+      } catch (e) {
+        console.error('데이터 변환 오류:', e);
+        return null;
+      }
+    }).filter(Boolean) as Progress[]; // null 값 제거
+    
+    // 결과 캐싱 (초기 로드만)
+    if (startAfterIndex === 0) {
+      progressCache[cacheKey] = { data: progressData, timestamp: now };
+    }
+    
+    // 결과 반환
+    return progressData;
+  } catch (error) {
+    console.error('진행 데이터 가져오기 오류:', error);
+    return [];
+  }
+};
+
+/* ───────── FAQ ───────── */
+const faqCache: Record<string, { data: FAQ[], timestamp: number }> = {};
+
+export const getFAQs = async (part: ExercisePart): Promise<FAQ[]> => {
+  try {
+    const cacheKey = `faq-${part}`;
+    const now = Date.now();
+    
+    // 캐시된 데이터가 있고 유효한지 확인
+    if (faqCache[cacheKey] && now - faqCache[cacheKey].timestamp < CACHE_DURATION) {
+      return faqCache[cacheKey].data;
+    }
+    
+    const q = query(collection(db, 'faqs'), where('part', '==', part));
+    const snap = await getDocs(q);
+    
+    const faqs = snap.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as Omit<FAQ, 'id'>)
+    }));
+    
+    // 결과 캐싱
+    faqCache[cacheKey] = { data: faqs, timestamp: now };
+    
+    return faqs;
+  } catch (e) {
+    console.error('FAQ 조회 에러:', e);
+    return [];
+  }
+};
