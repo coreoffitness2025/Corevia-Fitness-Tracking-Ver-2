@@ -1,4 +1,3 @@
-
 // 최적화된 GraphPage 컴포넌트
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { Line } from 'react-chartjs-2';
@@ -180,11 +179,12 @@ export default function GraphPage() {
       
       if (cachedData) {
         // 캐시된 데이터가 있으면 즉시 표시
-        setData(cachedData.data);
+        const cachedItems = cachedData.data;
+        setData(cachedItems);
         setLoading(false);
         
         // 캐시된 데이터가 충분하면 추가 로딩 방지
-        if (cachedData.data.length >= itemsPerPage) {
+        if (cachedItems.length >= itemsPerPage) {
           setHasMore(true);
           return;
         }
