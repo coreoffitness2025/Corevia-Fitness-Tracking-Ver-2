@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Session, ExercisePart, AccessoryExercise } from '../types';
+import { Session, ExercisePart, AccessoryExercise, Progress } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { getLastSession, saveSession } from '../services/firebaseService';
@@ -23,6 +23,38 @@ interface OfflineSession extends Session {
   pendingSync?: boolean;
   createdAt?: string;
 }
+
+// GraphPage에서 사용할 로컬 캐시 갱신 함수
+const updateLocalCache = (session: Session) => {
+  try {
+    // Progress 캐시 키
+    const cacheKey = `${session.userId}-${session.part}-0-10`;
+    
+    // 기존 캐시 데이터 가져오기
+    const existingCache = localStorage.getItem(`progress-${cacheKey}`);
+    if (existingCache) {
+      const cacheData = JSON.parse(existingCache);
+      
+      // 새 세션 데이터를 Progress 형태로 변환
+      const newProgress: Progress = {
+        date: session.date,
+        weight: session.mainExercise.weight,
+        successSets: session.mainExercise.sets.filter(s => s.isSuccess).length,
+        isSuccess: session.mainExercise.sets.filter(s => s.isSuccess).length === 5,
+        sets: session.mainExercise.sets,
+        accessoryNames: session.accessoryExercises.map(a => a.name)
+      };
+      
+      // 캐시 데이터 앞에 새 데이터 추가
+      cacheData.data = [newProgress, ...cacheData.data];
+      
+      // 캐시 갱신
+      localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(cacheData));
+    }
+  } catch (e) {
+    console.error('캐시 갱신 실패:', e);
+  }
+};
 
 // 오프라인 데이터 관리 유틸리티
 const offlineStorage = {
@@ -259,7 +291,7 @@ export default function RecordPage() {
     }
   };
 
-  // 저장 - 데이터 최소화 (최적화된 버전)
+  // 저장 - 데이터 최소화 (Fire-and-Forget 패턴)
   const handleSave = async () => {
     if (!user || !part || !mainExercise) return;
 
@@ -305,27 +337,43 @@ export default function RecordPage() {
 
       // 오프라인 상태면 즉시 오프라인 저장
       if (!navigator.onLine) {
-        return saveSessionOffline(sess);
+        saveSessionOffline(sess);
+        return;
       }
 
+      // 저장 시작 - 성공 알림 표시
       toast.success('✅ 저장 중...');
       
-      // Firebase에 저장 - 타임아웃 시간 단축 (7.5초)
-      const id = await withTimeout(saveSession(sess), 7500);
+      // 중요: 저장 요청을 보내고 곧바로 피드백 페이지로 이동
+      // 서버 응답을 기다리지 않고 진행 (Fire-and-Forget)
+      saveSession(sess)
+        .then(() => {
+          // 성공 시 로컬 캐시 갱신 (GraphPage 연동을 위해)
+          updateLocalCache(sess);
+          // 알림은 표시하지 않음 (이미 페이지 이동함)
+        })
+        .catch((e) => {
+          // 실패 시 오프라인 저장 - 백그라운드에서 처리
+          console.error('[saveSession error]', e?.message || e);
+          offlineStorage.saveSession(sess);
+          // 다음 로그인 시 동기화됨
+        });
       
-      // 저장 성공 후 UI 업데이트
+      // 저장 요청을 보내고 즉시 피드백 페이지로 이동
       setSaving(false);
       setDone(true);
-      toast.success('✅ 저장 완료!');
       
-      // 피드백 페이지로 이동
+      // 그래프 새로고침 플래그 설정
+      localStorage.setItem('shouldRefreshGraph', 'true');
+      
+      // 0.5초 후 페이지 이동 (알림 노출을 위해)
       setTimeout(() => {
         navigate('/feedback', { replace: true });
       }, 500);
     } catch (e: any) {
-      console.error('[saveSession error]', e?.message || e);
+      console.error('[saveSession 오류]', e?.message || e);
       
-      // 저장 실패 시 오프라인 저장 시도
+      // 예외 발생 시 오프라인 저장 시도
       toast.error('❌ 저장 실패! 오프라인으로 저장합니다.');
       
       // 실패한 세션 데이터 재사용 (오류 수정된 버전)
