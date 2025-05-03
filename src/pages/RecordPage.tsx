@@ -160,15 +160,26 @@ export default function RecordPage() {
     offlineStorage.cleanupOldData();
   }, [user]);
 
-  // 타임아웃 래퍼 - 시간 단축 (15초로 변경)
-  const withTimeout = <T,>(p: Promise<T>, ms = 15000): Promise<T> =>
-    new Promise((res, rej) => {
-      const t = setTimeout(() => rej(new Error('timeout')), ms);
-      p.then((v) => { clearTimeout(t); res(v); })
-       .catch((e) => { clearTimeout(t); rej(e); });
+  // 타임아웃 래퍼 - 최적화된 버전 (7.5초로 단축)
+  const withTimeout = <T,>(p: Promise<T>, ms = 7500): Promise<T> => {
+    let timeoutId: number;
+    
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error('timeout'));
+      }, ms);
     });
+    
+    return Promise.race([
+      p.then(value => {
+        clearTimeout(timeoutId);
+        return value;
+      }),
+      timeoutPromise
+    ]);
+  };
 
-  // 오프라인 데이터 동기화 함수
+  // 오프라인 데이터 동기화 함수 - 병렬 처리로 최적화
   const syncOfflineSessions = async () => {
     if (!navigator.onLine || !user) return;
     
@@ -189,16 +200,24 @@ export default function RecordPage() {
       let syncedCount = 0;
       const failedSessions: OfflineSession[] = [];
       
-      for (const session of pendingSessions) {
-        try {
-          await saveSession(session);
-          syncedCount++;
-          toast.loading(`오프라인 데이터 동기화 중... (${syncedCount}/${pendingSessions.length})`, { id: toastId });
-          session.pendingSync = false;
-        } catch (e) {
-          console.error('동기화 실패:', e);
-          failedSessions.push(session);
-        }
+      // 동기화 병렬 처리 (최대 3개 동시에)
+      const batchSize = 3;
+      for (let i = 0; i < pendingSessions.length; i += batchSize) {
+        const batch = pendingSessions.slice(i, i + batchSize);
+        const results = await Promise.allSettled(
+          batch.map(session => saveSession(session))
+        );
+        
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            syncedCount++;
+            batch[index].pendingSync = false;
+          } else {
+            failedSessions.push(batch[index]);
+          }
+        });
+        
+        toast.loading(`오프라인 데이터 동기화 중... (${syncedCount}/${pendingSessions.length})`, { id: toastId });
       }
       
       // 동기화 성공한 세션과 실패한 세션 분리
@@ -240,62 +259,66 @@ export default function RecordPage() {
     }
   };
 
-  // 저장 - 데이터 최소화
+  // 저장 - 데이터 최소화 (최적화된 버전)
   const handleSave = async () => {
     if (!user || !part || !mainExercise) return;
 
     setSaving(true);
     setDone(false);
 
- // 데이터 최소화
-const minimizedMainExercise = {
-  part,
-  weight: mainExercise.weight,
-  sets: mainExercise.sets.map((set: any) => ({
-    reps: set.reps,
-    isSuccess: set.isSuccess
-  }))
-};
-
-// 보조 운동 데이터 최소화
-const minimizedAccessoryExercises = Array.isArray(accessoryExercises) 
-  ? accessoryExercises.map((acc: any) => ({
-      name: acc.name,
-      sets: Array.isArray(acc.sets) 
-        ? acc.sets.map((set: any) => ({
-            reps: set.reps,
-            weight: set.weight
-          })) 
-        : []
-    })) 
-  : [];
-
-    const sess: Session = {
-      userId: user.uid,
-      date: new Date(),
-      part,
-      mainExercise: minimizedMainExercise,
-      accessoryExercises: minimizedAccessoryExercises,
-      notes: notes ? notes.substring(0, 300) : '', // 노트 길이 제한
-      isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
-    };
-
-    // 오프라인 상태면 즉시 오프라인 저장
-    if (!navigator.onLine) {
-      return saveSessionOffline(sess);
-    }
-
     try {
+      // 데이터 최소화 - 메인 운동
+      const minimizedMainExercise = {
+        part,
+        weight: mainExercise.weight,
+        sets: mainExercise.sets.map((set: any) => ({
+          reps: set.reps,
+          isSuccess: set.isSuccess
+        }))
+      };
+
+      // 보조 운동 데이터 최소화 - 타입 문제 해결
+      const minimizedAccessoryExercises = Array.isArray(accessoryExercises) 
+        ? accessoryExercises.map((acc: any) => ({
+            name: acc.name,
+            sets: Array.isArray(acc.sets) 
+              ? acc.sets.map((set: any) => ({
+                  reps: set.reps,
+                  weight: set.weight
+                })) 
+              : [],
+            weight: acc.weight || 0,  // AccessoryExercise에 필요한 속성 추가
+            reps: acc.reps || 0       // AccessoryExercise에 필요한 속성 추가
+          })) as AccessoryExercise[]  // 명시적으로 타입 지정
+        : [];
+
+      // 세션 객체 최소화
+      const sess: Session = {
+        userId: user.uid,
+        date: new Date(),
+        part,
+        mainExercise: minimizedMainExercise,
+        accessoryExercises: minimizedAccessoryExercises,
+        notes: notes ? notes.substring(0, 300) : '', // 노트 길이 제한
+        isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
+      };
+
+      // 오프라인 상태면 즉시 오프라인 저장
+      if (!navigator.onLine) {
+        return saveSessionOffline(sess);
+      }
+
       toast.success('✅ 저장 중...');
       
-      // Firebase에 저장하고 결과 기다리기
-      const id = await withTimeout(saveSession(sess));
+      // Firebase에 저장 - 타임아웃 시간 단축 (7.5초)
+      const id = await withTimeout(saveSession(sess), 7500);
       
       // 저장 성공 후 UI 업데이트
       setSaving(false);
       setDone(true);
       toast.success('✅ 저장 완료!');
       
+      // 피드백 페이지로 이동
       setTimeout(() => {
         navigate('/feedback', { replace: true });
       }, 500);
@@ -304,7 +327,42 @@ const minimizedAccessoryExercises = Array.isArray(accessoryExercises)
       
       // 저장 실패 시 오프라인 저장 시도
       toast.error('❌ 저장 실패! 오프라인으로 저장합니다.');
-      saveSessionOffline(sess);
+      
+      // 실패한 세션 데이터 재사용 (오류 수정된 버전)
+      const minimizedMainExercise = {
+        part,
+        weight: mainExercise.weight,
+        sets: mainExercise.sets.map((set: any) => ({
+          reps: set.reps,
+          isSuccess: set.isSuccess
+        }))
+      };
+
+      const minimizedAccessoryExercises = Array.isArray(accessoryExercises) 
+        ? accessoryExercises.map((acc: any) => ({
+            name: acc.name,
+            sets: Array.isArray(acc.sets) 
+              ? acc.sets.map((set: any) => ({
+                  reps: set.reps,
+                  weight: set.weight
+                })) 
+              : [],
+            weight: acc.weight || 0,
+            reps: acc.reps || 0
+          })) as AccessoryExercise[]
+        : [];
+
+      const offlineSession: Session = {
+        userId: user.uid,
+        date: new Date(),
+        part,
+        mainExercise: minimizedMainExercise,
+        accessoryExercises: minimizedAccessoryExercises,
+        notes: notes ? notes.substring(0, 300) : '',
+        isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
+      };
+      
+      saveSessionOffline(offlineSession);
     }
   };
 
