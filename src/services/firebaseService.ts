@@ -169,6 +169,19 @@ export const invalidateCache = (userId: string, part?: ExercisePart) => {
         delete progressCache[key];
       }
     });
+
+    // 로컬 스토리지 캐시도 무효화
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith(`progress-${userId}-${part}`)) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {
+      console.error('로컬 스토리지 캐시 무효화 실패:', e);
+    }
+    
+    console.log(`${part} 부위 캐시 무효화 완료`);
   } else {
     // 사용자의 모든 캐시 무효화
     Object.keys(sessionCache).forEach(key => {
@@ -182,6 +195,19 @@ export const invalidateCache = (userId: string, part?: ExercisePart) => {
         delete progressCache[key];
       }
     });
+
+    // 로컬 스토리지 캐시도 무효화
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith(`progress-${userId}`)) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {
+      console.error('로컬 스토리지 캐시 무효화 실패:', e);
+    }
+    
+    console.log('모든 캐시 무효화 완료');
   }
 };
 
@@ -202,11 +228,15 @@ export const getProgressData = async (
     const cacheKey = `${uid}-${part}-${startAfterIndex}-${limitCount}`;
     const now = Date.now();
     
+    // 디버그 정보 추가
+    console.log('getProgressData 호출됨:', {uid, part, limitCount, startAfterIndex, forceRefresh});
+    
     // 초기 로드이고 캐시가 유효하고 강제 새로고침이 아닌 경우 캐시된 데이터 반환
     if (startAfterIndex === 0 && 
         progressCache[cacheKey] && 
         now - progressCache[cacheKey].timestamp < CACHE_DURATION &&
         !forceRefresh) {
+      console.log('캐시된 데이터 반환, 개수:', progressCache[cacheKey].data.length);
       return progressCache[cacheKey].data;
     }
     
@@ -237,6 +267,7 @@ export const getProgressData = async (
     }
     
     const snap = await getDocs(q);
+    console.log('Firebase 쿼리 완료, 결과 개수:', snap.docs.length);
     
     // 마지막 문서 저장 (다음 쿼리를 위해)
     if (!snap.empty) {
@@ -273,11 +304,14 @@ export const getProgressData = async (
           data: progressData, 
           timestamp: now 
         }));
+        console.log('로컬 스토리지 캐시 저장 성공:', `progress-${cacheKey}`);
       } catch (e) {
-        console.log('LocalStorage 캐시 저장 실패:', e);
+        console.error('LocalStorage 캐시 저장 실패:', e);
       }
     }
     
+    // 결과 로깅 및 반환
+    console.log('Firebase에서 가져온 데이터 개수:', progressData.length);
     return progressData;
   } catch (error) {
     console.error('진행 데이터 가져오기 오류:', error);
