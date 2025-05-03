@@ -183,7 +183,6 @@ export default function GraphPage() {
     id: 'customTooltip',
     afterDraw: (chart: any) => {
       const ctx = chart.ctx;
-      const meta = chart.getDatasetMeta(0);
       const activeElement = chart.tooltip?.getActiveElements()[0];
       
       if (activeElement) {
@@ -220,8 +219,8 @@ export default function GraphPage() {
   };
 
   // 차트 클릭 이벤트 핸들러
-  const handleChartClick = (event: any, elements: any) => {
-    if (elements.length) {
+  const handleChartClick = (event: React.MouseEvent<HTMLCanvasElement>, elements: any) => {
+    if (elements && elements.length) {
       const clickedIndex = elements[0].index;
       setSelectedSession(data[clickedIndex]);
     }
@@ -274,9 +273,12 @@ export default function GraphPage() {
         title: { display: true, text: '무게(kg)' }
       }
     },
-    onHover: (event: any, elements: any) => {
-      // 호버 시 커서 변경
-      event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+    onHover: (_: any, elements: any) => {
+      // 호버 시 커서 변경 - event 변수는 사용하지 않음
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        canvas.style.cursor = elements.length ? 'pointer' : 'default';
+      }
     }
   };
 
@@ -341,7 +343,7 @@ export default function GraphPage() {
             data={chartData}
             options={chartOptions}
             plugins={[labelPlugin, customTooltip]}
-            onClick={handleChartClick}
+            onClick={handleChartClick as any} // 타입 오류 수정
           />
         )}
       </div>
