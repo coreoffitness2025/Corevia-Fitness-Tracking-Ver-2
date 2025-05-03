@@ -122,6 +122,16 @@ const isSameSession = (a: Progress, b: Progress): boolean => {
 
 // 최근 데이터 카드 컴포넌트 - 보조 운동과 메모를 항상 표시
 const RecentSessionCard = ({ data, part }: { data: Progress | null, part: ExercisePart }) => {
+  // 디버깅 코드 추가 - 데이터가 있을 때 콘솔에 내용 출력
+  if (data) {
+    console.log("RecentSessionCard 데이터:", data);
+    console.log("메모 필드 존재:", data.notes !== undefined);
+    console.log("메모 내용:", data.notes);
+    console.log("보조 운동 필드 존재:", data.accessoryExercises !== undefined);
+    console.log("보조 운동 배열 여부:", Array.isArray(data.accessoryExercises));
+    console.log("보조 운동 개수:", data.accessoryExercises ? data.accessoryExercises.length : 0);
+  }
+
   if (!data) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4 flex items-center justify-center h-40">
