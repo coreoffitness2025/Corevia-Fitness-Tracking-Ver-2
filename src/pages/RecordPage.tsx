@@ -62,46 +62,46 @@ export default function RecordPage() {
     });
 
   // 저장 - 간소화된 데이터만 저장
-const handleSave = async () => {
-  if (!user || !part || !mainExercise) return;
+  const handleSave = async () => {
+    if (!user || !part || !mainExercise) return;
 
-  setSaving(true);
-  setDone(false);
+    setSaving(true);
+    setDone(false);
 
-  const sess: Session = {
-    userId: user.uid,
-    date: new Date(),
-    part,
-    mainExercise,
-    accessoryExercises: accessoryExercises, // 실제 accessoryExercises 데이터 사용
-    notes,
-    isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
+    const sess: Session = {
+      userId: user.uid,
+      date: new Date(),
+      part,
+      mainExercise,
+      accessoryExercises: accessoryExercises, // 실제 accessoryExercises 데이터 사용
+      notes,
+      isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
+    };
+
+    try {
+      toast.success('✅ 저장 중...');
+      
+      // Firebase에 저장하고 결과 기다리기
+      const id = await withTimeout(saveSession(sess));
+      
+      // 저장 성공 후 UI 업데이트
+      setSaving(false);
+      setDone(true);
+      toast.success('✅ 저장 완료!');
+      
+      setTimeout(() => {
+        navigate('/feedback', { replace: true });
+      }, 500);
+    } catch (e: any) {
+      console.error('[saveSession error]', e?.message || e);
+      setSaving(false);
+      toast.error(
+        e?.message === 'timeout'
+          ? '⏱️ 서버 응답 지연, 잠시 후 다시 시도하세요.'
+          : '❌ 저장 실패! 네트워크를 확인하세요.'
+      );
+    }
   };
-
-  try {
-    toast.success('✅ 저장 중...');
-    
-    // Firebase에 저장하고 결과 기다리기
-    const id = await withTimeout(saveSession(sess));
-    
-    // 저장 성공 후 UI 업데이트
-    setSaving(false);
-    setDone(true);
-    toast.success('✅ 저장 완료!');
-    
-    setTimeout(() => {
-      navigate('/feedback', { replace: true });
-    }, 500);
-  } catch (e: any) {
-    console.error('[saveSession error]', e?.message || e);
-    setSaving(false);
-    toast.error(
-      e?.message === 'timeout'
-        ? '⏱️ 서버 응답 지연, 잠시 후 다시 시도하세요.'
-        : '❌ 저장 실패! 네트워크를 확인하세요.'
-    );
-  }
-};
 
   return (
     <Layout>
