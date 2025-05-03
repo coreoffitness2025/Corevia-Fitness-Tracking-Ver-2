@@ -203,20 +203,20 @@ const RecentSessionCard = ({ data, part }: { data: Progress | null, part: Exerci
       {data.accessoryExercises && data.accessoryExercises.length > 0 && (
         <div className="mb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
           <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">보조 운동</h4>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {data.accessoryExercises.map((exercise, i) => (
-              <div key={i} className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                <div className="font-medium">{exercise.name}</div>
+              <div key={i} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg shadow-sm hover:shadow transition-shadow">
+                <div className="font-medium text-gray-900 dark:text-gray-100 mb-1">{exercise.name}</div>
                 {exercise.sets && exercise.sets.length > 0 ? (
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="flex flex-wrap gap-1.5 mt-2">
                     {exercise.sets.map((set, j) => (
-                      <div key={j} className="text-xs bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded">
+                      <div key={j} className="text-xs bg-gray-200 dark:bg-gray-800 px-2.5 py-1.5 rounded-md text-gray-800 dark:text-gray-200">
                         {set.weight}kg × {set.reps}회
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-500 mt-1">세트 정보 없음</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 italic mt-1">세트 정보 없음</div>
                 )}
               </div>
             ))}
@@ -226,13 +226,58 @@ const RecentSessionCard = ({ data, part }: { data: Progress | null, part: Exerci
       
       {/* 메모 섹션 - 데이터가 있을 때만 표시 */}
       {data.notes && (
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-4">
           <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">메모</h4>
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 text-gray-600 dark:text-gray-300 rounded">
-            {data.notes}
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 text-gray-700 dark:text-gray-200 rounded-lg shadow-sm border border-yellow-200 dark:border-yellow-800/50">
+            <p className="whitespace-pre-wrap">{data.notes}</p>
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// 세트 상세 정보 컴포넌트
+const SetDetails = ({ session }: { session: Progress | null }) => {
+  if (!session) return null;
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
+      <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">세트 상세 정보</h3>
+      
+      <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <span className="text-gray-700 dark:text-gray-300 flex items-center">
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {new Date(session.date).toLocaleDateString('ko-KR', { 
+            year: 'numeric', month: 'long', day: 'numeric' 
+          })}
+        </span>
+        <span className="font-bold text-lg bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full text-blue-800 dark:text-blue-200">
+          {session.weight}kg
+        </span>
+      </div>
+      
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-3">
+        {session.sets.map((set, i) => (
+          <div key={i} className={`border p-2 rounded-lg text-center transition-all ${
+            set.isSuccess 
+              ? 'bg-green-50 dark:bg-green-900/40 border-green-300 dark:border-green-700' 
+              : 'bg-red-50 dark:bg-red-900/40 border-red-300 dark:border-red-700'
+          }`}>
+            <div className="text-xs text-gray-600 dark:text-gray-400">{i+1}세트</div>
+            <div className="font-bold text-lg">{set.reps}회</div>
+            <div className={`text-xs mt-1 px-1.5 py-0.5 rounded inline-block ${
+              set.isSuccess 
+                ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200' 
+                : 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
+            }`}>
+              {set.isSuccess ? '성공' : '실패'}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -571,121 +616,3 @@ export default function GraphPage() {
     setAllData([]);
     setDisplayData([]);
   }, []);
-  
-  // 뷰 모드 변경 핸들러
-  const handleViewModeChange = useCallback((mode: 'recent' | 'all') => {
-    setViewMode(mode);
-    setSelectedSession(null);
-  }, []);
-  
-  // 날짜 범위 변경 핸들러
-  const handleDateRangeChange = useCallback((range: '3months' | '6months' | 'all') => {
-    setDateRange(range);
-    setSelectedSession(null);
-  }, []);
-  
-  // 최근 데이터(1개) 메모이제이션
-  const latestSession = useMemo(() => {
-    if (allData.length === 0) return null;
-    return allData[0]; // 이미 날짜순으로 정렬되어 있음
-  }, [allData]);
-
-  return (
-    <Layout>
-      <h1 className="text-2xl font-bold mb-4">운동 그래프</h1>
-      
-      <div className="flex justify-between items-center mb-4">
-        <select
-          value={part}
-          onChange={handlePartChange}
-          className="border px-3 py-2 rounded dark:bg-gray-700 dark:text-white"
-        >
-          {Object.entries(PART_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-        
-        <div className="flex space-x-2">
-          <button
-            onClick={() => handleViewModeChange('recent')}
-            className={`px-3 py-2 rounded ${
-              viewMode === 'recent' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-            }`}
-          >
-            최근 기록
-          </button>
-          <button
-            onClick={() => handleViewModeChange('all')}
-            className={`px-3 py-2 rounded ${
-              viewMode === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-            }`}
-          >
-            전체 기록
-          </button>
-        </div>
-      </div>
-      
-      {loading && allData.length === 0 ? (
-        <LoadingState />
-      ) : viewMode === 'recent' ? (
-        // 최근 기록 모드 - 카드 형태로 표시
-        <RecentSessionCard data={latestSession} part={part} />
-      ) : (
-        // 전체 기록 모드 - 그래프로 표시
-        <>
-          <div className="flex justify-end mb-2 space-x-2">
-            <button
-              onClick={() => handleDateRangeChange('3months')}
-              className={`px-3 py-1 text-sm rounded ${
-                dateRange === '3months' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}
-            >
-              최근 3개월
-            </button>
-            <button
-              onClick={() => handleDateRangeChange('6months')}
-              className={`px-3 py-1 text-sm rounded ${
-                dateRange === '6months' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}
-            >
-              최근 6개월
-            </button>
-            <button
-              onClick={() => handleDateRangeChange('all')}
-              className={`px-3 py-1 text-sm rounded ${
-                dateRange === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}
-            >
-              전체 기간
-            </button>
-          </div>
-          
-          <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4 h-72">
-            {displayData.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <Line
-                data={chartData}
-                options={chartOptions}
-                plugins={[labelPlugin, customTooltip]}
-              />
-            )}
-          </div>
-          
-          {/* 선택된 세션 상세 정보 */}
-          {selectedSession && <SetDetails session={selectedSession} />}
-          
-          {hasMore && viewMode === 'all' && (
-            <button 
-              onClick={loadMore} 
-              className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md w-full"
-              disabled={loading}
-            >
-              {loading ? '로딩 중...' : '더 많은 데이터 보기'}
-            </button>
-          )}
-        </>
-      )}
-    </Layout>
-  );
-}
