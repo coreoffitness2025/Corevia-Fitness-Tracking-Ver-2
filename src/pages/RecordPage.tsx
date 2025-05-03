@@ -42,7 +42,7 @@ const updateLocalCache = (session: Session) => {
         successSets: session.mainExercise.sets.filter(s => s.isSuccess).length,
         isSuccess: session.mainExercise.sets.filter(s => s.isSuccess).length === 5,
         sets: session.mainExercise.sets,
-        accessoryNames: session.accessoryExercises.map(a => a.name)
+        accessoryNames: session.accessoryExercises ? session.accessoryExercises.map(a => a.name) : []
       };
       
       // 캐시 데이터 앞에 새 데이터 추가
