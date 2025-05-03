@@ -69,22 +69,26 @@ export const saveSession = async (session: Session): Promise<string> => {
       mainExercise: {
         part: session.mainExercise.part,
         weight: session.mainExercise.weight,
-        sets: session.mainExercise.sets.map((s: any) => ({
-          reps: s.reps,
-          isSuccess: s.isSuccess
-        }))
+        sets: Array.isArray(session.mainExercise.sets) 
+          ? session.mainExercise.sets.map((s: any) => ({
+              reps: s.reps,
+              isSuccess: s.isSuccess
+            }))
+          : []
       },
-      // 보조 운동 데이터 최소화
+      // 보조 운동 데이터 최소화 - 타입 수정
       accessoryExercises: Array.isArray(session.accessoryExercises) 
         ? session.accessoryExercises.map((a: any) => ({
             name: a.name,
+            weight: a.weight || 0,
+            reps: a.reps || 0,
             sets: Array.isArray(a.sets) 
               ? a.sets.map((s: any) => ({
                   reps: s.reps, 
                   weight: s.weight
                 })) 
               : []
-          })) 
+          }))
         : [],
       // 노트 길이 제한
       notes: session.notes ? session.notes.substring(0, 300) : '',
@@ -101,12 +105,24 @@ export const saveSession = async (session: Session): Promise<string> => {
   }
 };
 
-/* ───────── 최근 세션 조회 ───────── */
+/* ───────── 최근 세션 조회 - 최적화 ───────── */
+// 세션 캐시 (메모리)
+const sessionCache: Record<string, { data: Session | null, timestamp: number }> = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
+
 export const getLastSession = async (
   userId: string,
   part: ExercisePart
 ): Promise<Session | null> => {
   try {
+    const cacheKey = `${userId}-${part}`;
+    const now = Date.now();
+    
+    // 캐시된 데이터가 있고 유효한지 확인
+    if (sessionCache[cacheKey] && now - sessionCache[cacheKey].timestamp < CACHE_DURATION) {
+      return sessionCache[cacheKey].data;
+    }
+    
     const q = query(
       collection(db, 'sessions'),
       where('userId', '==', userId),
@@ -115,14 +131,25 @@ export const getLastSession = async (
       limit(1)
     );
     const snap = await getDocs(q);
-    if (snap.empty) return null;
+    
+    if (snap.empty) {
+      sessionCache[cacheKey] = { data: null, timestamp: now };
+      return null;
+    }
+    
     const docSnap = snap.docs[0];
     const data = docSnap.data() as Omit<Session, 'id' | 'date'> & { date: Timestamp };
-    return {
+    
+    const session = {
       ...data,
       id: docSnap.id,
       date: data.date.toDate()
     };
+    
+    // 결과 캐싱
+    sessionCache[cacheKey] = { data: session, timestamp: now };
+    
+    return session;
   } catch (e) {
     console.error('최근 세션 조회 에러:', e);
     return null;
@@ -132,6 +159,8 @@ export const getLastSession = async (
 /* ───────── 진행 데이터 (그래프) ───────── */
 // 페이지네이션을 위한 마지막 문서 캐시
 const lastDocMap: Record<string, QueryDocumentSnapshot | null> = {};
+// 진행 데이터 캐시
+const progressCache: Record<string, { data: Progress[], timestamp: number }> = {};
 
 export const getProgressData = async (
   uid: string,
@@ -140,11 +169,19 @@ export const getProgressData = async (
   startAfterIndex = 0
 ): Promise<Progress[]> => {
   try {
-    const cacheKey = `${uid}-${part}`;
+    const cacheKey = `${uid}-${part}-${startAfterIndex}-${limitCount}`;
+    const now = Date.now();
+    
+    // 초기 로드이고 캐시가 유효하면 캐시된 데이터 반환
+    if (startAfterIndex === 0 && 
+        progressCache[cacheKey] && 
+        now - progressCache[cacheKey].timestamp < CACHE_DURATION) {
+      return progressCache[cacheKey].data;
+    }
     
     // 초기 쿼리 또는 처음부터 시작하는 경우 마지막 문서 캐시 초기화
     if (startAfterIndex === 0) {
-      lastDocMap[cacheKey] = null;
+      lastDocMap[`${uid}-${part}`] = null;
     }
     
     let q = query(
@@ -156,13 +193,14 @@ export const getProgressData = async (
     );
     
     // 페이지네이션을 위해 이전 마지막 문서 이후부터 쿼리
-    if (startAfterIndex > 0 && lastDocMap[cacheKey]) {
+    const lastDocKey = `${uid}-${part}`;
+    if (startAfterIndex > 0 && lastDocMap[lastDocKey]) {
       q = query(
         collection(db, 'sessions'),
         where('userId', '==', uid),
         where('part', '==', part),
         orderBy('date', 'desc'),
-        startAfter(lastDocMap[cacheKey]),
+        startAfter(lastDocMap[lastDocKey]),
         limit(limitCount)
       );
     }
@@ -171,12 +209,15 @@ export const getProgressData = async (
     
     // 마지막 문서 저장 (다음 쿼리를 위해)
     if (!snap.empty) {
-      lastDocMap[cacheKey] = snap.docs[snap.docs.length - 1];
+      lastDocMap[lastDocKey] = snap.docs[snap.docs.length - 1];
     }
     
-    return snap.docs.map((docSnap) => {
+    // 데이터 변환 및 최적화
+    const progressData = snap.docs.map((docSnap) => {
       const d = docSnap.data() as Session & { date: Timestamp };
-      const successSets = d.mainExercise.sets.filter((s: any) => s.isSuccess).length;
+      const successSets = Array.isArray(d.mainExercise.sets) 
+        ? d.mainExercise.sets.filter((s: any) => s.isSuccess).length
+        : 0;
       
       // 그래프 데이터로 변환 (필요한 정보만)
       return {
@@ -190,6 +231,13 @@ export const getProgressData = async (
           : []
       } as Progress;
     });
+    
+    // 결과 캐싱 (초기 로드만)
+    if (startAfterIndex === 0) {
+      progressCache[cacheKey] = { data: progressData, timestamp: now };
+    }
+    
+    return progressData;
   } catch (error) {
     console.error('진행 데이터 가져오기 오류:', error);
     return [];
@@ -197,14 +245,30 @@ export const getProgressData = async (
 };
 
 /* ───────── FAQ ───────── */
+const faqCache: Record<string, { data: FAQ[], timestamp: number }> = {};
+
 export const getFAQs = async (part: ExercisePart): Promise<FAQ[]> => {
   try {
+    const cacheKey = `faq-${part}`;
+    const now = Date.now();
+    
+    // 캐시된 데이터가 있고 유효한지 확인
+    if (faqCache[cacheKey] && now - faqCache[cacheKey].timestamp < CACHE_DURATION) {
+      return faqCache[cacheKey].data;
+    }
+    
     const q = query(collection(db, 'faqs'), where('part', '==', part));
     const snap = await getDocs(q);
-    return snap.docs.map((docSnap) => ({
+    
+    const faqs = snap.docs.map((docSnap) => ({
       id: docSnap.id,
       ...(docSnap.data() as Omit<FAQ, 'id'>)
     }));
+    
+    // 결과 캐싱
+    faqCache[cacheKey] = { data: faqs, timestamp: now };
+    
+    return faqs;
   } catch (e) {
     console.error('FAQ 조회 에러:', e);
     return [];
