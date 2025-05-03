@@ -504,7 +504,8 @@ export default function GraphPage() {
       console.error("데이터 로드 오류:", err);
       
       // 캐시된 데이터와 로컬 세션이 모두 없고 오류가 발생한 경우에만 빈 배열로 설정
-      if (!cachedData && !getLatestSessionFromLocalStorage(user.uid, part)) {
+      const hasCache = getCachedProgressData(user.uid, part) !== null;
+      if (!hasCache && !getLatestSessionFromLocalStorage(user.uid, part)) {
         setData([]);
       }
     } finally {
