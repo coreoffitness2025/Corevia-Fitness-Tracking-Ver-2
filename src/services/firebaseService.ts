@@ -215,8 +215,18 @@ export const getProgressData = async (
         date: d.date.toDate(),
         weight: d.mainExercise.weight,
         successSets,
-        isSuccess: successSets === 5,
+        isSuccess: d.isAllSuccess || successSets === 5,
         sets: d.mainExercise.sets,
+        // 메모 필드 추가
+        notes: d.notes || '',
+        // 전체 보조 운동 데이터 추가
+        accessoryExercises: Array.isArray(d.accessoryExercises)
+          ? d.accessoryExercises.map((a: any) => ({
+              name: a.name,
+              sets: Array.isArray(a.sets) ? a.sets : []
+            }))
+          : [],
+        // 기존 이름 배열은 그대로 유지
         accessoryNames: Array.isArray(d.accessoryExercises)
           ? d.accessoryExercises.map((a: any) => a.name)
           : []
