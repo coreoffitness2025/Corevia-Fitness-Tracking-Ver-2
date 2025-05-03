@@ -247,24 +247,28 @@ export default function RecordPage() {
     setSaving(true);
     setDone(false);
 
-    // 데이터 최소화
-    const minimizedMainExercise = {
-      part,
-      weight: mainExercise.weight,
-      sets: mainExercise.sets.map(set => ({
-        reps: set.reps,
-        isSuccess: set.isSuccess
-      }))
-    };
+ // 데이터 최소화
+const minimizedMainExercise = {
+  part,
+  weight: mainExercise.weight,
+  sets: mainExercise.sets.map((set: any) => ({
+    reps: set.reps,
+    isSuccess: set.isSuccess
+  }))
+};
 
-    // 보조 운동 데이터 최소화
-    const minimizedAccessoryExercises = accessoryExercises.map(acc => ({
+// 보조 운동 데이터 최소화
+const minimizedAccessoryExercises = Array.isArray(accessoryExercises) 
+  ? accessoryExercises.map((acc: any) => ({
       name: acc.name,
-      sets: acc.sets.map(set => ({
-        reps: set.reps,
-        weight: set.weight
-      }))
-    })) as AccessoryExercise[];
+      sets: Array.isArray(acc.sets) 
+        ? acc.sets.map((set: any) => ({
+            reps: set.reps,
+            weight: set.weight
+          })) 
+        : []
+    })) 
+  : [];
 
     const sess: Session = {
       userId: user.uid,
