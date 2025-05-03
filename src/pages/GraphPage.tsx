@@ -25,31 +25,42 @@ export default function GraphPage() {
   const [hasMore, setHasMore] = useState(true);
   const itemsPerPage = 10;
 
-  // 컴포넌트 마운트 시 캐시 무효화 및 데이터 로드
-  useEffect(() => {
-    if (!user) return;
-    
-    setLoading(true);
-    setData([]);
-    setPage(1);
-    setHasMore(true);
-    
-    // 세션 저장 후 GraphPage로 이동한 경우 캐시 무효화
-    if (localStorage.getItem('shouldRefreshGraph') === 'true') {
-      invalidateCache(user.uid, part);
-      localStorage.removeItem('shouldRefreshGraph');
-    }
-    
-    // 항상 최신 데이터를 표시하기 위해 forceRefresh=true로 설정
-    getProgressData(user.uid, part, itemsPerPage, 0, true).then((rows) => {
-      setData(rows.reverse());
+// GraphPage.tsx의 useEffect 수정
+useEffect(() => {
+  if (!user) return;
+  
+  setLoading(true);
+  setData([]);
+  setPage(1);
+  setHasMore(true);
+  
+  // 콘솔에 디버그 정보 추가
+  console.log('GraphPage 로딩 시작, part:', part, 'shouldRefresh:', localStorage.getItem('shouldRefreshGraph'));
+  
+  // 세션 저장 후 GraphPage로 이동한 경우 캐시 무효화
+  if (localStorage.getItem('shouldRefreshGraph') === 'true') {
+    console.log('캐시 무효화 실행');
+    invalidateCache(user.uid, part);
+    localStorage.removeItem('shouldRefreshGraph');
+  }
+  
+  // 항상 최신 데이터를 표시하기 위해 forceRefresh=true로 설정
+  getProgressData(user.uid, part, itemsPerPage, 0, true)
+    .then((rows) => {
+      console.log('받은 데이터 개수:', rows.length);
+      if (rows.length > 0) {
+        setData(rows);  // reverse() 제거 - 이미 내림차순으로 정렬됨
+        setHasMore(rows.length === itemsPerPage);
+      } else {
+        setData([]);
+      }
       setLoading(false);
-      setHasMore(rows.length === itemsPerPage);
-    }).catch(err => {
+    })
+    .catch(err => {
       console.error("데이터 로딩 중 오류:", err);
       setLoading(false);
     });
-  }, [user, part]);
+}, [user, part]);
 
   // 더 많은 데이터 로드
   const loadMore = () => {
