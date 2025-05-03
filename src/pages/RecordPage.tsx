@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Session } from '../types';
+import { Session, ExercisePart, AccessoryExercise } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { getLastSession, saveSession } from '../services/firebaseService';
@@ -17,10 +17,17 @@ const coreExerciseNames = {
   leg: '스쿼트'
 };
 
+// 오프라인 저장을 위한 인터페이스 정의
+interface OfflineSession extends Session {
+  offlineId?: string;
+  pendingSync?: boolean;
+  createdAt?: string;
+}
+
 // 오프라인 데이터 관리 유틸리티
 const offlineStorage = {
   // 세션 저장
-  saveSession: (session) => {
+  saveSession: (session: Session): boolean => {
     try {
       const offlineSessions = offlineStorage.getAllSessions();
       offlineSessions.push({
@@ -40,7 +47,7 @@ const offlineStorage = {
   },
   
   // 모든 세션 가져오기
-  getAllSessions: () => {
+  getAllSessions: (): OfflineSession[] => {
     try {
       const data = localStorage.getItem('offlineSessions');
       return data ? JSON.parse(data) : [];
@@ -51,7 +58,7 @@ const offlineStorage = {
   },
   
   // 동기화 대기 중인 세션 수
-  getPendingCount: () => {
+  getPendingCount: (): number => {
     try {
       const sessions = offlineStorage.getAllSessions();
       return sessions.filter(s => s.pendingSync).length;
@@ -61,14 +68,14 @@ const offlineStorage = {
   },
   
   // 저장 공간 정리 (너무 오래된 데이터 제거)
-  cleanupOldData: () => {
+  cleanupOldData: (): boolean => {
     try {
       const sessions = offlineStorage.getAllSessions();
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
       const filtered = sessions.filter(s => {
-        const createdAt = new Date(s.createdAt || 0);
+        const createdAt = s.createdAt ? new Date(s.createdAt) : new Date(0);
         return createdAt > thirtyDaysAgo;
       });
       
@@ -180,7 +187,7 @@ export default function RecordPage() {
       const toastId = toast.loading(`오프라인 데이터 동기화 중... (0/${pendingSessions.length})`);
       
       let syncedCount = 0;
-      const failedSessions = [];
+      const failedSessions: OfflineSession[] = [];
       
       for (const session of pendingSessions) {
         try {
@@ -212,7 +219,7 @@ export default function RecordPage() {
   };
 
   // 세션 오프라인 저장
-  const saveSessionOffline = (session) => {
+  const saveSessionOffline = (session: Session) => {
     try {
       if (offlineStorage.saveSession(session)) {
         toast.success('✅ 오프라인에 저장되었습니다');
@@ -257,9 +264,9 @@ export default function RecordPage() {
         reps: set.reps,
         weight: set.weight
       }))
-    }));
+    })) as AccessoryExercise[];
 
-    const sess = {
+    const sess: Session = {
       userId: user.uid,
       date: new Date(),
       part,
@@ -410,7 +417,7 @@ export default function RecordPage() {
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .dot-flashing {
           position: relative;
           width: 6px;
