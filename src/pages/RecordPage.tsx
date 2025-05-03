@@ -24,15 +24,14 @@ interface OfflineSession extends Session {
   createdAt?: string;
 }
 
-// GraphPage에서 사용할 로컬 캐시 갱신 함수
-const updateLocalCache = (session: Session) => {
+// 세션 데이터를 직접 로컬 스토리지에 저장
+const saveSessionToLocalStorage = (session: Session) => {
   try {
-    // Progress 캐시 키
-    const cacheKey = `${session.userId}-${session.part}-0-10`;
-    console.log('updateLocalCache 호출됨, 키:', cacheKey);
+    // 키 생성
+    const key = `session-${session.userId}-${session.part}`;
     
-    // 새 세션 데이터를 Progress 형태로 변환
-    const newProgress: Progress = {
+    // 세션을 Progress 형태로 변환
+    const progressData = {
       date: session.date,
       weight: session.mainExercise.weight,
       successSets: session.mainExercise.sets.filter(s => s.isSuccess).length,
@@ -41,40 +40,15 @@ const updateLocalCache = (session: Session) => {
       accessoryNames: session.accessoryExercises ? session.accessoryExercises.map(a => a.name) : []
     };
     
-    // 기존 캐시 데이터 가져오기
-    const existingCacheStr = localStorage.getItem(`progress-${cacheKey}`);
+    // 로컬 스토리지에 저장
+    localStorage.setItem(key, JSON.stringify(progressData));
     
-    if (existingCacheStr) {
-      try {
-        const cacheData = JSON.parse(existingCacheStr);
-        
-        // 캐시 데이터 앞에 새 데이터 추가
-        cacheData.data = [newProgress, ...(cacheData.data || [])];
-        
-        // 캐시 갱신
-        localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(cacheData));
-        console.log('로컬 캐시 업데이트 성공');
-      } catch (parseError) {
-        console.error('캐시 파싱 오류:', parseError);
-        
-        // 캐시가 손상된 경우 새로 생성
-        const newCache = {
-          data: [newProgress],
-          timestamp: Date.now()
-        };
-        localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(newCache));
-      }
-    } else {
-      // 캐시가 없는 경우 새로 생성
-      const newCache = {
-        data: [newProgress],
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`progress-${cacheKey}`, JSON.stringify(newCache));
-      console.log('새 로컬 캐시 생성됨');
-    }
+    // 그래프 새로고침 플래그 설정
+    localStorage.setItem('shouldRefreshGraph', 'true');
+    
+    console.log('세션 데이터를 로컬 스토리지에 저장 완료');
   } catch (e) {
-    console.error('캐시 갱신 실패:', e);
+    console.error('로컬 스토리지 저장 실패:', e);
   }
 };
 
@@ -93,6 +67,10 @@ const offlineStorage = {
       
       localStorage.setItem('offlineSessions', JSON.stringify(offlineSessions));
       localStorage.setItem('hasPendingSessions', 'true');
+      
+      // 로컬 스토리지에도 직접 저장 (그래프용)
+      saveSessionToLocalStorage(session);
+      
       return true;
     } catch (e) {
       console.error('오프라인 저장 실패:', e);
@@ -159,8 +137,11 @@ export default function RecordPage() {
     const handleOnline = () => {
       setIsOnline(true);
       toast.success('인터넷에 다시 연결되었습니다');
-      // 온라인으로 전환되면 동기화 시도
-      syncOfflineSessions();
+      
+      // 오프라인 데이터가 있으면 백그라운드에서 자동 동기화
+      if (localStorage.getItem('hasPendingSessions') === 'true') {
+        syncOfflineSessionsInBackground();
+      }
     };
     
     const handleOffline = () => {
@@ -205,89 +186,68 @@ export default function RecordPage() {
   useEffect(() => {
     if (!user) return;
     
-    // 오프라인 데이터가 있으면 동기화 시도
+    // 오프라인 데이터가 있으면 백그라운드에서 자동 동기화
     if (localStorage.getItem('hasPendingSessions') === 'true' && navigator.onLine) {
-      syncOfflineSessions();
+      syncOfflineSessionsInBackground();
     }
     
     // 30일 이상 된 오래된 데이터 정리
     offlineStorage.cleanupOldData();
   }, [user]);
 
-  // 타임아웃 래퍼 - 최적화된 버전 (7.5초로 단축)
-  const withTimeout = <T,>(p: Promise<T>, ms = 7500): Promise<T> => {
-    let timeoutId: number;
-    
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = window.setTimeout(() => {
-        reject(new Error('timeout'));
-      }, ms);
-    });
-    
-    return Promise.race([
-      p.then(value => {
-        clearTimeout(timeoutId);
-        return value;
-      }),
-      timeoutPromise
-    ]);
-  };
-
-  // 오프라인 데이터 동기화 함수 - 병렬 처리로 최적화
-  const syncOfflineSessions = async () => {
+  // 백그라운드에서 오프라인 데이터 동기화
+  const syncOfflineSessionsInBackground = async () => {
     if (!navigator.onLine || !user) return;
     
-    const hasPendingSessions = localStorage.getItem('hasPendingSessions') === 'true';
-    if (!hasPendingSessions) return;
+    const pendingSessions = offlineStorage.getAllSessions().filter(s => s.pendingSync);
+    if (pendingSessions.length === 0) {
+      localStorage.removeItem('hasPendingSessions');
+      return;
+    }
     
-    try {
-      const offlineSessions = offlineStorage.getAllSessions();
-      const pendingSessions = offlineSessions.filter(s => s.pendingSync);
+    // 작은 표시만 한 번 노출
+    const toastId = toast.loading(`오프라인 데이터 동기화 중...`, {
+      duration: 3000  // 3초만 표시
+    });
+    
+    let syncedCount = 0;
+    const failedSessions: OfflineSession[] = [];
+    
+    // 동기화 병렬 처리 (최대 3개 동시에)
+    const batchSize = 3;
+    for (let i = 0; i < pendingSessions.length; i += batchSize) {
+      const batch = pendingSessions.slice(i, i + batchSize);
+      const results = await Promise.allSettled(
+        batch.map(session => saveSession(session))
+      );
       
-      if (pendingSessions.length === 0) {
-        localStorage.removeItem('hasPendingSessions');
-        return;
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          syncedCount++;
+          batch[index].pendingSync = false;
+        } else {
+          failedSessions.push(batch[index]);
+        }
+      });
+    }
+    
+    // 동기화 결과 저장
+    const allSessions = offlineStorage.getAllSessions();
+    const updatedSessions = allSessions.map(s => {
+      // pendingSync 플래그 업데이트
+      if (pendingSessions.includes(s) && !failedSessions.includes(s)) {
+        return { ...s, pendingSync: false };
       }
-      
-      const toastId = toast.loading(`오프라인 데이터 동기화 중... (0/${pendingSessions.length})`);
-      
-      let syncedCount = 0;
-      const failedSessions: OfflineSession[] = [];
-      
-      // 동기화 병렬 처리 (최대 3개 동시에)
-      const batchSize = 3;
-      for (let i = 0; i < pendingSessions.length; i += batchSize) {
-        const batch = pendingSessions.slice(i, i + batchSize);
-        const results = await Promise.allSettled(
-          batch.map(session => saveSession(session))
-        );
-        
-        results.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            syncedCount++;
-            batch[index].pendingSync = false;
-          } else {
-            failedSessions.push(batch[index]);
-          }
-        });
-        
-        toast.loading(`오프라인 데이터 동기화 중... (${syncedCount}/${pendingSessions.length})`, { id: toastId });
-      }
-      
-      // 동기화 성공한 세션과 실패한 세션 분리
-      const updatedSessions = offlineSessions.filter(s => !s.pendingSync || failedSessions.includes(s));
-      localStorage.setItem('offlineSessions', JSON.stringify(updatedSessions));
-      
-      if (failedSessions.length === 0) {
-        localStorage.removeItem('hasPendingSessions');
-        toast.success(`✅ ${syncedCount}개 세션 동기화 완료!`, { id: toastId });
-      } else {
-        localStorage.setItem('hasPendingSessions', 'true');
-        toast.success(`✅ ${syncedCount}개 동기화, ${failedSessions.length}개 실패`, { id: toastId });
-      }
-    } catch (e) {
-      console.error('동기화 과정 오류:', e);
-      toast.error('❌ 동기화 중 오류가 발생했습니다');
+      return s;
+    });
+    
+    localStorage.setItem('offlineSessions', JSON.stringify(updatedSessions));
+    
+    if (failedSessions.length === 0) {
+      localStorage.removeItem('hasPendingSessions');
+      toast.success(`${syncedCount}개 데이터 동기화 완료`, { id: toastId, duration: 2000 });
+    } else {
+      localStorage.setItem('hasPendingSessions', 'true');
     }
   };
 
@@ -366,13 +326,14 @@ export default function RecordPage() {
       // 저장 시작 - 성공 알림 표시
       toast.success('✅ 저장 중...');
       
+      // 로컬 스토리지에 직접 저장 (그래프용)
+      saveSessionToLocalStorage(sess);
+      
       // 중요: 저장 요청을 보내고 곧바로 피드백 페이지로 이동
       // 서버 응답을 기다리지 않고 진행 (Fire-and-Forget)
       saveSession(sess)
         .then(() => {
-          // 성공 시 로컬 캐시 갱신 (GraphPage 연동을 위해)
-          updateLocalCache(sess);
-          // 알림은 표시하지 않음 (이미 페이지 이동함)
+          // 성공 처리는 하지 않음 (이미 페이지 이동함)
         })
         .catch((e) => {
           // 실패 시 오프라인 저장 - 백그라운드에서 처리
@@ -384,9 +345,6 @@ export default function RecordPage() {
       // 저장 요청을 보내고 즉시 피드백 페이지로 이동
       setSaving(false);
       setDone(true);
-      
-      // 그래프 새로고침 플래그 설정
-      localStorage.setItem('shouldRefreshGraph', 'true');
       
       // 0.5초 후 페이지 이동 (알림 노출을 위해)
       setTimeout(() => {
@@ -451,26 +409,6 @@ export default function RecordPage() {
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 mb-4 rounded">
           <p className="text-sm font-medium">오프라인 모드 - 인터넷 연결이 없습니다</p>
           <p className="text-xs">데이터는 기기에 임시 저장되고 인터넷 연결 시 동기화됩니다</p>
-        </div>
-      )}
-
-      {/* 동기화 필요 알림 */}
-      {localStorage.getItem('hasPendingSessions') === 'true' && isOnline && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4 rounded">
-          <div className="flex justify-between items-center">
-            <p className="text-sm font-medium">
-              동기화되지 않은 데이터가 있습니다
-              <span className="text-xs ml-2">
-                ({offlineStorage.getPendingCount()}개)
-              </span>
-            </p>
-            <button 
-              onClick={syncOfflineSessions}
-              className="ml-4 bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded"
-            >
-              지금 동기화
-            </button>
-          </div>
         </div>
       )}
 
