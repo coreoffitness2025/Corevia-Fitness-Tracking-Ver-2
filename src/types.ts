@@ -43,10 +43,25 @@ export interface Session {
 export interface Progress {
   date: Date | string;
   weight: number;
-  successSets: number;
   isSuccess: boolean;
-  sets: ExerciseSet[];        // ✅ 세트 배열
-  accessoryNames: string[];   // ✅ 보조 운동 이름 목록
+  sets: Array<{
+    reps: number;
+    isSuccess: boolean;
+  }>;
+  
+  // 추가된 속성들
+  accessoryExercises?: Array<{
+    name: string;
+    sets?: Array<{
+      reps: number;
+      weight: number;
+    }>;
+    weight?: number;
+    reps?: number;
+  }>;
+  notes?: string;
+  successSets?: number;
+  accessoryNames?: string[];
 }
 
 /* ---------- FAQ ---------- */
