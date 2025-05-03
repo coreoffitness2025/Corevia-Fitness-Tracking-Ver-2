@@ -21,17 +21,9 @@ const QnaPage = () => {
   useEffect(() => {
     const fetchFAQs = async () => {
       setIsLoading(true);
-      // getFAQs 함수에 인자 하나만 전달
-      const data = await getFAQs(selectedPart);
-      
-      // 클라이언트 측에서 필터링
-      const filteredData = data.filter(faq => 
-        faqType === 'method' 
-          ? (faq.type === 'method' && faq.part === selectedPart)
-          : faq.type === 'sets'
-      );
-      
-      setFaqs(filteredData);
+      // 두 인자 모두 전달 - selectedPart와 faqType
+      const data = await getFAQs(selectedPart, faqType);
+      setFaqs(data);
       setIsLoading(false);
     };
 
