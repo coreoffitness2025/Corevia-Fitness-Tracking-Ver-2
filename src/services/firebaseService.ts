@@ -9,7 +9,7 @@ import {
   limit,
   Timestamp,
   serverTimestamp,
-  startAfter as fbStartAfter,
+  startAfter,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -47,18 +47,45 @@ export const signOut = async (): Promise<void> => {
   }
 };
 
-/* ───────── 세션 저장 (고속) ───────── */
+/* ───────── 세션 저장 (고속화) ───────── */
 export const saveSession = async (session: Session): Promise<string> => {
   try {
-    const id = crypto.randomUUID();                               // 클라이언트에서 ID 생성
-    await setDoc(doc(db, 'sessions', id), {
-      ...session,
-      date: serverTimestamp()                                     // 서버 타임스탬프
-    });
+    const id = crypto.randomUUID();
+    
+    // 데이터 최소화 - 필요한 데이터만 저장
+    const minimalSession = {
+      userId: session.userId,
+      date: serverTimestamp(),
+      part: session.part,
+      // 메인 운동 데이터 최소화
+      mainExercise: {
+        part: session.mainExercise.part,
+        weight: session.mainExercise.weight,
+        sets: session.mainExercise.sets.map(s => ({
+          reps: s.reps,
+          isSuccess: s.isSuccess
+        }))
+      },
+      // 보조 운동 데이터 최소화
+      accessoryExercises: session.accessoryExercises.map(a => ({
+        name: a.name,
+        sets: a.sets.map(s => ({
+          reps: s.reps, 
+          weight: s.weight
+        }))
+      })),
+      // 노트 길이 제한
+      notes: session.notes ? session.notes.substring(0, 300) : '',
+      isAllSuccess: session.mainExercise.sets.every(s => s.isSuccess)
+    };
+    
+    // Firebase에 최소화된 데이터 저장
+    await setDoc(doc(db, 'sessions', id), minimalSession);
+    
     return id;
   } catch (error) {
     console.error('세션 저장 중 오류:', error);
-    throw error; // UI가 오류를 처리할 수 있도록 다시 throw
+    throw error;
   }
 };
 
@@ -91,7 +118,7 @@ export const getLastSession = async (
 };
 
 /* ───────── 진행 데이터 (그래프) ───────── */
-// lastDoc 변수를 모듈 레벨에서 저장 (페이지네이션 최적화)
+// 페이지네이션을 위한 마지막 문서 캐시
 const lastDocMap: Record<string, QueryDocumentSnapshot | null> = {};
 
 export const getProgressData = async (
@@ -123,7 +150,7 @@ export const getProgressData = async (
         where('userId', '==', uid),
         where('part', '==', part),
         orderBy('date', 'desc'),
-        fbStartAfter(lastDocMap[cacheKey]),
+        startAfter(lastDocMap[cacheKey]),
         limit(limitCount)
       );
     }
@@ -139,6 +166,7 @@ export const getProgressData = async (
       const d = docSnap.data() as Session & { date: Timestamp };
       const successSets = d.mainExercise.sets.filter((s) => s.isSuccess).length;
       
+      // 그래프 데이터로 변환 (필요한 정보만)
       return {
         date: d.date.toDate(),
         weight: d.mainExercise.weight,
