@@ -9,12 +9,26 @@ import {
   Tooltip
 } from 'chart.js';
 import { useAuthStore } from '../stores/authStore';
-import { getProgressData, invalidateCache } from '../services/firebaseService';
+import { getProgressData } from '../services/firebaseService';
 import { ExercisePart, Progress } from '../types';
 import Layout from '../components/common/Layout';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
 const PART_LABEL = { chest: '가슴', back: '등', shoulder: '어깨', leg: '하체' };
+
+// 로컬 스토리지에서 직접 데이터 가져오기
+const getLatestSessionFromLocalStorage = (userId: string, part: ExercisePart): Progress | null => {
+  try {
+    const key = `session-${userId}-${part}`;
+    const sessionData = localStorage.getItem(key);
+    if (!sessionData) return null;
+    
+    return JSON.parse(sessionData) as Progress;
+  } catch (e) {
+    console.error('로컬 스토리지 데이터 로드 실패:', e);
+    return null;
+  }
+};
 
 export default function GraphPage() {
   const { user } = useAuthStore();
@@ -25,7 +39,7 @@ export default function GraphPage() {
   const [hasMore, setHasMore] = useState(true);
   const itemsPerPage = 10;
 
-  // 컴포넌트 마운트 시 캐시 무효화 및 데이터 로드
+  // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
     if (!user) return;
     
@@ -34,23 +48,33 @@ export default function GraphPage() {
     setPage(1);
     setHasMore(true);
     
-    // 디버그 정보 추가
-    console.log('GraphPage 로딩 시작, part:', part, 'shouldRefresh:', localStorage.getItem('shouldRefreshGraph'));
+    console.log('그래프 페이지 데이터 로딩 시작:', part);
     
-    // 세션 저장 후 GraphPage로 이동한 경우 캐시 무효화
-    if (localStorage.getItem('shouldRefreshGraph') === 'true') {
-      console.log('캐시 무효화 실행');
-      invalidateCache(user.uid, part);
-      localStorage.removeItem('shouldRefreshGraph');
-    }
+    // 먼저 로컬 스토리지에서 최신 세션 가져오기
+    const latestSession = getLatestSessionFromLocalStorage(user.uid, part);
+    console.log('로컬 스토리지 최신 세션:', latestSession);
     
-    // 항상 최신 데이터를 표시하기 위해 forceRefresh=true로 설정
+    // Firebase에서 데이터 가져오기
     getProgressData(user.uid, part, itemsPerPage, 0, true)
       .then((rows) => {
-        console.log('받은 데이터 개수:', rows.length);
+        console.log('Firebase에서 가져온 데이터:', rows.length, '개');
+        
         if (rows.length > 0) {
-          setData(rows);  // reverse() 제거 - 이미 내림차순으로 정렬됨
+          // 로컬 스토리지에 최신 세션이 있고 Firebase 데이터에 없는 경우 병합
+          if (latestSession && !rows.some(r => 
+              r.weight === latestSession.weight && 
+              r.isSuccess === latestSession.isSuccess)) {
+            console.log('로컬 스토리지 데이터 병합');
+            setData([latestSession, ...rows]);
+          } else {
+            setData(rows);
+          }
           setHasMore(rows.length === itemsPerPage);
+        } else if (latestSession) {
+          // Firebase에 데이터가 없고 로컬 스토리지에만 있는 경우
+          console.log('로컬 스토리지 데이터만 사용');
+          setData([latestSession]);
+          setHasMore(false);
         } else {
           setData([]);
         }
@@ -58,8 +82,18 @@ export default function GraphPage() {
       })
       .catch(err => {
         console.error("데이터 로딩 중 오류:", err);
+        
+        // 오류 발생 시 로컬 스토리지 데이터로 폴백
+        if (latestSession) {
+          console.log('오류 발생, 로컬 스토리지 데이터 사용');
+          setData([latestSession]);
+        }
         setLoading(false);
+        setHasMore(false);
       });
+      
+    // 그래프 새로고침 플래그 제거
+    localStorage.removeItem('shouldRefreshGraph');
   }, [user, part]);
 
   // 더 많은 데이터 로드
@@ -68,54 +102,88 @@ export default function GraphPage() {
     
     setLoading(true);
     
-    getProgressData(user.uid, part, itemsPerPage, page).then((rows) => {
-      if (rows.length > 0) {
-        setData(prev => [...prev, ...rows]);  // reverse() 제거
-        setPage(prev => prev + 1);
-      }
-      setHasMore(rows.length === itemsPerPage);
-      setLoading(false);
-    }).catch(err => {
-      console.error("추가 데이터 로딩 중 오류:", err);
-      setLoading(false);
-    });
+    getProgressData(user.uid, part, itemsPerPage, page)
+      .then((rows) => {
+        if (rows.length > 0) {
+          setData(prev => [...prev, ...rows]);
+          setPage(prev => prev + 1);
+        }
+        setHasMore(rows.length === itemsPerPage);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("추가 데이터 로딩 중 오류:", err);
+        setLoading(false);
+      });
   };
 
   const chartData = useMemo(() => {
-    return {
-      labels: data.map((p) =>
-        new Date(p.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
-      ),
-      datasets: [
-        {
-          label: '무게(kg)',
-          data: data.map((p) => p.weight),
-          borderColor: '#3B82F6',
-          backgroundColor: '#3B82F6',
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          tension: 0.3
+    if (data.length === 0) return { labels: [], datasets: [] };
+    
+    try {
+      // 날짜 포맷 안전하게 처리
+      const labels = data.map(p => {
+        try {
+          const date = p.date instanceof Date ? p.date : new Date(p.date);
+          return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+        } catch (e) {
+          return '날짜 오류';
         }
-      ]
-    };
+      });
+      
+      return {
+        labels,
+        datasets: [
+          {
+            label: '무게(kg)',
+            data: data.map(p => p.weight),
+            borderColor: '#3B82F6',
+            backgroundColor: '#3B82F6',
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            tension: 0.3
+          }
+        ]
+      };
+    } catch (e) {
+      console.error('차트 데이터 생성 오류:', e);
+      return { labels: [], datasets: [] };
+    }
   }, [data]);
 
   const labelPlugin = {
     id: 'labelPlugin',
     afterDatasetDraw(chart: any) {
-      const { ctx } = chart;
-      const meta = chart.getDatasetMeta(0);
-      data.forEach((p, i) => {
-        const { x, y } = meta.data[i].tooltipPosition();
-        ctx.save();
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = p.isSuccess ? '#22c55e' : '#ef4444';
-        ctx.fillText(p.isSuccess ? '성공' : '실패', x, y - 10);
-        ctx.restore();
-      });
+      if (!chart || !chart.ctx || data.length === 0) return;
+      
+      try {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        
+        data.forEach((p, i) => {
+          if (!meta.data[i]) return;
+          
+          const { x, y } = meta.data[i].tooltipPosition();
+          ctx.save();
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = p.isSuccess ? '#22c55e' : '#ef4444';
+          ctx.fillText(p.isSuccess ? '성공' : '실패', x, y - 10);
+          ctx.restore();
+        });
+      } catch (e) {
+        console.error('라벨 플러그인 오류:', e);
+      }
     }
   };
+
+  // 데이터 디버깅
+  useEffect(() => {
+    console.log('현재 그래프 데이터:', data.length, '개');
+    if (data.length > 0) {
+      console.log('첫 번째 데이터:', data[0]);
+    }
+  }, [data]);
 
   return (
     <Layout>
