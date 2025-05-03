@@ -1,0 +1,216 @@
+// AdminFaqPage.tsx
+import { useState, useEffect } from 'react';
+import { collection, addDoc, updateDoc, doc, getDocs, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { ExercisePart, FAQ } from '../types';
+
+const AdminFaqPage = () => {
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newFaq, setNewFaq] = useState({
+    question: '',
+    answer: '',
+    videoUrl: '',
+    type: 'method' as 'method' | 'sets',
+    part: 'chest' as ExercisePart
+  });
+
+  // FAQ 불러오기
+  const loadFaqs = async () => {
+    setLoading(true);
+    const snapshot = await getDocs(collection(db, 'faqs'));
+    const faqList = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as FAQ[];
+    
+    setFaqs(faqList);
+    setLoading(false);
+  };
+
+  // 컴포넌트 마운트 시 FAQ 로드
+  useEffect(() => {
+    loadFaqs();
+  }, []);
+
+  // FAQ 추가
+  const addFaq = async () => {
+    try {
+      // type이 'sets'인 경우 part 필드 제거
+      const faqData = newFaq.type === 'sets' 
+        ? { ...newFaq, part: null } 
+        : newFaq;
+      
+      await addDoc(collection(db, 'faqs'), faqData);
+      setNewFaq({
+        question: '',
+        answer: '',
+        videoUrl: '',
+        type: 'method',
+        part: 'chest'
+      });
+      loadFaqs(); // 목록 새로고침
+    } catch (error) {
+      console.error("FAQ 추가 오류:", error);
+      alert("FAQ 추가 중 오류가 발생했습니다.");
+    }
+  };
+
+  // FAQ 삭제
+  const deleteFaq = async (id: string) => {
+    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    
+    try {
+      await deleteDoc(doc(db, 'faqs', id));
+      loadFaqs(); // 목록 새로고침
+    } catch (error) {
+      console.error("FAQ 삭제 오류:", error);
+      alert("FAQ 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 유튜브 검색 기능
+  const searchYouTube = async (keyword: string) => {
+    // YouTube 영상을 직접 검색해서 결과를 클립보드에 복사하도록
+    // 이 부분은 YouTube API를 사용하려면 추가 개발이 필요합니다
+    window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}`, '_blank');
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">FAQ 관리</h1>
+      
+      {/* 새 FAQ 추가 폼 */}
+      <div className="bg-white rounded shadow p-4 mb-6">
+        <h2 className="text-xl font-bold mb-4">새 FAQ 추가</h2>
+        
+        <div className="mb-4">
+          <label className="block mb-1">타입:</label>
+          <select 
+            className="w-full p-2 border rounded"
+            value={newFaq.type} 
+            onChange={(e) => setNewFaq({...newFaq, type: e.target.value as 'method' | 'sets'})}
+          >
+            <option value="method">운동 방법</option>
+            <option value="sets">운동 세트 수</option>
+          </select>
+        </div>
+        
+        {newFaq.type === 'method' && (
+          <div className="mb-4">
+            <label className="block mb-1">부위:</label>
+            <select 
+              className="w-full p-2 border rounded"
+              value={newFaq.part} 
+              onChange={(e) => setNewFaq({...newFaq, part: e.target.value as ExercisePart})}
+            >
+              <option value="chest">가슴</option>
+              <option value="back">등</option>
+              <option value="shoulder">어깨</option>
+              <option value="leg">하체</option>
+            </select>
+          </div>
+        )}
+        
+        <div className="mb-4">
+          <label className="block mb-1">질문:</label>
+          <input 
+            type="text" 
+            className="w-full p-2 border rounded"
+            value={newFaq.question} 
+            onChange={(e) => setNewFaq({...newFaq, question: e.target.value})}
+          />
+        </div>
+        
+        <div className="mb-4">
+          <label className="block mb-1">답변:</label>
+          <textarea 
+            className="w-full p-2 border rounded h-32"
+            value={newFaq.answer} 
+            onChange={(e) => setNewFaq({...newFaq, answer: e.target.value})}
+          />
+        </div>
+        
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-1">
+            <label className="block">유튜브 URL:</label>
+            <button 
+              onClick={() => searchYouTube(`${newFaq.part || ''} ${newFaq.question}`)}
+              className="text-sm text-blue-500"
+            >
+              유튜브 검색 열기
+            </button>
+          </div>
+          <input 
+            type="text" 
+            className="w-full p-2 border rounded"
+            value={newFaq.videoUrl} 
+            onChange={(e) => setNewFaq({...newFaq, videoUrl: e.target.value})}
+            placeholder="https://www.youtube.com/watch?v=..."
+          />
+        </div>
+        
+        <button 
+          onClick={addFaq}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          FAQ 추가
+        </button>
+      </div>
+      
+      {/* FAQ 목록 */}
+      <div className="bg-white rounded shadow p-4">
+        <h2 className="text-xl font-bold mb-4">FAQ 목록</h2>
+        
+        {loading ? (
+          <p className="text-center py-4">로딩 중...</p>
+        ) : faqs.length === 0 ? (
+          <p className="text-center py-4">등록된 FAQ가 없습니다.</p>
+        ) : (
+          <div className="space-y-4">
+            {faqs.map(faq => (
+              <div key={faq.id} className="border p-4 rounded">
+                <div className="flex justify-between mb-2">
+                  <div>
+                    <span className="px-2 py-1 bg-gray-200 text-xs rounded mr-2">
+                      {faq.type === 'method' ? '운동 방법' : '운동 세트'}
+                    </span>
+                    {faq.part && (
+                      <span className="px-2 py-1 bg-blue-100 text-xs rounded">
+                        {faq.part === 'chest' ? '가슴' : 
+                         faq.part === 'back' ? '등' : 
+                         faq.part === 'shoulder' ? '어깨' : '하체'}
+                      </span>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => deleteFaq(faq.id)}
+                    className="text-red-500 text-sm"
+                  >
+                    삭제
+                  </button>
+                </div>
+                
+                <h3 className="font-bold mb-2">{faq.question}</h3>
+                <p className="text-gray-700 mb-2">{faq.answer}</p>
+                
+                {faq.videoUrl && (
+                  <a 
+                    href={faq.videoUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 text-sm inline-block"
+                  >
+                    유튜브 영상 보기
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminFaqPage;
