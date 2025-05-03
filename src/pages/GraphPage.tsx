@@ -616,3 +616,121 @@ export default function GraphPage() {
     setAllData([]);
     setDisplayData([]);
   }, []);
+  
+  // 뷰 모드 변경 핸들러
+  const handleViewModeChange = useCallback((mode: 'recent' | 'all') => {
+    setViewMode(mode);
+    setSelectedSession(null);
+  }, []);
+  
+  // 날짜 범위 변경 핸들러
+  const handleDateRangeChange = useCallback((range: '3months' | '6months' | 'all') => {
+    setDateRange(range);
+    setSelectedSession(null);
+  }, []);
+  
+  // 최근 데이터(1개) 메모이제이션
+  const latestSession = useMemo(() => {
+    if (allData.length === 0) return null;
+    return allData[0]; // 이미 날짜순으로 정렬되어 있음
+  }, [allData]);
+
+  return (
+    <Layout>
+      <h1 className="text-2xl font-bold mb-4">운동 그래프</h1>
+      
+      <div className="flex justify-between items-center mb-4">
+        <select
+          value={part}
+          onChange={handlePartChange}
+          className="border px-3 py-2 rounded dark:bg-gray-700 dark:text-white"
+        >
+          {Object.entries(PART_LABEL).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={() => handleViewModeChange('recent')}
+            className={`px-3 py-2 rounded ${
+              viewMode === 'recent' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+            }`}
+          >
+            최근 기록
+          </button>
+          <button
+            onClick={() => handleViewModeChange('all')}
+            className={`px-3 py-2 rounded ${
+              viewMode === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+            }`}
+          >
+            전체 기록
+          </button>
+        </div>
+      </div>
+      
+      {loading && allData.length === 0 ? (
+        <LoadingState />
+      ) : viewMode === 'recent' ? (
+        // 최근 기록 모드 - 카드 형태로 표시
+        <RecentSessionCard data={latestSession} part={part} />
+      ) : (
+        // 전체 기록 모드 - 그래프로 표시
+        <>
+          <div className="flex justify-end mb-2 space-x-2">
+            <button
+              onClick={() => handleDateRangeChange('3months')}
+              className={`px-3 py-1 text-sm rounded ${
+                dateRange === '3months' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+              }`}
+            >
+              최근 3개월
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('6months')}
+              className={`px-3 py-1 text-sm rounded ${
+                dateRange === '6months' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+              }`}
+            >
+              최근 6개월
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('all')}
+              className={`px-3 py-1 text-sm rounded ${
+                dateRange === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
+              }`}
+            >
+              전체 기간
+            </button>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded shadow p-4 mb-4 h-72">
+            {displayData.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <Line
+                data={chartData}
+                options={chartOptions}
+                plugins={[labelPlugin, customTooltip]}
+              />
+            )}
+          </div>
+          
+          {/* 선택된 세션 상세 정보 */}
+          {selectedSession && <SetDetails session={selectedSession} />}
+          
+          {hasMore && viewMode === 'all' && (
+            <button 
+              onClick={loadMore} 
+              className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md w-full"
+              disabled={loading}
+            >
+              {loading ? '로딩 중...' : '더 많은 데이터 보기'}
+            </button>
+          )}
+        </>
+      )}
+    </Layout>
+  );
+}
