@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* react-hot-toast 스타일 */
+.toast {
+  border-radius: 8px;
+  padding: 16px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.toast-success {
+  background-color: #10b981;
+}
+
+.toast-error {
+  background-color: #ef4444;
+}
+
+.toast-loading {
+  background-color: #6b7280;
+}
+
+.toast-custom {
+  background-color: #3b82f6;
+}
+
 :root {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
   line-height: 1.5;
