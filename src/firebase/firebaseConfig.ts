@@ -26,12 +26,12 @@ for (const envVar of requiredEnvVars) {
 }
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'corevia-fitness-tracking.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'corevia-fitness-tracking',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'corevia-fitness-tracking.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789012',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789012:web:abcdef1234567890',
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-3HT5SN1CDP'
 };
 
