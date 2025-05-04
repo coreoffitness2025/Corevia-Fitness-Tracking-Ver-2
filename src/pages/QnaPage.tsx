@@ -32,7 +32,7 @@ const QnaPage = () => {
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
-            {tab === 'exercise' && '운동 Q&A'}
+            {tab === 'exercise' && '운동 정보'}
             {tab === 'nutrition' && '영양 정보'}
             {tab === 'handbook' && '핸드북'}
           </button>
