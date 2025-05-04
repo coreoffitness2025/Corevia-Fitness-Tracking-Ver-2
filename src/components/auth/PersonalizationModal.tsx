@@ -2,43 +2,35 @@ import { useState } from 'react';
 import { UserProfile } from '../../types';
 
 interface PersonalizationModalProps {
+  isOpen: boolean;
   onClose: () => void;
-  onSave: (profile: Omit<UserProfile, 'uid' | 'displayName' | 'email' | 'photoURL'>) => void;
+  onSave: (profile: Partial<UserProfile>) => void;
 }
 
-export default function PersonalizationModal({ onClose, onSave }: PersonalizationModalProps) {
-  const [height, setHeight] = useState(170);
-  const [weight, setWeight] = useState(70);
-  const [age, setAge] = useState(25);
+const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalProps) => {
+  const [height, setHeight] = useState<number>(0);
+  const [weight, setWeight] = useState<number>(0);
+  const [age, setAge] = useState<number>(0);
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [activityLevel, setActivityLevel] = useState<'low' | 'moderate' | 'high'>('moderate');
   const [fitnessGoal, setFitnessGoal] = useState<'loss' | 'maintain' | 'gain'>('maintain');
-  const [experience] = useState({
-    years: 0,
-    level: 'beginner' as const,
-    squat: {
-      maxWeight: 0,
-      maxReps: 0
-    }
-  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     onSave({
       height,
       weight,
       age,
       gender,
       activityLevel,
-      fitnessGoal,
-      experience
+      fitnessGoal
     });
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">프로필 설정</h2>
+    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isOpen ? '' : 'hidden'}`}>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4">프로필 설정</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -145,4 +137,6 @@ export default function PersonalizationModal({ onClose, onSave }: Personalizatio
       </div>
     </div>
   );
-}
+};
+
+export default PersonalizationModal;
