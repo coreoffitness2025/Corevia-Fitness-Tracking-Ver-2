@@ -5,7 +5,7 @@ import toast, { Toaster } from 'react-hot-toast';
 interface FoodLog {
   id: string;
   date: string;
-  time: string; // 시간 추가
+  time: string;
   imageData: string;
   timestamp: number;
 }
@@ -37,7 +37,6 @@ export default function FoodLogPage() {
       if (viewMode === 'day') {
         return parsed.filter(log => log.date === selectedDate);
       } else if (viewMode === 'week') {
-        // 선택한 날짜부터 7일 전까지의 데이터
         const startDate = new Date(selectedDate);
         startDate.setDate(startDate.getDate() - 6);
         return parsed.filter(log => {
@@ -45,7 +44,6 @@ export default function FoodLogPage() {
           return logDate >= startDate && logDate <= new Date(selectedDate);
         });
       } else if (viewMode === 'month') {
-        // 선택한 날짜의 월 데이터
         const [year, month] = selectedDate.split('-');
         return parsed.filter(log => {
           const [logYear, logMonth] = log.date.split('-');
@@ -189,7 +187,7 @@ export default function FoodLogPage() {
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          max={today} // 미래 날짜 선택 불가
+          max={today}
           className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
                    dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 
                    focus:ring-blue-500"
@@ -264,7 +262,7 @@ export default function FoodLogPage() {
 
       {/* 음식 이미지 그리드 */}
       {viewMode === 'day' ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
           {foodLogs.length === 0 ? (
             <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
               {selectedDate === today 
@@ -279,19 +277,19 @@ export default function FoodLogPage() {
                   alt={`${log.date} ${log.time} 음식`}
                   className="w-full aspect-square object-cover rounded-lg"
                 />
-                {/* 시간 워터마크 - 명확하게 보이도록 개선 */}
-                <div className="absolute inset-0 flex items-end justify-center pb-2">
-                  <span className="bg-black/70 text-white px-3 py-1 rounded-full text-lg font-bold">
+                {/* 시간 워터마크 - 작은 크기로 수정 */}
+                <div className="absolute inset-0 flex items-end justify-center pb-1">
+                  <span className="bg-black/70 text-white px-2 py-0.5 rounded-full text-xs font-medium">
                     {log.time}
                   </span>
                 </div>
                 <button
                   onClick={() => deleteFoodLog(log.id)}
-                  className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full 
+                  className="absolute top-1 right-1 p-1 bg-red-500 rounded-full 
                            opacity-0 group-hover:opacity-100 transition-opacity
                            text-white hover:bg-red-600"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
@@ -300,18 +298,18 @@ export default function FoodLogPage() {
           )}
         </div>
       ) : (
-        // 주별/월별 보기
-        <div className="space-y-6">
+        // 주별/월별 보기 - 더 작은 그리드
+        <div className="space-y-4">
           {Object.keys(groupedLogs).length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               이 기간에 기록된 음식이 없습니다
             </div>
           ) : (
             Object.entries(groupedLogs)
-              .sort((a, b) => b[0].localeCompare(a[0])) // 최신 날짜부터
+              .sort((a, b) => b[0].localeCompare(a[0]))
               .map(([date, logs]) => (
-                <div key={date} className="bg-white dark:bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">
+                <div key={date} className="bg-white dark:bg-gray-800 rounded-lg p-3">
+                  <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
                     {new Date(date).toLocaleDateString('ko-KR', { 
                       weekday: 'long', 
                       year: 'numeric', 
@@ -319,7 +317,7 @@ export default function FoodLogPage() {
                       day: 'numeric' 
                     })}
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {logs.map(log => (
                       <div key={log.id} className="relative">
                         <img
@@ -327,8 +325,8 @@ export default function FoodLogPage() {
                           alt={`${log.date} ${log.time} 음식`}
                           className="w-full aspect-square object-cover rounded-lg"
                         />
-                        <div className="absolute inset-0 flex items-end justify-center pb-2">
-                          <span className="bg-black/70 text-white px-3 py-1 rounded-full font-bold">
+                        <div className="absolute inset-0 flex items-end justify-center pb-1">
+                          <span className="bg-black/70 text-white px-2 py-0.5 rounded-full text-xs font-medium">
                             {log.time}
                           </span>
                         </div>
