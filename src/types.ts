@@ -96,7 +96,9 @@ export interface UserProfile {
     height: number;      // 키 (cm)
     weight: number;      // 몸무게 (kg)
     age: number;         // 나이
-    gender: 'male' | 'female';  // 성별
+    gender: 'male' | 'female' | 'other';  // 성별
+    activityLevel: 'low' | 'moderate' | 'high';  // 활동 수준
+    fitnessGoal: 'loss' | 'maintain' | 'gain';  // 목표
     experience: {        // 운동 경력
       years: number;     // 운동 경력 (년)
       level: 'beginner' | 'intermediate' | 'advanced';  // 운동 수준
@@ -106,4 +108,18 @@ export interface UserProfile {
       }
     }
   }
+}
+
+export interface UserSettings {
+  theme: 'light' | 'dark';
+  notifications: {
+    workoutReminder: boolean;
+    mealReminder: boolean;
+    progressUpdate: boolean;
+  };
+  units: {
+    weight: 'kg' | 'lbs';
+    height: 'cm' | 'ft';
+  };
+  language: 'ko' | 'en';
 }

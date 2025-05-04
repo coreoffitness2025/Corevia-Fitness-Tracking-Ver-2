@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/sessionStore';
 
+interface ExerciseSet {
+  reps: number;
+  weight: number;
+  isSuccess: boolean;
+}
+
 // 휴식 타이머 컴포넌트 프롭스
 interface RestTimerProps {
   setNumber: number;
@@ -93,11 +99,11 @@ const MainExerciseForm = ({ initialWeight = 20 }: MainExerciseFormProps) => {
           part: useSessionStore.getState().part!,
           weight,
           sets: [
-            { reps: 0, isSuccess: false },
-            { reps: 0, isSuccess: false },
-            { reps: 0, isSuccess: false },
-            { reps: 0, isSuccess: false },
-            { reps: 0, isSuccess: false }
+            { reps: 0, weight, isSuccess: false },
+            { reps: 0, weight, isSuccess: false },
+            { reps: 0, weight, isSuccess: false },
+            { reps: 0, weight, isSuccess: false },
+            { reps: 0, weight, isSuccess: false }
           ]
         }
       });

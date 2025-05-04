@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { DEFAULT_PROFILE } from '../../constants/profile';
 
 interface CalorieCalculatorProps {
   onComplete?: (result: any) => void;
@@ -63,13 +64,13 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
     if (userProfile) {
       setFormData(prev => ({
         ...prev,
-        gender: userProfile.gender,
-        age: userProfile.age.toString(),
-        height: userProfile.height.toString(),
-        weight: userProfile.weight.toString(),
-        activity: userProfile.activityLevel === 'low' ? '1.2' : 
-                 userProfile.activityLevel === 'moderate' ? '1.375' : '1.55',
-        goal: userProfile.fitnessGoal
+        gender: userProfile.profile.gender,
+        age: userProfile.profile.age.toString(),
+        height: userProfile.profile.height.toString(),
+        weight: userProfile.profile.weight.toString(),
+        activity: userProfile.profile.activityLevel === 'low' ? '1.2' : 
+                 userProfile.profile.activityLevel === 'moderate' ? '1.375' : '1.55',
+        goal: userProfile.profile.fitnessGoal
       }));
     }
   }, [userProfile]);
@@ -99,13 +100,16 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
     // 프로필 업데이트
     try {
       await updateProfile({
-        gender,
-        age: ageNum,
-        height: heightNum,
-        weight: weightNum,
-        activityLevel: activityNum === 1.2 ? 'low' : 
-                      activityNum === 1.375 ? 'moderate' : 'high',
-        fitnessGoal: goal
+        profile: {
+          height: heightNum,
+          weight: weightNum,
+          age: ageNum,
+          gender: gender as 'male' | 'female' | 'other',
+          activityLevel: activityNum === 1.2 ? 'low' : 
+                        activityNum === 1.375 ? 'moderate' : 'high',
+          fitnessGoal: goal as 'loss' | 'maintain' | 'gain',
+          experience: userProfile?.profile.experience || DEFAULT_PROFILE.experience
+        }
       });
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);

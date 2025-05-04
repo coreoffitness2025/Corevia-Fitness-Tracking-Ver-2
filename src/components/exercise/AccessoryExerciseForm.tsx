@@ -19,23 +19,47 @@ const AccessoryExerciseForm = ({ part }: AccessoryExercisesProps) => {
     name: accessoryExerciseOptions[part][0] || '',
     weight: 10,
     reps: 12,
-    sets: 3
+    sets: Array(3).fill({ reps: 12, weight: 10, isSuccess: false })
   });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setNewExercise({
-      ...newExercise,
-      [name]: name === 'name' ? value : Number(value)
-    });
+    if (name === 'name') {
+      setNewExercise({
+        ...newExercise,
+        name: value
+      });
+    } else if (name === 'weight' || name === 'reps') {
+      const numValue = Number(value);
+      setNewExercise({
+        ...newExercise,
+        [name]: numValue,
+        sets: newExercise.sets?.map(set => ({
+          ...set,
+          [name]: numValue
+        })) || []
+      });
+    } else if (name === 'sets') {
+      const numSets = Number(value);
+      setNewExercise({
+        ...newExercise,
+        sets: Array(numSets).fill({ 
+          reps: newExercise.reps || 12, 
+          weight: newExercise.weight || 10, 
+          isSuccess: false 
+        })
+      });
+    }
   };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addAccessoryExercise(newExercise);
     setNewExercise({
-      ...newExercise,
-      name: accessoryExerciseOptions[part][0] || ''
+      name: accessoryExerciseOptions[part][0] || '',
+      weight: 10,
+      reps: 12,
+      sets: Array(3).fill({ reps: 12, weight: 10, isSuccess: false })
     });
   };
   
@@ -52,7 +76,7 @@ const AccessoryExerciseForm = ({ part }: AccessoryExercisesProps) => {
                 <div>
                   <span className="font-medium">{exercise.name}</span>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {exercise.weight}kg x {exercise.reps}회 x {exercise.sets}세트
+                    {exercise.weight}kg x {exercise.reps}회 x {exercise.sets?.length || 0}세트
                   </p>
                 </div>
                 <button
@@ -124,7 +148,7 @@ const AccessoryExerciseForm = ({ part }: AccessoryExercisesProps) => {
             <input
               type="number"
               name="sets"
-              value={newExercise.sets}
+              value={newExercise.sets?.length || 0}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               min="1"

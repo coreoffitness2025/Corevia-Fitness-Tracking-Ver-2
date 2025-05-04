@@ -1,6 +1,4 @@
-import { initializeApp } from 'firebase/app';
 import {
-  getAuth,
   signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
@@ -13,7 +11,6 @@ import {
   updateProfile
 } from 'firebase/auth';
 import {
-  getFirestore,
   doc,
   getDoc,
   setDoc,
@@ -34,65 +31,39 @@ import { UserProfile, Session, FAQ, User, Progress } from '../types';
 import { auth, db } from '../firebase';
 import { ExercisePart } from '../types';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-
 /* ───────── 로그인 & 로그아웃 ───────── */
-export const signInWithGoogle = async (): Promise<User | null> => {
+export const signInWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
   try {
-    const provider = new GoogleAuthProvider();
-    const { user } = await signInWithPopup(auth, provider);
-    return {
-      uid: user.uid,
-      displayName: user.displayName || '사용자',
-      email: user.email || '',
-      photoURL: user.photoURL || undefined
-    };
-  } catch (e) {
-    console.error('Google 로그인 에러:', e);
-    throw new Error('Google 로그인에 실패했습니다. 다시 시도해주세요.');
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error) {
+    console.error('구글 로그인 실패:', error);
+    throw new Error('구글 로그인에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
-export const signOut = async (): Promise<void> => {
+export const signOut = async () => {
   try {
-    await auth.signOut();
-  } catch (e) {
-    console.error('로그아웃 에러:', e);
+    await firebaseSignOut(auth);
+  } catch (error) {
+    console.error('로그아웃 실패:', error);
     throw new Error('로그아웃에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
-export const signInWithEmail = async (email: string, password: string, rememberMe: boolean): Promise<User | null> => {
+export const signInWithEmail = async (email: string, password: string) => {
   try {
-    const auth = getAuth();
-    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-    const { user } = await signInWithEmailAndPassword(auth, email, password);
-    return {
-      uid: user.uid,
-      displayName: user.displayName || '사용자',
-      email: user.email || '',
-      photoURL: user.photoURL || undefined
-    };
-  } catch (e) {
-    console.error('이메일 로그인 에러:', e);
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
+  } catch (error) {
+    console.error('이메일 로그인 실패:', error);
     throw new Error('이메일 로그인에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
-export const signUpWithEmail = async (email: string, password: string, displayName: string): Promise<User | null> => {
+export const signUpWithEmail = async (email: string, password: string, displayName: string) => {
   try {
-    const auth = getAuth();
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     
     // 사용자 프로필 업데이트
@@ -100,14 +71,9 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
       await updateProfile(user, { displayName });
     }
     
-    return {
-      uid: user.uid,
-      displayName: displayName,
-      email: user.email || '',
-      photoURL: user.photoURL || undefined
-    };
-  } catch (e) {
-    console.error('회원가입 에러:', e);
+    return user;
+  } catch (error) {
+    console.error('회원가입 실패:', error);
     throw new Error('회원가입에 실패했습니다. 다시 시도해주세요.');
   }
 };
@@ -164,36 +130,22 @@ export const saveSession = async (session: Session): Promise<string> => {
 /* ───────── 최근 세션 조회 - 최적화 ───────── */
 const sessionCache: Record<string, { data: Session | null; timestamp: number }> = {};
 const CACHE_DURATION = 5 * 60 * 1000;
-export const getLastSession = async (
-  userId: string,
-  part: ExercisePart
-): Promise<Session | null> => {
+export const getLastSession = async (userId: string, part: string): Promise<Session | null> => {
   try {
-    const cacheKey = `${userId}-${part}`;
-    const now = Date.now();
-    if (sessionCache[cacheKey] && now - sessionCache[cacheKey].timestamp < CACHE_DURATION) {
-      return sessionCache[cacheKey].data;
-    }
+    const sessionsRef = collection(db, 'sessions');
     const q = query(
-      collection(db, 'sessions'),
+      sessionsRef,
       where('userId', '==', userId),
       where('part', '==', part),
       orderBy('date', 'desc'),
       limit(1)
     );
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      sessionCache[cacheKey] = { data: null, timestamp: now };
-      return null;
-    }
-    const docSnap = snap.docs[0];
-    const data = docSnap.data() as Omit<Session, 'id' | 'date'> & { date: Timestamp };
-    const session = { ...data, id: docSnap.id, date: data.date.toDate() };
-    sessionCache[cacheKey] = { data: session, timestamp: now };
-    return session;
-  } catch (e) {
-    console.error('최근 세션 조회 에러:', e);
-    return null;
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+    return querySnapshot.docs[0].data() as Session;
+  } catch (error) {
+    console.error('마지막 세션 조회 실패:', error);
+    throw new Error('마지막 세션 정보를 불러오는데 실패했습니다.');
   }
 };
 
@@ -229,86 +181,23 @@ export const invalidateCache = (userId: string, part?: ExercisePart) => {
 /* ───────── 진행 데이터 (그래프) ───────── */
 const lastDocMap: Record<string, QueryDocumentSnapshot | null> = {};
 const progressCache: Record<string, { data: Progress[]; timestamp: number }> = {};
-export const getProgressData = async (
-  uid: string,
-  part: ExercisePart,
-  limitCount = 10,
-  startAfterIndex = 0,
-  forceRefresh = false
-): Promise<Progress[]> => {
+export const getProgressData = async (userId: string, part: string): Promise<Progress[]> => {
   try {
-    const cacheKey = `${uid}-${part}-${startAfterIndex}-${limitCount}`;
-    const now = Date.now();
-    if (
-      startAfterIndex === 0 &&
-      progressCache[cacheKey] &&
-      now - progressCache[cacheKey].timestamp < CACHE_DURATION &&
-      !forceRefresh
-    ) {
-      return progressCache[cacheKey].data;
-    }
-    if (startAfterIndex === 0) lastDocMap[`${uid}-${part}`] = null;
-    let q = query(
-      collection(db, 'sessions'),
-      where('userId', '==', uid),
+    const progressRef = collection(db, 'progress');
+    const q = query(
+      progressRef,
+      where('userId', '==', userId),
       where('part', '==', part),
-      orderBy('date', 'desc'),
-      limit(limitCount)
+      orderBy('date', 'desc')
     );
-    const lastDocKey = `${uid}-${part}`;
-    if (startAfterIndex > 0 && lastDocMap[lastDocKey]) {
-      q = query(
-        collection(db, 'sessions'),
-        where('userId', '==', uid),
-        where('part', '==', part),
-        orderBy('date', 'desc'),
-        startAfter(lastDocMap[lastDocKey]),
-        limit(limitCount)
-      );
-    }
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      lastDocMap[lastDocKey] = snap.docs[snap.docs.length - 1];
-    }
-    const progressData = snap.docs.map(docSnap => {
-      const d = docSnap.data() as Session & { date: Timestamp };
-      const successSets = Array.isArray(d.mainExercise.sets)
-        ? d.mainExercise.sets.filter((s: any) => s.isSuccess).length
-        : 0;
-      return {
-        date: d.date.toDate(),
-        weight: d.mainExercise.weight,
-        successSets,
-        isSuccess: d.isAllSuccess || successSets === 5,
-        sets: d.mainExercise.sets,
-        // 메모 필드 추가
-        notes: d.notes || '',
-        // 전체 보조 운동 데이터 추가
-        accessoryExercises: Array.isArray(d.accessoryExercises)
-          ? d.accessoryExercises.map((a: any) => ({
-              name: a.name,
-              sets: Array.isArray(a.sets) ? a.sets : []
-            }))
-          : [],
-        // 기존 이름 배열은 그대로 유지
-        accessoryNames: Array.isArray(d.accessoryExercises)
-          ? d.accessoryExercises.map((a: any) => a.name)
-          : []
-      } as Progress;
-    });
-    if (startAfterIndex === 0) {
-      progressCache[cacheKey] = { data: progressData, timestamp: now };
-      try {
-        localStorage.setItem(
-          `progress-${cacheKey}`,
-          JSON.stringify({ data: progressData, timestamp: now })
-        );
-      } catch {}
-    }
-    return progressData;
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Progress[];
   } catch (error) {
-    console.error('진행 데이터 가져오기 오류:', error);
-    return [];
+    console.error('진행 상황 조회 실패:', error);
+    throw new Error('진행 상황 정보를 불러오는데 실패했습니다.');
   }
 };
 
@@ -385,34 +274,4 @@ export const saveProgress = async (progress: Omit<Progress, 'id'>) => {
   const progressRef = collection(db, 'progress');
   const docRef = await addDoc(progressRef, progress);
   return { ...progress, id: docRef.id };
-};
-
-export const getProgressData = async (userId: string, part: ExercisePart) => {
-  const progressRef = collection(db, 'progress');
-  const q = query(
-    progressRef,
-    where('userId', '==', userId),
-    where('part', '==', part),
-    orderBy('date', 'desc')
-  );
-  
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Progress[];
-};
-
-export const getLastSession = async (userId: string, part: ExercisePart) => {
-  const progressRef = collection(db, 'progress');
-  const q = query(
-    progressRef,
-    where('userId', '==', userId),
-    where('part', '==', part),
-    orderBy('date', 'desc'),
-    limit(1)
-  );
-  
-  const querySnapshot = await getDocs(q);
-  if (querySnapshot.empty) return null;
-  
-  const doc = querySnapshot.docs[0];
-  return { ...doc.data(), id: doc.id } as Progress;
 };

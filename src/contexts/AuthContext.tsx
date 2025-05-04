@@ -2,34 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebaseService';
-
-interface UserProfile {
-  name: string;
-  email: string;
-  height: number;
-  weight: number;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  settings?: {
-    darkMode: boolean;
-    notifications: {
-      workoutReminder: boolean;
-      mealReminder: boolean;
-      progressUpdate: boolean;
-    };
-    units: {
-      weight: 'kg' | 'lbs';
-      height: 'cm' | 'ft';
-    };
-    language: 'ko' | 'en';
-  };
-}
-
-interface UserSettings {
-  theme: 'light' | 'dark';
-  notifications: boolean;
-  language: string;
-}
+import { UserProfile, UserSettings } from '../types';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -43,17 +16,38 @@ interface AuthContextType {
 }
 
 const defaultProfile: UserProfile = {
-  gender: 'male',
-  age: 25,
-  height: 170,
-  weight: 70,
-  activityLevel: 'moderate',
-  fitnessGoal: 'maintain'
+  uid: '',
+  displayName: '',
+  email: '',
+  profile: {
+    height: 170,
+    weight: 70,
+    age: 25,
+    gender: 'male',
+    activityLevel: 'moderate',
+    fitnessGoal: 'maintain',
+    experience: {
+      years: 0,
+      level: 'beginner',
+      squat: {
+        maxWeight: 0,
+        maxReps: 0
+      }
+    }
+  }
 };
 
 const defaultSettings: UserSettings = {
   theme: 'light',
-  notifications: true,
+  notifications: {
+    workoutReminder: true,
+    mealReminder: true,
+    progressUpdate: true
+  },
+  units: {
+    weight: 'kg',
+    height: 'cm'
+  },
   language: 'ko'
 };
 
@@ -86,21 +80,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
           if (profileDoc.exists()) {
             const profileData = profileDoc.data();
-            setUserProfile({
-              ...defaultProfile,
-              ...profileData.profile
-            });
-            setUserSettings({
+            const userProfile: UserProfile = {
+              uid: user.uid,
+              displayName: user.displayName || '',
+              email: user.email || '',
+              photoURL: user.photoURL || undefined,
+              profile: {
+                ...defaultProfile.profile,
+                ...profileData.profile
+              }
+            };
+            const userSettings: UserSettings = {
               ...defaultSettings,
               ...profileData.settings
-            });
+            };
+            setUserProfile(userProfile);
+            setUserSettings(userSettings);
           } else {
             // 새 사용자일 경우 기본 프로필 생성
+            const newProfile: UserProfile = {
+              uid: user.uid,
+              displayName: user.displayName || '',
+              email: user.email || '',
+              photoURL: user.photoURL || undefined,
+              profile: defaultProfile.profile
+            };
             await setDoc(doc(db, 'users', user.uid), {
-              profile: defaultProfile,
+              profile: newProfile.profile,
               settings: defaultSettings
             });
-            setUserProfile(defaultProfile);
+            setUserProfile(newProfile);
             setUserSettings(defaultSettings);
           }
         } catch (err) {
@@ -121,11 +130,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
     
     try {
-      const updatedProfile = { ...userProfile, ...profile };
-      await setDoc(doc(db, 'users', currentUser.uid), {
-        profile: updatedProfile,
-        settings: userSettings
+      const userRef = doc(db, 'users', currentUser.uid);
+      const currentProfile = userProfile || defaultProfile;
+      
+      const updatedProfile: UserProfile = {
+        ...currentProfile,
+        ...profile,
+        uid: currentUser.uid,
+        displayName: currentUser.displayName || '',
+        email: currentUser.email || '',
+        photoURL: currentUser.photoURL || undefined,
+        profile: {
+          ...currentProfile.profile,
+          ...profile.profile
+        }
+      };
+
+      await setDoc(userRef, {
+        profile: updatedProfile.profile,
+        settings: userSettings || defaultSettings
       }, { merge: true });
+
       setUserProfile(updatedProfile);
     } catch (err) {
       setError('프로필 업데이트 중 오류가 발생했습니다.');
@@ -137,11 +162,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
     
     try {
-      const updatedSettings = { ...userSettings, ...settings };
-      await setDoc(doc(db, 'users', currentUser.uid), {
-        profile: userProfile,
+      const userRef = doc(db, 'users', currentUser.uid);
+      const currentSettings = userSettings || defaultSettings;
+      
+      const updatedSettings: UserSettings = {
+        ...currentSettings,
+        ...settings
+      };
+
+      await setDoc(userRef, {
         settings: updatedSettings
       }, { merge: true });
+
       setUserSettings(updatedSettings);
     } catch (err) {
       setError('설정 업데이트 중 오류가 발생했습니다.');
