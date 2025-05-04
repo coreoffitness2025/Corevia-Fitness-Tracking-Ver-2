@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import CalorieCalculator from './CalorieCalculator';
 import NutritionScout from './NutritionScout';
 
 const NutritionGuide = () => {
   const [activeTab, setActiveTab] = useState<'scout' | 'calculator'>('scout');
+  const { userProfile } = useAuth(); // Get userProfile from useAuth
 
   return (
     <div className="space-y-6">
@@ -29,10 +31,13 @@ const NutritionGuide = () => {
           칼로리 계산기
         </button>
       </div>
-
-      {activeTab === 'scout' ? <NutritionScout /> : <CalorieCalculator />}
+      {activeTab === 'scout' ? (
+        <NutritionScout />
+      ) : (
+        userProfile && <CalorieCalculator userProfile={userProfile} />
+      )}
     </div>
   );
 };
 
-export default NutritionGuide; 
+export default NutritionGuide;
