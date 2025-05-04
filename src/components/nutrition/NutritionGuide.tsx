@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import CalorieCalculator from './CalorieCalculator';
 import NutritionScout from './NutritionScout';
 
 const NutritionGuide = () => {
   const [activeTab, setActiveTab] = useState<'scout' | 'calculator'>('scout');
-  const { userProfile } = useAuth(); // Get userProfile from useAuth
+  const { userProfile } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -31,10 +31,15 @@ const NutritionGuide = () => {
           칼로리 계산기
         </button>
       </div>
+      
       {activeTab === 'scout' ? (
         <NutritionScout />
+      ) : userProfile ? (
+        <CalorieCalculator userProfile={userProfile} />
       ) : (
-        userProfile && <CalorieCalculator userProfile={userProfile} />
+        <div className="p-4 text-center text-gray-600 dark:text-gray-400">
+          <p>프로필을 완성하면 칼로리 계산기를 사용할 수 있습니다.</p>
+        </div>
       )}
     </div>
   );
