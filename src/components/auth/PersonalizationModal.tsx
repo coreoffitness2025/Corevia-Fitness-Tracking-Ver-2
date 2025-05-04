@@ -10,10 +10,10 @@ export default function PersonalizationModal({ onClose, onSave }: Personalizatio
   const [height, setHeight] = useState(170);
   const [weight, setWeight] = useState(70);
   const [age, setAge] = useState(25);
-  const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [activityLevel, setActivityLevel] = useState<'low' | 'moderate' | 'high'>('moderate');
   const [fitnessGoal, setFitnessGoal] = useState<'loss' | 'maintain' | 'gain'>('maintain');
-  const [experience, setExperience] = useState({
+  const [experience] = useState({
     years: 0,
     level: 'beginner' as const,
     squat: {
@@ -88,13 +88,12 @@ export default function PersonalizationModal({ onClose, onSave }: Personalizatio
             </label>
             <select
               value={gender}
-              onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
+              onChange={(e) => setGender(e.target.value as 'male' | 'female')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
               required
             >
               <option value="male">남성</option>
               <option value="female">여성</option>
-              <option value="other">기타</option>
             </select>
           </div>
           <div>
@@ -146,4 +145,4 @@ export default function PersonalizationModal({ onClose, onSave }: Personalizatio
       </div>
     </div>
   );
-} 
+}
