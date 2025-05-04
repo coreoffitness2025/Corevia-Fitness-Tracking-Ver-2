@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ExercisePart, FAQ } from '../../types';
-import { getFAQs } from '../../services/firebaseService';
+import { getFAQs } from '../../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 
 const partNames: Record<ExercisePart, string> = {

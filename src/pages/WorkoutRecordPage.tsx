@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, collection, query, where, getDocs, deleteDoc, setDoc } from 'firebase/firestore';
-import { db } from '../services/firebaseService';
+import { db } from '../firebase/firebaseConfig';
 import toast from 'react-hot-toast';
 import { ExercisePart, WorkoutSession, Progress } from '../types/workout';
 import Layout from '../components/common/Layout';

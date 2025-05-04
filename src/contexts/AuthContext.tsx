@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebaseService';
+import { auth, db, getUserProfile } from '../firebase/firebaseConfig';
 import { UserProfile, UserSettings } from '../types';
 
 interface AuthContextType {

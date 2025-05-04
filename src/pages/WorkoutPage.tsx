@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ExercisePart, Session, AccessoryExercise } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
-import { getLastSession } from '../services/firebaseService';
+import { getLastSession } from '../firebase/firebaseConfig';
 import Layout from '../components/common/Layout';
 import logoSrc from '../assets/Corevia-logo.png';
 import { addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';

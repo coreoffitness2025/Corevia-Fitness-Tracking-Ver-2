@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/common/Layout';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../services/firebaseService';
+import { db } from '../firebase/firebaseConfig';
 import toast from 'react-hot-toast';
 import { UserSettings } from '../types';
 
