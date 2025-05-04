@@ -26,6 +26,6 @@ export default defineConfig({
       }
     }
   },
-  base: '/Corevia-Fitness-Tracking-Ver-2/',
+  base: './',
   assetsInclude: ['**/*.csv']
 });
