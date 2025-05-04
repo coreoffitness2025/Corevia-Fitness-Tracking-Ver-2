@@ -70,7 +70,6 @@ export default function LoginPage() {
 
       {showPersonalization && userProfile && (
         <PersonalizationModal
-          user={userProfile}
           onClose={() => setShowPersonalization(false)}
           onSave={handleSaveProfile}
         />
