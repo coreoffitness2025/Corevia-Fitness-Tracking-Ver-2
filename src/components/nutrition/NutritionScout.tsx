@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Papa from 'papaparse';
 import toast from 'react-hot-toast';
 
 interface NutritionData {
@@ -10,6 +9,37 @@ interface NutritionData {
   '지방(g/100g)': number;
   '코멘트': string;
 }
+
+// CSV 파서 함수
+const parseCSV = (csvText: string) => {
+  const lines = csvText.split('\n');
+  const result = [];
+  
+  if (lines.length < 2) return [];
+  
+  const headers = lines[0].split(',').map(header => header.trim());
+  
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    
+    const values = lines[i].split(',');
+    const row: any = {};
+    
+    headers.forEach((header, j) => {
+      const value = values[j]?.trim();
+      // 숫자 값 변환 시도
+      if (!isNaN(parseFloat(value)) && isFinite(parseFloat(value))) {
+        row[header] = parseFloat(value);
+      } else {
+        row[header] = value;
+      }
+    });
+    
+    result.push(row);
+  }
+  
+  return result;
+};
 
 const NutritionScout = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,14 +60,10 @@ const NutritionScout = () => {
       if (!response.ok) throw new Error('CSV 파일을 불러올 수 없습니다.');
       
       const csvText = await response.text();
+      const data = parseCSV(csvText);
       
-      const result = Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        dynamicTyping: true
-      });
-      
-      const standardizedData = result.data.map((item: any) => {
+      // 데이터 표준화
+      const standardizedData = data.map((item: any) => {
         const standardizedItem: NutritionData = { ...item };
         
         // 요리명 필드 표준화
@@ -51,7 +77,7 @@ const NutritionScout = () => {
         return standardizedItem;
       });
       
-      setFoodData(standardizedData as NutritionData[]);
+      setFoodData(standardizedData);
     } catch (error) {
       toast.error('데이터를 불러올 수 없습니다.');
       console.error(error);
