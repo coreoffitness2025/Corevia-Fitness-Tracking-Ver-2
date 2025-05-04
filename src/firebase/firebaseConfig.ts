@@ -25,14 +25,25 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+// 환경 변수가 없을 때 사용할 기본값
+const defaultConfig = {
+  apiKey: 'AIzaSyDxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx',
+  authDomain: 'corevia-fitness-tracking.firebaseapp.com',
+  projectId: 'corevia-fitness-tracking',
+  storageBucket: 'corevia-fitness-tracking.firebasestorage.app',
+  messagingSenderId: '123456789012',
+  appId: '1:123456789012:web:abcdef1234567890',
+  measurementId: 'G-3HT5SN1CDP'
+};
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'corevia-fitness-tracking.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'corevia-fitness-tracking',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'corevia-fitness-tracking.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789012',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789012:web:abcdef1234567890',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-3HT5SN1CDP'
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || defaultConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || defaultConfig.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || defaultConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultConfig.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultConfig.appId,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || defaultConfig.measurementId
 };
 
 console.log('Firebase Config:', {
