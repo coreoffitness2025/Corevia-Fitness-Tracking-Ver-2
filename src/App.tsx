@@ -13,6 +13,12 @@ import WorkoutNewPage from './pages/WorkoutNewPage';
 import WorkoutEditPage from './pages/WorkoutEditPage';
 import WorkoutStartPage from './pages/WorkoutStartPage';
 import WorkoutResultPage from './pages/WorkoutResultPage';
+import WorkoutRecordPage from './pages/WorkoutRecordPage';
+import FoodLogPage from './pages/FoodLogPage';
+import FoodRecordPage from './pages/FoodRecordPage';
+import QnaPage from './pages/QnaPage';
+import SettingPage from './pages/SettingPage';
+import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 interface LayoutProps {
@@ -47,6 +53,12 @@ function App() {
               <Route path="/workout/:id/edit" element={<WorkoutEditPage />} />
               <Route path="/workout/:id/start" element={<WorkoutStartPage />} />
               <Route path="/workout/:id/result" element={<WorkoutResultPage />} />
+              <Route path="/workout/record" element={<WorkoutRecordPage />} />
+              <Route path="/food" element={<FoodLogPage />} />
+              <Route path="/food/record" element={<FoodRecordPage />} />
+              <Route path="/qna" element={<QnaPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/:tab" element={<SettingPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Layout>
