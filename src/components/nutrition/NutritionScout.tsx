@@ -56,7 +56,8 @@ const NutritionScout = () => {
   const loadCSV = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/assets/nutrition_db.csv');
+      // public 폴더에서 fetch하도록 경로 수정
+      const response = await fetch('/nutrition_db.csv');
       if (!response.ok) throw new Error('CSV 파일을 불러올 수 없습니다.');
       
       const csvText = await response.text();
@@ -100,8 +101,17 @@ const NutritionScout = () => {
       setSearchResult(result);
       setShowAutoComplete(false);
     } else {
-      setSearchResult(null);
-      toast.error('검색 결과가 없습니다.');
+      // 부분 일치 검색도 시도
+      const partialMatch = foodData.find(
+        item => item.요리명 && item.요리명.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      if (partialMatch) {
+        setSearchResult(partialMatch);
+        setShowAutoComplete(false);
+      } else {
+        setSearchResult(null);
+        toast.error('검색 결과가 없습니다.');
+      }
     }
   };
 
