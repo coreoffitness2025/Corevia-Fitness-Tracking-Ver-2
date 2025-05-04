@@ -5,18 +5,9 @@ import FeedbackPage from './pages/FeedbackPage';
 import GraphPage from './pages/GraphPage';
 import QnaPage from './pages/QnaPage';
 import SettingsPage from './pages/SettingsPage';
-import LoginPage from './pages/LoginPage'; // 로그인 페이지만 추가
-// import AdminFaqPage from './pages/AdminFaqPage'; // 주석 처리
+import LoginPage from './pages/LoginPage';
+import FoodLogPage from './pages/FoodLogPage'; // 새로 추가
 import ProtectedRoute from './components/auth/ProtectedRoute';
-// import { useAuthState } from 'react-firebase-hooks/auth'; // 주석 처리
-// import { getAuth } from 'firebase/auth'; // 주석 처리
-
-/*
-// 관리자 라우트 - 나중에 추가
-const AdminRoute = ({ children }: { children: JSX.Element }) => {
-  return children;
-};
-*/
 
 function App() {
   return (
@@ -72,19 +63,18 @@ function App() {
           }
         />
         
-        {/* 로그인 페이지 추가 */}
-        <Route path="/login" element={<LoginPage />} />
-        
-        {/* 관리자 페이지 - 나중에 추가 
+        {/* 새로 추가한 FoodLogPage */}
         <Route
-          path="/admin/faq"
+          path="/foodlog"
           element={
-            <AdminRoute>
-              <AdminFaqPage />
-            </AdminRoute>
+            <ProtectedRoute>
+              <FoodLogPage />
+            </ProtectedRoute>
           }
         />
-        */}
+        
+        {/* 로그인 페이지 */}
+        <Route path="/login" element={<LoginPage />} />
         
         {/* 잘못된 경로는 / 로 돌려보냄 */}
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -92,5 +82,4 @@ function App() {
     </Router>
   );
 }
-
 export default App;
