@@ -15,7 +15,7 @@ interface NutritionGoal {
 
 const FoodLog = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth(); // Added userProfile from useAuth
   const [showCalculator, setShowCalculator] = useState(false);
   const [nutritionGoal, setNutritionGoal] = useState<NutritionGoal | null>(null);
   const [loading, setLoading] = useState(true);
@@ -191,7 +191,12 @@ const FoodLog = () => {
                 ✕
               </button>
             </div>
-            <CalorieCalculator onComplete={handleCalculatorComplete} />
+            {userProfile && (
+              <CalorieCalculator 
+                userProfile={userProfile} 
+                onComplete={handleCalculatorComplete} 
+              />
+            )}
           </div>
         </div>
       )}
@@ -199,4 +204,4 @@ const FoodLog = () => {
   );
 };
 
-export default FoodLog; 
+export default FoodLog;
