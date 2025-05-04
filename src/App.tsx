@@ -16,6 +16,7 @@ import QnaPage from './pages/QnaPage';
 import SettingPage from './pages/SettingPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import BottomNavBar from './components/common/BottomNavBar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,10 +24,11 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background pb-16">
+      <main>
         {children}
       </main>
+      <BottomNavBar />
     </div>
   );
 };
