@@ -1,11 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import WorkoutPage from './pages/WorkoutPage';
 import WorkoutDetailPage from './pages/WorkoutDetailPage';
@@ -39,31 +36,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <ThemeProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/workout" element={<WorkoutPage />} />
-              <Route path="/workout/:id" element={<WorkoutDetailPage />} />
-              <Route path="/workout/new" element={<WorkoutNewPage />} />
-              <Route path="/workout/:id/edit" element={<WorkoutEditPage />} />
-              <Route path="/workout/:id/start" element={<WorkoutStartPage />} />
-              <Route path="/workout/:id/result" element={<WorkoutResultPage />} />
-              <Route path="/workout/record" element={<WorkoutRecordPage />} />
-              <Route path="/food" element={<FoodLogPage />} />
-              <Route path="/food/record" element={<FoodRecordPage />} />
-              <Route path="/qna" element={<QnaPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/settings/:tab" element={<SettingPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </Layout>
-        </ThemeProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/workout" element={<WorkoutPage />} />
+            <Route path="/workout/:id" element={<WorkoutDetailPage />} />
+            <Route path="/workout/new" element={<WorkoutNewPage />} />
+            <Route path="/workout/:id/edit" element={<WorkoutEditPage />} />
+            <Route path="/workout/:id/start" element={<WorkoutStartPage />} />
+            <Route path="/workout/:id/result" element={<WorkoutResultPage />} />
+            <Route path="/workout/record" element={<WorkoutRecordPage />} />
+            <Route path="/food" element={<FoodLogPage />} />
+            <Route path="/food/record" element={<FoodRecordPage />} />
+            <Route path="/qna" element={<QnaPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/:tab" element={<SettingPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Layout>
+      </ThemeProvider>
     </Router>
   );
 }

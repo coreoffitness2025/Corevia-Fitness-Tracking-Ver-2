@@ -9,36 +9,40 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface UseLoginProps {
-  onSuccess?: (user: User, profile: UserProfile) => void;
+  onSuccess?: (user: User | null, profile: UserProfile | null) => void;
   onError?: (error: Error) => void;
 }
 
-const createUserProfile = (user: User): UserProfile => ({
-  uid: user.uid,
-  displayName: user.displayName || '',
-  email: user.email || null,
-  photoURL: user.photoURL || null,
-  height: DEFAULT_PROFILE.height,
-  weight: DEFAULT_PROFILE.weight,
-  age: DEFAULT_PROFILE.age,
-  gender: DEFAULT_PROFILE.gender,
-  activityLevel: DEFAULT_PROFILE.activityLevel,
-  fitnessGoal: DEFAULT_PROFILE.fitnessGoal,
-  experience: DEFAULT_PROFILE.experience,
-  settings: {
-    darkMode: false,
-    notifications: {
-      workoutReminder: true,
-      mealReminder: true,
-      progressUpdate: true
-    },
-    units: {
-      weight: 'kg',
-      height: 'cm'
-    },
-    language: 'ko'
-  }
-});
+const createUserProfile = (user: User | null): UserProfile | null => {
+  if (!user) return null;
+  
+  return {
+    uid: user.uid,
+    displayName: user.displayName || '',
+    email: user.email || null,
+    photoURL: user.photoURL || null,
+    height: DEFAULT_PROFILE.height,
+    weight: DEFAULT_PROFILE.weight,
+    age: DEFAULT_PROFILE.age,
+    gender: DEFAULT_PROFILE.gender,
+    activityLevel: DEFAULT_PROFILE.activityLevel,
+    fitnessGoal: DEFAULT_PROFILE.fitnessGoal,
+    experience: DEFAULT_PROFILE.experience,
+    settings: {
+      darkMode: false,
+      notifications: {
+        workoutReminder: true,
+        mealReminder: true,
+        progressUpdate: true
+      },
+      units: {
+        weight: 'kg',
+        height: 'cm'
+      },
+      language: 'ko'
+    }
+  };
+};
 
 export const useLogin = ({ onSuccess, onError }: UseLoginProps = {}) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +52,12 @@ export const useLogin = ({ onSuccess, onError }: UseLoginProps = {}) => {
     try {
       setIsLoading(true);
       const result = await signInWithGoogle();
-      const user = result.user;
+      const user = result.user as User | null;
+      
+      if (!user) {
+        throw new Error('로그인에 실패했습니다.');
+      }
+      
       const existingProfile = await getUserProfile(user.uid);
       const profile = existingProfile || createUserProfile(user);
       
@@ -71,7 +80,12 @@ export const useLogin = ({ onSuccess, onError }: UseLoginProps = {}) => {
     try {
       setIsLoading(true);
       const result = await signInWithEmail(email, password);
-      const user = result.user;
+      const user = result.user as User | null;
+      
+      if (!user) {
+        throw new Error('로그인에 실패했습니다.');
+      }
+      
       const existingProfile = await getUserProfile(user.uid);
       const profile = existingProfile || createUserProfile(user);
       
