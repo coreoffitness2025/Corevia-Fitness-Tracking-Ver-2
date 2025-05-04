@@ -1,3 +1,4 @@
+import { User } from 'firebase/auth';
 import { useCallback } from 'react';
 import { signInWithGoogle, signInWithEmail, getUserProfile } from '../services/firebaseService';
 import { UserProfile } from '../types';
@@ -12,6 +13,20 @@ interface UseLoginProps {
   setShowPersonalization: (show: boolean) => void;
   navigate: (path: string) => void;
 }
+
+const createUserProfile = (user: User): UserProfile => ({
+  uid: user.uid,
+  displayName: user.displayName || '',
+  email: user.email || '',
+  photoURL: user.photoURL || undefined,
+  height: DEFAULT_PROFILE.height,
+  weight: DEFAULT_PROFILE.weight,
+  age: DEFAULT_PROFILE.age,
+  gender: DEFAULT_PROFILE.gender,
+  activityLevel: DEFAULT_PROFILE.activityLevel,
+  fitnessGoal: DEFAULT_PROFILE.fitnessGoal,
+  experience: DEFAULT_PROFILE.experience
+});
 
 export const useLogin = ({
   setIsLoading,
@@ -29,11 +44,7 @@ export const useLogin = ({
         throw new Error('로그인에 실패했습니다.');
       }
 
-      // 사용자 기본 정보 설정
-      const userProfile: UserProfile = {
-        ...userCredential,
-        profile: DEFAULT_PROFILE
-      };
+      const userProfile = createUserProfile(userCredential);
       setUser(userProfile);
 
       // 기존 프로필 확인
@@ -75,20 +86,16 @@ export const useLogin = ({
     }
   }, [setIsLoading, setUser, setUserProfile, setShowPersonalization, navigate]);
 
-  const handleEmailLogin = useCallback(async (email: string, password: string, rememberMe: boolean) => {
+  const handleEmailLogin = useCallback(async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const userCredential = await signInWithEmail(email, password, rememberMe);
+      const userCredential = await signInWithEmail(email, password);
       
       if (!userCredential) {
         throw new Error('로그인에 실패했습니다.');
       }
 
-      // 사용자 기본 정보 설정
-      const userProfile: UserProfile = {
-        ...userCredential,
-        profile: DEFAULT_PROFILE
-      };
+      const userProfile = createUserProfile(userCredential);
       setUser(userProfile);
 
       // 기존 프로필 확인

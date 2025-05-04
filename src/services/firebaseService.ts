@@ -27,9 +27,24 @@ import {
   QueryDocumentSnapshot,
   startAfter
 } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { UserProfile, Session, FAQ, User, Progress } from '../types';
-import { auth, db } from '../firebase';
 import { ExercisePart } from '../types';
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'your-api-key',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'your-auth-domain',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'your-project-id',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'your-storage-bucket',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || 'your-messaging-sender-id',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'your-app-id'
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 /* ───────── 로그인 & 로그아웃 ───────── */
 export const signInWithGoogle = async () => {
@@ -54,11 +69,11 @@ export const signOut = async () => {
 
 export const signInWithEmail = async (email: string, password: string) => {
   try {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
   } catch (error) {
-    console.error('이메일 로그인 실패:', error);
-    throw new Error('이메일 로그인에 실패했습니다. 다시 시도해주세요.');
+    console.error('이메일 로그인 에러:', error);
+    throw error;
   }
 };
 
@@ -215,14 +230,12 @@ export const getFAQs = async (part: ExercisePart, type: 'method' | 'sets' = 'met
     let q;
     
     if (type === 'method') {
-      // method 타입은 부위별 필터링
       q = query(
         faqCollection, 
         where('type', '==', 'method'),
         where('part', '==', part)
       );
     } else {
-      // sets 타입은 부위 관계없이 필터링
       q = query(
         faqCollection, 
         where('type', '==', 'sets')
@@ -238,7 +251,8 @@ export const getFAQs = async (part: ExercisePart, type: 'method' | 'sets' = 'met
         answer: data.answer,
         videoUrl: data.videoUrl,
         type: data.type,
-        part: data.part
+        part: data.part,
+        category: data.category || 'general'
       } as FAQ;
     });
   } catch (error) {

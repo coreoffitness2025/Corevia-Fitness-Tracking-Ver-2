@@ -1,10 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
-import { useLogin } from '../hooks/useLogin';
-import { useProfile } from '../hooks/useProfile';
-import { useAuthStore } from '../stores/authStore';
+import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/common/Layout';
 
 const LoginButton = ({ 
@@ -107,73 +106,98 @@ const EmailLoginForm = ({
 };
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [showPersonalization, setShowPersonalization] = useState<boolean>(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loginType, setLoginType] = useState<'google' | 'email'>('google');
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
+  const { updateProfile } = useAuth();
+  const [showPersonalization, setShowPersonalization] = useState(false);
+  const [newUserProfile, setNewUserProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { handleLogin, handleEmailLogin } = useLogin({
-    setIsLoading,
-    setUser,
-    setUserProfile,
-    setShowPersonalization,
-    navigate,
-  });
+  const handleAuthStateChange = async (user: User | null) => {
+    if (user) {
+      setIsLoading(true);
+      try {
+        const userProfile: UserProfile = {
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          height: 170,
+          weight: 70,
+          age: 25,
+          gender: 'male',
+          activityLevel: 'moderate',
+          fitnessGoal: 'maintain',
+          experience: {
+            years: 0,
+            level: 'beginner',
+            squat: {
+              maxWeight: 0,
+              maxReps: 0
+            }
+          }
+        };
+        setNewUserProfile(userProfile);
+        setShowPersonalization(true);
+      } catch (error) {
+        console.error('Error creating user profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
-  const { handleSaveProfile } = useProfile({
-    userProfile,
-    navigate,
-  });
+  const handlePersonalizationComplete = async (profile: Omit<UserProfile, 'uid' | 'displayName' | 'email' | 'photoURL'>) => {
+    if (newUserProfile) {
+      setIsLoading(true);
+      try {
+        const updatedProfile: UserProfile = {
+          ...newUserProfile,
+          ...profile
+        };
+        await updateProfile(updatedProfile);
+        setShowPersonalization(false);
+        navigate('/');
+      } catch (error) {
+        console.error('Error updating profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   return (
     <Layout>
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <LoginHeader />
-        
-        <div className="mb-6">
-          <button
-            onClick={() => setLoginType('google')}
-            className={`mr-4 px-4 py-2 rounded ${
-              loginType === 'google'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-            }`}
-          >
-            Google 로그인
-          </button>
-          <button
-            onClick={() => setLoginType('email')}
-            className={`px-4 py-2 rounded ${
-              loginType === 'email'
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-            }`}
-          >
-            이메일 로그인
-          </button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <LoginHeader />
+          <div className="space-y-4">
+            <LoginButton 
+              isLoading={isLoading} 
+              onClick={() => handleAuthStateChange({ uid: 'test', displayName: 'Test User', email: 'test@example.com' } as User)}
+            />
+            <EmailLoginForm 
+              onSubmit={async (email, password, rememberMe) => {
+                setIsLoading(true);
+                try {
+                  // TODO: Implement email login
+                  console.log('Email login:', { email, password, rememberMe });
+                } catch (error) {
+                  console.error('Login error:', error);
+                } finally {
+                  setIsLoading(false);
+                }
+              }} 
+              isLoading={isLoading} 
+            />
+          </div>
         </div>
-
-        {loginType === 'google' ? (
-          <LoginButton 
-            isLoading={isLoading} 
-            onClick={handleLogin} 
-          />
-        ) : (
-          <EmailLoginForm 
-            onSubmit={handleEmailLogin} 
-            isLoading={isLoading} 
+        {showPersonalization && (
+          <PersonalizationModal
+            onClose={() => setShowPersonalization(false)}
+            onSave={handlePersonalizationComplete}
           />
         )}
       </div>
-
-      {showPersonalization && userProfile && (
-        <PersonalizationModal
-          onClose={() => setShowPersonalization(false)}
-          onSave={handleSaveProfile}
-        />
-      )}
     </Layout>
   );
 }

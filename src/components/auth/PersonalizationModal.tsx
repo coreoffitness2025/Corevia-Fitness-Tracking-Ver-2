@@ -3,177 +3,147 @@ import { UserProfile } from '../../types';
 
 interface PersonalizationModalProps {
   onClose: () => void;
-  onSave: (profile: UserProfile['profile']) => void;
+  onSave: (profile: Omit<UserProfile, 'uid' | 'displayName' | 'email' | 'photoURL'>) => void;
 }
 
-const PersonalizationModal = ({ onClose, onSave }: PersonalizationModalProps) => {
-  const [profile, setProfile] = useState<UserProfile['profile']>({
-    height: 170,
-    weight: 70,
-    age: 25,
-    gender: 'male',
-    experience: {
-      years: 0,
-      level: 'beginner',
-      squat: {
-        maxWeight: 0,
-        maxReps: 0
-      }
+export default function PersonalizationModal({ onClose, onSave }: PersonalizationModalProps) {
+  const [height, setHeight] = useState(170);
+  const [weight, setWeight] = useState(70);
+  const [age, setAge] = useState(25);
+  const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
+  const [activityLevel, setActivityLevel] = useState<'low' | 'moderate' | 'high'>('moderate');
+  const [fitnessGoal, setFitnessGoal] = useState<'loss' | 'maintain' | 'gain'>('maintain');
+  const [experience, setExperience] = useState({
+    years: 0,
+    level: 'beginner' as const,
+    squat: {
+      maxWeight: 0,
+      maxReps: 0
     }
   });
 
-  const calculateExperienceLevel = (years: number, squat: { maxWeight: number, maxReps: number }) => {
-    if (years < 1 || squat.maxWeight < 60) return 'beginner';
-    if (years < 3 || squat.maxWeight < 100) return 'intermediate';
-    return 'advanced';
-  };
-
-  const handleSave = () => {
-    const level = calculateExperienceLevel(profile.experience.years, profile.experience.squat);
-    onSave({ ...profile, experience: { ...profile.experience, level } });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      height,
+      weight,
+      age,
+      gender,
+      activityLevel,
+      fitnessGoal,
+      experience
+    });
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">개인 정보 입력</h2>
-        
-        <div className="space-y-4">
-          {/* 신체 정보 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">키 (cm)</label>
-              <input
-                type="number"
-                value={profile.height}
-                onChange={(e) => setProfile({...profile, height: Number(e.target.value)})}
-                className="w-full p-2 border rounded"
-                min="100"
-                max="250"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">몸무게 (kg)</label>
-              <input
-                type="number"
-                value={profile.weight}
-                onChange={(e) => setProfile({...profile, weight: Number(e.target.value)})}
-                className="w-full p-2 border rounded"
-                min="30"
-                max="200"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">나이</label>
-              <input
-                type="number"
-                value={profile.age}
-                onChange={(e) => setProfile({...profile, age: Number(e.target.value)})}
-                className="w-full p-2 border rounded"
-                min="13"
-                max="100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">성별</label>
-              <select
-                value={profile.gender}
-                onChange={(e) => setProfile({...profile, gender: e.target.value as 'male' | 'female'})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="male">남성</option>
-                <option value="female">여성</option>
-              </select>
-            </div>
-          </div>
-
-          {/* 운동 경력 */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-4">프로필 설정</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">운동 경력 (년)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              키 (cm)
+            </label>
             <input
               type="number"
-              value={profile.experience.years}
-              onChange={(e) => setProfile({
-                ...profile,
-                experience: {
-                  ...profile.experience,
-                  years: Number(e.target.value)
-                }
-              })}
-              className="w-full p-2 border rounded"
-              min="0"
-              max="50"
+              value={height}
+              onChange={(e) => setHeight(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              min="100"
+              max="250"
+              required
             />
           </div>
-
-          {/* 스쿼트 기록 */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium">스쿼트 기록</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1">최대 중량 (kg)</label>
-                <input
-                  type="number"
-                  value={profile.experience.squat.maxWeight}
-                  onChange={(e) => setProfile({
-                    ...profile,
-                    experience: {
-                      ...profile.experience,
-                      squat: {
-                        ...profile.experience.squat,
-                        maxWeight: Number(e.target.value)
-                      }
-                    }
-                  })}
-                  className="w-full p-2 border rounded"
-                  min="0"
-                  max="300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">최대 횟수</label>
-                <input
-                  type="number"
-                  value={profile.experience.squat.maxReps}
-                  onChange={(e) => setProfile({
-                    ...profile,
-                    experience: {
-                      ...profile.experience,
-                      squat: {
-                        ...profile.experience.squat,
-                        maxReps: Number(e.target.value)
-                      }
-                    }
-                  })}
-                  className="w-full p-2 border rounded"
-                  min="0"
-                  max="50"
-                />
-              </div>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              몸무게 (kg)
+            </label>
+            <input
+              type="number"
+              value={weight}
+              onChange={(e) => setWeight(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              min="30"
+              max="200"
+              required
+            />
           </div>
-        </div>
-
-        <div className="mt-6 flex justify-end space-x-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            취소
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            저장
-          </button>
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              나이
+            </label>
+            <input
+              type="number"
+              value={age}
+              onChange={(e) => setAge(Number(e.target.value))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              min="13"
+              max="100"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              성별
+            </label>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              required
+            >
+              <option value="male">남성</option>
+              <option value="female">여성</option>
+              <option value="other">기타</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              활동 수준
+            </label>
+            <select
+              value={activityLevel}
+              onChange={(e) => setActivityLevel(e.target.value as 'low' | 'moderate' | 'high')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              required
+            >
+              <option value="low">낮음</option>
+              <option value="moderate">보통</option>
+              <option value="high">높음</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              목표
+            </label>
+            <select
+              value={fitnessGoal}
+              onChange={(e) => setFitnessGoal(e.target.value as 'loss' | 'maintain' | 'gain')}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              required
+            >
+              <option value="loss">체중 감소</option>
+              <option value="maintain">체중 유지</option>
+              <option value="gain">체중 증가</option>
+            </select>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              저장
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
-};
-
-export default PersonalizationModal; 
+} 

@@ -48,8 +48,12 @@ export interface Session {
 
 /* ---------- 일일 운동 기록 ---------- */
 export interface DailyWorkout {
+  id: string;
+  userId: string;
   date: string;
-  sessions: Session[];
+  sessions: string[];
+  totalDuration: number;
+  caloriesBurned: number;
 }
 
 /* ---------- 그래프용 진행 데이터 ---------- */
@@ -62,19 +66,18 @@ export interface Set {
 export interface Progress {
   id: string;
   userId: string;
-  part: ExercisePart;
   date: string;
   weight: number;
-  isSuccess: boolean;
-  sets: Set[];
+  bodyFat?: number;
+  measurements?: {
+    chest: number;
+    waist: number;
+    hips: number;
+    arms: number;
+    thighs: number;
+  };
+  photos?: string[];
   notes?: string;
-  accessoryExercises?: {
-    name: string;
-    sets: Set[];
-  }[];
-  isAllSuccess?: boolean;
-  successSets?: number;
-  accessoryNames?: string[];
 }
 
 /* ---------- FAQ ---------- */
@@ -82,37 +85,33 @@ export interface FAQ {
   id: string;
   question: string;
   answer: string;
-  videoUrl?: string;
-  type: 'method' | 'sets';
-  part?: ExercisePart;
+  category: string;
 }
 
 export interface UserProfile {
   uid: string;
-  displayName: string;
-  email: string;
-  photoURL?: string;
-  profile: {
-    height: number;
-    weight: number;
-    age: number;
-    gender: 'male' | 'female' | 'other';
-    activityLevel: 'low' | 'moderate' | 'high';
-    fitnessGoal: 'loss' | 'maintain' | 'gain';
-    experience: {
-      years: number;
-      level: 'beginner' | 'intermediate' | 'advanced';
-      squat: {
-        maxWeight: number;
-        maxReps: number;
-      };
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
+  height: number;
+  weight: number;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  activityLevel: 'low' | 'moderate' | 'high';
+  fitnessGoal: 'loss' | 'maintain' | 'gain';
+  experience: {
+    years: number;
+    level: 'beginner' | 'intermediate' | 'advanced';
+    squat: {
+      maxWeight: number;
+      maxReps: number;
     };
   };
-  settings?: UserSettings;
 }
 
 export interface UserSettings {
   theme: 'light' | 'dark';
+  darkMode: boolean;
   notifications: {
     workoutReminder: boolean;
     mealReminder: boolean;
@@ -125,7 +124,33 @@ export interface UserSettings {
   language: 'ko' | 'en';
 }
 
+export interface Exercise {
+  id: string;
+  name: string;
+  description: string;
+  muscleGroups: string[];
+  equipment: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  instructions: string[];
+  videoUrl?: string;
+}
+
+export interface WorkoutSession {
+  id: string;
+  userId: string;
+  date: string;
+  exercises: {
+    exerciseId: string;
+    sets: {
+      weight: number;
+      reps: number;
+      completed: boolean;
+    }[];
+  }[];
+  duration: number;
+  notes?: string;
+}
+
 export interface LayoutProps {
   children: React.ReactNode;
-  className?: string;
 }

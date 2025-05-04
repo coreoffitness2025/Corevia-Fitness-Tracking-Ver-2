@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebaseService';
@@ -17,28 +17,28 @@ interface AuthContextType {
 
 const defaultProfile: UserProfile = {
   uid: '',
-  displayName: '',
-  email: '',
-  profile: {
-    height: 170,
-    weight: 70,
-    age: 25,
-    gender: 'male',
-    activityLevel: 'moderate',
-    fitnessGoal: 'maintain',
-    experience: {
-      years: 0,
-      level: 'beginner',
-      squat: {
-        maxWeight: 0,
-        maxReps: 0
-      }
+  displayName: null,
+  email: null,
+  photoURL: null,
+  height: 170,
+  weight: 70,
+  age: 25,
+  gender: 'male',
+  activityLevel: 'moderate',
+  fitnessGoal: 'maintain',
+  experience: {
+    years: 0,
+    level: 'beginner',
+    squat: {
+      maxWeight: 0,
+      maxReps: 0
     }
   }
 };
 
 const defaultSettings: UserSettings = {
   theme: 'light',
+  darkMode: false,
   notifications: {
     workoutReminder: true,
     mealReminder: true,
@@ -51,20 +51,9 @@ const defaultSettings: UserSettings = {
   language: 'ko'
 };
 
-const AuthContext = createContext<AuthContextType>({
-  currentUser: null,
-  userProfile: null,
-  userSettings: null,
-  loading: true,
-  error: null,
-  updateProfile: async () => {},
-  updateSettings: async () => {},
-  logout: async () => {}
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => useContext(AuthContext);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
@@ -76,45 +65,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(user);
       if (user) {
         try {
-          // 사용자 프로필 로드
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
+          const settingsDoc = await getDoc(doc(db, 'settings', user.uid));
+          
           if (profileDoc.exists()) {
             const profileData = profileDoc.data();
             const userProfile: UserProfile = {
               uid: user.uid,
-              displayName: user.displayName || '',
-              email: user.email || '',
-              photoURL: user.photoURL || undefined,
-              profile: {
-                ...defaultProfile.profile,
-                ...profileData.profile
-              }
-            };
-            const userSettings: UserSettings = {
-              ...defaultSettings,
-              ...profileData.settings
+              displayName: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL,
+              height: profileData.height || defaultProfile.height,
+              weight: profileData.weight || defaultProfile.weight,
+              age: profileData.age || defaultProfile.age,
+              gender: profileData.gender || defaultProfile.gender,
+              activityLevel: profileData.activityLevel || defaultProfile.activityLevel,
+              fitnessGoal: profileData.fitnessGoal || defaultProfile.fitnessGoal,
+              experience: profileData.experience || defaultProfile.experience
             };
             setUserProfile(userProfile);
+          } else {
+            const newProfile: UserProfile = {
+              ...defaultProfile,
+              uid: user.uid,
+              displayName: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL
+            };
+            await setDoc(doc(db, 'users', user.uid), newProfile);
+            setUserProfile(newProfile);
+          }
+
+          if (settingsDoc.exists()) {
+            const settingsData = settingsDoc.data();
+            const userSettings: UserSettings = {
+              theme: settingsData.theme || defaultSettings.theme,
+              darkMode: settingsData.darkMode || defaultSettings.darkMode,
+              notifications: settingsData.notifications || defaultSettings.notifications,
+              units: settingsData.units || defaultSettings.units,
+              language: settingsData.language || defaultSettings.language
+            };
             setUserSettings(userSettings);
           } else {
-            // 새 사용자일 경우 기본 프로필 생성
-            const newProfile: UserProfile = {
-              uid: user.uid,
-              displayName: user.displayName || '',
-              email: user.email || '',
-              photoURL: user.photoURL || undefined,
-              profile: defaultProfile.profile
-            };
-            await setDoc(doc(db, 'users', user.uid), {
-              profile: newProfile.profile,
-              settings: defaultSettings
-            });
-            setUserProfile(newProfile);
+            await setDoc(doc(db, 'settings', user.uid), defaultSettings);
             setUserSettings(defaultSettings);
           }
         } catch (err) {
-          setError('프로필 로드 중 오류가 발생했습니다.');
-          console.error('프로필 로드 실패:', err);
+          setError(err instanceof Error ? err.message : 'An error occurred');
         }
       } else {
         setUserProfile(null);
@@ -128,7 +125,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (profile: Partial<UserProfile>) => {
     if (!currentUser) return;
-    
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const currentProfile = userProfile || defaultProfile;
@@ -137,32 +133,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...currentProfile,
         ...profile,
         uid: currentUser.uid,
-        displayName: currentUser.displayName || '',
-        email: currentUser.email || '',
-        photoURL: currentUser.photoURL || undefined,
-        profile: {
-          ...currentProfile.profile,
-          ...profile.profile
-        }
+        displayName: currentUser.displayName,
+        email: currentUser.email,
+        photoURL: currentUser.photoURL
       };
 
-      await setDoc(userRef, {
-        profile: updatedProfile.profile,
-        settings: userSettings || defaultSettings
-      }, { merge: true });
-
+      await setDoc(userRef, updatedProfile, { merge: true });
       setUserProfile(updatedProfile);
     } catch (err) {
-      setError('프로필 업데이트 중 오류가 발생했습니다.');
-      console.error('프로필 업데이트 실패:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
   const updateSettings = async (settings: Partial<UserSettings>) => {
     if (!currentUser) return;
-    
     try {
-      const userRef = doc(db, 'users', currentUser.uid);
+      const settingsRef = doc(db, 'settings', currentUser.uid);
       const currentSettings = userSettings || defaultSettings;
       
       const updatedSettings: UserSettings = {
@@ -170,19 +156,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...settings
       };
 
-      await setDoc(userRef, {
-        settings: updatedSettings
-      }, { merge: true });
-
+      await setDoc(settingsRef, updatedSettings, { merge: true });
       setUserSettings(updatedSettings);
     } catch (err) {
-      setError('설정 업데이트 중 오류가 발생했습니다.');
-      console.error('설정 업데이트 실패:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+      setCurrentUser(null);
+      setUserProfile(null);
+      setUserSettings(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
   };
 
   const value = {
@@ -198,7 +187,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
-}; 
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+} 
