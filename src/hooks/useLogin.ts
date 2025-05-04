@@ -17,8 +17,8 @@ interface UseLoginProps {
 const createUserProfile = (user: User): UserProfile => ({
   uid: user.uid,
   displayName: user.displayName || '',
-  email: user.email || '',
-  photoURL: user.photoURL || undefined,
+  email: user.email || null,
+  photoURL: user.photoURL || null,
   height: DEFAULT_PROFILE.height,
   weight: DEFAULT_PROFILE.weight,
   age: DEFAULT_PROFILE.age,
@@ -144,4 +144,4 @@ export const useLogin = ({
     handleLogin,
     handleEmailLogin
   };
-}; 
+};
