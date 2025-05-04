@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Layout from '../components/common/Layout';
 import ExerciseFaq from '../components/exercise/ExerciseFaq';
 import NutritionScout from '../components/nutrition/NutritionScout';
+import NutritionGuide from '../components/nutrition/NutritionGuide';
 import Handbook from '../components/handbook/Handbook';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
 
@@ -43,7 +44,12 @@ const QnaPage = () => {
 
       {/* 탭 콘텐츠 */}
       {activeTab === 'exercise' && <ExerciseFaq />}
-      {activeTab === 'nutrition' && <NutritionScout />}
+      {activeTab === 'nutrition' && (
+        <>
+          <NutritionGuide />
+          <NutritionScout />
+        </>
+      )}
       {activeTab === 'handbook' && <Handbook />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

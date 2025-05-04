@@ -53,90 +53,68 @@ const defaultSettings: UserSettings = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user: User | null) => {
-      setCurrentUser(user);
-      if (user) {
-        try {
-          const profileDoc = await getDoc(doc(db, 'users', user.uid));
-          const settingsDoc = await getDoc(doc(db, 'settings', user.uid));
-          
-          if (profileDoc.exists()) {
-            const profileData = profileDoc.data();
-            const userProfile: UserProfile = {
-              uid: user.uid,
-              displayName: user.displayName,
-              email: user.email,
-              photoURL: user.photoURL,
-              height: profileData.height || defaultProfile.height,
-              weight: profileData.weight || defaultProfile.weight,
-              age: profileData.age || defaultProfile.age,
-              gender: profileData.gender || defaultProfile.gender,
-              activityLevel: profileData.activityLevel || defaultProfile.activityLevel,
-              fitnessGoal: profileData.fitnessGoal || defaultProfile.fitnessGoal,
-              experience: profileData.experience || defaultProfile.experience
-            };
-            setUserProfile(userProfile);
-          } else {
-            const newProfile: UserProfile = {
-              ...defaultProfile,
-              uid: user.uid,
-              displayName: user.displayName,
-              email: user.email,
-              photoURL: user.photoURL
-            };
-            await setDoc(doc(db, 'users', user.uid), newProfile);
-            setUserProfile(newProfile);
-          }
-
-          if (settingsDoc.exists()) {
-            const settingsData = settingsDoc.data();
-            const userSettings: UserSettings = {
-              darkMode: settingsData.darkMode || defaultSettings.darkMode,
-              notifications: settingsData.notifications || defaultSettings.notifications,
-              units: settingsData.units || defaultSettings.units,
-              language: settingsData.language || defaultSettings.language
-            };
-            setUserSettings(userSettings);
-          } else {
-            await setDoc(doc(db, 'settings', user.uid), defaultSettings);
-            setUserSettings(defaultSettings);
-          }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'An error occurred');
-        }
-      } else {
-        setUserProfile(null);
-        setUserSettings(null);
+  const [currentUser, setCurrentUser] = useState<User | null>({
+    uid: 'dummy-user-id',
+    email: 'test@example.com',
+    displayName: '테스트 사용자',
+    photoURL: null,
+    emailVerified: true,
+    isAnonymous: false,
+    metadata: {},
+    providerData: [],
+    refreshToken: '',
+    tenantId: null,
+    phoneNumber: null,
+    providerId: 'password',
+    delete: async () => {},
+    getIdToken: async () => '',
+    getIdTokenResult: async () => ({ 
+      token: '', 
+      expirationTime: '', 
+      authTime: '', 
+      issuedAtTime: '', 
+      signInProvider: null, 
+      signInSecondFactor: null,
+      claims: {} 
+    }),
+    reload: async () => {},
+    toJSON: () => ({}),
+  } as User);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>({
+    ...defaultProfile,
+    uid: 'dummy-user-id',
+    displayName: '테스트 사용자',
+    email: 'test@example.com',
+    height: 175,
+    weight: 70,
+    age: 28,
+    gender: 'male',
+    activityLevel: 'moderate',
+    fitnessGoal: 'maintain',
+    experience: {
+      years: 2,
+      level: 'intermediate',
+      squat: {
+        maxWeight: 100,
+        maxReps: 8
       }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
+    }
+  });
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(defaultSettings);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const updateProfile = async (profile: Partial<UserProfile>) => {
     if (!currentUser) return;
     try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      const currentProfile = userProfile || defaultProfile;
-      
       const updatedProfile: UserProfile = {
-        ...currentProfile,
+        ...(userProfile || defaultProfile),
         ...profile,
         uid: currentUser.uid,
         displayName: currentUser.displayName,
         email: currentUser.email,
         photoURL: currentUser.photoURL
       };
-
-      await setDoc(userRef, updatedProfile, { merge: true });
       setUserProfile(updatedProfile);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -146,15 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateSettings = async (settings: Partial<UserSettings>) => {
     if (!currentUser) return;
     try {
-      const settingsRef = doc(db, 'settings', currentUser.uid);
-      const currentSettings = userSettings || defaultSettings;
-      
       const updatedSettings: UserSettings = {
-        ...currentSettings,
+        ...(userSettings || defaultSettings),
         ...settings
       };
-
-      await setDoc(settingsRef, updatedSettings, { merge: true });
       setUserSettings(updatedSettings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -163,7 +136,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
       setCurrentUser(null);
       setUserProfile(null);
       setUserSettings(null);
