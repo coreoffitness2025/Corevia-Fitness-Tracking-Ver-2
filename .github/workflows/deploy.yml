@@ -1,25 +1,21 @@
 name: Deploy to GitHub Pages
-
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: "pages"
   cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4  # v3에서 v4로 업데이트
       
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -47,7 +43,6 @@ jobs:
         uses: actions/upload-pages-artifact@v2
         with:
           path: './dist'
-
   deploy:
     environment:
       name: github-pages
