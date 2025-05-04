@@ -28,45 +28,109 @@ try {
   }
 } catch (error) {
   console.error('Firebase initialization error:', error);
-  throw new Error('Firebase 초기화 실패');
+  // Firebase 초기화 실패 시에도 앱이 계속 실행되도록 함
+  app = null;
 }
 
-if (!app) {
-  throw new Error('Firebase 앱이 초기화되지 않았습니다');
-}
+// Firebase 서비스 객체 생성 (초기화 실패 시에도 빈 객체 반환)
+export const auth = app ? getAuth(app) : {
+  currentUser: null,
+  onAuthStateChanged: (callback: (user: User | null) => void) => {
+    callback(null);
+    return () => {};
+  }
+} as any;
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-export const analytics = getAnalytics(app);
+export const db = app ? getFirestore(app) : {
+  collection: () => ({
+    doc: () => ({
+      get: async () => ({ exists: false, data: () => null }),
+      set: async () => {},
+      update: async () => {}
+    }),
+    where: () => ({
+      orderBy: () => ({
+        limit: () => ({
+          get: async () => ({ docs: [] })
+        })
+      })
+    })
+  })
+} as any;
+
+export const storage = app ? getStorage(app) : {} as any;
+export const analytics = app ? getAnalytics(app) : {} as any;
 
 // 인증 관련 함수들
 export const signInWithGoogle = async () => {
+  if (!app) {
+    console.log('Firebase가 초기화되지 않았습니다. 더미 로그인을 수행합니다.');
+    return { user: null };
+  }
   const provider = new GoogleAuthProvider();
   return signInWithPopup(auth, provider);
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
+  if (!app) {
+    console.log('Firebase가 초기화되지 않았습니다. 더미 로그인을 수행합니다.');
+    return { user: null };
+  }
   return signInWithEmailAndPassword(auth, email, password);
 };
 
 export const logout = async () => {
+  if (!app) {
+    console.log('Firebase가 초기화되지 않았습니다. 더미 로그아웃을 수행합니다.');
+    return;
+  }
   return signOut(auth);
 };
 
 // 사용자 프로필 관련 함수들
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  if (!app) {
+    console.log('Firebase가 초기화되지 않았습니다. 더미 프로필을 반환합니다.');
+    return {
+      uid: userId,
+      displayName: '테스트 사용자',
+      email: 'test@example.com',
+      photoURL: null,
+      height: 170,
+      weight: 70,
+      age: 25,
+      gender: 'male',
+      activityLevel: 'moderate',
+      fitnessGoal: 'maintain',
+      experience: {
+        years: 0,
+        level: 'beginner',
+        squat: {
+          maxWeight: 0,
+          maxReps: 0
+        }
+      }
+    };
+  }
   const userDoc = await getDoc(doc(db, 'users', userId));
   return userDoc.exists() ? userDoc.data() as UserProfile : null;
 };
 
 export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
+  if (!app) {
+    console.log('Firebase가 초기화되지 않았습니다. 프로필 업데이트를 건너뜁니다.');
+    return;
+  }
   const userRef = doc(db, 'users', userId);
   await setDoc(userRef, profile, { merge: true });
 };
 
 // 운동 기록 관련 함수들
 export const getLastSession = async (userId: string): Promise<Session | null> => {
+  if (!app) {
+    console.log('Firebase가 초기화되지 않았습니다. 더미 세션을 반환합니다.');
+    return null;
+  }
   const sessionsRef = collection(db, 'workoutSessions');
   const q = query(
     sessionsRef,
@@ -95,6 +159,29 @@ export const getLastSession = async (userId: string): Promise<Session | null> =>
 
 // FAQ 관련 함수들
 export const getFAQs = async (part?: ExercisePart, type?: 'method' | 'sets'): Promise<FAQ[]> => {
+  if (!app) {
+    console.log('Firebase가 초기화되지 않았습니다. 더미 FAQ를 반환합니다.');
+    return [
+      {
+        id: '1',
+        question: '운동을 시작하기 전에 준비해야 할 것은 무엇인가요?',
+        answer: '운동 전에는 충분한 준비운동과 스트레칭이 필요합니다.',
+        videoUrl: undefined,
+        type: 'method',
+        part: 'chest',
+        category: 'chest'
+      },
+      {
+        id: '2',
+        question: '운동 후에는 어떤 식사를 해야 하나요?',
+        answer: '운동 후에는 단백질과 탄수화물을 골고루 섭취하는 것이 좋습니다.',
+        videoUrl: undefined,
+        type: 'method',
+        part: 'chest',
+        category: 'chest'
+      }
+    ];
+  }
   try {
     const faqsRef = collection(db, 'faqs');
     let q = query(faqsRef, orderBy('order'));
