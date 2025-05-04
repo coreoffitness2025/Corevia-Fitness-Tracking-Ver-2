@@ -93,21 +93,22 @@ export interface UserProfile {
   email: string;
   photoURL?: string;
   profile: {
-    height: number;      // 키 (cm)
-    weight: number;      // 몸무게 (kg)
-    age: number;         // 나이
-    gender: 'male' | 'female' | 'other';  // 성별
-    activityLevel: 'low' | 'moderate' | 'high';  // 활동 수준
-    fitnessGoal: 'loss' | 'maintain' | 'gain';  // 목표
-    experience: {        // 운동 경력
-      years: number;     // 운동 경력 (년)
-      level: 'beginner' | 'intermediate' | 'advanced';  // 운동 수준
-      squat: {           // 스쿼트 기록
-        maxWeight: number;  // 최대 중량 (kg)
-        maxReps: number;    // 최대 횟수
-      }
-    }
-  }
+    height: number;
+    weight: number;
+    age: number;
+    gender: 'male' | 'female' | 'other';
+    activityLevel: 'low' | 'moderate' | 'high';
+    fitnessGoal: 'loss' | 'maintain' | 'gain';
+    experience: {
+      years: number;
+      level: 'beginner' | 'intermediate' | 'advanced';
+      squat: {
+        maxWeight: number;
+        maxReps: number;
+      };
+    };
+  };
+  settings?: UserSettings;
 }
 
 export interface UserSettings {
@@ -122,4 +123,9 @@ export interface UserSettings {
     height: 'cm' | 'ft';
   };
   language: 'ko' | 'en';
+}
+
+export interface LayoutProps {
+  children: React.ReactNode;
+  className?: string;
 }
