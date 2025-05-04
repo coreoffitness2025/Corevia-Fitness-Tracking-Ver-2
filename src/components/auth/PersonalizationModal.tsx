@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { UserProfile } from '../../types';
 
 interface PersonalizationModalProps {
-  user: UserProfile;
   onClose: () => void;
   onSave: (profile: UserProfile['profile']) => void;
 }
 
-const PersonalizationModal = ({ user, onClose, onSave }: PersonalizationModalProps) => {
+const PersonalizationModal = ({ onClose, onSave }: PersonalizationModalProps) => {
   const [profile, setProfile] = useState<UserProfile['profile']>({
     height: 170,
     weight: 70,

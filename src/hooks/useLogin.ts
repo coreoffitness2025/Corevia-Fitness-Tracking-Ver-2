@@ -23,21 +23,21 @@ export const useLogin = ({
   const handleLogin = useCallback(async () => {
     try {
       setIsLoading(true);
-      const user = await signInWithGoogle();
+      const userCredential = await signInWithGoogle();
       
-      if (!user) {
+      if (!userCredential) {
         throw new Error('로그인에 실패했습니다.');
       }
 
       // 사용자 기본 정보 설정
       const userProfile: UserProfile = {
-        ...user,
+        ...userCredential,
         profile: DEFAULT_PROFILE
       };
       setUser(userProfile);
 
       // 기존 프로필 확인
-      const existingProfile = await getUserProfile(user.uid);
+      const existingProfile = await getUserProfile(userCredential.uid);
       
       if (existingProfile) {
         setUserProfile(existingProfile);
