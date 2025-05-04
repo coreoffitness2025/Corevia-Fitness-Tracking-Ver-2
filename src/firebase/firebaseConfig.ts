@@ -19,7 +19,7 @@ for (const envVar of requiredEnvVars) {
   const value = import.meta.env[envVar];
   console.log(`${envVar}: ${value ? '✅' : '❌'}`);
   if (!value) {
-    console.error(`Missing required environment variable: ${envVar}`);
+    console.warn(`Missing environment variable: ${envVar}`);
   }
 }
 
