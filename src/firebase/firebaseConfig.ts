@@ -5,52 +5,18 @@ import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 import { UserProfile, FAQ, ExercisePart, Session } from '../types';
 
-// Firebase 환경 변수 확인 및 디버깅
-const requiredEnvVars = [
-  'VITE_FIREBASE_API_KEY',
-  'VITE_FIREBASE_AUTH_DOMAIN',
-  'VITE_FIREBASE_PROJECT_ID',
-  'VITE_FIREBASE_STORAGE_BUCKET',
-  'VITE_FIREBASE_MESSAGING_SENDER_ID',
-  'VITE_FIREBASE_APP_ID',
-  'VITE_FIREBASE_MEASUREMENT_ID'
-];
-
-console.log('Checking environment variables...');
-for (const envVar of requiredEnvVars) {
-  const value = import.meta.env[envVar];
-  console.log(`${envVar}: ${value ? '✅' : '❌'}`);
-  if (!value) {
-    console.warn(`Missing environment variable: ${envVar}`);
-  }
-}
-
-// 환경 변수가 없을 때 사용할 기본값
-const defaultConfig = {
-  apiKey: 'AIzaSyDxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx',
-  authDomain: 'corevia-fitness-tracking.firebaseapp.com',
-  projectId: 'corevia-fitness-tracking',
-  storageBucket: 'corevia-fitness-tracking.firebasestorage.app',
-  messagingSenderId: '123456789012',
-  appId: '1:123456789012:web:abcdef1234567890',
-  measurementId: 'G-3HT5SN1CDP'
-};
-
+// Firebase 설정
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || defaultConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultConfig.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || defaultConfig.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || defaultConfig.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultConfig.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultConfig.appId,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || defaultConfig.measurementId
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: "corevia-fitness-tracking.firebaseapp.com",
+  projectId: "corevia-fitness-tracking",
+  storageBucket: "corevia-fitness-tracking.appspot.com",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: "G-3HT5SN1CDP"
 };
 
-console.log('Firebase Config:', {
-  ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey ? '***' : 'missing'
-});
-
+// Firebase 초기화
 let app;
 try {
   if (getApps().length === 0) {
