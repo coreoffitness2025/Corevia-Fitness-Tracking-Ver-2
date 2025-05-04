@@ -1,16 +1,17 @@
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { HomeIcon, ChartBarIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon, FireIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, FireIcon, ChartBarIcon, ClipboardDocumentListIcon, QuestionMarkCircleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 const BottomNavBar = () => {
   const location = useLocation();
 
   const navItems = [
     { path: '/', icon: HomeIcon, label: '홈' },
-    { path: '/workout', icon: UserGroupIcon, label: '운동하기' },
-    { path: '/workout-record', icon: ChartBarIcon, label: '통계' },
-    { path: '/foodlog', icon: FireIcon, label: '식단' },
-    { path: '/qna', icon: ChatBubbleLeftRightIcon, label: 'Q&A' },
-    { path: '/settings', icon: Cog6ToothIcon, label: '설정' }
+    { path: '/workout', icon: FireIcon, label: '운동하기' },
+    { path: '/workout-record', icon: ChartBarIcon, label: '운동 기록' },
+    { path: '/foodlog', icon: ClipboardDocumentListIcon, label: '식단 기록' },
+    { path: '/qna', icon: QuestionMarkCircleIcon, label: 'Q&A' },
+    { path: '/settings', icon: Cog6ToothIcon, label: '설정' },
   ];
 
   return (
@@ -25,7 +26,7 @@ const BottomNavBar = () => {
               className={`flex flex-col items-center justify-center w-full h-full ${
                 isActive
                   ? 'text-blue-500 dark:text-blue-400'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               <item.icon className="w-6 h-6" />

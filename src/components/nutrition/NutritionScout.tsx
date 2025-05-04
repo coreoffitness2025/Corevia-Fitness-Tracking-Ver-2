@@ -10,9 +10,48 @@ interface NutritionData {
   '코멘트': string;
 }
 
+// 기본 영양소 데이터
+const DEFAULT_FOOD_DATA: NutritionData[] = [
+  {
+    '요리명': '닭가슴살',
+    '탄수화물(g/100g)': 0,
+    '단백질(g/100g)': 23,
+    '지방(g/100g)': 2,
+    '코멘트': '고단백 저지방 식품'
+  },
+  {
+    '요리명': '현미밥',
+    '탄수화물(g/100g)': 35,
+    '단백질(g/100g)': 3,
+    '지방(g/100g)': 1,
+    '코멘트': '고탄수화물 식품'
+  },
+  {
+    '요리명': '연어',
+    '탄수화물(g/100g)': 0,
+    '단백질(g/100g)': 20,
+    '지방(g/100g)': 13,
+    '코멘트': '고단백 고지방 식품'
+  },
+  {
+    '요리명': '고구마',
+    '탄수화물(g/100g)': 30,
+    '단백질(g/100g)': 1.5,
+    '지방(g/100g)': 0.1,
+    '코멘트': '고탄수화물 저지방 식품'
+  },
+  {
+    '요리명': '계란',
+    '탄수화물(g/100g)': 1,
+    '단백질(g/100g)': 12,
+    '지방(g/100g)': 10,
+    '코멘트': '고단백 식품'
+  }
+];
+
 const NutritionScout = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [foodData, setFoodData] = useState<NutritionData[]>([]);
+  const [foodData, setFoodData] = useState<NutritionData[]>(DEFAULT_FOOD_DATA);
   const [searchResult, setSearchResult] = useState<NutritionData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<NutritionData[]>([]);
@@ -25,93 +64,46 @@ const NutritionScout = () => {
   const loadCSV = async () => {
     setIsLoading(true);
     try {
-      // 여러 경로 시도
-      const paths = [
-        '/nutrition_db.csv',
-        './nutrition_db.csv',
-        // import.meta.env 대신 기본 경로 사용
-        'nutrition_db.csv',
-        // 절대 경로로도 시도
-        window.location.origin + '/nutrition_db.csv'
-      ];
+      // 개발 환경과 배포 환경에서 모두 작동하는 경로 구성
+      const baseUrl = import.meta.env.DEV ? '' : import.meta.env.BASE_URL;
+      console.log('Base URL:', baseUrl); // 디버깅용
       
-      let csvText = '';
-      let foundPath = '';
+      const response = await fetch(`${baseUrl}nutrition_db.csv`);
+      console.log('Response status:', response.status); // 디버깅용
       
-      // 모든 경로 시도
-      for (const path of paths) {
-        try {
-          console.log(`시도 중: ${path}`);
-          const response = await fetch(path);
-          if (response.ok) {
-            csvText = await response.text();
-            foundPath = path;
-            console.log('성공적으로 로드한 경로:', path);
-            break;
-          }
-          console.log(`실패 - ${path}: ${response.status}`);
-        } catch (err) {
-          console.log(`에러 - ${path}:`, err);
-        }
-      }
-      
-      if (!csvText) {
-        throw new Error('모든 경로에서 파일을 찾을 수 없습니다');
-      }
-      
-      // CSV 파싱
-      const lines = csvText.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
-      
-      console.log('CSV 헤더:', headers);
-      
-      const data = [];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
+      if (response.ok) {
+        const csvText = await response.text();
+        console.log('CSV first line:', csvText.split('\n')[0]); // 디버깅용
         
-        const values = lines[i].split(',');
-        const row: any = {};
+        const lines = csvText.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
         
-        headers.forEach((header, j) => {
-          const value = values[j]?.trim() || '';
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
           
-          // 숫자로 변환 시도
-          if (!isNaN(parseFloat(value)) && isFinite(parseFloat(value))) {
-            row[header] = parseFloat(value);
-          } else {
-            row[header] = value;
-          }
-        });
-        
-        data.push(row);
-      }
-      
-      console.log('파싱된 데이터 수:', data.length);
-      console.log('첫 번째 행:', data[0]);
-      
-      // 데이터 표준화
-      const standardizedData = data.map((item: any) => {
-        const standardizedItem: NutritionData = { ...item };
-        
-        // 요리명 필드 표준화
-        const possibleKeys = ['요리명', '음식명', '이름', '식품명', 'food_name', 'name'];
-        for (const key of possibleKeys) {
-          if (item[key]) {
-            standardizedItem['요리명'] = item[key];
-            console.log('요리명 필드 발견:', key, '=', item[key]);
-            break;
-          }
+          const values = lines[i].split(',');
+          const row: any = {};
+          
+          headers.forEach((header, j) => {
+            const value = values[j]?.trim() || '';
+            row[header] = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
+          });
+          
+          data.push(row);
         }
         
-        return standardizedItem;
-      }) as NutritionData[];
-      
-      setFoodData(standardizedData);
-      toast.success(`데이터 로드 성공 (${standardizedData.length}개 항목)`);
-      
+        setFoodData([...DEFAULT_FOOD_DATA, ...data]);
+        toast.success(`데이터 로드 성공 (${data.length}개 항목)`);
+      } else {
+        console.error('CSV 로드 실패:', response.status, response.statusText); // 디버깅용
+        setFoodData(DEFAULT_FOOD_DATA);
+        toast.error(`데이터를 불러올 수 없습니다. (${response.status})`);
+      }
     } catch (error) {
-      console.error('전체 에러:', error);
-      toast.error(`데이터를 불러올 수 없습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      console.error('CSV 로드 에러:', error); // 디버깅용
+      setFoodData(DEFAULT_FOOD_DATA);
+      toast.error('데이터를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }

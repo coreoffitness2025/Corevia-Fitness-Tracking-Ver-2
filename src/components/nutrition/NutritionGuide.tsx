@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import CalorieCalculator from './CalorieCalculator';
 import NutritionScout from './NutritionScout';
 
@@ -7,26 +7,26 @@ const NutritionGuide = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex space-x-4 mb-6">
+      <div className="flex space-x-4">
         <button
           onClick={() => setActiveTab('scout')}
-          className={`px-4 py-2 rounded ${
+          className={`px-4 py-2 rounded-lg ${
             activeTab === 'scout'
               ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
           }`}
         >
-          영양 정보 검색
+          영양소 스카우트
         </button>
         <button
           onClick={() => setActiveTab('calculator')}
-          className={`px-4 py-2 rounded ${
+          className={`px-4 py-2 rounded-lg ${
             activeTab === 'calculator'
               ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
           }`}
         >
-          목표 칼로리 계산
+          칼로리 계산기
         </button>
       </div>
 

@@ -1,17 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import toast from 'react-hot-toast';
 
 interface CalorieCalculatorProps {
   onComplete?: (result: any) => void;
-}
-
-interface UserProfile {
-  gender: string;
-  age: number;
-  height: number;
-  weight: number;
 }
 
 const PROTEIN_SOURCES = [
@@ -42,7 +34,7 @@ const FAT_SOURCES = [
 ];
 
 const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
-  const { currentUser } = useAuth();
+  const { userProfile, updateProfile } = useAuth();
   const [formData, setFormData] = useState({
     gender: 'male',
     age: '',
@@ -68,32 +60,19 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
   } | null>(null);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!currentUser) return;
-
-      try {
-        const userDoc = doc(db, 'users', currentUser.uid);
-        const userData = await getDoc(userDoc);
-        
-        if (userData.exists()) {
-          const profile = userData.data().profile as UserProfile;
-          if (profile) {
-            setFormData(prev => ({
-              ...prev,
-              gender: profile.gender || 'male',
-              age: profile.age?.toString() || '',
-              height: profile.height?.toString() || '',
-              weight: profile.weight?.toString() || ''
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('사용자 프로필 로딩 실패:', error);
-      }
-    };
-
-    fetchUserProfile();
-  }, [currentUser]);
+    if (userProfile) {
+      setFormData(prev => ({
+        ...prev,
+        gender: userProfile.gender,
+        age: userProfile.age.toString(),
+        height: userProfile.height.toString(),
+        weight: userProfile.weight.toString(),
+        activity: userProfile.activityLevel === 'low' ? '1.2' : 
+                 userProfile.activityLevel === 'moderate' ? '1.375' : '1.55',
+        goal: userProfile.fitnessGoal
+      }));
+    }
+  }, [userProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -104,11 +83,11 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
     return arr[Math.floor(Math.random() * arr.length)];
   };
 
-  const calculate = () => {
+  const calculate = async () => {
     const { gender, age, height, weight, activity, goal } = formData;
     
     if (!age || !height || !weight) {
-      alert("나이, 키, 체중을 모두 입력해주세요.");
+      toast.error("나이, 키, 체중을 모두 입력해주세요.");
       return;
     }
 
@@ -116,6 +95,21 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
     const heightNum = parseFloat(height);
     const weightNum = parseFloat(weight);
     const activityNum = parseFloat(activity);
+
+    // 프로필 업데이트
+    try {
+      await updateProfile({
+        gender,
+        age: ageNum,
+        height: heightNum,
+        weight: weightNum,
+        activityLevel: activityNum === 1.2 ? 'low' : 
+                      activityNum === 1.375 ? 'moderate' : 'high',
+        fitnessGoal: goal
+      });
+    } catch (error) {
+      console.error('프로필 업데이트 실패:', error);
+    }
 
     let bmr;
     if (gender === "male") {
@@ -167,6 +161,7 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
     if (onComplete) {
       onComplete(result);
     }
+    toast.success('칼로리 계산이 완료되었습니다!');
   };
 
   return (
@@ -239,16 +234,17 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
             onChange={handleChange}
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           >
-            <option value="1.2">운동을 하지 않는다 (거의 좌식, 운동X)</option>
-            <option value="1.3">보통이다 (주3회 운동)</option>
-            <option value="1.5">많다 (주5회 이상 운동)</option>
-            <option value="1.7">아주 많다 (주7회 이상 운동)</option>
+            <option value="1.2">거의 운동하지 않음</option>
+            <option value="1.375">가벼운 운동 (주 1-3일)</option>
+            <option value="1.55">보통 운동 (주 3-5일)</option>
+            <option value="1.725">격렬한 운동 (주 6-7일)</option>
+            <option value="1.9">매우 격렬한 운동 (하루 2회)</option>
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            목적
+            목표
           </label>
           <select
             name="goal"
@@ -256,111 +252,39 @@ const CalorieCalculator = ({ onComplete }: CalorieCalculatorProps) => {
             onChange={handleChange}
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           >
-            <option value="gain">증량</option>
-            <option value="loss">감량</option>
+            <option value="loss">체중 감량</option>
+            <option value="maintain">체중 유지</option>
+            <option value="gain">체중 증가</option>
           </select>
         </div>
       </div>
 
       <button
         onClick={calculate}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
         계산하기
       </button>
 
       {result && (
-        <div className="space-y-6">
-          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">📊 결과 요약</h3>
-            <div className="space-y-2">
-              <p><b>하루 기초 소비 칼로리:</b> {result.bmr.toFixed(0)} kcal</p>
-              <p><b>유지 칼로리:</b> 약 {result.rawTdee.toFixed(0)} kcal</p>
-              <p><b>한국인 기준(15%↓):</b> 약 {result.tdee.toFixed(0)} kcal</p>
-              <p><b>목표 섭취 칼로리 ({formData.goal === "gain" ? "증량" : "감량"}):</b> {result.targetCal.toFixed(0)} kcal</p>
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <h3 className="text-lg font-medium mb-4">계산 결과</h3>
+          <div className="space-y-2">
+            <p>기초 대사량 (BMR): {Math.round(result.bmr)} kcal</p>
+            <p>활동 대사량 (TDEE): {Math.round(result.tdee)} kcal</p>
+            <p>목표 칼로리: {Math.round(result.targetCal)} kcal</p>
+            <div className="mt-4">
+              <h4 className="font-medium mb-2">권장 식사 구성 (1회)</h4>
+              <p>단백질: {result.mealProtein}g</p>
+              <p>탄수화물: {result.mealCarbs}g</p>
+              <p>지방: {result.mealFats}g</p>
             </div>
-          </div>
-
-          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">🍽 1끼당 권장 섭취량(하루 3끼 식사 기준)</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              간식으로 단백질 보충제(1스쿱 - 단백질 30g) 섭취 가정
-            </p>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-700 p-4 rounded-lg text-center">
-                <p className="font-semibold">단백질</p>
-                <p className="text-2xl">{result.mealProtein}g</p>
-              </div>
-              <div className="bg-white dark:bg-gray-700 p-4 rounded-lg text-center">
-                <p className="font-semibold">탄수화물</p>
-                <p className="text-2xl">{result.mealCarbs}g</p>
-              </div>
-              <div className="bg-white dark:bg-gray-700 p-4 rounded-lg text-center">
-                <p className="font-semibold">지방</p>
-                <p className="text-2xl">{result.mealFats}g</p>
-              </div>
+            <div className="mt-4">
+              <h4 className="font-medium mb-2">예시 식사</h4>
+              <p>단백질: {result.exampleMeal.protein.name} {Math.round(result.exampleMeal.protein.amount)}g</p>
+              <p>탄수화물: {result.exampleMeal.carb.name} {Math.round(result.exampleMeal.carb.amount)}g</p>
+              <p>지방: {result.exampleMeal.fat.name} {Math.round(result.exampleMeal.fat.amount)}g</p>
             </div>
-          </div>
-
-          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">🍽 1끼 예시 식단 조합</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="font-semibold">단백질 식품:</p>
-                <p>{result.exampleMeal.protein.name} 약 {result.exampleMeal.protein.amount.toFixed(0)}g</p>
-              </div>
-              <div>
-                <p className="font-semibold">탄수화물 식품:</p>
-                <p>{result.exampleMeal.carb.name} 약 {result.exampleMeal.carb.amount.toFixed(0)}g</p>
-              </div>
-              <div>
-                <p className="font-semibold">지방 식품:</p>
-                <p>{result.exampleMeal.fat.name} 약 {result.exampleMeal.fat.amount.toFixed(0)}g</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">🥩 영양소 급원</h3>
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-semibold mb-2">단백질 급원</h4>
-                <ul className="space-y-1">
-                  {PROTEIN_SOURCES.map((item, index) => (
-                    <li key={index} className="text-sm">
-                      {item.name} - 100g 기준: 단백질 {item.protein}g / 탄수화물 {item.carbs}g / 지방 {item.fat}g
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">탄수화물 급원</h4>
-                <ul className="space-y-1">
-                  {CARB_SOURCES.map((item, index) => (
-                    <li key={index} className="text-sm">
-                      {item.name} - 100g 기준: 단백질 {item.protein}g / 탄수화물 {item.carbs}g / 지방 {item.fat}g
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">지방 급원</h4>
-                <ul className="space-y-1">
-                  {FAT_SOURCES.map((item, index) => (
-                    <li key={index} className="text-sm">
-                      {item.name} - 100g 기준: 단백질 {item.protein}g / 탄수화물 {item.carbs}g / 지방 {item.fat}g
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            <p>※ 본 계산기는 예시용입니다. 개인별 건강 상태나 목표에 따라 실제 섭취 계획은 달라집니다.</p>
-            <p>※ 본 계산기는 Harris-Benedict 공식으로 산출된 칼로리를 기준으로, 한국인에 맞춰 조정하여 15% 낮추어 칼로리를 계산하였습니다.</p>
-            <p>※ 실제 식단을 유지해보며 2~4주간 체중 변화 추세를 확인 후, 조금씩 보정하여 본인의 유지 칼로리를 찾을 수 있도록 해야 합니다.</p>
-            <p>※ 단백질 보충제(1스쿱=30g 단백질)를 하루에 한번 간식으로 섭취했다고 가정하고, 나머지 식단 구성량을 계산합니다.</p>
           </div>
         </div>
       )}

@@ -25,7 +25,8 @@ export default defineConfig({
           'chart-vendor': ['chart.js', 'react-chartjs-2']
         }
       }
-    },
+    }
   },
   base: '/Corevia-Fitness-Tracking-Ver-2/',
+  assetsInclude: ['**/*.csv']
 });
