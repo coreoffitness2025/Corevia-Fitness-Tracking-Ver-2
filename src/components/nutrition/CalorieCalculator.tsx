@@ -1,28 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { UserProfile } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
 
 interface CalorieCalculatorProps {
   userProfile: UserProfile;
   onComplete?: (result: { calories: number; protein: number; carbs: number; fat: number }) => void;
 }
-
-const DEFAULT_PROFILE = {
-  height: 170,
-  weight: 70,
-  age: 25,
-  gender: 'male' as const,
-  activityLevel: 'moderate' as const,
-  fitnessGoal: 'maintain' as const,
-  experience: {
-    years: 0,
-    level: 'beginner' as const,
-    squat: {
-      maxWeight: 0,
-      maxReps: 0
-    }
-  }
-};
 
 const CalorieCalculator: React.FC<CalorieCalculatorProps> = ({ userProfile, onComplete }) => {
   const [calories, setCalories] = useState<number>(0);
@@ -104,4 +86,4 @@ const CalorieCalculator: React.FC<CalorieCalculatorProps> = ({ userProfile, onCo
   );
 };
 
-export default CalorieCalculator; 
+export default CalorieCalculator;
