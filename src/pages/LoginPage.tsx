@@ -108,8 +108,8 @@ const EmailLoginForm = ({
 export default function LoginPage() {
   const navigate = useNavigate();
   const { updateProfile } = useAuth();
-  const [showPersonalization, setShowPersonalization] = useState(false);
-  const [newUserProfile, setNewUserProfile] = useState<UserProfile | null>(null);
+  const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAuthStateChange = async (user: User | null) => {
@@ -136,8 +136,8 @@ export default function LoginPage() {
             }
           }
         };
-        setNewUserProfile(userProfile);
-        setShowPersonalization(true);
+        setUserProfile(userProfile);
+        setIsPersonalizationOpen(true);
       } catch (error) {
         console.error('Error creating user profile:', error);
       } finally {
@@ -146,23 +146,10 @@ export default function LoginPage() {
     }
   };
 
-  const handlePersonalizationComplete = async (profile: Omit<UserProfile, 'uid' | 'displayName' | 'email' | 'photoURL'>) => {
-    if (newUserProfile) {
-      setIsLoading(true);
-      try {
-        const updatedProfile: UserProfile = {
-          ...newUserProfile,
-          ...profile
-        };
-        await updateProfile(updatedProfile);
-        setShowPersonalization(false);
-        navigate('/');
-      } catch (error) {
-        console.error('Error updating profile:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  const handlePersonalizationSave = async (profile: Partial<UserProfile>) => {
+    setUserProfile(profile);
+    setIsPersonalizationOpen(false);
+    navigate('/');
   };
 
   return (
@@ -191,10 +178,11 @@ export default function LoginPage() {
             />
           </div>
         </div>
-        {showPersonalization && (
+        {isPersonalizationOpen && (
           <PersonalizationModal
-            onClose={() => setShowPersonalization(false)}
-            onSave={handlePersonalizationComplete}
+            isOpen={isPersonalizationOpen}
+            onClose={() => setIsPersonalizationOpen(false)}
+            onSave={handlePersonalizationSave}
           />
         )}
       </div>
