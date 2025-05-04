@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebaseService';
@@ -37,7 +37,6 @@ const defaultProfile: UserProfile = {
 };
 
 const defaultSettings: UserSettings = {
-  theme: 'light',
   darkMode: false,
   notifications: {
     workoutReminder: true,
@@ -99,7 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (settingsDoc.exists()) {
             const settingsData = settingsDoc.data();
             const userSettings: UserSettings = {
-              theme: settingsData.theme || defaultSettings.theme,
               darkMode: settingsData.darkMode || defaultSettings.darkMode,
               notifications: settingsData.notifications || defaultSettings.notifications,
               units: settingsData.units || defaultSettings.units,
@@ -198,4 +196,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}
