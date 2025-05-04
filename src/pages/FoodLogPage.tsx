@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import Layout from '../components/common/Layout';
 import toast, { Toaster } from 'react-hot-toast';
+import Layout from '../components/common/Layout';
 
 interface FoodLog {
   id: string;
@@ -249,10 +249,10 @@ export default function FoodLogPage() {
                       ${isLoading ? 'border-gray-300 cursor-not-allowed opacity-50' : 'border-green-500 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900'} 
                       dark:border-green-400`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className="text-green-600 font-medium dark:text-green-400">
-                  {isLoading ? '처리 중...' : '앨범에서 선택'}
+                  {isLoading ? '처리 중...' : '갤러리에서 선택'}
                 </span>
               </div>
             </label>
@@ -260,82 +260,68 @@ export default function FoodLogPage() {
         </>
       )}
 
-      {/* 음식 이미지 그리드 */}
+      {/* 로그 표시 */}
       {viewMode === 'day' ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-          {foodLogs.length === 0 ? (
-            <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-              {selectedDate === today 
-                ? '오늘 먹은 음식을 기록해보세요' 
-                : '이 날짜에 기록된 음식이 없습니다'}
-            </div>
-          ) : (
-            foodLogs.map(log => (
-              <div key={log.id} className="relative group">
-                <img
-                  src={log.imageData}
-                  alt={`${log.date} ${log.time} 음식`}
-                  className="w-full aspect-square object-cover rounded-lg"
-                />
-                {/* 시간 워터마크 - 작은 크기로 수정 */}
-                <div className="absolute inset-0 flex items-end justify-center pb-1">
-                  <span className="bg-black/70 text-white px-2 py-0.5 rounded-full text-xs font-medium">
-                    {log.time}
-                  </span>
-                </div>
+        <div className="grid grid-cols-1 gap-4">
+          {foodLogs.map((log) => (
+            <div key={log.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-600 dark:text-gray-400">{log.time}</span>
                 <button
                   onClick={() => deleteFoodLog(log.id)}
-                  className="absolute top-1 right-1 p-1 bg-red-500 rounded-full 
-                           opacity-0 group-hover:opacity-100 transition-opacity
-                           text-white hover:bg-red-600"
+                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
               </div>
-            ))
-          )}
+              <img
+                src={log.imageData}
+                alt="음식 사진"
+                className="w-full h-48 object-cover rounded-lg"
+              />
+            </div>
+          ))}
         </div>
       ) : (
-        // 주별/월별 보기 - 더 작은 그리드
-        <div className="space-y-4">
-          {Object.keys(groupedLogs).length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              이 기간에 기록된 음식이 없습니다
-            </div>
-          ) : (
-            Object.entries(groupedLogs)
-              .sort((a, b) => b[0].localeCompare(a[0]))
-              .map(([date, logs]) => (
-                <div key={date} className="bg-white dark:bg-gray-800 rounded-lg p-3">
-                  <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
-                    {new Date(date).toLocaleDateString('ko-KR', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {logs.map(log => (
-                      <div key={log.id} className="relative">
-                        <img
-                          src={log.imageData}
-                          alt={`${log.date} ${log.time} 음식`}
-                          className="w-full aspect-square object-cover rounded-lg"
-                        />
-                        <div className="absolute inset-0 flex items-end justify-center pb-1">
-                          <span className="bg-black/70 text-white px-2 py-0.5 rounded-full text-xs font-medium">
-                            {log.time}
-                          </span>
-                        </div>
+        <div className="space-y-6">
+          {Object.entries(groupedLogs)
+            .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
+            .map(([date, logs]) => (
+              <div key={date} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                  {new Date(date).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long'
+                  })}
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {logs.map((log) => (
+                    <div key={log.id} className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-gray-600 dark:text-gray-400">{log.time}</span>
+                        <button
+                          onClick={() => deleteFoodLog(log.id)}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                      <img
+                        src={log.imageData}
+                        alt="음식 사진"
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))
-          )}
+              </div>
+            ))}
         </div>
       )}
     </Layout>
