@@ -28,9 +28,9 @@ const NutritionScout = () => {
       // 여러 경로 시도
       const paths = [
         '/nutrition_db.csv',
-        '/public/nutrition_db.csv',
         './nutrition_db.csv',
-        import.meta.env.BASE_URL + 'nutrition_db.csv',
+        // import.meta.env 대신 기본 경로 사용
+        'nutrition_db.csv',
         // 절대 경로로도 시도
         window.location.origin + '/nutrition_db.csv'
       ];
@@ -41,6 +41,7 @@ const NutritionScout = () => {
       // 모든 경로 시도
       for (const path of paths) {
         try {
+          console.log(`시도 중: ${path}`);
           const response = await fetch(path);
           if (response.ok) {
             csvText = await response.text();
