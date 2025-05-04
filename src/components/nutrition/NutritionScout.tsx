@@ -10,37 +10,6 @@ interface NutritionData {
   '코멘트': string;
 }
 
-// CSV 파서 함수
-const parseCSV = (csvText: string) => {
-  const lines = csvText.split('\n');
-  const result = [];
-  
-  if (lines.length < 2) return [];
-  
-  const headers = lines[0].split(',').map(header => header.trim());
-  
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    
-    const values = lines[i].split(',');
-    const row: any = {};
-    
-    headers.forEach((header, j) => {
-      const value = values[j]?.trim();
-      // 숫자 값 변환 시도
-      if (!isNaN(parseFloat(value)) && isFinite(parseFloat(value))) {
-        row[header] = parseFloat(value);
-      } else {
-        row[header] = value;
-      }
-    });
-    
-    result.push(row);
-  }
-  
-  return result;
-};
-
 const NutritionScout = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [foodData, setFoodData] = useState<NutritionData[]>([]);
@@ -56,12 +25,42 @@ const NutritionScout = () => {
   const loadCSV = async () => {
     setIsLoading(true);
     try {
-      // public 폴더에서 fetch하도록 경로 수정
+      // Vite의 public 폴더 접근 방식
       const response = await fetch('/nutrition_db.csv');
       if (!response.ok) throw new Error('CSV 파일을 불러올 수 없습니다.');
       
       const csvText = await response.text();
-      const data = parseCSV(csvText);
+      
+      // CSV 파싱
+      const lines = csvText.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        // 쉼표가 포함된 값 처리를 위한 정규식 사용
+        const line = lines[i];
+        const regex = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+        const values = line.match(regex) || [];
+        
+        const row: any = {};
+        
+        headers.forEach((header, j) => {
+          let value = values[j]?.trim() || '';
+          // 따옴표 제거
+          value = value.replace(/^"(.*)"$/, '$1');
+          
+          // 숫자로 변환 시도
+          if (!isNaN(parseFloat(value)) && isFinite(parseFloat(value))) {
+            row[header] = parseFloat(value);
+          } else {
+            row[header] = value;
+          }
+        });
+        
+        data.push(row);
+      }
       
       // 데이터 표준화
       const standardizedData = data.map((item: any) => {
@@ -76,12 +75,13 @@ const NutritionScout = () => {
         }
         
         return standardizedItem;
-      });
+      }) as NutritionData[];
       
       setFoodData(standardizedData);
+      
     } catch (error) {
-      toast.error('데이터를 불러올 수 없습니다.');
       console.error(error);
+      toast.error('데이터를 불러올 수 없습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -101,10 +101,10 @@ const NutritionScout = () => {
       setSearchResult(result);
       setShowAutoComplete(false);
     } else {
-      // 부분 일치 검색도 시도
       const partialMatch = foodData.find(
         item => item.요리명 && item.요리명.toLowerCase().includes(searchQuery.toLowerCase())
       );
+      
       if (partialMatch) {
         setSearchResult(partialMatch);
         setShowAutoComplete(false);
@@ -126,6 +126,7 @@ const NutritionScout = () => {
           item.요리명.toLowerCase().includes(value.toLowerCase())
         )
         .slice(0, 5);
+      
       setSuggestions(filtered);
       setShowAutoComplete(true);
     } else {
