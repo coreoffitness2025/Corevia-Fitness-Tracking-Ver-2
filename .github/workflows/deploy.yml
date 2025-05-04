@@ -43,10 +43,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
       
-      - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           path: ./dist
+          name: github-pages
 
   deploy:
     needs: build
