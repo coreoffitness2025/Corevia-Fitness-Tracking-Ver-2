@@ -25,31 +25,54 @@ const NutritionScout = () => {
   const loadCSV = async () => {
     setIsLoading(true);
     try {
-      // Vite의 public 폴더 접근 방식
-      const response = await fetch('/nutrition_db.csv');
-      if (!response.ok) throw new Error('CSV 파일을 불러올 수 없습니다.');
+      // 여러 경로 시도
+      const paths = [
+        '/nutrition_db.csv',
+        '/public/nutrition_db.csv',
+        './nutrition_db.csv',
+        import.meta.env.BASE_URL + 'nutrition_db.csv',
+        // 절대 경로로도 시도
+        window.location.origin + '/nutrition_db.csv'
+      ];
       
-      const csvText = await response.text();
+      let csvText = '';
+      let foundPath = '';
+      
+      // 모든 경로 시도
+      for (const path of paths) {
+        try {
+          const response = await fetch(path);
+          if (response.ok) {
+            csvText = await response.text();
+            foundPath = path;
+            console.log('성공적으로 로드한 경로:', path);
+            break;
+          }
+          console.log(`실패 - ${path}: ${response.status}`);
+        } catch (err) {
+          console.log(`에러 - ${path}:`, err);
+        }
+      }
+      
+      if (!csvText) {
+        throw new Error('모든 경로에서 파일을 찾을 수 없습니다');
+      }
       
       // CSV 파싱
       const lines = csvText.split('\n');
       const headers = lines[0].split(',').map(h => h.trim());
       
+      console.log('CSV 헤더:', headers);
+      
       const data = [];
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         
-        // 쉼표가 포함된 값 처리를 위한 정규식 사용
-        const line = lines[i];
-        const regex = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
-        const values = line.match(regex) || [];
-        
+        const values = lines[i].split(',');
         const row: any = {};
         
         headers.forEach((header, j) => {
-          let value = values[j]?.trim() || '';
-          // 따옴표 제거
-          value = value.replace(/^"(.*)"$/, '$1');
+          const value = values[j]?.trim() || '';
           
           // 숫자로 변환 시도
           if (!isNaN(parseFloat(value)) && isFinite(parseFloat(value))) {
@@ -62,14 +85,19 @@ const NutritionScout = () => {
         data.push(row);
       }
       
+      console.log('파싱된 데이터 수:', data.length);
+      console.log('첫 번째 행:', data[0]);
+      
       // 데이터 표준화
       const standardizedData = data.map((item: any) => {
         const standardizedItem: NutritionData = { ...item };
         
         // 요리명 필드 표준화
-        for (const key of Object.keys(item)) {
-          if (key.includes('음식') || key.includes('요리') || key.includes('이름')) {
+        const possibleKeys = ['요리명', '음식명', '이름', '식품명', 'food_name', 'name'];
+        for (const key of possibleKeys) {
+          if (item[key]) {
             standardizedItem['요리명'] = item[key];
+            console.log('요리명 필드 발견:', key, '=', item[key]);
             break;
           }
         }
@@ -78,10 +106,11 @@ const NutritionScout = () => {
       }) as NutritionData[];
       
       setFoodData(standardizedData);
+      toast.success(`데이터 로드 성공 (${standardizedData.length}개 항목)`);
       
     } catch (error) {
-      console.error(error);
-      toast.error('데이터를 불러올 수 없습니다.');
+      console.error('전체 에러:', error);
+      toast.error(`데이터를 불러올 수 없습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     } finally {
       setIsLoading(false);
     }
