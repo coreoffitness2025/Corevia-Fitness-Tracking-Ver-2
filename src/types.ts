@@ -12,6 +12,7 @@ export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
 export interface ExerciseSet {
   reps: number;
   isSuccess: boolean;
+  weight: number;
 }
 
 export interface MainExercise {
@@ -22,9 +23,13 @@ export interface MainExercise {
 
 export interface AccessoryExercise {
   name: string;
-  weight: number;
-  reps: number;
-  sets: number;
+  weight?: number;
+  reps?: number;
+  sets?: Array<{
+    reps: number;
+    weight: number;
+    isSuccess: boolean;
+  }>;
 }
 
 /* ---------- 세션 ---------- */
@@ -37,29 +42,37 @@ export interface Session {
   accessoryExercises?: AccessoryExercise[];
   notes?: string;
   isAllSuccess?: boolean;
+  successSets?: number;
+  accessoryNames?: string[];
+}
+
+/* ---------- 일일 운동 기록 ---------- */
+export interface DailyWorkout {
+  date: string;
+  sessions: Session[];
 }
 
 /* ---------- 그래프용 진행 데이터 ---------- */
+export interface Set {
+  reps: number;
+  isSuccess: boolean;
+  weight: number;
+}
+
 export interface Progress {
-  date: Date | string;
+  id: string;
+  userId: string;
+  part: ExercisePart;
+  date: string;
   weight: number;
   isSuccess: boolean;
-  sets: Array<{
-    reps: number;
-    isSuccess: boolean;
-  }>;
-  
-  // 추가된 속성들
-  accessoryExercises?: Array<{
-    name: string;
-    sets?: Array<{
-      reps: number;
-      weight: number;
-    }>;
-    weight?: number;
-    reps?: number;
-  }>;
+  sets: Set[];
   notes?: string;
+  accessoryExercises?: {
+    name: string;
+    sets: Set[];
+  }[];
+  isAllSuccess?: boolean;
   successSets?: number;
   accessoryNames?: string[];
 }

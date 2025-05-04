@@ -288,16 +288,16 @@ export default function FoodLogPage() {
         <div className="space-y-6">
           {Object.entries(groupedLogs)
             .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
-            .map(([date, logs]) => (
+              .map(([date, logs]) => (
               <div key={date} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                  {new Date(date).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
+                    {new Date(date).toLocaleDateString('ko-KR', { 
+                      year: 'numeric', 
+                      month: 'long', 
                     day: 'numeric',
                     weekday: 'long'
-                  })}
-                </h3>
+                    })}
+                  </h3>
                 <div className="grid grid-cols-1 gap-4">
                   {logs.map((log) => (
                     <div key={log.id} className="border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -312,15 +312,15 @@ export default function FoodLogPage() {
                           </svg>
                         </button>
                       </div>
-                      <img
-                        src={log.imageData}
+                        <img
+                          src={log.imageData}
                         alt="음식 사진"
                         className="w-full h-48 object-cover rounded-lg"
-                      />
-                    </div>
-                  ))}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
             ))}
         </div>
       )}

@@ -4,7 +4,13 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  updateProfile
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -51,6 +57,45 @@ export const signOut = async (): Promise<void> => {
   } catch (e) {
     console.error('로그아웃 에러:', e);
     throw new Error('로그아웃에 실패했습니다. 다시 시도해주세요.');
+  }
+};
+
+export const signInWithEmail = async (email: string, password: string, rememberMe: boolean): Promise<User | null> => {
+  try {
+    const auth = getAuth();
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+    const { user } = await signInWithEmailAndPassword(auth, email, password);
+    return {
+      uid: user.uid,
+      displayName: user.displayName || '사용자',
+      email: user.email || '',
+      photoURL: user.photoURL || undefined
+    };
+  } catch (e) {
+    console.error('이메일 로그인 에러:', e);
+    throw new Error('이메일 로그인에 실패했습니다. 다시 시도해주세요.');
+  }
+};
+
+export const signUpWithEmail = async (email: string, password: string, displayName: string): Promise<User | null> => {
+  try {
+    const auth = getAuth();
+    const { user } = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // 사용자 프로필 업데이트
+    if (user) {
+      await updateProfile(user, { displayName });
+    }
+    
+    return {
+      uid: user.uid,
+      displayName: displayName,
+      email: user.email || '',
+      photoURL: user.photoURL || undefined
+    };
+  } catch (e) {
+    console.error('회원가입 에러:', e);
+    throw new Error('회원가입에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
@@ -321,4 +366,40 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     console.error('사용자 프로필 조회 실패:', error);
     throw new Error('프로필 정보를 불러오는데 실패했습니다. 다시 시도해주세요.');
   }
+};
+
+export const saveProgress = async (progress: Omit<Progress, 'id'>) => {
+  const progressRef = collection(db, 'progress');
+  const docRef = await addDoc(progressRef, progress);
+  return { ...progress, id: docRef.id };
+};
+
+export const getProgressData = async (userId: string, part: ExercisePart) => {
+  const progressRef = collection(db, 'progress');
+  const q = query(
+    progressRef,
+    where('userId', '==', userId),
+    where('part', '==', part),
+    orderBy('date', 'desc')
+  );
+  
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Progress[];
+};
+
+export const getLastSession = async (userId: string, part: ExercisePart) => {
+  const progressRef = collection(db, 'progress');
+  const q = query(
+    progressRef,
+    where('userId', '==', userId),
+    where('part', '==', part),
+    orderBy('date', 'desc'),
+    limit(1)
+  );
+  
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) return null;
+  
+  const doc = querySnapshot.docs[0];
+  return { ...doc.data(), id: doc.id } as Progress;
 };

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { signInWithGoogle, getUserProfile } from '../services/firebaseService';
+import { signInWithGoogle, signInWithEmail, getUserProfile } from '../services/firebaseService';
 import { UserProfile } from '../types';
 import { toast } from 'react-hot-toast';
 import { DEFAULT_PROFILE } from '../constants/profile';
@@ -75,5 +75,66 @@ export const useLogin = ({
     }
   }, [setIsLoading, setUser, setUserProfile, setShowPersonalization, navigate]);
 
-  return { handleLogin };
+  const handleEmailLogin = useCallback(async (email: string, password: string, rememberMe: boolean) => {
+    try {
+      setIsLoading(true);
+      const userCredential = await signInWithEmail(email, password, rememberMe);
+      
+      if (!userCredential) {
+        throw new Error('로그인에 실패했습니다.');
+      }
+
+      // 사용자 기본 정보 설정
+      const userProfile: UserProfile = {
+        ...userCredential,
+        profile: DEFAULT_PROFILE
+      };
+      setUser(userProfile);
+
+      // 기존 프로필 확인
+      const existingProfile = await getUserProfile(userCredential.uid);
+      
+      if (existingProfile) {
+        setUserProfile(existingProfile);
+        toast.success('로그인 성공!');
+        navigate('/dashboard');
+      } else {
+        setUserProfile(userProfile);
+        setShowPersonalization(true);
+      }
+    } catch (error) {
+      let errorMessage = '로그인에 실패했습니다. 다시 시도해주세요.';
+      
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = '존재하지 않는 이메일입니다.';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = '잘못된 비밀번호입니다.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = '너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = '네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.';
+            break;
+          default:
+            console.error('Firebase 에러:', error);
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      console.error('로그인 실패:', error);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setIsLoading, setUser, setUserProfile, setShowPersonalization, navigate]);
+
+  return {
+    handleLogin,
+    handleEmailLogin
+  };
 }; 
