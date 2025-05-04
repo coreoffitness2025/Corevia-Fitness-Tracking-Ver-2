@@ -119,6 +119,28 @@ const offlineStorage = {
   }
 };
 
+const saveOfflineData = async (data: any) => {
+  try {
+    const offlineData = await getOfflineData();
+    offlineData.push({ ...data, timestamp: new Date().toISOString() });
+    localStorage.setItem('offlineData', JSON.stringify(offlineData));
+  } catch (e) {
+    console.error('오프라인 저장 실패:', e);
+    toast.error('오프라인 저장에 실패했습니다. 데이터가 손실될 수 있습니다.');
+  }
+};
+
+const getOfflineData = async () => {
+  try {
+    const data = localStorage.getItem('offlineData');
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    console.error('오프라인 데이터 조회 실패:', e);
+    toast.error('오프라인 데이터를 불러오는데 실패했습니다.');
+    return [];
+  }
+};
+
 export default function RecordPage() {
   const { user } = useAuthStore();
   const {
@@ -331,16 +353,9 @@ export default function RecordPage() {
       
       // 중요: 저장 요청을 보내고 곧바로 피드백 페이지로 이동
       // 서버 응답을 기다리지 않고 진행 (Fire-and-Forget)
-      saveSession(sess)
-        .then(() => {
-          // 성공 처리는 하지 않음 (이미 페이지 이동함)
-        })
-        .catch((e) => {
-          // 실패 시 오프라인 저장 - 백그라운드에서 처리
-          console.error('[saveSession error]', e?.message || e);
-          offlineStorage.saveSession(sess);
-          // 다음 로그인 시 동기화됨
-        });
+      await saveSession(sess);
+      
+      toast.success('✅ 저장 완료!');
       
       // 저장 요청을 보내고 즉시 피드백 페이지로 이동
       setSaving(false);
@@ -390,7 +405,13 @@ export default function RecordPage() {
         isAllSuccess: mainExercise.sets.every(s => s.isSuccess)
       };
       
-      saveSessionOffline(offlineSession);
+      try {
+        await saveOfflineData(offlineSession);
+        toast.warning('⚠️ 오프라인으로 저장되었습니다. 인터넷 연결 후 자동으로 동기화됩니다.');
+      } catch (offlineError: any) {
+        console.error('[saveSession 오류]', offlineError?.message || offlineError);
+        toast.error('❌ 저장 실패! 오프라인 저장도 실패했습니다.');
+      }
     }
   };
 

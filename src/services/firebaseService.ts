@@ -10,7 +10,8 @@ import {
   Timestamp,
   serverTimestamp,
   startAfter,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  getDoc
 } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../firebase';
@@ -20,7 +21,8 @@ import {
   FAQ,
   User,
   Progress,
-  AccessoryExercise
+  AccessoryExercise,
+  UserProfile
 } from '../types';
 
 /* ───────── 로그인 & 로그아웃 ───────── */
@@ -36,7 +38,7 @@ export const signInWithGoogle = async (): Promise<User | null> => {
     };
   } catch (e) {
     console.error('Google 로그인 에러:', e);
-    return null;
+    throw new Error('Google 로그인에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
@@ -45,6 +47,7 @@ export const signOut = async (): Promise<void> => {
     await auth.signOut();
   } catch (e) {
     console.error('로그아웃 에러:', e);
+    throw new Error('로그아웃에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
@@ -93,7 +96,7 @@ export const saveSession = async (session: Session): Promise<string> => {
     return id;
   } catch (error) {
     console.error('세션 저장 중 오류:', error);
-    throw error;
+    throw new Error('운동 기록 저장에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
@@ -291,5 +294,28 @@ export const getFAQs = async (part: ExercisePart, type: 'method' | 'sets' = 'met
   } catch (error) {
     console.error('Error fetching FAQs:', error);
     return [];
+  }
+};
+
+export const saveUserProfile = async (user: UserProfile) => {
+  try {
+    await setDoc(doc(db, 'users', user.uid), {
+      ...user,
+      lastUpdated: new Date(),
+    });
+  } catch (error) {
+    console.error('사용자 프로필 저장 실패:', error);
+    throw new Error('프로필 저장에 실패했습니다. 다시 시도해주세요.');
+  }
+};
+
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  try {
+    const docRef = doc(db, 'users', uid);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? docSnap.data() as UserProfile : null;
+  } catch (error) {
+    console.error('사용자 프로필 조회 실패:', error);
+    throw new Error('프로필 정보를 불러오는데 실패했습니다. 다시 시도해주세요.');
   }
 };
