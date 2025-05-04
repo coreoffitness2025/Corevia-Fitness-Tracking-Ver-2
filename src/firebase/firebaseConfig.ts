@@ -2,6 +2,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics } from 'firebase/analytics';
 import { UserProfile, FAQ, ExercisePart, Session } from '../types';
 
 // Firebase 환경 변수 확인 및 디버깅
@@ -11,7 +12,8 @@ const requiredEnvVars = [
   'VITE_FIREBASE_PROJECT_ID',
   'VITE_FIREBASE_STORAGE_BUCKET',
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
-  'VITE_FIREBASE_APP_ID'
+  'VITE_FIREBASE_APP_ID',
+  'VITE_FIREBASE_MEASUREMENT_ID'
 ];
 
 console.log('Checking environment variables...');
@@ -25,11 +27,12 @@ for (const envVar of requiredEnvVars) {
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'corevia-fitness-tracking.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'corevia-fitness-tracking',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'corevia-fitness-tracking.firebasestorage.app',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-3HT5SN1CDP'
 };
 
 console.log('Firebase Config:', {
@@ -58,6 +61,7 @@ if (!app) {
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export const analytics = getAnalytics(app);
 
 // 인증 관련 함수들
 export const signInWithGoogle = async () => {
