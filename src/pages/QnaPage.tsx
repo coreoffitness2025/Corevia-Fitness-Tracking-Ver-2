@@ -3,6 +3,7 @@ import { ExercisePart, FAQ } from '../types';
 import { getFAQs } from '../services/firebaseService';
 import Layout from '../components/common/Layout';
 import NutritionScout from '../components/nutrition/NutritionScout';
+import Handbook from '../components/handbook/Handbook';
 
 const partNames: Record<ExercisePart, string> = {
   chest: '가슴',
@@ -12,7 +13,7 @@ const partNames: Record<ExercisePart, string> = {
 };
 
 type FAQType = 'method' | 'sets';
-type TabType = 'exercise' | 'nutrition';
+type TabType = 'exercise' | 'nutrition' | 'handbook';
 
 const QnaPage = () => {
   const [faqType, setFaqType] = useState<FAQType>('method');
@@ -46,7 +47,7 @@ const QnaPage = () => {
 
       {/* 탭 메뉴 */}
       <div className="flex gap-2 mb-6">
-        {(['exercise', 'nutrition'] as const).map((tab) => (
+        {(['exercise', 'nutrition', 'handbook'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -58,6 +59,7 @@ const QnaPage = () => {
           >
             {tab === 'exercise' && '운동 Q&A'}
             {tab === 'nutrition' && '영양 정보'}
+            {tab === 'handbook' && '핸드북'}
           </button>
         ))}
       </div>
@@ -172,9 +174,12 @@ const QnaPage = () => {
             </div>
           )}
         </div>
-      ) : (
+      ) : activeTab === 'nutrition' ? (
         /* 영양 정보 섹션 */
         <NutritionScout />
+      ) : (
+        /* 핸드북 섹션 */
+        <Handbook />
       )}
     </Layout>
   );
