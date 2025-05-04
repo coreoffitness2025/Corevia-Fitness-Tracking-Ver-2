@@ -52,8 +52,8 @@ const WorkoutPage = () => {
     setSelectedPart(part);
 
     if (lastSessionCache[part] === undefined) {
-      getLastSession(user.uid, part)
-        .then((s) => cacheLastSession(part, s ?? null))
+      getLastSession(user.uid)
+        .then((s) => cacheLastSession(part, s))
         .catch(console.error);
     }
   };

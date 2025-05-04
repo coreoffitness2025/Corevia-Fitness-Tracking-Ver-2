@@ -2,7 +2,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { UserProfile, FAQ, ExercisePart } from '../types';
+import { UserProfile, FAQ, ExercisePart, Session } from '../types';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -59,7 +59,7 @@ export const updateUserProfile = async (userId: string, profile: Partial<UserPro
 };
 
 // 운동 기록 관련 함수들
-export const getLastSession = async (userId: string) => {
+export const getLastSession = async (userId: string): Promise<Session | null> => {
   const sessionsRef = collection(db, 'workoutSessions');
   const q = query(
     sessionsRef,
@@ -68,7 +68,22 @@ export const getLastSession = async (userId: string) => {
     limit(1)
   );
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs[0]?.data();
+  const doc = querySnapshot.docs[0];
+  
+  if (!doc) return null;
+  
+  const data = doc.data();
+  return {
+    userId: data.userId,
+    date: data.date.toDate(),
+    part: data.part,
+    mainExercise: data.mainExercise,
+    accessoryExercises: data.accessoryExercises || [],
+    notes: data.notes || '',
+    isAllSuccess: data.isAllSuccess || false,
+    successSets: data.successSets || 0,
+    accessoryNames: data.accessoryNames || []
+  } as Session;
 };
 
 // FAQ 관련 함수들
