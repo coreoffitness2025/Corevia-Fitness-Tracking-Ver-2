@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Session, ExercisePart, AccessoryExercise, Progress } from '../types';
+import { Session, AccessoryExercise } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { getLastSession, saveSession } from '../services/firebaseService';

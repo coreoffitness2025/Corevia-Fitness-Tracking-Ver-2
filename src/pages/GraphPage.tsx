@@ -111,15 +111,6 @@ const mergeAndDeduplicate = (localData: Progress[], remoteData: Progress[]): Pro
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
-// 세션 비교 함수
-const isSameSession = (a: Progress, b: Progress): boolean => {
-  return (
-    a.weight === b.weight && 
-    a.isSuccess === b.isSuccess && 
-    new Date(a.date).toDateString() === new Date(b.date).toDateString()
-  );
-};
-
 // 최근 데이터 카드 컴포넌트 - 보조 운동과 메모를 항상 표시
 const RecentSessionCard = ({ data, part }: { data: Progress | null, part: ExercisePart }) => {
   // 디버깅 코드 추가 - 데이터가 있을 때 콘솔에 내용 출력

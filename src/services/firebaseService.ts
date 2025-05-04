@@ -1,29 +1,32 @@
+import { initializeApp } from 'firebase/app';
 import {
-  collection,
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import {
+  getFirestore,
   doc,
+  getDoc,
   setDoc,
+  collection,
   query,
   where,
-  orderBy,
   getDocs,
-  limit,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   Timestamp,
-  serverTimestamp,
-  startAfter,
+  orderBy,
+  limit,
   QueryDocumentSnapshot,
-  getDoc
+  startAfter
 } from 'firebase/firestore';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { UserProfile, Session, FAQ, User, Progress } from '../types';
 import { auth, db } from '../firebase';
-import {
-  ExercisePart,
-  Session,
-  FAQ,
-  User,
-  Progress,
-  AccessoryExercise,
-  UserProfile
-} from '../types';
+import { ExercisePart } from '../types';
 
 /* ───────── 로그인 & 로그아웃 ───────── */
 export const signInWithGoogle = async (): Promise<User | null> => {

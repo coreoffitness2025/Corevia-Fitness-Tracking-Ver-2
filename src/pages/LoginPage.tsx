@@ -1,14 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { signInWithGoogle, getUserProfile, saveUserProfile } from '../services/firebaseService';
-import { useAuthStore } from '../stores/authStore';
-import Layout from '../components/common/Layout';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
-import { toast } from 'react-hot-toast';
 import { useLogin } from '../hooks/useLogin';
 import { useProfile } from '../hooks/useProfile';
-import { DEFAULT_PROFILE } from '../constants/profile';
+import { useAuthStore } from '../stores/authStore';
+import Layout from '../components/common/Layout';
 
 const LoginButton = ({ 
   isLoading, 

@@ -20,11 +20,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/analytics'],
-          'chart-vendor': ['chart.js', 'react-chartjs-2'],
-        },
-      },
+          'react-vendor': ['react', 'react-dom'],
+          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'chart-vendor': ['chart.js', 'react-chartjs-2']
+        }
+      }
     },
   },
   base: '/Corevia-Fitness-Tracking-Ver-2/',
