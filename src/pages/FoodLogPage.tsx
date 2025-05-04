@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import Layout from '../components/common/Layout';
 
 interface FoodLog {
   id: string;
@@ -147,7 +146,7 @@ export default function FoodLogPage() {
   const groupedLogs = viewMode !== 'day' ? getGroupedLogs() : {};
 
   return (
-    <Layout>
+    <div className="container mx-auto px-4 py-8">
       <Toaster position="top-center" />
       
       <div className="mb-6">
@@ -324,6 +323,6 @@ export default function FoodLogPage() {
             ))}
         </div>
       )}
-    </Layout>
+    </div>
   );
 }

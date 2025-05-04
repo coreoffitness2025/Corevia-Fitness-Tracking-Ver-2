@@ -1,6 +1,5 @@
 import React from 'react';
 import { useState } from 'react';
-import Layout from '../components/common/Layout';
 import ExerciseFaq from '../components/exercise/ExerciseFaq';
 import NutritionScout from '../components/nutrition/NutritionScout';
 import NutritionGuide from '../components/nutrition/NutritionGuide';
@@ -13,7 +12,7 @@ const QnaPage = () => {
   const [activeTab, setActiveTab] = useState<TabType>('exercise');
 
   return (
-    <Layout>
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           운동 & 영양 가이드
@@ -78,7 +77,7 @@ const QnaPage = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

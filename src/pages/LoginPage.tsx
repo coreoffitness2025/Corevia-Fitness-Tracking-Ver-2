@@ -4,7 +4,6 @@ import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import { useAuth } from '../contexts/AuthContext';
-import Layout from '../components/common/Layout';
 
 const LoginButton = ({ 
   isLoading, 
@@ -153,39 +152,37 @@ export default function LoginPage() {
   };
 
   return (
-    <Layout>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <LoginHeader />
-          <div className="space-y-4">
-            <LoginButton 
-              isLoading={isLoading} 
-              onClick={() => handleAuthStateChange({ uid: 'test', displayName: 'Test User', email: 'test@example.com' } as User)}
-            />
-            <EmailLoginForm 
-              onSubmit={async (email, password, rememberMe) => {
-                setIsLoading(true);
-                try {
-                  // TODO: Implement email login
-                  console.log('Email login:', { email, password, rememberMe });
-                } catch (error) {
-                  console.error('Login error:', error);
-                } finally {
-                  setIsLoading(false);
-                }
-              }} 
-              isLoading={isLoading} 
-            />
-          </div>
-        </div>
-        {isPersonalizationOpen && (
-          <PersonalizationModal
-            isOpen={isPersonalizationOpen}
-            onClose={() => setIsPersonalizationOpen(false)}
-            onSave={handlePersonalizationSave}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <LoginHeader />
+        <div className="space-y-4">
+          <LoginButton 
+            isLoading={isLoading} 
+            onClick={() => handleAuthStateChange({ uid: 'test', displayName: 'Test User', email: 'test@example.com' } as User)}
           />
-        )}
+          <EmailLoginForm 
+            onSubmit={async (email, password, rememberMe) => {
+              setIsLoading(true);
+              try {
+                // TODO: Implement email login
+                console.log('Email login:', { email, password, rememberMe });
+              } catch (error) {
+                console.error('Login error:', error);
+              } finally {
+                setIsLoading(false);
+              }
+            }} 
+            isLoading={isLoading} 
+          />
+        </div>
       </div>
-    </Layout>
+      {isPersonalizationOpen && (
+        <PersonalizationModal
+          isOpen={isPersonalizationOpen}
+          onClose={() => setIsPersonalizationOpen(false)}
+          onSave={handlePersonalizationSave}
+        />
+      )}
+    </div>
   );
 }
