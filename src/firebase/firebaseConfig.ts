@@ -101,4 +101,4 @@ export const getFAQs = async (part?: ExercisePart, type?: 'method' | 'sets'): Pr
     console.error('FAQ 로드 실패:', error);
     return [];
   }
-}; 
+};
