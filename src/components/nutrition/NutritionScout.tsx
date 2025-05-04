@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as Papa from 'papaparse';
+import Papa from 'papaparse';
 import toast from 'react-hot-toast';
 
 interface NutritionData {
