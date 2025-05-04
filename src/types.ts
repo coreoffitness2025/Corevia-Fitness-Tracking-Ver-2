@@ -85,6 +85,9 @@ export interface FAQ {
   id: string;
   question: string;
   answer: string;
+  videoUrl?: string;
+  type: 'method' | 'sets';
+  part: ExercisePart;
   category: string;
 }
 
@@ -96,7 +99,7 @@ export interface UserProfile {
   height: number;
   weight: number;
   age: number;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female';
   activityLevel: 'low' | 'moderate' | 'high';
   fitnessGoal: 'loss' | 'maintain' | 'gain';
   experience: {
@@ -107,10 +110,10 @@ export interface UserProfile {
       maxReps: number;
     };
   };
+  settings?: UserSettings;
 }
 
 export interface UserSettings {
-  theme: 'light' | 'dark';
   darkMode: boolean;
   notifications: {
     workoutReminder: boolean;

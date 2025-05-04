@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 interface CalorieCalculatorProps {
   userProfile: UserProfile;
+  onComplete?: (result: { calories: number; protein: number; carbs: number; fat: number }) => void;
 }
 
 const DEFAULT_PROFILE = {
@@ -23,7 +24,7 @@ const DEFAULT_PROFILE = {
   }
 };
 
-const CalorieCalculator: React.FC<CalorieCalculatorProps> = ({ userProfile }) => {
+const CalorieCalculator: React.FC<CalorieCalculatorProps> = ({ userProfile, onComplete }) => {
   const [calories, setCalories] = useState<number>(0);
   const [protein, setProtein] = useState<number>(0);
   const [carbs, setCarbs] = useState<number>(0);
@@ -62,10 +63,19 @@ const CalorieCalculator: React.FC<CalorieCalculatorProps> = ({ userProfile }) =>
       setProtein(Math.round(proteinGrams));
       setCarbs(Math.round(carbGrams));
       setFat(Math.round(fatGrams));
+
+      if (onComplete) {
+        onComplete({
+          calories: Math.round(dailyCalories),
+          protein: Math.round(proteinGrams),
+          carbs: Math.round(carbGrams),
+          fat: Math.round(fatGrams)
+        });
+      }
     };
 
     calculateCalories();
-  }, [userProfile]);
+  }, [userProfile, onComplete]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">

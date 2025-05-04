@@ -1,41 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/common/Layout';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebaseService';
 import toast from 'react-hot-toast';
-
-interface AppSettings {
-  darkMode: boolean;
-  notifications: {
-    workoutReminder: boolean;
-    mealReminder: boolean;
-    progressUpdate: boolean;
-  };
-  units: {
-    weight: 'kg' | 'lbs';
-    height: 'cm' | 'ft';
-  };
-  language: 'ko' | 'en';
-}
+import { UserSettings } from '../types';
 
 const SettingPage = () => {
-  const { currentUser, userProfile, logout } = useAuth();
+  const { currentUser, userProfile, logout, updateSettings } = useAuth();
   const navigate = useNavigate();
-  const [settings, setSettings] = useState<AppSettings>({
-    darkMode: userProfile?.settings?.darkMode ?? false,
+  const [settings, setSettings] = useState<UserSettings>({
+    darkMode: false,
     notifications: {
-      workoutReminder: userProfile?.settings?.notifications?.workoutReminder ?? true,
-      mealReminder: userProfile?.settings?.notifications?.mealReminder ?? true,
-      progressUpdate: userProfile?.settings?.notifications?.progressUpdate ?? true,
+      workoutReminder: true,
+      mealReminder: true,
+      progressUpdate: true
     },
     units: {
-      weight: userProfile?.settings?.units?.weight ?? 'kg',
-      height: userProfile?.settings?.units?.height ?? 'cm',
+      weight: 'kg',
+      height: 'cm'
     },
-    language: userProfile?.settings?.language ?? 'ko',
+    language: 'ko'
   });
+
+  useEffect(() => {
+    if (userProfile?.settings) {
+      setSettings(userProfile.settings);
+    }
+  }, [userProfile]);
 
   const handleLogout = async () => {
     try {
@@ -48,43 +41,24 @@ const SettingPage = () => {
     }
   };
 
-  const handleSettingChange = async (key: keyof AppSettings, value: any) => {
-    if (!currentUser) return;
-
-    try {
-      const newSettings = { ...settings, [key]: value };
-      setSettings(newSettings);
-
-      const userRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userRef, {
-        settings: newSettings,
-      });
-
-      toast.success('설정이 저장되었습니다.');
-    } catch (error) {
-      toast.error('설정 저장에 실패했습니다.');
-      console.error('설정 저장 실패:', error);
-    }
+  const handleSettingChange = async (key: keyof UserSettings, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    await updateSettings(newSettings);
   };
 
-  const handleNotificationChange = async (key: keyof AppSettings['notifications'], value: boolean) => {
-    if (!currentUser) return;
+  const handleNotificationChange = async (key: keyof UserSettings['notifications'], value: boolean) => {
+    const newNotifications = { ...settings.notifications, [key]: value };
+    const newSettings = { ...settings, notifications: newNotifications };
+    setSettings(newSettings);
+    await updateSettings(newSettings);
+  };
 
-    try {
-      const newNotifications = { ...settings.notifications, [key]: value };
-      const newSettings = { ...settings, notifications: newNotifications };
-      setSettings(newSettings);
-
-      const userRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userRef, {
-        'settings.notifications': newNotifications,
-      });
-
-      toast.success('알림 설정이 저장되었습니다.');
-    } catch (error) {
-      toast.error('알림 설정 저장에 실패했습니다.');
-      console.error('알림 설정 저장 실패:', error);
-    }
+  const handleUnitChange = async (key: keyof UserSettings['units'], value: 'kg' | 'lbs' | 'cm' | 'ft') => {
+    const newUnits = { ...settings.units, [key]: value };
+    const newSettings = { ...settings, units: newUnits };
+    setSettings(newSettings);
+    await updateSettings(newSettings);
   };
 
   if (!currentUser) {
@@ -108,15 +82,14 @@ const SettingPage = () => {
             <h2 className="text-xl font-semibold mb-4">테마 설정</h2>
             <div className="flex items-center justify-between">
               <span>다크 모드</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={settings.darkMode}
-                  onChange={(e) => handleSettingChange('darkMode', e.target.checked)}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
+              <button
+                onClick={() => handleSettingChange('darkMode', !settings.darkMode)}
+                className={`px-4 py-2 rounded ${
+                  settings.darkMode ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-800'
+                }`}
+              >
+                {settings.darkMode ? '켜짐' : '꺼짐'}
+              </button>
             </div>
           </div>
 
@@ -126,40 +99,53 @@ const SettingPage = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span>운동 알림</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={settings.notifications.workoutReminder}
-                    onChange={(e) => handleNotificationChange('workoutReminder', e.target.checked)}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  onClick={() => handleNotificationChange('workoutReminder', !settings.notifications.workoutReminder)}
+                  className={`px-4 py-2 rounded ${
+                    settings.notifications.workoutReminder ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  {settings.notifications.workoutReminder ? '켜짐' : '꺼짐'}
+                </button>
               </div>
               <div className="flex items-center justify-between">
                 <span>식사 알림</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={settings.notifications.mealReminder}
-                    onChange={(e) => handleNotificationChange('mealReminder', e.target.checked)}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  onClick={() => handleNotificationChange('mealReminder', !settings.notifications.mealReminder)}
+                  className={`px-4 py-2 rounded ${
+                    settings.notifications.mealReminder ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  {settings.notifications.mealReminder ? '켜짐' : '꺼짐'}
+                </button>
               </div>
               <div className="flex items-center justify-between">
                 <span>진행 상황 알림</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={settings.notifications.progressUpdate}
-                    onChange={(e) => handleNotificationChange('progressUpdate', e.target.checked)}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  onClick={() => handleNotificationChange('progressUpdate', !settings.notifications.progressUpdate)}
+                  className={`px-4 py-2 rounded ${
+                    settings.notifications.progressUpdate ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  {settings.notifications.progressUpdate ? '켜짐' : '꺼짐'}
+                </button>
               </div>
+            </div>
+          </div>
+
+          {/* 언어 설정 */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">언어 설정</h2>
+            <div className="flex items-center justify-between">
+              <span>언어</span>
+              <select
+                value={settings.language}
+                onChange={(e) => handleSettingChange('language', e.target.value as 'ko' | 'en')}
+                className="px-4 py-2 rounded border"
+              >
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+              </select>
             </div>
           </div>
 
@@ -170,9 +156,9 @@ const SettingPage = () => {
               <div className="flex items-center justify-between">
                 <span>무게 단위</span>
                 <select
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
                   value={settings.units.weight}
-                  onChange={(e) => handleSettingChange('units', { ...settings.units, weight: e.target.value as 'kg' | 'lbs' })}
+                  onChange={(e) => handleUnitChange('weight', e.target.value as 'kg' | 'lbs')}
+                  className="px-4 py-2 rounded border"
                 >
                   <option value="kg">kg</option>
                   <option value="lbs">lbs</option>
@@ -181,30 +167,14 @@ const SettingPage = () => {
               <div className="flex items-center justify-between">
                 <span>키 단위</span>
                 <select
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
                   value={settings.units.height}
-                  onChange={(e) => handleSettingChange('units', { ...settings.units, height: e.target.value as 'cm' | 'ft' })}
+                  onChange={(e) => handleUnitChange('height', e.target.value as 'cm' | 'ft')}
+                  className="px-4 py-2 rounded border"
                 >
                   <option value="cm">cm</option>
                   <option value="ft">ft</option>
                 </select>
               </div>
-            </div>
-          </div>
-
-          {/* 언어 설정 */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">언어 설정</h2>
-            <div className="flex items-center justify-between">
-              <span>앱 언어</span>
-              <select
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                value={settings.language}
-                onChange={(e) => handleSettingChange('language', e.target.value as 'ko' | 'en')}
-              >
-                <option value="ko">한국어</option>
-                <option value="en">English</option>
-              </select>
             </div>
           </div>
 
