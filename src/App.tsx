@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/authStore';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -27,17 +28,19 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <Toaster position="top-center" />
-      <Routes>
-        <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" />} />
-        <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
-        <Route path="/workout" element={user ? <WorkoutPage /> : <Navigate to="/login" />} />
-        <Route path="/food" element={user ? <FoodPage /> : <Navigate to="/login" />} />
-        <Route path="/qna" element={user ? <QnaPage /> : <Navigate to="/login" />} />
-        <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <AuthProvider>
+        <Toaster position="top-center" />
+        <Routes>
+          <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
+          <Route path="/workout" element={user ? <WorkoutPage /> : <Navigate to="/login" />} />
+          <Route path="/food" element={user ? <FoodPage /> : <Navigate to="/login" />} />
+          <Route path="/qna" element={user ? <QnaPage /> : <Navigate to="/login" />} />
+          <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 };
