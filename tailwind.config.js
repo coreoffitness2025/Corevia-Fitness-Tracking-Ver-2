@@ -6,18 +6,22 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Pretendard', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['Montserrat', 'Pretendard', 'sans-serif'],
+      },
       colors: {
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          50: '#eef6ff',
+          100: '#d9eaff',
+          200: '#bbd8ff',
+          300: '#8ac0ff',
+          400: '#549dff',
+          500: '#3175ff',
+          600: '#1d5af2',
+          700: '#1347de',
+          800: '#183ab3',
+          900: '#193687',
         },
         secondary: {
           50: '#f0f9ff',
@@ -44,16 +48,16 @@ export default {
           900: '#064e3b',
         },
         danger: {
-          50: '#fef2f2',
-          100: '#fee2e2',
-          200: '#fecaca',
-          300: '#fca5a5',
-          400: '#f87171',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          800: '#991b1b',
-          900: '#7f1d1d',
+          50: '#fff1f2',
+          100: '#ffe4e6',
+          200: '#fecdd3',
+          300: '#fda4af',
+          400: '#fb7185',
+          500: '#f43f5e',
+          600: '#e11d48',
+          700: '#be123c',
+          800: '#9f1239',
+          900: '#881337',
         },
         warning: {
           50: '#fffbeb',
@@ -81,10 +85,11 @@ export default {
         }
       },
       boxShadow: {
-        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        'nav': '0 -2px 10px rgba(0, 0, 0, 0.05)',
-        'button': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        'card': '0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
+        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.07), 0 10px 10px -5px rgba(0, 0, 0, 0.02)',
+        'nav': '0 -4px 20px rgba(0, 0, 0, 0.08)',
+        'button': '0 2px 4px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+        'input': '0 1px 2px 0 rgba(0, 0, 0, 0.02)',
       },
       animation: {
         'bounce-slow': 'bounce 3s infinite',
@@ -94,6 +99,7 @@ export default {
         'slideDown': 'slideDown 0.3s ease-out',
         'slideLeft': 'slideLeft 0.3s ease-out',
         'slideRight': 'slideRight 0.3s ease-out',
+        'scale': 'scale 0.3s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -116,17 +122,27 @@ export default {
           '0%': { transform: 'translateX(-10px)', opacity: '0' },
           '100%': { transform: 'translateX(0)', opacity: '1' },
         },
+        scale: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        }
       },
       borderRadius: {
         'xl': '1rem',
         '2xl': '1.5rem',
+        '3xl': '2rem',
       },
       transitionProperty: {
         'height': 'height',
         'spacing': 'margin, padding',
+        'width': 'width',
+        'transform': 'transform',
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+    require('@tailwindcss/forms'),
+  ],
   darkMode: 'media'
 }

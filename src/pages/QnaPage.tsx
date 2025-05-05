@@ -361,62 +361,65 @@ const QnaPage: React.FC = () => {
                     {exercisesByPart[selectedPart].map((exercise) => (
                       <div 
                         key={exercise.id}
-                        onClick={() => handleExerciseSelect(exercise)}
-                        className={`p-4 rounded-lg border transition-all duration-300 cursor-pointer ${
-                          selectedExercise?.id === exercise.id
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-md transform -translate-y-1'
-                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow'
-                        }`}
+                        className="border rounded-lg transition-all duration-300 overflow-hidden"
                       >
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
-                          {exercise.name}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
-                          {exercise.description}
-                        </p>
-                        <div className="mt-3 flex justify-end">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
+                        {/* 운동 헤더 부분 */}
+                        <div 
+                          onClick={() => handleExerciseSelect(exercise)}
+                          className={`p-4 cursor-pointer ${
                             selectedExercise?.id === exercise.id
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                          }`}>
-                            자세히 보기
-                          </span>
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                              : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
+                              {exercise.name}
+                            </h4>
+                            <span className={`transform transition-transform duration-300 ${
+                              selectedExercise?.id === exercise.id ? 'rotate-180' : ''
+                            }`}>
+                              ▼
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                            {exercise.description}
+                          </p>
                         </div>
+                        
+                        {/* 접히는 상세 내용 부분 */}
+                        {selectedExercise?.id === exercise.id && (
+                          <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-t border-blue-200 dark:border-blue-800 animate-slideDown">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 border-b border-blue-200 dark:border-blue-700 pb-2">
+                              수행 방법
+                            </h3>
+                            <ol className="list-decimal list-inside space-y-3 mb-6 pl-2">
+                              {exercise.steps.map((step, index) => (
+                                <li key={index} className="text-gray-700 dark:text-gray-300">
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                            {exercise.videoUrl && (
+                              <a 
+                                href={exercise.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow transition-colors duration-300"
+                              >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                영상으로 보기
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
-                
-                {/* 선택된 운동의 상세 정보 */}
-                {selectedExercise && (
-                  <div className="mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg shadow-lg animate-slideUp">
-                    <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-4 border-b border-blue-200 dark:border-blue-700 pb-2">
-                      {selectedExercise.name} 수행 방법
-                    </h3>
-                    <ol className="list-decimal list-inside space-y-3 mb-6">
-                      {selectedExercise.steps.map((step, index) => (
-                        <li key={index} className="text-gray-700 dark:text-gray-300 pl-2">
-                          {step}
-                        </li>
-                      ))}
-                    </ol>
-                    {selectedExercise.videoUrl && (
-                      <a 
-                        href={selectedExercise.videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow transition-colors duration-300"
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        영상으로 보기
-                      </a>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
             
