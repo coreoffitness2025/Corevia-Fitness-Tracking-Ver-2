@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
+// 디버깅용 코드 추가: toast 객체 구조 출력
+console.log('toast 객체 구조:', Object.keys(toast));
+console.log('toast 타입:', typeof toast);
+console.log('toast.warning 존재 여부:', 'warning' in toast);
+console.log('toast.success 존재 여부:', 'success' in toast);
+console.log('toast.error 존재 여부:', 'error' in toast);
+
 interface NutritionData {
   [key: string]: any;
   '요리명': string;
@@ -214,15 +221,29 @@ const NutritionScout = () => {
         
         if (data.length === 0) {
           console.warn('CSV에서 항목을 찾지 못했습니다. 기본 데이터만 사용합니다.');
-          toast('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.', {
-            duration: 3000,
-            icon: '⚠️',
-            style: {
-              backgroundColor: '#FFF3CD',
-              color: '#856404',
-              border: '1px solid #FFEEBA'
+          
+          // 디버깅: toast.warning 사용 시 오류 발생 지점
+          try {
+            // react-hot-toast 메서드 존재 여부 확인 및 안전하게 호출
+            if (typeof toast === 'function') {
+              // 기본 toast 함수 사용
+              toast('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.', {
+                duration: 3000,
+                icon: '⚠️'
+              });
+            } else if (typeof toast.warning === 'function') {
+              // warning 메서드가 있다면 사용
+              toast.warning('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.', {
+                duration: 3000,
+                icon: '⚠️'
+              });
+            } else {
+              // 두 방법 모두 실패하면 경고만 표시
+              console.warn('Toast 알림을 표시할 수 없습니다.');
             }
-          });
+          } catch (toastError) {
+            console.error('Toast 표시 중 오류 발생:', toastError);
+          }
         } else {
           // 중복 데이터 제거 (요리명 기준)
           const uniqueNames = new Set();
@@ -238,29 +259,50 @@ const NutritionScout = () => {
           console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
           setFoodData(uniqueData);
           
-          toast(`${data.length}개의 음식 데이터를 로드했습니다.`, {
-            duration: 3000,
-            icon: '🍽️',
-            style: {
-              backgroundColor: '#D4EDDA',
-              color: '#155724',
-              border: '1px solid #C3E6CB'
+          // 디버깅: toast.success 사용 시 오류 발생 가능 지점
+          try {
+            // react-hot-toast 메서드 존재 여부 확인 및 안전하게 호출
+            if (typeof toast === 'function') {
+              // 기본 toast 함수 사용
+              toast(`${data.length}개의 음식 데이터를 로드했습니다.`, {
+                duration: 3000,
+                icon: '🍽️'
+              });
+            } else if (typeof toast.success === 'function') {
+              // success 메서드가 있다면 사용
+              toast.success(`${data.length}개의 음식 데이터를 로드했습니다.`, {
+                duration: 3000,
+                icon: '🍽️'
+              });
+            } else {
+              console.warn('Toast 알림을 표시할 수 없습니다.');
             }
-          });
+          } catch (toastError) {
+            console.error('Toast 표시 중 오류 발생:', toastError);
+          }
         }
       }
     } catch (error: any) {
       console.error('CSV 로드 에러:', error);
       setLoadError(`CSV 로드 실패: ${error.message}`);
-      toast('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.', {
-        duration: 3000, 
-        icon: '❌',
-        style: {
-          backgroundColor: '#F8D7DA',
-          color: '#721C24',
-          border: '1px solid #F5C6CB'
+      
+      // 디버깅: toast.error 사용 시 오류 발생 가능 지점
+      try {
+        if (typeof toast === 'function') {
+          // 기본 toast 함수 사용
+          toast('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.', {
+            duration: 3000,
+            icon: '❌'
+          });
+        } else if (typeof toast.error === 'function') {
+          // error 메서드가 있다면 사용
+          toast.error('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.');
+        } else {
+          console.warn('Toast 알림을 표시할 수 없습니다.');
         }
-      });
+      } catch (toastError) {
+        console.error('Toast 표시 중 오류 발생:', toastError);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -268,15 +310,23 @@ const NutritionScout = () => {
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
-      toast('검색어를 입력해주세요.', {
-        duration: 3000,
-        icon: '❌',
-        style: {
-          backgroundColor: '#F8D7DA',
-          color: '#721C24',
-          border: '1px solid #F5C6CB'
+      // 디버깅: toast.error 사용 시 오류 발생 가능 지점
+      try {
+        if (typeof toast === 'function') {
+          // 기본 toast 함수 사용
+          toast('검색어를 입력해주세요.', {
+            duration: 3000,
+            icon: '❌'
+          });
+        } else if (typeof toast.error === 'function') {
+          // error 메서드가 있다면 사용
+          toast.error('검색어를 입력해주세요.');
+        } else {
+          console.warn('Toast 알림을 표시할 수 없습니다.');
         }
-      });
+      } catch (toastError) {
+        console.error('Toast 표시 중 오류 발생:', toastError);
+      }
       return;
     }
     
@@ -297,15 +347,23 @@ const NutritionScout = () => {
         setShowAutoComplete(false);
       } else {
         setSearchResult(null);
-        toast('검색 결과가 없습니다.', {
-          duration: 3000,
-          icon: '❌',
-          style: {
-            backgroundColor: '#F8D7DA',
-            color: '#721C24',
-            border: '1px solid #F5C6CB'
+        // 디버깅: toast.error 사용 시 오류 발생 가능 지점
+        try {
+          if (typeof toast === 'function') {
+            // 기본 toast 함수 사용
+            toast('검색 결과가 없습니다.', {
+              duration: 3000,
+              icon: '❌'
+            });
+          } else if (typeof toast.error === 'function') {
+            // error 메서드가 있다면 사용
+            toast.error('검색 결과가 없습니다.');
+          } else {
+            console.warn('Toast 알림을 표시할 수 없습니다.');
           }
-        });
+        } catch (toastError) {
+          console.error('Toast 표시 중 오류 발생:', toastError);
+        }
       }
     }
   };
