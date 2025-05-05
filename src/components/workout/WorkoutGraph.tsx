@@ -54,13 +54,52 @@ const WorkoutGraph: React.FC = () => {
 
   const currentWorkouts = workoutData[selectedPart] || [];
   
+  // 정렬된 데이터
+  const sortedWorkouts = [...currentWorkouts].sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  
   // y축 범위 계산
-  const maxWeight = Math.max(...currentWorkouts.map(d => d.weight), 0);
+  const maxWeight = Math.max(...currentWorkouts.map(d => d.weight), 0) + 5; // 상단 여백 추가
   const minWeight = Math.max(0, Math.min(...currentWorkouts.map(d => d.weight)) - 10);
   const range = maxWeight - minWeight > 0 ? maxWeight - minWeight : 10;
   
   // 선택된 부위의 메인 운동 이름
   const selectedExercise = exercisePartOptions.find(opt => opt.value === selectedPart)?.mainExerciseName || '';
+
+  // 그래프 SVG 관련 설정
+  const graphHeight = 250;  
+  const graphWidth = 600;
+  const paddingLeft = 50;   // y축 레이블 공간
+  const paddingRight = 20;  // 오른쪽 여백
+  const paddingTop = 20;    // 상단 여백
+  const paddingBottom = 50; // x축 레이블 공간
+  
+  // 실제 그래프 영역 크기
+  const chartWidth = graphWidth - paddingLeft - paddingRight;
+  const chartHeight = graphHeight - paddingTop - paddingBottom;
+  
+  // x축, y축 데이터 포인트 계산
+  const getX = (index: number) => {
+    return paddingLeft + (index / (sortedWorkouts.length - 1 || 1)) * chartWidth;
+  };
+  
+  const getY = (weight: number) => {
+    return paddingTop + chartHeight - ((weight - minWeight) / range) * chartHeight;
+  };
+  
+  // 선 그래프 경로 생성
+  const createLinePath = () => {
+    if (sortedWorkouts.length === 0) return '';
+    
+    let path = `M${getX(0)},${getY(sortedWorkouts[0].weight)}`;
+    
+    for (let i = 1; i < sortedWorkouts.length; i++) {
+      path += ` L${getX(i)},${getY(sortedWorkouts[i].weight)}`;
+    }
+    
+    return path;
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -85,70 +124,128 @@ const WorkoutGraph: React.FC = () => {
       </div>
       
       {currentWorkouts.length > 0 ? (
-        <>
-          {/* Y 축 레이블 */}
-          <div className="flex mb-2">
-            <div className="w-10 text-right pr-2 text-sm text-gray-600 dark:text-gray-400">
-              무게(kg)
-            </div>
-            <div className="flex-1"></div>
-          </div>
-          
-          <div className="flex">
-            {/* Y 축 눈금 */}
-            <div className="w-10 relative h-64">
-              <div className="absolute top-0 right-2 text-xs text-gray-600 dark:text-gray-400">{maxWeight}</div>
-              <div className="absolute top-1/3 right-2 text-xs text-gray-600 dark:text-gray-400">
-                {Math.round(maxWeight - (range / 3))}
-              </div>
-              <div className="absolute top-2/3 right-2 text-xs text-gray-600 dark:text-gray-400">
-                {Math.round(maxWeight - (2 * range / 3))}
-              </div>
-              <div className="absolute bottom-0 right-2 text-xs text-gray-600 dark:text-gray-400">{minWeight}</div>
-            </div>
+        <div className="relative overflow-x-auto">
+          <svg width={graphWidth} height={graphHeight} className="mx-auto">
+            {/* Y축 */}
+            <line 
+              x1={paddingLeft} 
+              y1={paddingTop} 
+              x2={paddingLeft} 
+              y2={paddingTop + chartHeight} 
+              stroke="#CBD5E0" 
+              strokeWidth="1" 
+            />
             
-            {/* 그래프 */}
-            <div className="flex-1 h-64">
-              <div className="h-full flex items-end gap-2">
-                {currentWorkouts.map((data, index) => (
-                  <div key={index} className="flex-1 flex flex-col items-center">
-                    <div
-                      className={`w-full rounded-t ${
-                        data.isSuccess ? 'bg-green-500' : 'bg-red-500'
-                      }`}
-                      style={{
-                        height: `${((data.weight - minWeight) / range) * 100}%`
-                      }}
-                    >
-                      <div className="h-full flex items-center justify-center">
-                        <span className="text-xs text-white font-bold rotate-90 origin-center">
-                          {data.weight}kg
-                        </span>
-                      </div>
-                    </div>
-                    <div className="w-full text-center mt-1 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
-                      {new Date(data.date).toLocaleDateString('ko-KR', {
-                        month: 'short', 
-                        day: 'numeric'
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+            {/* X축 */}
+            <line 
+              x1={paddingLeft} 
+              y1={paddingTop + chartHeight} 
+              x2={paddingLeft + chartWidth} 
+              y2={paddingTop + chartHeight} 
+              stroke="#CBD5E0" 
+              strokeWidth="1" 
+            />
+            
+            {/* Y축 눈금 및 레이블 */}
+            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+              const yPos = paddingTop + chartHeight * (1 - ratio);
+              const weight = minWeight + range * ratio;
+              return (
+                <g key={`y-${ratio}`}>
+                  <line 
+                    x1={paddingLeft - 5} 
+                    y1={yPos} 
+                    x2={paddingLeft} 
+                    y2={yPos} 
+                    stroke="#718096" 
+                    strokeWidth="1" 
+                  />
+                  <text 
+                    x={paddingLeft - 10} 
+                    y={yPos} 
+                    textAnchor="end" 
+                    dominantBaseline="middle" 
+                    fontSize="12" 
+                    fill="#718096"
+                  >
+                    {Math.round(weight)}kg
+                  </text>
+                  <line 
+                    x1={paddingLeft} 
+                    y1={yPos} 
+                    x2={paddingLeft + chartWidth} 
+                    y2={yPos} 
+                    stroke="#CBD5E0" 
+                    strokeDasharray="3,3" 
+                    strokeWidth="1" 
+                  />
+                </g>
+              );
+            })}
+            
+            {/* X축 레이블 */}
+            {sortedWorkouts.map((workout, i) => (
+              <text 
+                key={`x-${i}`} 
+                x={getX(i)} 
+                y={paddingTop + chartHeight + 20} 
+                textAnchor="middle" 
+                fontSize="11" 
+                fill="#718096"
+              >
+                {new Date(workout.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+              </text>
+            ))}
+            
+            {/* 데이터 포인트를 연결하는 선 */}
+            <path 
+              d={createLinePath()} 
+              fill="none" 
+              stroke="#3B82F6" 
+              strokeWidth="3" 
+              strokeLinejoin="round" 
+            />
+            
+            {/* 데이터 포인트 */}
+            {sortedWorkouts.map((workout, i) => (
+              <g key={`point-${i}`}>
+                {/* 성공/실패에 따른 데이터 포인트 색상 */}
+                <circle 
+                  cx={getX(i)} 
+                  cy={getY(workout.weight)} 
+                  r="6" 
+                  fill={workout.isSuccess ? "#10B981" : "#EF4444"} 
+                  stroke="white" 
+                  strokeWidth="2" 
+                />
+                
+                {/* 무게 레이블 */}
+                <text 
+                  x={getX(i)} 
+                  y={getY(workout.weight) - 12} 
+                  textAnchor="middle" 
+                  fontSize="12" 
+                  fontWeight="bold" 
+                  fill={workout.isSuccess ? "#10B981" : "#EF4444"}
+                >
+                  {workout.weight}kg
+                </text>
+              </g>
+            ))}
+          </svg>
           
+          {/* 범례 */}
           <div className="mt-6 flex justify-center gap-4">
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-green-500 rounded mr-2" />
+              <div className="w-4 h-4 bg-green-500 rounded-full mr-2" />
               <span className="text-sm">성공</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-red-500 rounded mr-2" />
+              <div className="w-4 h-4 bg-red-500 rounded-full mr-2" />
               <span className="text-sm">실패</span>
             </div>
           </div>
-        </>
+        </div>
       ) : (
         <div className="h-64 flex items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">

@@ -33,10 +33,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [notes, setNotes] = useState('');
   
   // 타이머 관련 상태
-  const [countdownTime, setCountdownTime] = useState(120); // 2분 = 120초
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [activeSetTimer, setActiveSetTimer] = useState<number | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [activeTimers, setActiveTimers] = useState<Record<string, number>>({});
+  const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
   
   // 파트가 변경될 때 메인 운동 이름 자동 변경
   useEffect(() => {
@@ -51,36 +49,40 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 타이머 효과
   useEffect(() => {
-    if (isTimerRunning && countdownTime > 0) {
-      timerRef.current = setInterval(() => {
-        setCountdownTime(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current as NodeJS.Timeout);
-            setIsTimerRunning(false);
-            // 타이머 종료 알림
-            toast('휴식 시간이 끝났습니다. 다음 세트를 진행해주세요!', {
-              icon: '⏰',
-              style: {
-                borderRadius: '10px',
-                background: '#333',
-                color: '#fff',
-              },
-            });
-            return 120; // 타이머 리셋
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (!isTimerRunning && timerRef.current) {
-      clearInterval(timerRef.current);
-    }
+    // 활성화된 타이머들에 대한 처리
+    Object.entries(activeTimers).forEach(([timerId, timeLeft]) => {
+      if (timeLeft > 0) {
+        timerRefs.current[timerId] = setInterval(() => {
+          setActiveTimers(prev => {
+            const newTime = prev[timerId] - 1;
+            if (newTime <= 0) {
+              clearInterval(timerRefs.current[timerId]);
+              // 타이머 종료 알림
+              toast('휴식 시간이 끝났습니다. 다음 세트를 진행해주세요!', {
+                icon: '⏰',
+                style: {
+                  borderRadius: '10px',
+                  background: '#333',
+                  color: '#fff',
+                },
+              });
+              
+              // 타이머 제거
+              const newTimers = { ...prev };
+              delete newTimers[timerId];
+              return newTimers;
+            }
+            return { ...prev, [timerId]: newTime };
+          });
+        }, 1000);
+      }
+    });
     
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      // 모든 타이머 정리
+      Object.values(timerRefs.current).forEach(timer => clearInterval(timer));
     };
-  }, [isTimerRunning, countdownTime]);
+  }, [activeTimers]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -88,10 +90,46 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const startTimer = (setIndex: number) => {
-    setCountdownTime(120); // 타이머 초기화
-    setIsTimerRunning(true);
-    setActiveSetTimer(setIndex);
+  const startTimer = (exerciseIndex: number = -1, setIndex: number) => {
+    // 타이머 ID 생성 (메인 운동 또는 보조 운동에 따라 다름)
+    const timerId = exerciseIndex === -1 
+      ? `main_${setIndex}` 
+      : `accessory_${exerciseIndex}_${setIndex}`;
+    
+    // 새 타이머 시작 (2분 = 120초)
+    setActiveTimers(prev => ({ ...prev, [timerId]: 120 }));
+    
+    // 타이머 시작 토스트 메시지
+    toast.success(
+      <div className="text-center">
+        <div className="font-bold text-lg mb-1">휴식 타이머</div>
+        <div className="font-mono" id={`timer-toast-${timerId}`}>02:00</div>
+      </div>,
+      {
+        id: timerId,
+        duration: 120000, // 2분
+        position: 'bottom-center',
+        style: {
+          background: '#1E40AF',
+          color: 'white',
+          fontWeight: 'bold',
+          minWidth: '200px',
+        },
+      }
+    );
+    
+    // 토스트 내의 타이머 업데이트
+    const toastTimerInterval = setInterval(() => {
+      const timeLeft = activeTimers[timerId];
+      if (timeLeft) {
+        const element = document.getElementById(`timer-toast-${timerId}`);
+        if (element) {
+          element.textContent = formatTime(timeLeft);
+        }
+      } else {
+        clearInterval(toastTimerInterval);
+      }
+    }, 1000);
   };
 
   const addSet = (exerciseIndex: number = -1) => {
@@ -181,12 +219,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       
       // 저장 완료 토스트 메시지
       toast.success('저장 완료!', {
-        duration: 2000,
+        duration: 3000,
+        position: 'top-center',
         style: {
           background: '#10B981',
           color: '#fff',
-          fontWeight: 'bold'
-        }
+          fontWeight: 'bold',
+          padding: '16px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          fontSize: '1.2rem',
+          minWidth: '250px',
+          textAlign: 'center',
+        },
+        icon: '✅'
       });
       
       // 5회 이상 10세트 성공 시 증량 추천 메시지
@@ -211,8 +256,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       });
       setAccessoryExercises([]);
       setNotes('');
-      setCountdownTime(120);
-      setIsTimerRunning(false);
       
       // 성공 콜백 호출 - 운동 기록 페이지로 이동
       if (onSuccess) {
@@ -235,7 +278,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center mb-6">
               <select
                 value={part}
                 onChange={(e) => setPart(e.target.value as ExercisePart)}
@@ -247,9 +290,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   </option>
                 ))}
               </select>
-              <div className={`text-2xl font-mono ${isTimerRunning ? 'text-red-500 animate-pulse' : 'text-gray-800 dark:text-white'}`}>
-                {formatTime(countdownTime)}
-              </div>
             </div>
 
             <div className="space-y-6">
@@ -304,14 +344,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       
                       <button
                         type="button"
-                        onClick={() => startTimer(index)}
+                        onClick={() => startTimer(-1, index)}
                         className={`ml-2 px-3 py-1 rounded ${
-                          activeSetTimer === index && isTimerRunning
+                          activeTimers[`main_${index}`] 
                             ? 'bg-red-500 text-white'
                             : 'bg-blue-500 text-white hover:bg-blue-600'
                         }`}
                       >
-                        {activeSetTimer === index && isTimerRunning ? '타이머 작동중' : '휴식 타이머'}
+                        {activeTimers[`main_${index}`] 
+                          ? `${formatTime(activeTimers[`main_${index}`])}` 
+                          : '휴식 타이머'}
                       </button>
                     </div>
                   ))}
@@ -385,6 +427,20 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           {set.isSuccess ? '성공' : '실패'}
                         </button>
                         <span className="text-xs text-gray-500 italic ml-2">(* 10회 이상 성공시 성공으로 계산)</span>
+                        
+                        <button
+                          type="button"
+                          onClick={() => startTimer(index, setIndex)}
+                          className={`ml-2 px-3 py-1 rounded ${
+                            activeTimers[`accessory_${index}_${setIndex}`] 
+                              ? 'bg-red-500 text-white'
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                          }`}
+                        >
+                          {activeTimers[`accessory_${index}_${setIndex}`] 
+                            ? `${formatTime(activeTimers[`accessory_${index}_${setIndex}`])}` 
+                            : '휴식 타이머'}
+                        </button>
                       </div>
                     ))}
                     <button
