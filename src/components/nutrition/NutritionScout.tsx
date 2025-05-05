@@ -102,81 +102,127 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // process.env.PUBLIC_URL 활용하여 파일 로드
-      const response = await fetch(`${process.env.PUBLIC_URL}/nutrition_db.csv`);
+      // Vite에서는 import.meta.env.BASE_URL 사용
+      const baseUrl = import.meta.env.BASE_URL || '';
       
-      if (!response.ok) {
-        // 대체 방법 시도
-        const alternativeResponse = await fetch('./nutrition_db.csv');
-        
-        if (!alternativeResponse.ok) {
-          throw new Error(`CSV 로드 실패: ${response.status}`);
+      // 시도할 수 있는 모든 경로
+      const possiblePaths = [
+        '/nutrition_db.csv',
+        './nutrition_db.csv',
+        '../nutrition_db.csv',
+        `${baseUrl}/nutrition_db.csv`,
+        'nutrition_db.csv',
+        `/public/nutrition_db.csv`,
+        `${window.location.origin}/nutrition_db.csv`,
+      ];
+      
+      let response;
+      let successPath = '';
+      
+      // 모든 가능한 경로를 순차적으로 시도
+      for (const path of possiblePaths) {
+        try {
+          console.log(`CSV 로드 시도: ${path}`);
+          const tempResponse = await fetch(path);
+          if (tempResponse.ok) {
+            response = tempResponse;
+            successPath = path;
+            console.log(`CSV 로드 성공: ${path}`);
+            break;
+          }
+        } catch (error) {
+          console.log(`${path} 경로 시도 실패:`, error);
         }
-        
-        return await processCSVResponse(alternativeResponse);
       }
       
-      return await processCSVResponse(response);
-    } catch (error) {
+      if (!response || !response.ok) {
+        throw new Error(`모든 경로에서 CSV 로드 실패`);
+      }
+      
+      const csvText = await response.text();
+      console.log(`CSV 로드 성공. 파일 크기: ${csvText.length} bytes, 경로: ${successPath}`);
+      
+      // CSV 내용 로깅 (디버깅용)
+      console.log('CSV 처음 500자:', csvText.substring(0, 500));
+      
+      // CSV 파싱
+      if (csvText) {
+        const lines = csvText.split('\n');
+        
+        if (lines.length <= 1) {
+          console.error('CSV 파일 형식 오류: 줄이 충분하지 않음');
+          throw new Error('CSV 파일 형식 오류');
+        }
+        
+        const headers = lines[0].split(',').map(h => h.trim());
+        console.log('CSV 헤더:', headers);
+        
+        if (headers.length < 3) {
+          console.error('CSV 헤더 형식 오류:', headers);
+          throw new Error('CSV 헤더 형식 오류');
+        }
+        
+        const data: NutritionData[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          
+          const values = lines[i].split(',');
+          if (values.length < 3) {
+            console.log(`유효하지 않은 행 스킵 (${i}):`, lines[i]);
+            continue;
+          }
+          
+          const row: any = {};
+          
+          headers.forEach((header, j) => {
+            const value = values[j]?.trim() || '';
+            row[header] = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
+          });
+          
+          // 요리명이 있는 경우만 추가
+          if (row['요리명']) {
+            data.push(row as NutritionData);
+          }
+        }
+        
+        console.log(`CSV에서 ${data.length}개의 항목 로드됨`);
+        
+        if (data.length === 0) {
+          console.warn('CSV에서 항목을 찾지 못했습니다. 기본 데이터만 사용합니다.');
+        }
+        
+        // 중복 데이터 제거 (요리명 기준)
+        const uniqueNames = new Set();
+        const uniqueData = [...DEFAULT_FOOD_DATA];
+        
+        data.forEach(item => {
+          if (!uniqueNames.has(item.요리명)) {
+            uniqueNames.add(item.요리명);
+            uniqueData.push(item);
+          }
+        });
+        
+        console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
+        setFoodData(uniqueData);
+        
+        if (data.length > 0) {
+          toast.success(`${data.length}개의 음식 데이터를 로드했습니다.`, {
+            duration: 3000,
+            icon: '🍽️'
+          });
+        } else {
+          toast.warning('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.', {
+            duration: 3000,
+            icon: '⚠️'
+          });
+        }
+      }
+    } catch (error: any) {
       console.error('CSV 로드 에러:', error);
-      setLoadError('CSV 로드 실패');
+      setLoadError(`CSV 로드 실패: ${error.message}`);
       toast.error('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.');
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  // CSV 응답 처리 함수 분리
-  const processCSVResponse = async (response: Response) => {
-    const csvText = await response.text();
-    
-    // CSV 파싱
-    if (csvText) {
-      const lines = csvText.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
-      
-      console.log('CSV 헤더:', headers);
-      
-      const data: NutritionData[] = [];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        
-        const values = lines[i].split(',');
-        if (values.length < 3) continue; // 유효하지 않은 행 스킵
-        
-        const row: any = {};
-        
-        headers.forEach((header, j) => {
-          const value = values[j]?.trim() || '';
-          row[header] = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
-        });
-        
-        // 요리명이 있는 경우만 추가
-        if (row['요리명']) {
-          data.push(row as NutritionData);
-        }
-      }
-      
-      console.log(`CSV에서 ${data.length}개의 항목 로드됨`);
-      
-      // 중복 데이터 제거 (요리명 기준)
-      const uniqueNames = new Set();
-      const uniqueData = [...DEFAULT_FOOD_DATA];
-      
-      data.forEach(item => {
-        if (!uniqueNames.has(item.요리명)) {
-          uniqueNames.add(item.요리명);
-          uniqueData.push(item);
-        }
-      });
-      
-      console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
-      setFoodData(uniqueData);
-      
-      toast.success(`${data.length}개의 음식 데이터를 로드했습니다.`, {
-        duration: 3000,
-        icon: '🍽️'
-      });
     }
   };
 
