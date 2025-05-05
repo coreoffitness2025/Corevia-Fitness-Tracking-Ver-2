@@ -157,6 +157,7 @@ export interface Food {
   protein: number;
   carbs: number;
   fat: number;
+  type?: string;
   imageUrl?: string;
   notes?: string;
 }

@@ -79,13 +79,93 @@ const QnaPage: React.FC = () => {
 
         {activeTab === 'nutrition' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 왼쪽에 목표 칼로리 계산기 (NutritionGuide) */}
+            {/* 왼쪽에 목표 칼로리 계산기 */}
             <div>
               <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">목표 칼로리 계산기</h2>
-              <NutritionGuide />
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <div className="space-y-4">
+                  <div className="mb-4">
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2">성별</label>
+                    <div className="flex gap-4">
+                      <div className="flex items-center">
+                        <input type="radio" id="male" name="gender" className="mr-2" defaultChecked />
+                        <label htmlFor="male" className="text-gray-700 dark:text-gray-300">남성</label>
+                      </div>
+                      <div className="flex items-center">
+                        <input type="radio" id="female" name="gender" className="mr-2" />
+                        <label htmlFor="female" className="text-gray-700 dark:text-gray-300">여성</label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">나이</label>
+                      <input 
+                        type="number" 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                        placeholder="25"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">체중 (kg)</label>
+                      <input 
+                        type="number" 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                        placeholder="70"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">신장 (cm)</label>
+                      <input 
+                        type="number" 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                        placeholder="175"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">활동 수준</label>
+                      <select className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="1.2">거의 운동 안함</option>
+                        <option value="1.375">가벼운 운동 (주 1-3회)</option>
+                        <option value="1.55">보통 수준 (주 3-5회)</option>
+                        <option value="1.725">활발한 운동 (주 6-7회)</option>
+                        <option value="1.9">매우 활발함 (하루 2회)</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2">목표</label>
+                    <select className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                      <option value="lose">체중 감량</option>
+                      <option value="maintain">체중 유지</option>
+                      <option value="gain">체중 증가</option>
+                    </select>
+                  </div>
+                  
+                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 mt-4">
+                    계산하기
+                  </button>
+                  
+                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                    <h3 className="font-medium text-gray-800 dark:text-white mb-2">계산 결과</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">기초 대사량 (BMR)</p>
+                        <p className="font-medium">1,745 kcal</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">하루 권장 칼로리</p>
+                        <p className="font-medium text-blue-600 dark:text-blue-400">2,400 kcal</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            {/* 오른쪽에 음식 영양성분 확인하기 (NutritionScout) */}
+            {/* 오른쪽에 음식 영양성분 확인하기 */}
             <div>
               <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">음식 영양성분 확인하기</h2>
               <NutritionScout />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { ExercisePart, Session } from '../../types';
 import { addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -11,17 +11,17 @@ interface WorkoutFormProps {
 }
 
 const exercisePartOptions = [
-  { value: 'chest',    label: '가슴',   icon: '💪' },
-  { value: 'back',     label: '등',     icon: '🔙' },
-  { value: 'shoulder', label: '어깨',   icon: '🏋️' },
-  { value: 'leg',      label: '하체',   icon: '🦵' }
+  { value: 'chest',    label: '가슴',   icon: '💪', mainExerciseName: '벤치 프레스' },
+  { value: 'back',     label: '등',     icon: '🔙', mainExerciseName: '데드리프트' },
+  { value: 'shoulder', label: '어깨',   icon: '🏋️', mainExerciseName: '오버헤드 프레스' },
+  { value: 'leg',      label: '하체',   icon: '🦵', mainExerciseName: '스쿼트' }
 ];
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { user } = useAuthStore();
   const [part, setPart] = useState<ExercisePart>('chest');
   const [mainExercise, setMainExercise] = useState({
-    name: '',
+    name: exercisePartOptions[0].mainExerciseName,
     sets: [{ reps: 0, weight: 0, isSuccess: false }]
   });
   const [accessoryExercises, setAccessoryExercises] = useState<Array<{
@@ -31,23 +31,67 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     sets: Array<{ reps: number; weight: number; isSuccess: boolean }>;
   }>>([]);
   const [notes, setNotes] = useState('');
-  const [timer, setTimer] = useState(0);
+  
+  // 타이머 관련 상태
+  const [countdownTime, setCountdownTime] = useState(120); // 2분 = 120초
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-
+  const [activeSetTimer, setActiveSetTimer] = useState<number | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 파트가 변경될 때 메인 운동 이름 자동 변경
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        setTimer(prev => prev + 1);
-      }, 1000);
+    const selectedPart = exercisePartOptions.find(option => option.value === part);
+    if (selectedPart) {
+      setMainExercise(prev => ({
+        ...prev,
+        name: selectedPart.mainExerciseName
+      }));
     }
-    return () => clearInterval(interval);
-  }, [isTimerRunning]);
+  }, [part]);
+
+  // 타이머 효과
+  useEffect(() => {
+    if (isTimerRunning && countdownTime > 0) {
+      timerRef.current = setInterval(() => {
+        setCountdownTime(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current as NodeJS.Timeout);
+            setIsTimerRunning(false);
+            // 타이머 종료 알림
+            toast('휴식 시간이 끝났습니다. 다음 세트를 진행해주세요!', {
+              icon: '⏰',
+              style: {
+                borderRadius: '10px',
+                background: '#333',
+                color: '#fff',
+              },
+            });
+            return 120; // 타이머 리셋
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (!isTimerRunning && timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isTimerRunning, countdownTime]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const startTimer = (setIndex: number) => {
+    setCountdownTime(120); // 타이머 초기화
+    setIsTimerRunning(true);
+    setActiveSetTimer(setIndex);
   };
 
   const addSet = (exerciseIndex: number = -1) => {
@@ -76,6 +120,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         sets: [{ reps: 0, weight: 0, isSuccess: false }] 
       }
     ]);
+  };
+
+  // 횟수 자동 성공 처리
+  const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
+    if (isMainExercise) {
+      const newSets = [...mainExercise.sets];
+      newSets[setIndex].reps = newReps;
+      // 10회 이상이면 자동으로 성공 처리
+      newSets[setIndex].isSuccess = newReps >= 10;
+      setMainExercise(prev => ({ ...prev, sets: newSets }));
+    } else if (accessoryIndex !== undefined) {
+      const newExercises = [...accessoryExercises];
+      newExercises[accessoryIndex].sets[setIndex].reps = newReps;
+      // 10회 이상이면 자동으로 성공 처리
+      newExercises[accessoryIndex].sets[setIndex].isSuccess = newReps >= 10;
+      setAccessoryExercises(newExercises);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,22 +178,47 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       }
 
       await addDoc(collection(db, 'sessions'), sessionData);
-      toast.success('운동 기록이 저장되었습니다.');
+      
+      // 저장 완료 토스트 메시지
+      toast.success('저장 완료!', {
+        duration: 2000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: 'bold'
+        }
+      });
+      
+      // 5회 이상 10세트 성공 시 증량 추천 메시지
+      const successSets = mainExercise.sets.filter(set => set.isSuccess).length;
+      if (successSets >= 5 && mainExercise.sets.length >= 10) {
+        toast.success('훈련에 성공했습니다. 2.5kg 증량을 추천드립니다!', {
+          duration: 5000,
+          icon: '🏋️',
+          style: {
+            background: '#3B82F6',
+            color: '#fff',
+            fontWeight: 'bold'
+          }
+        });
+      }
       
       // 폼 초기화
       setPart('chest');
       setMainExercise({
-        name: '',
+        name: exercisePartOptions[0].mainExerciseName,
         sets: [{ reps: 0, weight: 0, isSuccess: false }]
       });
       setAccessoryExercises([]);
       setNotes('');
-      setTimer(0);
+      setCountdownTime(120);
       setIsTimerRunning(false);
       
-      // 성공 콜백 호출
+      // 성공 콜백 호출 - 운동 기록 페이지로 이동
       if (onSuccess) {
-        onSuccess();
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
       }
     } catch (error) {
       console.error('Error saving session:', error);
@@ -161,47 +247,44 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   </option>
                 ))}
               </select>
-              <div className="text-2xl font-mono text-gray-800 dark:text-white">
-                {formatTime(timer)}
+              <div className={`text-2xl font-mono ${isTimerRunning ? 'text-red-500 animate-pulse' : 'text-gray-800 dark:text-white'}`}>
+                {formatTime(countdownTime)}
               </div>
             </div>
 
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">메인 운동</h3>
-                <input
-                  type="text"
-                  value={mainExercise.name}
-                  onChange={(e) => setMainExercise(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="운동 이름"
-                  className="w-full p-2 border rounded mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
+                <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+                  메인 운동: {mainExercise.name}
+                </h3>
                 <div className="space-y-4">
                   {mainExercise.sets.map((set, index) => (
-                    <div key={index} className="flex items-center gap-4">
-                      <span className="font-medium text-gray-800 dark:text-white">세트 {index + 1}</span>
-                      <input
-                        type="number"
-                        value={set.weight}
-                        onChange={(e) => {
-                          const newSets = [...mainExercise.sets];
-                          newSets[index].weight = Number(e.target.value);
-                          setMainExercise(prev => ({ ...prev, sets: newSets }));
-                        }}
-                        placeholder="무게"
-                        className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                      <input
-                        type="number"
-                        value={set.reps}
-                        onChange={(e) => {
-                          const newSets = [...mainExercise.sets];
-                          newSets[index].reps = Number(e.target.value);
-                          setMainExercise(prev => ({ ...prev, sets: newSets }));
-                        }}
-                        placeholder="횟수"
-                        className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
+                    <div key={index} className="flex items-center gap-4 flex-wrap">
+                      <span className="font-medium text-gray-800 dark:text-white w-16">세트 {index + 1}</span>
+                      <div className="flex flex-col">
+                        <label className="text-xs text-gray-500 mb-1">무게 (kg)</label>
+                        <input
+                          type="number"
+                          value={set.weight}
+                          onChange={(e) => {
+                            const newSets = [...mainExercise.sets];
+                            newSets[index].weight = Number(e.target.value);
+                            setMainExercise(prev => ({ ...prev, sets: newSets }));
+                          }}
+                          placeholder="kg"
+                          className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-xs text-gray-500 mb-1">횟수</label>
+                        <input
+                          type="number"
+                          value={set.reps}
+                          onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
+                          placeholder="횟수"
+                          className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
@@ -216,6 +299,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         }`}
                       >
                         {set.isSuccess ? '성공' : '실패'}
+                      </button>
+                      <span className="text-xs text-gray-500 italic ml-2">(* 10회 이상 성공시 성공으로 계산)</span>
+                      
+                      <button
+                        type="button"
+                        onClick={() => startTimer(index)}
+                        className={`ml-2 px-3 py-1 rounded ${
+                          activeSetTimer === index && isTimerRunning
+                            ? 'bg-red-500 text-white'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                      >
+                        {activeSetTimer === index && isTimerRunning ? '타이머 작동중' : '휴식 타이머'}
                       </button>
                     </div>
                   ))}
@@ -247,30 +343,32 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   />
                   <div className="space-y-4">
                     {exercise.sets.map((set, setIndex) => (
-                      <div key={setIndex} className="flex items-center gap-4">
-                        <span className="font-medium text-gray-800 dark:text-white">세트 {setIndex + 1}</span>
-                        <input
-                          type="number"
-                          value={set.weight}
-                          onChange={(e) => {
-                            const newExercises = [...accessoryExercises];
-                            newExercises[index].sets[setIndex].weight = Number(e.target.value);
-                            setAccessoryExercises(newExercises);
-                          }}
-                          placeholder="무게"
-                          className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        />
-                        <input
-                          type="number"
-                          value={set.reps}
-                          onChange={(e) => {
-                            const newExercises = [...accessoryExercises];
-                            newExercises[index].sets[setIndex].reps = Number(e.target.value);
-                            setAccessoryExercises(newExercises);
-                          }}
-                          placeholder="횟수"
-                          className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        />
+                      <div key={setIndex} className="flex items-center gap-4 flex-wrap">
+                        <span className="font-medium text-gray-800 dark:text-white w-16">세트 {setIndex + 1}</span>
+                        <div className="flex flex-col">
+                          <label className="text-xs text-gray-500 mb-1">무게 (kg)</label>
+                          <input
+                            type="number"
+                            value={set.weight}
+                            onChange={(e) => {
+                              const newExercises = [...accessoryExercises];
+                              newExercises[index].sets[setIndex].weight = Number(e.target.value);
+                              setAccessoryExercises(newExercises);
+                            }}
+                            placeholder="kg"
+                            className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-xs text-gray-500 mb-1">횟수</label>
+                          <input
+                            type="number"
+                            value={set.reps}
+                            onChange={(e) => handleRepsChange(Number(e.target.value), setIndex, false, index)}
+                            placeholder="횟수"
+                            className="w-24 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
@@ -286,6 +384,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         >
                           {set.isSuccess ? '성공' : '실패'}
                         </button>
+                        <span className="text-xs text-gray-500 italic ml-2">(* 10회 이상 성공시 성공으로 계산)</span>
                       </div>
                     ))}
                     <button
@@ -331,4 +430,4 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   );
 };
 
-export default WorkoutForm; 
+export default WorkoutForm;
