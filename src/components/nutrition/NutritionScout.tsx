@@ -323,7 +323,8 @@ const NutritionScout = () => {
           setFoodData(uniqueData);
           
           // 여기서 로드 성공 토스트 메시지는 표시합니다
-          showToast.success('영양 데이터 로드 완료');
+          // showToast.success('영양 데이터 로드 완료');
+          // 데이터 로드 완료 메시지 제거함
         }
       }
     } catch (error: any) {
