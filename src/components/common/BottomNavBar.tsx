@@ -14,19 +14,30 @@ const BottomNavBar: React.FC = () => {
     return (
       <Link
         to={path}
-        className={`flex flex-col items-center justify-center p-2 transition-colors ${
-          active ? 'text-blue-500' : 'text-gray-500 dark:text-gray-400'
+        className={`flex flex-col items-center justify-center relative p-2 transition-all duration-300 ${
+          active 
+            ? 'text-primary-600 scale-110' 
+            : 'text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400'
         }`}
       >
-        <Icon size={24} />
-        <span className="text-xs mt-1">{label}</span>
+        {active && (
+          <span className="absolute -top-1 w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+        )}
+        <Icon 
+          size={24} 
+          strokeWidth={active ? 2.5 : 1.5} 
+          className={`transition-all duration-300 ${active ? 'drop-shadow-md' : ''}`}
+        />
+        <span className={`text-xs mt-1 font-medium transition-all duration-300 ${active ? 'font-semibold' : ''}`}>
+          {label}
+        </span>
       </Link>
     );
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-3">
-      <div className="container mx-auto flex justify-around items-center">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-nav backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-all duration-300 z-40">
+      <div className="container mx-auto flex justify-around items-center py-3">
         <NavItem path="/" icon={Home} label="홈" />
         <NavItem path="/workout" icon={Activity} label="운동" />
         <NavItem path="/food" icon={Utensils} label="식단" />
