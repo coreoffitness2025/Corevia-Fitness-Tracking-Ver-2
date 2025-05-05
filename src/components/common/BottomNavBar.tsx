@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Activity, Utensils, HelpCircle, Settings } from 'lucide-react';
+import { Home, Utensils, HelpCircle, Settings, Dumbbell } from 'lucide-react';
 
 const BottomNavBar: React.FC = () => {
   const location = useLocation();
@@ -16,12 +16,12 @@ const BottomNavBar: React.FC = () => {
         to={path}
         className={`flex flex-col items-center justify-center relative p-2 transition-all duration-300 ${
           active 
-            ? 'text-primary-600 scale-110' 
-            : 'text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400'
+            ? 'text-[#4285F4] scale-110' 
+            : 'text-gray-500 dark:text-gray-400 hover:text-[#4285F4] dark:hover:text-[#78a9f9]'
         }`}
       >
         {active && (
-          <span className="absolute -top-1 w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+          <span className="absolute -top-1 w-1.5 h-1.5 rounded-full bg-[#4285F4] animate-pulse" />
         )}
         <Icon 
           size={24} 
@@ -39,7 +39,7 @@ const BottomNavBar: React.FC = () => {
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-nav backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-all duration-300 z-40">
       <div className="container mx-auto flex justify-around items-center py-3">
         <NavItem path="/" icon={Home} label="홈" />
-        <NavItem path="/workout" icon={Activity} label="운동" />
+        <NavItem path="/workout" icon={Dumbbell} label="운동" />
         <NavItem path="/food" icon={Utensils} label="식단" />
         <NavItem path="/qna" icon={HelpCircle} label="Q&A" />
         <NavItem path="/settings" icon={Settings} label="설정" />
