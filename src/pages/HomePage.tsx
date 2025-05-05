@@ -1,5 +1,6 @@
 import React from 'react';
 import { WorkoutSession } from '../types/workout';
+import Layout from '../components/common/Layout';
 
 const dummyWorkouts: WorkoutSession[] = [
   {
@@ -51,7 +52,7 @@ const dummyProfile = {
 
 const HomePage = () => {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <Layout>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 사용자 프로필 섹션 */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
@@ -116,7 +117,7 @@ const HomePage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

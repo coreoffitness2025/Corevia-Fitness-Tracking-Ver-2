@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import Layout from '../components/common/Layout';
 
 const SettingsPage = () => {
   const { user, logout } = useAuthStore();
@@ -11,7 +12,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <>
+    <Layout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           설정
@@ -81,7 +82,7 @@ const SettingsPage = () => {
           <p>© 2025 Corevia. All rights reserved.</p>
         </div>
       </div>
-    </>
+    </Layout>
   );
 };
 
