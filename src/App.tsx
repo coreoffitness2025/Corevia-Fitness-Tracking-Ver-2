@@ -1,9 +1,10 @@
+// 1단계: App.tsx 라우트 수정
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
-import WorkoutPage from './pages/WorkoutPage';
+import WorkoutPage from './pages/WorkoutPage'; // GraphPage 대신 WorkoutPage
 import WorkoutDetailPage from './pages/WorkoutDetailPage';
 import WorkoutNewPage from './pages/WorkoutNewPage';
 import WorkoutEditPage from './pages/WorkoutEditPage';
@@ -24,7 +25,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-background pb-16">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
       <main>
         {children}
       </main>
@@ -41,18 +42,29 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/workout" element={<WorkoutPage />} />
+            
+            {/* Workout Routes - 운동 관련 */}
+            <Route path="/graph" element={<WorkoutPage />} /> {/* BottomNavBar에서 '운동일지'로 사용 */}
             <Route path="/workout/:id" element={<WorkoutDetailPage />} />
             <Route path="/workout/new" element={<WorkoutNewPage />} />
             <Route path="/workout/:id/edit" element={<WorkoutEditPage />} />
             <Route path="/workout/:id/start" element={<WorkoutStartPage />} />
             <Route path="/workout/:id/result" element={<WorkoutResultPage />} />
             <Route path="/workout/record" element={<WorkoutRecordPage />} />
+            
+            {/* Food Routes - 식단 관련 */}
+            <Route path="/foodlog" element={<FoodLogPage />} /> {/* BottomNavBar에서 '식단기록'으로 사용 */}
             <Route path="/food" element={<FoodLogPage />} />
             <Route path="/food/record" element={<FoodRecordPage />} />
+            
+            {/* Q&A */}
             <Route path="/qna" element={<QnaPage />} />
+            
+            {/* Settings */}
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/:tab" element={<SettingPage />} />
+            
+            {/* 404 Must be at the end */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>
