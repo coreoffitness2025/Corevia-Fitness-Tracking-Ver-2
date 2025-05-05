@@ -8,20 +8,21 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Pretendard', 'Inter', 'system-ui', 'sans-serif'],
-        heading: ['Montserrat', 'Pretendard', 'sans-serif'],
+        heading: ['Pretendard', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
         primary: {
-          50: '#eef6ff',
-          100: '#d9eaff',
-          200: '#bbd8ff',
-          300: '#8ac0ff',
-          400: '#549dff',
-          500: '#3175ff',
-          600: '#1d5af2',
-          700: '#1347de',
-          800: '#183ab3',
-          900: '#193687',
+          50: '#e8f0fe',
+          100: '#d2e3fc',
+          200: '#a6c7fa',
+          300: '#7baaf7',
+          400: '#4285F4',
+          500: '#1a73e8',
+          600: '#1967d2',
+          700: '#185abc',
+          800: '#174ea6',
+          900: '#143d81',
         },
         secondary: {
           50: '#f0f9ff',
