@@ -6,8 +6,6 @@ import { calculateTotalNutrition, formatDate } from '../../utils/nutritionUtils'
 import { fetchFoodsByDate } from '../../services/foodService';
 import FoodItem from './FoodItem';
 import NutritionSummary from './NutritionSummary';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
 
 const FoodLog: React.FC = () => {
   const { user } = useAuthStore();
