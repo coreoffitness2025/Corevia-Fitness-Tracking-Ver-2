@@ -250,8 +250,42 @@ const WorkoutList: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">운동 달력</h3>
-          <div className="text-gray-700 dark:text-gray-300 font-medium">
-            {monthYearText}
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={goToPreviousMonth} 
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              &lt;
+            </button>
+            
+            <div className="flex items-center space-x-2">
+              <select
+                value={currentYear}
+                onChange={(e) => goToSelectedMonth(parseInt(e.target.value), currentMonth)}
+                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                {yearOptions.map(year => (
+                  <option key={year} value={year}>{year}년</option>
+                ))}
+              </select>
+              
+              <select
+                value={currentMonth}
+                onChange={(e) => goToSelectedMonth(currentYear, parseInt(e.target.value))}
+                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                {monthOptions.map(month => (
+                  <option key={month.value} value={month.value}>{month.label}</option>
+                ))}
+              </select>
+            </div>
+            
+            <button 
+              onClick={goToNextMonth} 
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              &gt;
+            </button>
           </div>
         </div>
         

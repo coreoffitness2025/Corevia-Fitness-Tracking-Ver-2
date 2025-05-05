@@ -14,6 +14,8 @@ interface ExercisePartOption {
   mainExerciseName: string;
 }
 
+type TimeRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'all';
+
 const exercisePartOptions: ExercisePartOption[] = [
   { value: 'chest',    label: '가슴',   mainExerciseName: '벤치 프레스' },
   { value: 'back',     label: '등',     mainExerciseName: '데드리프트' },
@@ -24,6 +26,7 @@ const exercisePartOptions: ExercisePartOption[] = [
 const WorkoutGraph: React.FC = () => {
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutData | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
   
   // 선택된 부위에 따른 데이터 필터링 (실제로는 API에서 데이터 가져와야 함)
   const workoutData: Record<ExercisePart, WorkoutData[]> = {
@@ -99,7 +102,49 @@ const WorkoutGraph: React.FC = () => {
     ]
   };
 
-  const currentWorkouts = workoutData[selectedPart] || [];
+  // 필터링된 데이터를 반환하는 함수
+  const getFilteredWorkouts = () => {
+    let filteredWorkouts = [...workoutData[selectedPart]];
+    
+    // 기간별 필터링
+    if (timeRange !== 'all') {
+      const now = new Date();
+      let startDate: Date;
+      
+      switch (timeRange) {
+        case '1week':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '1month':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case '3months':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 3);
+          break;
+        case '6months':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 6);
+          break;
+        case '1year':
+          startDate = new Date(now);
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          return filteredWorkouts;
+      }
+      
+      filteredWorkouts = filteredWorkouts.filter(workout => 
+        new Date(workout.date) >= startDate
+      );
+    }
+    
+    return filteredWorkouts;
+  };
+
+  const currentWorkouts = getFilteredWorkouts();
   
   // 정렬된 데이터
   const sortedWorkouts = [...currentWorkouts].sort((a, b) => 
@@ -165,7 +210,7 @@ const WorkoutGraph: React.FC = () => {
           {selectedExercise} 무게 추이
         </h2>
         
-        <div className="flex">
+        <div className="flex space-x-4">
           <select
             value={selectedPart}
             onChange={(e) => setSelectedPart(e.target.value as ExercisePart)}
@@ -176,6 +221,19 @@ const WorkoutGraph: React.FC = () => {
                 {option.label} ({option.mainExerciseName})
               </option>
             ))}
+          </select>
+          
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+            className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="all">전체 기간</option>
+            <option value="1week">최근 1주</option>
+            <option value="1month">최근 1개월</option>
+            <option value="3months">최근 3개월</option>
+            <option value="6months">최근 6개월</option>
+            <option value="1year">최근 1년</option>
           </select>
         </div>
       </div>

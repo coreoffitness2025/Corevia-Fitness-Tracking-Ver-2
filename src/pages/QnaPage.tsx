@@ -73,6 +73,54 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
         '바를 가슴 하단부까지 내린 후 팔을 완전히 펴는 동작을 반복합니다.',
         '어깨 관절에 무리가 가지 않도록 주의합니다.'
       ]
+    },
+    {
+      id: 'dumbbell_press',
+      name: '덤벨 프레스',
+      description: '덤벨을 사용해 가슴 근육을 골고루 발달시키는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=VmB1G1K7v94',
+      steps: [
+        '벤치에 누워 양 손에 덤벨을 들고 가슴 옆에 위치시킵니다.',
+        '양팔을 동시에 위로 밀어올려 덤벨이 가슴 위쪽에서 가까워지도록 합니다.',
+        '천천히 시작 자세로 돌아옵니다.',
+        '바벨보다 더 넓은 가동범위로 운동할 수 있습니다.'
+      ]
+    },
+    {
+      id: 'chest_fly',
+      name: '체스트 플라이',
+      description: '가슴 근육을 집중적으로 스트레칭하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=eozdVDA78K0',
+      steps: [
+        '벤치에 누워 양 손에 덤벨을 들고 팔을 펴서 가슴 위에 위치시킵니다.',
+        '팔꿈치를 약간 구부린 상태로 고정하고 팔을 양 옆으로 벌립니다.',
+        '가슴이 충분히 스트레칭되는 지점까지 내린 후 시작 자세로 돌아옵니다.',
+        '가슴 근육을 수축시키는 느낌에 집중합니다.'
+      ]
+    },
+    {
+      id: 'push_up',
+      name: '푸시업',
+      description: '체중을 이용한 기본적인 가슴 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=IODxDxX7oi4',
+      steps: [
+        '엎드린 자세에서 손은 어깨보다 약간 넓게, 발은 모아 몸을 일직선으로 유지합니다.',
+        '팔꿈치를 구부려 가슴이 바닥에 거의 닿을 때까지 몸을 내립니다.',
+        '팔을 펴서 시작 자세로 돌아옵니다.',
+        '운동 중 몸이 일직선을 유지하도록 주의합니다.'
+      ]
+    },
+    {
+      id: 'cable_crossover',
+      name: '케이블 크로스오버',
+      description: '가슴 중앙과 안쪽 부위를 집중적으로 발달시키는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=taI4XduLpTk',
+      steps: [
+        '케이블 머신 중앙에 서서 양쪽 케이블을 높은 위치에서 잡습니다.',
+        '한 발을 앞으로 내밀고 상체를 약간 앞으로 기울입니다.',
+        '팔을 앞으로 당겨 가슴 앞에서 손이 교차되게 합니다.',
+        '천천히 시작 자세로 돌아옵니다.'
+      ]
     }
   ],
   back: [
@@ -153,6 +201,14 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
       ]
     }
   ]
+};
+
+// 추가: 운동 부위별 아이콘 매핑
+const partIcons: Record<ExercisePart, string> = {
+  chest: '💪',
+  back: '🔙',
+  shoulder: '🏋️',
+  leg: '🦵'
 };
 
 const QnaPage: React.FC = () => {
@@ -274,21 +330,22 @@ const QnaPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 왼쪽: 운동 유형 선택 */}
             <div className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
                 <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">문의 유형 선택</h2>
                 
                 {/* 운동 부위 선택 버튼 */}
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-3 mb-6">
                   {(['chest', 'back', 'shoulder', 'leg'] as const).map((part) => (
                     <button
                       key={part}
                       onClick={() => handlePartSelect(part)}
-                      className={`px-4 py-2 rounded-md ${
+                      className={`px-4 py-2 rounded-lg flex items-center transition-all duration-300 ${
                         selectedPart === part
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                          ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
+                      <span className="mr-2">{partIcons[part]}</span>
                       {getPartLabel(part)}
                     </button>
                   ))}
@@ -296,27 +353,36 @@ const QnaPage: React.FC = () => {
                 
                 {/* 선택된 부위의 운동 목록 */}
                 <div className="space-y-4">
-                  <h3 className="font-medium text-gray-800 dark:text-white mb-2">
-                    {getPartLabel(selectedPart)} 운동 목록
+                  <h3 className="font-medium text-gray-800 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+                    {partIcons[selectedPart]} {getPartLabel(selectedPart)} 운동 목록
                   </h3>
                   
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 gap-4">
                     {exercisesByPart[selectedPart].map((exercise) => (
                       <div 
                         key={exercise.id}
                         onClick={() => handleExerciseSelect(exercise)}
-                        className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                        className={`p-4 rounded-lg border transition-all duration-300 cursor-pointer ${
                           selectedExercise?.id === exercise.id
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-md transform -translate-y-1'
+                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow'
                         }`}
                       >
-                        <h4 className="font-medium text-gray-900 dark:text-white">
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
                           {exercise.name}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
                           {exercise.description}
                         </p>
+                        <div className="mt-3 flex justify-end">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            selectedExercise?.id === exercise.id
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            자세히 보기
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -324,13 +390,13 @@ const QnaPage: React.FC = () => {
                 
                 {/* 선택된 운동의 상세 정보 */}
                 {selectedExercise && (
-                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-3">
+                  <div className="mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg shadow-lg animate-slideUp">
+                    <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-4 border-b border-blue-200 dark:border-blue-700 pb-2">
                       {selectedExercise.name} 수행 방법
                     </h3>
-                    <ol className="list-decimal list-inside space-y-2 mb-4">
+                    <ol className="list-decimal list-inside space-y-3 mb-6">
                       {selectedExercise.steps.map((step, index) => (
-                        <li key={index} className="text-gray-700 dark:text-gray-300">
+                        <li key={index} className="text-gray-700 dark:text-gray-300 pl-2">
                           {step}
                         </li>
                       ))}
@@ -340,11 +406,11 @@ const QnaPage: React.FC = () => {
                         href={selectedExercise.videoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                        className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow transition-colors duration-300"
                       >
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         영상으로 보기
                       </a>

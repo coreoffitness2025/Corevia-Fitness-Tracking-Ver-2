@@ -102,51 +102,14 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // CSV 파일 경로 목록 - 여러 위치 시도
-      const possiblePaths = [
-        '/nutrition_db.csv',                    // 기본 public 경로
-        '/public/nutrition_db.csv',             // public 명시적 경로
-        '/src/assets/nutrition_db.csv',         // assets 경로
-        './nutrition_db.csv',                   // 상대 경로
-        '../nutrition_db.csv',                  // 상위 경로
-        './public/nutrition_db.csv',            // 상대 public 경로
-        './assets/nutrition_db.csv',            // 상대 assets 경로
-        'nutrition_db.csv'                      // 직접 파일명
-      ];
-
-      let csvText = null;
-      let loadedPath = null;
+      // 기본 경로로 시도
+      const response = await fetch('/nutrition_db.csv');
       
-      // 여러 경로 시도
-      for (const path of possiblePaths) {
-        try {
-          console.log(`CSV 로드 시도: ${path}`);
-          const response = await fetch(path);
-          if (response.ok) {
-            csvText = await response.text();
-            loadedPath = path;
-            console.log(`CSV 로드 성공: ${path}`);
-            break;
-          }
-        } catch (error) {
-          console.log(`${path} 경로 시도 실패:`, error);
-        }
+      if (!response.ok) {
+        throw new Error(`CSV 로드 실패: ${response.status}`);
       }
       
-      if (!csvText) {
-        // 모든 경로 시도 실패 시 하드코딩된 경로 시도 (Windows 환경 고려)
-        const absolutePath = '/Corevia-Fitness-Tracking-Ver-2/public/nutrition_db.csv';
-        console.log(`최종 시도 경로: ${absolutePath}`);
-        const response = await fetch(absolutePath);
-        
-        if (response.ok) {
-          csvText = await response.text();
-          loadedPath = absolutePath;
-          console.log('하드코딩 경로로 CSV 로드 성공');
-        } else {
-          throw new Error(`모든 경로 시도 실패. 마지막 상태 코드: ${response.status}`);
-        }
-      }
+      const csvText = await response.text();
       
       // CSV 파싱
       if (csvText) {
@@ -154,7 +117,6 @@ const NutritionScout = () => {
         const headers = lines[0].split(',').map(h => h.trim());
         
         console.log('CSV 헤더:', headers);
-        console.log('데이터 샘플 (첫 줄):', lines[1]);
         
         const data: NutritionData[] = [];
         for (let i = 1; i < lines.length; i++) {
@@ -176,7 +138,7 @@ const NutritionScout = () => {
           }
         }
         
-        console.log(`CSV에서 ${data.length}개의 항목 로드됨 (경로: ${loadedPath})`);
+        console.log(`CSV에서 ${data.length}개의 항목 로드됨`);
         
         // 중복 데이터 제거 (요리명 기준)
         const uniqueNames = new Set();
