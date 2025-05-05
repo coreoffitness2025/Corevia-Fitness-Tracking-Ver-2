@@ -125,6 +125,20 @@ const DEFAULT_FOOD_DATA: NutritionData[] = [
     '단백질(g/100g)': 13,
     '지방(g/100g)': 7,
     '코멘트': '식이섬유가 풍부한 건강한 탄수화물 식품'
+  },
+  {
+    '요리명': '치킨',
+    '탄수화물(g/100g)': 8.2,
+    '단백질(g/100g)': 22.5,
+    '지방(g/100g)': 9.8,
+    '코멘트': '치킨,부위와 조리법에 따라 지방 함량이 크게 달라집니다. 껍질에는 포화지방이 집중되어 있으니 제거하는 것이 좋습니다. 프라이드 치킨은 트랜스지방과 포화지방이 많으므로, 구운 닭가슴살이나 닭다리살을 선택하세요. 단백질 함량이 높아 근비대에 좋지만, 조리법을 건강하게 선택하는 것이 중요합니다.'
+  },
+  {
+    '요리명': '데리야끼킨롤밥',
+    '탄수화물(g/100g)': 21.0,
+    '단백질(g/100g)': 14.4,
+    '지방(g/100g)': 0,
+    '코멘트': '데리야끼 킨롤밥은 식이섬유가 풍부해 포만감을 주고 소화를 돕습니다. 다만 일반적인 가지볶음은 식용유를 많이 사용하는 경향이 있어 지방 섭취에 주의가 필요합니다. 단백질 함량이 높아 근비대에 좋습니다.'
   }
 ];
 
@@ -443,15 +457,25 @@ const NutritionScout = () => {
     setShowComments(!showComments);
   };
 
-  return (
-    <div className="card">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">음식 영양성분 확인하기</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          음식 이름을 검색하여 영양 정보를 확인하세요
-        </p>
-      </div>
+  // 칼로리 계산
+  const calculateCalories = (food: NutritionData): number => {
+    if (!food) return 0;
+    
+    const carbs = food['탄수화물(g/100g)'] || 0;
+    const protein = food['단백질(g/100g)'] || 0;
+    const fat = food['지방(g/100g)'] || 0;
+    
+    // 칼로리 계산: 1g 탄수화물 = 4kcal, 1g 단백질 = 4kcal, 1g 지방 = 9kcal
+    return Math.round((carbs * 4) + (protein * 4) + (fat * 9));
+  };
 
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold text-[#4285F4] md:text-3xl mb-2">Nutrition Scout</h1>
+        <p className="text-gray-600 dark:text-gray-400">영양정보 검색 도구</p>
+      </div>
+      
       {/* 검색 입력 */}
       <div className="relative mb-6">
         <div className="flex gap-2">
@@ -462,13 +486,19 @@ const NutritionScout = () => {
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             placeholder="음식 이름을 입력하세요"
-            className="input-standard"
+            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                     dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 
+                     focus:ring-[#4285F4] text-base"
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button
             onClick={handleSearch}
             disabled={isLoading}
-            className={`btn-primary ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-5 py-3 rounded-lg text-white font-medium text-base ${
+              isLoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-[#4285F4] hover:bg-[#2a75f3]'
+            }`}
           >
             검색
           </button>
@@ -478,7 +508,7 @@ const NutritionScout = () => {
         {showAutoComplete && (
           <div 
             ref={autoCompleteRef}
-            className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg"
+            className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg"
           >
             {suggestions.map((suggestion, index) => {
               // 검색어 하이라이트를 위한 처리
@@ -507,7 +537,7 @@ const NutritionScout = () => {
                 <div
                   key={index}
                   onClick={() => selectSuggestion(suggestion)}
-                  className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-white"
+                  className="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-white border-b border-gray-100 dark:border-gray-600 last:border-b-0"
                 >
                   {highlightedName}
                 </div>
@@ -520,37 +550,37 @@ const NutritionScout = () => {
       {/* 로딩 상태 */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4285F4] mb-2"></div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">영양 정보를 불러오는 중...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-200 dark:border-gray-600 border-t-[#4285F4] mb-3"></div>
+          <p className="text-gray-600 dark:text-gray-400">데이터를 불러오는 중...</p>
         </div>
       )}
 
       {/* 검색 결과 */}
       {searchResult && !isLoading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-all duration-300">
-          {/* 음식 이름과 설명 */}
-          <div className="bg-[#f8f9fa] dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                {searchResult.요리명}
-              </h3>
-              {searchResult.코멘트 && searchResult.코멘트.trim() !== '' && (
-                <button
-                  onClick={toggleComments}
-                  className="text-[#4285F4] hover:text-[#1a73e8] text-sm font-medium"
-                >
-                  {showComments ? '설명 숨기기' : '설명 보기'}
-                </button>
-              )}
-            </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 mb-4">
+          {/* 음식 이름 헤더 */}
+          <div className="bg-[#f8f9fa] dark:bg-gray-700 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center justify-between">
+              {searchResult.요리명}
+              <button
+                onClick={() => setSearchResult(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </h2>
           </div>
           
           {/* 영양소 정보 */}
-          <div className="p-4">
+          <div className="p-5">
+            {/* 탄수화물 */}
             <div className="mb-4">
-              <div className="flex justify-between mb-1">
-                <span className="text-sm text-gray-700 dark:text-gray-300">탄수화물</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="flex justify-between mb-1 items-center">
+                <span className="text-gray-700 dark:text-gray-300">탄수화물</span>
+                <span className="font-medium text-gray-900 dark:text-white">
                   {formatNumber(searchResult['탄수화물(g/100g)'])}g/100g
                 </span>
               </div>
@@ -562,10 +592,11 @@ const NutritionScout = () => {
               </div>
             </div>
             
+            {/* 단백질 */}
             <div className="mb-4">
-              <div className="flex justify-between mb-1">
-                <span className="text-sm text-gray-700 dark:text-gray-300">단백질</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="flex justify-between mb-1 items-center">
+                <span className="text-gray-700 dark:text-gray-300">단백질</span>
+                <span className="font-medium text-gray-900 dark:text-white">
                   {formatNumber(searchResult['단백질(g/100g)'])}g/100g
                 </span>
               </div>
@@ -577,10 +608,11 @@ const NutritionScout = () => {
               </div>
             </div>
             
+            {/* 지방 */}
             <div className="mb-4">
-              <div className="flex justify-between mb-1">
-                <span className="text-sm text-gray-700 dark:text-gray-300">지방</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="flex justify-between mb-1 items-center">
+                <span className="text-gray-700 dark:text-gray-300">지방</span>
+                <span className="font-medium text-gray-900 dark:text-white">
                   {formatNumber(searchResult['지방(g/100g)'])}g/100g
                 </span>
               </div>
@@ -594,23 +626,21 @@ const NutritionScout = () => {
             
             {/* 칼로리 추정치 */}
             <div className="flex justify-between items-center mt-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-              <span className="text-sm text-gray-700 dark:text-gray-300">칼로리 추정치 (100g 기준)</span>
+              <span className="text-gray-700 dark:text-gray-300">칼로리 추정치 (100g 기준)</span>
               <span className="text-lg font-bold text-[#4285F4]">
-                {Math.round(
-                  (searchResult['탄수화물(g/100g)'] * 4) + 
-                  (searchResult['단백질(g/100g)'] * 4) + 
-                  (searchResult['지방(g/100g)'] * 9)
-                )} kcal
+                {calculateCalories(searchResult)} kcal
               </span>
             </div>
           </div>
           
-          {/* 코멘트 (접을 수 있음) */}
-          {searchResult.코멘트 && searchResult.코멘트.trim() !== '' && showComments && (
-            <div className="p-4 bg-[#E8F0FE] dark:bg-[#1A3A6B] border-t border-gray-200 dark:border-gray-600">
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm">
-                {typeof searchResult.코멘트 === 'string' ? searchResult.코멘트.replace(/\\n/g, '\n') : ''}
-              </p>
+          {/* 코멘트 */}
+          {searchResult.코멘트 && searchResult.코멘트.trim() !== '' && (
+            <div className="p-5 bg-[#f0f0f0] dark:bg-[#1E2235] border-t border-gray-200 dark:border-gray-600">
+              <div className="bg-[#E8F0FE] dark:bg-[#1A3A6B] border-l-4 border-[#4285F4] p-4 rounded-r">
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
+                  {typeof searchResult.코멘트 === 'string' ? searchResult.코멘트.replace(/\\n/g, '\n') : ''}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -620,12 +650,12 @@ const NutritionScout = () => {
       {!searchResult && !isLoading && (
         <div className="text-center py-10 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           <h3 className="mt-4 text-lg font-medium text-gray-800 dark:text-white">음식 이름을 검색해보세요</h3>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             음식 이름을 입력하고 검색하면 영양 정보를 확인할 수 있습니다.<br />
-            예시: 닭가슴살, 현미밥, 연어, 고구마, 계란, 두부, 아보카도 등
+            예시: 닭가슴살, 현미밥, 연어, 고구마, 치킨, 데리야끼킨롤밥
           </p>
         </div>
       )}
