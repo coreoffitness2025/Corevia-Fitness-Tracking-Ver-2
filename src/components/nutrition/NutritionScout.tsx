@@ -130,12 +130,11 @@ const NutritionScout = () => {
         
         console.log(`CSV에서 ${data.length}개의 항목 로드됨`); // 디버깅용
         setFoodData([...DEFAULT_FOOD_DATA, ...data]);
-        toast.success(`데이터 로드 성공 (${data.length}개 항목)`);
       } else {
         console.error('CSV 로드 실패:', response.status, response.statusText);
         console.log('기본 데이터만 사용합니다.');
         setFoodData(DEFAULT_FOOD_DATA);
-        toast.error(`데이터를 불러올 수 없습니다. (${response.status})`);
+        toast.error(`데이터를 불러올 수 없습니다.`);
       }
     } catch (error) {
       console.error('CSV 로드 에러:', error);
@@ -263,9 +262,9 @@ const NutritionScout = () => {
 
       {/* 검색 결과 */}
       {isLoading && (
-        <div className="flex flex-col items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">데이터를 불러오는 중...</p>
+        <div className="flex flex-col items-center justify-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mb-2"></div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">검색 중...</p>
         </div>
       )}
 

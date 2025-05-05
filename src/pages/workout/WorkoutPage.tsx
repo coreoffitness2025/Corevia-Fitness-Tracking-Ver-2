@@ -17,14 +17,9 @@ const WorkoutPage: React.FC = () => {
     day: 'numeric',
     weekday: 'long'
   });
-
-  if (!user) {
-    return (
-      <Layout>
-        <div className="text-center py-10 text-gray-500">로그인 정보를 불러오는 중...</div>
-      </Layout>
-    );
-  }
+  
+  // 더미 사용자 정보
+  const displayName = user?.displayName || '테스트 사용자';
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -43,7 +38,7 @@ const WorkoutPage: React.FC = () => {
     <Layout>
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-          안녕하세요, {user.displayName || '회원'}님!
+          안녕하세요, {displayName}님!
         </h1>
         <p className="text-gray-600 dark:text-gray-400">{today}</p>
       </div>

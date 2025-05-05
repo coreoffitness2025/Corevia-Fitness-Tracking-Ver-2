@@ -41,6 +41,43 @@ const dummyWorkouts: WorkoutSession[] = [
   }
 ];
 
+// 더미 식사 데이터
+const dummyMeals = [
+  {
+    id: '1',
+    userId: 'dummy-user',
+    date: new Date().toISOString(),
+    name: '닭가슴살 샐러드',
+    calories: 350,
+    protein: 40,
+    carbs: 15,
+    fat: 10,
+    type: '점심'
+  },
+  {
+    id: '2',
+    userId: 'dummy-user',
+    date: new Date(new Date().setHours(new Date().getHours() - 4)).toISOString(),
+    name: '단백질 쉐이크',
+    calories: 180,
+    protein: 30,
+    carbs: 5,
+    fat: 3,
+    type: '아침'
+  },
+  {
+    id: '3',
+    userId: 'dummy-user',
+    date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(),
+    name: '현미밥과 닭고기 볶음',
+    calories: 550,
+    protein: 35,
+    carbs: 65,
+    fat: 15,
+    type: '저녁'
+  }
+];
+
 const dummyProfile = {
   displayName: '홍길동',
   email: 'example@example.com',
@@ -111,6 +148,44 @@ const HomePage = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {workout.mainExercise.sets.length}세트 x {workout.mainExercise.sets[0].reps}회 ({workout.mainExercise.sets[0].weight}kg)
                   </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 최근 식사 기록 */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow md:col-span-2">
+          <h2 className="text-xl font-semibold mb-4">최근 식사 기록</h2>
+          <div className="space-y-4">
+            {dummyMeals.map((meal) => (
+              <div key={meal.id} className="border-b border-gray-200 dark:border-gray-700 pb-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-medium">{meal.name}</h3>
+                    <span className="text-sm text-blue-500 dark:text-blue-400">{meal.type}</span>
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    {new Date(meal.date).toLocaleDateString('ko-KR')}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  <div className="text-center">
+                    <span className="text-xs text-gray-500">칼로리</span>
+                    <p className="font-medium">{meal.calories} kcal</p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-xs text-gray-500">단백질</span>
+                    <p className="font-medium">{meal.protein}g</p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-xs text-gray-500">탄수화물</span>
+                    <p className="font-medium">{meal.carbs}g</p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-xs text-gray-500">지방</span>
+                    <p className="font-medium">{meal.fat}g</p>
+                  </div>
                 </div>
               </div>
             ))}
