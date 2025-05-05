@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 
 // 디버깅용 코드 제거
@@ -136,9 +136,26 @@ const NutritionScout = () => {
   const [suggestions, setSuggestions] = useState<NutritionData[]>([]);
   const [showAutoComplete, setShowAutoComplete] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showComments, setShowComments] = useState(true);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autoCompleteRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadCSV();
+    
+    // 자동완성 외부 클릭 감지
+    const handleClickOutside = (event: MouseEvent) => {
+      if (autoCompleteRef.current && !autoCompleteRef.current.contains(event.target as Node) &&
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowAutoComplete(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const loadCSV = async () => {
@@ -290,7 +307,20 @@ const NutritionScout = () => {
           if (row['요리명']) {
             // 코멘트 필드가 없다면 빈 문자열로 설정
             if (!row['코멘트']) {
-              row['코멘트'] = '';
+              // 코멘트 필드 표준화 - 모든 가능한 코멘트 필드명 확인
+              for (const key of Object.keys(row)) {
+                if (key.includes('코멘트') || key.includes('comment') || 
+                    key.includes('설명') || key.includes('메모') || 
+                    key.includes('비고') || key.includes('특징')) {
+                  row['코멘트'] = row[key];
+                  break;
+                }
+              }
+              
+              // 그래도 없으면 빈 문자열 설정
+              if (!row['코멘트']) {
+                row['코멘트'] = '';
+              }
             }
             
             // 코멘트 디버깅 로그 (각 항목의 코멘트 확인)
@@ -321,10 +351,6 @@ const NutritionScout = () => {
           
           console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
           setFoodData(uniqueData);
-          
-          // 여기서 로드 성공 토스트 메시지는 표시합니다
-          // showToast.success('영양 데이터 로드 완료');
-          // 데이터 로드 완료 메시지 제거함
         }
       }
     } catch (error: any) {
@@ -374,7 +400,7 @@ const NutritionScout = () => {
     setSearchQuery(value);
     
     if (value.trim()) {
-      // 첫 글자 일치 우선, 그 후 포함 항목
+      // 음식 이름으로만 필터링 (코멘트 제외)
       const exactMatches = foodData.filter(item => 
         item.요리명 && item.요리명.toLowerCase().startsWith(value.toLowerCase())
       );
@@ -413,37 +439,36 @@ const NutritionScout = () => {
     return typeof value === 'number' ? value.toFixed(1) : value;
   };
 
+  const toggleComments = () => {
+    setShowComments(!showComments);
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-full">
-      <div className="mb-6">
+    <div className="card">
+      <div className="mb-4">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">음식 영양성분 확인하기</h2>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           음식 이름을 검색하여 영양 정보를 확인하세요
         </p>
-        {/* 데이터 로드 메시지 제거 */}
       </div>
 
       {/* 검색 입력 */}
       <div className="relative mb-6">
         <div className="flex gap-2">
           <input
+            ref={inputRef}
             type="text"
             value={searchQuery}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             placeholder="음식 이름을 입력하세요"
-            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
-                     dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 
-                     focus:ring-[#4285F4]" // 파란색으로 변경
+            className="input-standard"
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button
             onClick={handleSearch}
             disabled={isLoading}
-            className={`px-4 py-2 rounded-md text-white ${
-              isLoading 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-[#4285F4] hover:bg-[#2a75f3]'
-            }`}
+            className={`btn-primary ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             검색
           </button>
@@ -451,7 +476,10 @@ const NutritionScout = () => {
 
         {/* 자동완성 리스트 */}
         {showAutoComplete && (
-          <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+          <div 
+            ref={autoCompleteRef}
+            className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg"
+          >
             {suggestions.map((suggestion, index) => {
               // 검색어 하이라이트를 위한 처리
               const itemName = suggestion.요리명;
@@ -467,7 +495,7 @@ const NutritionScout = () => {
                 highlightedName = (
                   <>
                     {before}
-                    <span className="font-bold text-[#4285F4] dark:text-[#78a9f9]">{match}</span> {/* 색상 변경 */}
+                    <span className="font-bold text-[#4285F4] dark:text-[#78a9f9]">{match}</span>
                     {after}
                   </>
                 );
@@ -489,44 +517,98 @@ const NutritionScout = () => {
         )}
       </div>
 
-      {/* 검색 결과 */}
+      {/* 로딩 상태 */}
       {isLoading && (
-        <div className="flex flex-col items-center justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#4285F4] mb-2"></div> {/* 색상 변경 */}
-          <p className="text-sm text-gray-600 dark:text-gray-400">검색 중...</p>
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4285F4] mb-2"></div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">영양 정보를 불러오는 중...</p>
         </div>
       )}
 
-      {searchResult && (
-        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 transition-all duration-300 transform">
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b border-[#4285F4] pb-2"> {/* 색상 변경 */}
-            {searchResult.요리명}
-          </h3>
-          
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm">
-              <p className="text-sm text-gray-600 dark:text-gray-400">탄수화물</p>
-              <p className="text-lg font-bold text-[#4285F4]"> {/* 색상 변경 */}
-                {formatNumber(searchResult['탄수화물(g/100g)'])}g
-              </p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm">
-              <p className="text-sm text-gray-600 dark:text-gray-400">단백질</p>
-              <p className="text-lg font-bold text-[#4285F4]"> {/* 색상 변경 */}
-                {formatNumber(searchResult['단백질(g/100g)'])}g
-              </p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm">
-              <p className="text-sm text-gray-600 dark:text-gray-400">지방</p>
-              <p className="text-lg font-bold text-[#4285F4]"> {/* 색상 변경 */}
-                {formatNumber(searchResult['지방(g/100g)'])}g
-              </p>
+      {/* 검색 결과 */}
+      {searchResult && !isLoading && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-all duration-300">
+          {/* 음식 이름과 설명 */}
+          <div className="bg-[#f8f9fa] dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                {searchResult.요리명}
+              </h3>
+              {searchResult.코멘트 && searchResult.코멘트.trim() !== '' && (
+                <button
+                  onClick={toggleComments}
+                  className="text-[#4285F4] hover:text-[#1a73e8] text-sm font-medium"
+                >
+                  {showComments ? '설명 숨기기' : '설명 보기'}
+                </button>
+              )}
             </div>
           </div>
-
-          {searchResult.코멘트 && searchResult.코멘트.trim() !== '' && (
-            <div className="bg-[#E8F0FE] dark:bg-[#1A3A6B] border-l-4 border-[#4285F4] p-3 rounded"> {/* 색상 변경 */}
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+          
+          {/* 영양소 정보 */}
+          <div className="p-4">
+            <div className="mb-4">
+              <div className="flex justify-between mb-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">탄수화물</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatNumber(searchResult['탄수화물(g/100g)'])}g/100g
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                <div 
+                  className="bg-[#fbbc04] h-2.5 rounded-full" 
+                  style={{ width: `${Math.min(100, searchResult['탄수화물(g/100g)'] * 1.5)}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex justify-between mb-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">단백질</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatNumber(searchResult['단백질(g/100g)'])}g/100g
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                <div 
+                  className="bg-[#4285F4] h-2.5 rounded-full" 
+                  style={{ width: `${Math.min(100, searchResult['단백질(g/100g)'] * 4)}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex justify-between mb-1">
+                <span className="text-sm text-gray-700 dark:text-gray-300">지방</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatNumber(searchResult['지방(g/100g)'])}g/100g
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                <div 
+                  className="bg-[#ea4335] h-2.5 rounded-full" 
+                  style={{ width: `${Math.min(100, searchResult['지방(g/100g)'] * 2)}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* 칼로리 추정치 */}
+            <div className="flex justify-between items-center mt-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+              <span className="text-sm text-gray-700 dark:text-gray-300">칼로리 추정치 (100g 기준)</span>
+              <span className="text-lg font-bold text-[#4285F4]">
+                {Math.round(
+                  (searchResult['탄수화물(g/100g)'] * 4) + 
+                  (searchResult['단백질(g/100g)'] * 4) + 
+                  (searchResult['지방(g/100g)'] * 9)
+                )} kcal
+              </span>
+            </div>
+          </div>
+          
+          {/* 코멘트 (접을 수 있음) */}
+          {searchResult.코멘트 && searchResult.코멘트.trim() !== '' && showComments && (
+            <div className="p-4 bg-[#E8F0FE] dark:bg-[#1A3A6B] border-t border-gray-200 dark:border-gray-600">
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm">
                 {typeof searchResult.코멘트 === 'string' ? searchResult.코멘트.replace(/\\n/g, '\n') : ''}
               </p>
             </div>
@@ -534,12 +616,27 @@ const NutritionScout = () => {
         </div>
       )}
 
+      {/* 검색 결과 없음 */}
       {!searchResult && !isLoading && (
-        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-          음식 이름을 검색하여 영양 정보를 확인해보세요.<br />
-          예시: 닭가슴살, 현미밥, 연어, 고구마, 계란, 두부, 아보카도 등
+        <div className="text-center py-10 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+          </svg>
+          <h3 className="mt-4 text-lg font-medium text-gray-800 dark:text-white">음식 이름을 검색해보세요</h3>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            음식 이름을 입력하고 검색하면 영양 정보를 확인할 수 있습니다.<br />
+            예시: 닭가슴살, 현미밥, 연어, 고구마, 계란, 두부, 아보카도 등
+          </p>
         </div>
       )}
+
+      {/* 데이터베이스 정보 표시 */}
+      <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex justify-between items-center">
+        <span>데이터베이스: {foodData.length}개 항목</span>
+        {loadError && (
+          <span className="text-red-500">{loadError}</span>
+        )}
+      </div>
     </div>
   );
 };
