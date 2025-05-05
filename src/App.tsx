@@ -1,76 +1,45 @@
 // 1단계: App.tsx 라우트 수정
 import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { useAuthStore } from './stores/authStore';
+
+// Pages
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
-import WorkoutPage from './pages/WorkoutPage'; // GraphPage 대신 WorkoutPage
-import WorkoutDetailPage from './pages/WorkoutDetailPage';
-import WorkoutNewPage from './pages/WorkoutNewPage';
-import WorkoutEditPage from './pages/WorkoutEditPage';
-import WorkoutStartPage from './pages/WorkoutStartPage';
-import WorkoutResultPage from './pages/WorkoutResultPage';
-import WorkoutRecordPage from './pages/WorkoutRecordPage';
-import FoodLogPage from './pages/FoodLogPage';
-import FoodRecordPage from './pages/FoodRecordPage';
 import QnaPage from './pages/QnaPage';
-import SettingPage from './pages/SettingPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
-import BottomNavBar from './components/common/BottomNavBar';
+import WorkoutPage from './pages/workout/WorkoutPage';
+import FoodPage from './pages/food/FoodPage';
+import RegisterPage from './pages/RegisterPage';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
+const App: React.FC = () => {
+  const { user, loading } = useAuthStore();
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
-      <main>
-        {children}
-      </main>
-      <BottomNavBar />
-    </div>
-  );
-};
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
-function App() {
   return (
     <Router>
-      <ThemeProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            
-            {/* Workout Routes - 운동 관련 */}
-            <Route path="/graph" element={<WorkoutPage />} /> {/* BottomNavBar에서 '운동일지'로 사용 */}
-            <Route path="/workout/:id" element={<WorkoutDetailPage />} />
-            <Route path="/workout/new" element={<WorkoutNewPage />} />
-            <Route path="/workout/:id/edit" element={<WorkoutEditPage />} />
-            <Route path="/workout/:id/start" element={<WorkoutStartPage />} />
-            <Route path="/workout/:id/result" element={<WorkoutResultPage />} />
-            <Route path="/workout/record" element={<WorkoutRecordPage />} />
-            
-            {/* Food Routes - 식단 관련 */}
-            <Route path="/foodlog" element={<FoodLogPage />} /> {/* BottomNavBar에서 '식단기록'으로 사용 */}
-            <Route path="/food" element={<FoodLogPage />} />
-            <Route path="/food/record" element={<FoodRecordPage />} />
-            
-            {/* Q&A */}
-            <Route path="/qna" element={<QnaPage />} />
-            
-            {/* Settings */}
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/settings/:tab" element={<SettingPage />} />
-            
-            {/* 404 Must be at the end */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Layout>
-      </ThemeProvider>
+      <Toaster position="top-center" />
+      <Routes>
+        <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" />} />
+        <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
+        <Route path="/workout" element={user ? <WorkoutPage /> : <Navigate to="/login" />} />
+        <Route path="/food" element={user ? <FoodPage /> : <Navigate to="/login" />} />
+        <Route path="/qna" element={user ? <QnaPage /> : <Navigate to="/login" />} />
+        <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </Router>
   );
-}
+};
 
 export default App;

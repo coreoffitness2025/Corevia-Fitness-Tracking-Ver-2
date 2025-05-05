@@ -9,41 +9,35 @@ export interface User {
 /* ---------- 운동 타입 ---------- */
 export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
 
-export interface ExerciseSet {
+export interface Set {
   reps: number;
-  isSuccess: boolean;
   weight: number;
+  isSuccess: boolean;
 }
 
 export interface MainExercise {
   part: ExercisePart;
   weight: number;
-  sets: ExerciseSet[];
+  sets: Set[];
 }
 
 export interface AccessoryExercise {
   name: string;
-  weight?: number;
-  reps?: number;
-  sets?: Array<{
-    reps: number;
-    weight: number;
-    isSuccess: boolean;
-  }>;
+  sets?: Set[];
 }
 
 /* ---------- 세션 ---------- */
 export interface Session {
   id?: string;
   userId: string;
-  date: Date | string;
+  date: Date;
   part: ExercisePart;
   mainExercise: MainExercise;
-  accessoryExercises?: AccessoryExercise[];
-  notes?: string;
-  isAllSuccess?: boolean;
-  successSets?: number;
-  accessoryNames?: string[];
+  accessoryExercises: AccessoryExercise[];
+  notes: string;
+  isAllSuccess: boolean;
+  successSets: number;
+  accessoryNames: string[];
 }
 
 /* ---------- 일일 운동 기록 ---------- */
@@ -57,12 +51,6 @@ export interface DailyWorkout {
 }
 
 /* ---------- 그래프용 진행 데이터 ---------- */
-export interface Set {
-  reps: number;
-  isSuccess: boolean;
-  weight: number;
-}
-
 export interface Progress {
   id: string;
   userId: string;
@@ -156,4 +144,17 @@ export interface WorkoutSession {
 
 export interface LayoutProps {
   children: React.ReactNode;
+}
+
+export interface Food {
+  id: string;
+  userId: string;
+  date: Date;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  imageUrl?: string;
+  notes?: string;
 }
