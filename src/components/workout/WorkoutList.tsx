@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatDate, weekdays } from '../../utils/dateUtils';
 import { ExercisePart } from '../../types';
 
 interface WorkoutSet {
@@ -27,14 +28,10 @@ interface Workout {
 }
 
 // 현재 달의 날짜 배열 생성
-const generateCalendarDays = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  
-  // 현재 달의 첫째 날
+const generateCalendarDays = (year: number, month: number) => {
+  // 선택된 달의 첫째 날
   const firstDay = new Date(year, month, 1);
-  // 현재 달의 마지막 날
+  // 선택된 달의 마지막 날
   const lastDay = new Date(year, month + 1, 0);
   
   // 달력 시작일 (이전 달의 일부 포함)
@@ -46,7 +43,7 @@ const generateCalendarDays = () => {
   const daysToAdd = 6 - lastDay.getDay();
   endDate.setDate(lastDay.getDate() + daysToAdd);
   
-  const days = [];
+  const days: Date[] = [];
   let currentDate = new Date(startDate);
   
   while (currentDate <= endDate) {
@@ -57,18 +54,72 @@ const generateCalendarDays = () => {
   return days;
 };
 
-// 날짜 포맷 함수
-const formatDate = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+// 운동 부위에 따른 레이블 반환
+const getPartLabel = (part: ExercisePart): string => {
+  const labels: { [key in ExercisePart]: string } = {
+    chest: '가슴',
+    back: '등',
+    shoulder: '어깨',
+    leg: '하체'
+  };
+  return labels[part];
 };
-
-// 달력의 요일 헤더
-const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
 const WorkoutList: React.FC = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
-  const calendarDays = generateCalendarDays();
+  
+  // 년도와 월 상태 추가
+  const today = new Date();
+  const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
+  
+  // 선택된 년도와 월에 따라 달력 데이터 생성
+  const calendarDays = generateCalendarDays(currentYear, currentMonth);
+  
+  // 이전/다음 달 이동 함수
+  const goToPreviousMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+  
+  const goToNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+  
+  // 특정 년도/월로 이동하는 함수
+  const goToSelectedMonth = (year: number, month: number) => {
+    setCurrentYear(year);
+    setCurrentMonth(month);
+  };
+  
+  // 년도 옵션 생성 (현재 년도 기준 ±5년)
+  const yearOptions = Array.from({ length: 11 }, (_, i) => today.getFullYear() - 5 + i);
+  
+  // 월 옵션 생성
+  const monthOptions = [
+    { value: 0, label: '1월' },
+    { value: 1, label: '2월' },
+    { value: 2, label: '3월' },
+    { value: 3, label: '4월' },
+    { value: 4, label: '5월' },
+    { value: 5, label: '6월' },
+    { value: 6, label: '7월' },
+    { value: 7, label: '8월' },
+    { value: 8, label: '9월' },
+    { value: 9, label: '10월' },
+    { value: 10, label: '11월' },
+    { value: 11, label: '12월' }
+  ];
   
   // 임시 데이터 (나중에 실제 데이터로 교체)
   const workouts: Workout[] = [
@@ -163,9 +214,7 @@ const WorkoutList: React.FC = () => {
     }
   ];
 
-  // 달력 연도/월 표시 추가
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  // 달력 연도/월 표시 수정
   const monthYearText = new Date(currentYear, currentMonth).toLocaleDateString('ko-KR', { 
     year: 'numeric', 
     month: 'long' 
@@ -180,30 +229,20 @@ const WorkoutList: React.FC = () => {
     acc[date].push(workout);
     return acc;
   }, {});
-
-  // 선택된 날짜의 운동 기록
-  const selectedWorkouts = workoutsByDate[selectedDate] || [];
-
-  const getPartLabel = (part: ExercisePart) => {
-    const labels: { [key in ExercisePart]: string } = {
-      chest: '가슴',
-      back: '등',
-      shoulder: '어깨',
-      leg: '하체'
-    };
-    return labels[part];
-  };
-
-  // 운동 부위에 따른 색상 지정
+  
+  // 운동 부위에 따른 색상 지정 - 성공/실패 색상 더 명확하게 구분
   const getPartColor = (part: ExercisePart, isSuccess: boolean = true) => {
     const baseColors = {
-      chest: isSuccess ? 'bg-blue-100 text-blue-800' : 'bg-blue-50 text-blue-400',
-      back: isSuccess ? 'bg-green-100 text-green-800' : 'bg-green-50 text-green-400',
-      shoulder: isSuccess ? 'bg-purple-100 text-purple-800' : 'bg-purple-50 text-purple-400',
-      leg: isSuccess ? 'bg-orange-100 text-orange-800' : 'bg-orange-50 text-orange-400'
+      chest: isSuccess ? 'bg-blue-200 text-blue-800 border-blue-400' : 'bg-red-200 text-red-800 border-red-400',
+      back: isSuccess ? 'bg-green-200 text-green-800 border-green-400' : 'bg-red-200 text-red-800 border-red-400',
+      shoulder: isSuccess ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-red-200 text-red-800 border-red-400',
+      leg: isSuccess ? 'bg-orange-200 text-orange-800 border-orange-400' : 'bg-red-200 text-red-800 border-red-400'
     };
     return baseColors[part];
   };
+
+  // 선택된 날짜의 운동 기록
+  const selectedWorkouts = workoutsByDate[selectedDate] || [];
 
   return (
     <div className="space-y-6">

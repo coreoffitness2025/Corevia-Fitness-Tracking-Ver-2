@@ -91,6 +91,7 @@ const NutritionScout = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<NutritionData[]>([]);
   const [showAutoComplete, setShowAutoComplete] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     loadCSV();
@@ -98,26 +99,70 @@ const NutritionScout = () => {
 
   const loadCSV = async () => {
     setIsLoading(true);
+    setLoadError(null);
+    
     try {
-      // 개발 환경과 배포 환경에서 모두 작동하는 경로 구성
-      const baseUrl = import.meta.env.DEV ? '' : import.meta.env.BASE_URL;
-      console.log('Base URL:', baseUrl); // 디버깅용
+      // CSV 파일 경로 목록 - 여러 위치 시도
+      const possiblePaths = [
+        '/nutrition_db.csv',                    // 기본 public 경로
+        '/public/nutrition_db.csv',             // public 명시적 경로
+        '/src/assets/nutrition_db.csv',         // assets 경로
+        './nutrition_db.csv',                   // 상대 경로
+        '../nutrition_db.csv',                  // 상위 경로
+        './public/nutrition_db.csv',            // 상대 public 경로
+        './assets/nutrition_db.csv',            // 상대 assets 경로
+        'nutrition_db.csv'                      // 직접 파일명
+      ];
+
+      let csvText = null;
+      let loadedPath = null;
       
-      const response = await fetch(`${baseUrl}/nutrition_db.csv`);
-      console.log('CSV 로드 응답 상태:', response.status); // 디버깅용
+      // 여러 경로 시도
+      for (const path of possiblePaths) {
+        try {
+          console.log(`CSV 로드 시도: ${path}`);
+          const response = await fetch(path);
+          if (response.ok) {
+            csvText = await response.text();
+            loadedPath = path;
+            console.log(`CSV 로드 성공: ${path}`);
+            break;
+          }
+        } catch (error) {
+          console.log(`${path} 경로 시도 실패:`, error);
+        }
+      }
       
-      if (response.ok) {
-        const csvText = await response.text();
-        console.log('CSV 첫 줄:', csvText.split('\n')[0]); // 디버깅용
+      if (!csvText) {
+        // 모든 경로 시도 실패 시 하드코딩된 경로 시도 (Windows 환경 고려)
+        const absolutePath = '/Corevia-Fitness-Tracking-Ver-2/public/nutrition_db.csv';
+        console.log(`최종 시도 경로: ${absolutePath}`);
+        const response = await fetch(absolutePath);
         
+        if (response.ok) {
+          csvText = await response.text();
+          loadedPath = absolutePath;
+          console.log('하드코딩 경로로 CSV 로드 성공');
+        } else {
+          throw new Error(`모든 경로 시도 실패. 마지막 상태 코드: ${response.status}`);
+        }
+      }
+      
+      // CSV 파싱
+      if (csvText) {
         const lines = csvText.split('\n');
         const headers = lines[0].split(',').map(h => h.trim());
         
-        const data = [];
+        console.log('CSV 헤더:', headers);
+        console.log('데이터 샘플 (첫 줄):', lines[1]);
+        
+        const data: NutritionData[] = [];
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
           
           const values = lines[i].split(',');
+          if (values.length < 3) continue; // 유효하지 않은 행 스킵
+          
           const row: any = {};
           
           headers.forEach((header, j) => {
@@ -125,20 +170,37 @@ const NutritionScout = () => {
             row[header] = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
           });
           
-          data.push(row);
+          // 요리명이 있는 경우만 추가
+          if (row['요리명']) {
+            data.push(row as NutritionData);
+          }
         }
         
-        console.log(`CSV에서 ${data.length}개의 항목 로드됨`); // 디버깅용
-        setFoodData([...DEFAULT_FOOD_DATA, ...data]);
-      } else {
-        console.error('CSV 로드 실패:', response.status, response.statusText);
-        console.log('기본 데이터만 사용합니다.');
-        setFoodData(DEFAULT_FOOD_DATA);
-        toast.error(`데이터를 불러올 수 없습니다.`);
+        console.log(`CSV에서 ${data.length}개의 항목 로드됨 (경로: ${loadedPath})`);
+        
+        // 중복 데이터 제거 (요리명 기준)
+        const uniqueNames = new Set();
+        const uniqueData = [...DEFAULT_FOOD_DATA];
+        
+        data.forEach(item => {
+          if (!uniqueNames.has(item.요리명)) {
+            uniqueNames.add(item.요리명);
+            uniqueData.push(item);
+          }
+        });
+        
+        console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
+        setFoodData(uniqueData);
+        
+        toast.success(`${data.length}개의 음식 데이터를 로드했습니다.`, {
+          duration: 3000,
+          icon: '🍽️'
+        });
       }
     } catch (error) {
       console.error('CSV 로드 에러:', error);
-      toast.error('데이터를 불러오는 중 오류가 발생했습니다.');
+      setLoadError('CSV 로드 실패');
+      toast.error('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.');
     } finally {
       setIsLoading(false);
     }
@@ -215,6 +277,16 @@ const NutritionScout = () => {
         <p className="text-sm text-gray-600 dark:text-gray-400">
           음식 이름을 검색하여 영양 정보를 확인하세요
         </p>
+        {foodData.length > DEFAULT_FOOD_DATA.length ? (
+          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+            {foodData.length}개의 음식 데이터가 로드되었습니다.
+          </p>
+        ) : (
+          <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+            기본 데이터만 사용 중입니다 ({DEFAULT_FOOD_DATA.length}개 항목).
+            {loadError && ` 오류: ${loadError}`}
+          </p>
+        )}
       </div>
 
       {/* 검색 입력 */}
