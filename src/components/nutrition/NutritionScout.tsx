@@ -214,9 +214,14 @@ const NutritionScout = () => {
         
         if (data.length === 0) {
           console.warn('CSV에서 항목을 찾지 못했습니다. 기본 데이터만 사용합니다.');
-          toast.warning('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.', {
+          toast('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.', {
             duration: 3000,
-            icon: '⚠️'
+            icon: '⚠️',
+            style: {
+              backgroundColor: '#FFF3CD',
+              color: '#856404',
+              border: '1px solid #FFEEBA'
+            }
           });
         } else {
           // 중복 데이터 제거 (요리명 기준)
@@ -233,16 +238,29 @@ const NutritionScout = () => {
           console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
           setFoodData(uniqueData);
           
-          toast.success(`${data.length}개의 음식 데이터를 로드했습니다.`, {
+          toast(`${data.length}개의 음식 데이터를 로드했습니다.`, {
             duration: 3000,
-            icon: '🍽️'
+            icon: '🍽️',
+            style: {
+              backgroundColor: '#D4EDDA',
+              color: '#155724',
+              border: '1px solid #C3E6CB'
+            }
           });
         }
       }
     } catch (error: any) {
       console.error('CSV 로드 에러:', error);
       setLoadError(`CSV 로드 실패: ${error.message}`);
-      toast.error('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.');
+      toast('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.', {
+        duration: 3000, 
+        icon: '❌',
+        style: {
+          backgroundColor: '#F8D7DA',
+          color: '#721C24',
+          border: '1px solid #F5C6CB'
+        }
+      });
     } finally {
       setIsLoading(false);
     }
@@ -250,7 +268,15 @@ const NutritionScout = () => {
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
-      toast.error('검색어를 입력해주세요.');
+      toast('검색어를 입력해주세요.', {
+        duration: 3000,
+        icon: '❌',
+        style: {
+          backgroundColor: '#F8D7DA',
+          color: '#721C24',
+          border: '1px solid #F5C6CB'
+        }
+      });
       return;
     }
     
@@ -271,7 +297,15 @@ const NutritionScout = () => {
         setShowAutoComplete(false);
       } else {
         setSearchResult(null);
-        toast.error('검색 결과가 없습니다.');
+        toast('검색 결과가 없습니다.', {
+          duration: 3000,
+          icon: '❌',
+          style: {
+            backgroundColor: '#F8D7DA',
+            color: '#721C24',
+            border: '1px solid #F5C6CB'
+          }
+        });
       }
     }
   };
