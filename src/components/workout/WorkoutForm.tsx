@@ -26,6 +26,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   });
   const [accessoryExercises, setAccessoryExercises] = useState<Array<{
     name: string;
+    weight: number;
+    reps: number;
     sets: Array<{ reps: number; weight: number; isSuccess: boolean }>;
   }>>([]);
   const [notes, setNotes] = useState('');
@@ -67,7 +69,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const addAccessoryExercise = () => {
     setAccessoryExercises(prev => [
       ...prev,
-      { name: '', sets: [{ reps: 0, weight: 0, isSuccess: false }] }
+      { 
+        name: '', 
+        weight: 0,
+        reps: 0,
+        sets: [{ reps: 0, weight: 0, isSuccess: false }] 
+      }
     ]);
   };
 

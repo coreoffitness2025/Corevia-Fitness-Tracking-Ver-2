@@ -1,14 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../firebase/firebaseConfig';
 import { useAuthStore } from '../stores/authStore';
 
 const SettingsPage = () => {
-  const { user, logout: authLogout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
-    authLogout();
+    logout();
     navigate('/login');
   };
 
