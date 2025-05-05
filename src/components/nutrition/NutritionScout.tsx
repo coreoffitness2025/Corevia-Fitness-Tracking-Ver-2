@@ -46,6 +46,41 @@ const DEFAULT_FOOD_DATA: NutritionData[] = [
     '단백질(g/100g)': 12,
     '지방(g/100g)': 10,
     '코멘트': '고단백 식품'
+  },
+  {
+    '요리명': '아보카도',
+    '탄수화물(g/100g)': 9,
+    '단백질(g/100g)': 2,
+    '지방(g/100g)': 15,
+    '코멘트': '건강한 지방이 풍부한 식품'
+  },
+  {
+    '요리명': '두부',
+    '탄수화물(g/100g)': 2,
+    '단백질(g/100g)': 8,
+    '지방(g/100g)': 4,
+    '코멘트': '식물성 단백질이 풍부한 식품'
+  },
+  {
+    '요리명': '견과류',
+    '탄수화물(g/100g)': 20,
+    '단백질(g/100g)': 15,
+    '지방(g/100g)': 50,
+    '코멘트': '건강한 지방과 단백질이 풍부한 식품'
+  },
+  {
+    '요리명': '바나나',
+    '탄수화물(g/100g)': 23,
+    '단백질(g/100g)': 1,
+    '지방(g/100g)': 0.3,
+    '코멘트': '칼륨이 풍부한 과일'
+  },
+  {
+    '요리명': '오트밀',
+    '탄수화물(g/100g)': 67,
+    '단백질(g/100g)': 13,
+    '지방(g/100g)': 7,
+    '코멘트': '식이섬유가 풍부한 건강한 탄수화물 식품'
   }
 ];
 
@@ -68,12 +103,12 @@ const NutritionScout = () => {
       const baseUrl = import.meta.env.DEV ? '' : import.meta.env.BASE_URL;
       console.log('Base URL:', baseUrl); // 디버깅용
       
-      const response = await fetch(`${baseUrl}nutrition_db.csv`);
-      console.log('Response status:', response.status); // 디버깅용
+      const response = await fetch(`${baseUrl}/nutrition_db.csv`);
+      console.log('CSV 로드 응답 상태:', response.status); // 디버깅용
       
       if (response.ok) {
         const csvText = await response.text();
-        console.log('CSV first line:', csvText.split('\n')[0]); // 디버깅용
+        console.log('CSV 첫 줄:', csvText.split('\n')[0]); // 디버깅용
         
         const lines = csvText.split('\n');
         const headers = lines[0].split(',').map(h => h.trim());
@@ -93,16 +128,17 @@ const NutritionScout = () => {
           data.push(row);
         }
         
+        console.log(`CSV에서 ${data.length}개의 항목 로드됨`); // 디버깅용
         setFoodData([...DEFAULT_FOOD_DATA, ...data]);
         toast.success(`데이터 로드 성공 (${data.length}개 항목)`);
       } else {
-        console.error('CSV 로드 실패:', response.status, response.statusText); // 디버깅용
+        console.error('CSV 로드 실패:', response.status, response.statusText);
+        console.log('기본 데이터만 사용합니다.');
         setFoodData(DEFAULT_FOOD_DATA);
         toast.error(`데이터를 불러올 수 없습니다. (${response.status})`);
       }
     } catch (error) {
-      console.error('CSV 로드 에러:', error); // 디버깅용
-      setFoodData(DEFAULT_FOOD_DATA);
+      console.error('CSV 로드 에러:', error);
       toast.error('데이터를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
@@ -150,9 +186,16 @@ const NutritionScout = () => {
         .slice(0, 5);
       
       setSuggestions(filtered);
-      setShowAutoComplete(true);
+      setShowAutoComplete(filtered.length > 0);
     } else {
+      setSuggestions([]);
       setShowAutoComplete(false);
+    }
+  };
+
+  const handleInputFocus = () => {
+    if (searchQuery.trim() && suggestions.length > 0) {
+      setShowAutoComplete(true);
     }
   };
 
@@ -168,11 +211,8 @@ const NutritionScout = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-full">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
-          영양 정보 검색
-        </h2>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           음식 이름을 검색하여 영양 정보를 확인하세요
         </p>
@@ -185,6 +225,7 @@ const NutritionScout = () => {
             type="text"
             value={searchQuery}
             onChange={handleInputChange}
+            onFocus={handleInputFocus}
             placeholder="음식 이름을 입력하세요"
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
                      dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 
@@ -205,7 +246,7 @@ const NutritionScout = () => {
         </div>
 
         {/* 자동완성 리스트 */}
-        {showAutoComplete && suggestions.length > 0 && (
+        {showAutoComplete && (
           <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto">
             {suggestions.map((suggestion, index) => (
               <div
@@ -262,6 +303,13 @@ const NutritionScout = () => {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {!searchResult && !isLoading && (
+        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+          음식 이름을 검색하여 영양 정보를 확인해보세요.<br />
+          예시: 닭가슴살, 현미밥, 연어, 고구마, 계란, 두부, 아보카도 등
         </div>
       )}
     </div>
