@@ -1,9 +1,10 @@
+// 1단계: App.tsx 라우트 수정
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
-import GraphPage from './pages/GraphPage'; // WorkoutPage 대신 GraphPage
+import WorkoutPage from './pages/WorkoutPage'; // GraphPage 대신 WorkoutPage
 import WorkoutDetailPage from './pages/WorkoutDetailPage';
 import WorkoutNewPage from './pages/WorkoutNewPage';
 import WorkoutEditPage from './pages/WorkoutEditPage';
@@ -42,11 +43,8 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/profile" element={<ProfilePage />} />
             
-            {/* Graph/운동일지 */}
-            <Route path="/graph" element={<GraphPage />} />
-            
-            {/* Workout Routes */}
-            <Route path="/workout" element={<WorkoutRecordPage />} />
+            {/* Workout Routes - 운동 관련 */}
+            <Route path="/graph" element={<WorkoutPage />} /> {/* BottomNavBar에서 '운동일지'로 사용 */}
             <Route path="/workout/:id" element={<WorkoutDetailPage />} />
             <Route path="/workout/new" element={<WorkoutNewPage />} />
             <Route path="/workout/:id/edit" element={<WorkoutEditPage />} />
@@ -54,8 +52,8 @@ function App() {
             <Route path="/workout/:id/result" element={<WorkoutResultPage />} />
             <Route path="/workout/record" element={<WorkoutRecordPage />} />
             
-            {/* Food Routes */}
-            <Route path="/foodlog" element={<FoodRecordPage />} />
+            {/* Food Routes - 식단 관련 */}
+            <Route path="/foodlog" element={<FoodLogPage />} /> {/* BottomNavBar에서 '식단기록'으로 사용 */}
             <Route path="/food" element={<FoodLogPage />} />
             <Route path="/food/record" element={<FoodRecordPage />} />
             
