@@ -5,6 +5,7 @@ interface WorkoutData {
   date: string;
   weight: number;
   isSuccess: boolean;
+  sets?: Array<{ reps: number; weight: number; isSuccess: boolean }>;
 }
 
 interface ExercisePartOption {
@@ -22,15 +23,61 @@ const exercisePartOptions: ExercisePartOption[] = [
 
 const WorkoutGraph: React.FC = () => {
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
+  const [selectedWorkout, setSelectedWorkout] = useState<WorkoutData | null>(null);
   
   // 선택된 부위에 따른 데이터 필터링 (실제로는 API에서 데이터 가져와야 함)
   const workoutData: Record<ExercisePart, WorkoutData[]> = {
     chest: [
-      { date: '2024-03-01', weight: 80, isSuccess: true },
-      { date: '2024-03-08', weight: 82.5, isSuccess: true },
-      { date: '2024-03-15', weight: 85, isSuccess: false },
-      { date: '2024-03-22', weight: 85, isSuccess: true },
-      { date: '2024-03-29', weight: 87.5, isSuccess: true }
+      { 
+        date: '2024-03-01', 
+        weight: 80, 
+        isSuccess: true,
+        sets: [
+          { reps: 10, weight: 80, isSuccess: true },
+          { reps: 10, weight: 80, isSuccess: true },
+          { reps: 10, weight: 80, isSuccess: true }
+        ]
+      },
+      { 
+        date: '2024-03-08', 
+        weight: 82.5, 
+        isSuccess: true,
+        sets: [
+          { reps: 10, weight: 82.5, isSuccess: true },
+          { reps: 10, weight: 82.5, isSuccess: true },
+          { reps: 8, weight: 82.5, isSuccess: true }
+        ]
+      },
+      { 
+        date: '2024-03-15', 
+        weight: 85, 
+        isSuccess: false,
+        sets: [
+          { reps: 10, weight: 85, isSuccess: true },
+          { reps: 8, weight: 85, isSuccess: false },
+          { reps: 7, weight: 85, isSuccess: false }
+        ]
+      },
+      { 
+        date: '2024-03-22', 
+        weight: 85, 
+        isSuccess: true,
+        sets: [
+          { reps: 10, weight: 85, isSuccess: true },
+          { reps: 9, weight: 85, isSuccess: true },
+          { reps: 8, weight: 85, isSuccess: true }
+        ]
+      },
+      { 
+        date: '2024-03-29', 
+        weight: 87.5, 
+        isSuccess: true,
+        sets: [
+          { reps: 10, weight: 87.5, isSuccess: true },
+          { reps: 10, weight: 87.5, isSuccess: true },
+          { reps: 10, weight: 87.5, isSuccess: true }
+        ]
+      }
     ],
     back: [
       { date: '2024-03-02', weight: 100, isSuccess: true },
@@ -99,6 +146,16 @@ const WorkoutGraph: React.FC = () => {
     }
     
     return path;
+  };
+
+  // 데이터 포인트 클릭 핸들러
+  const handlePointClick = (workout: WorkoutData) => {
+    setSelectedWorkout(workout);
+  };
+  
+  // 모달 닫기 핸들러
+  const closeModal = () => {
+    setSelectedWorkout(null);
   };
 
   return (
@@ -208,7 +265,7 @@ const WorkoutGraph: React.FC = () => {
             
             {/* 데이터 포인트 */}
             {sortedWorkouts.map((workout, i) => (
-              <g key={`point-${i}`}>
+              <g key={`point-${i}`} onClick={() => handlePointClick(workout)} style={{ cursor: 'pointer' }}>
                 {/* 성공/실패에 따른 데이터 포인트 색상 */}
                 <circle 
                   cx={getX(i)} 
@@ -251,6 +308,63 @@ const WorkoutGraph: React.FC = () => {
           <p className="text-gray-500 dark:text-gray-400">
             기록된 운동 데이터가 없습니다.
           </p>
+        </div>
+      )}
+      
+      {/* 세트 정보 모달 */}
+      {selectedWorkout && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={closeModal}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                {selectedExercise} - {new Date(selectedWorkout.date).toLocaleDateString('ko-KR')}
+              </h3>
+              <button 
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                onClick={closeModal}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <div className="mb-4">
+              <div className="flex justify-between items-center">
+                <p className="text-gray-700 dark:text-gray-300">무게: <span className="font-bold">{selectedWorkout.weight}kg</span></p>
+                <span className={`px-2 py-1 text-sm rounded-full ${selectedWorkout.isSuccess 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}
+                >
+                  {selectedWorkout.isSuccess ? '성공' : '실패'}
+                </span>
+              </div>
+            </div>
+            <div className="border-t dark:border-gray-700 pt-4">
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">세트 정보</h4>
+              {selectedWorkout.sets && selectedWorkout.sets.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedWorkout.sets.map((set, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700">
+                      <div>
+                        <span className="font-medium">세트 {index + 1}:</span> {set.weight}kg x {set.reps}회
+                      </div>
+                      <span className={`text-sm px-2 py-1 rounded-full ${
+                        set.isSuccess 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200' 
+                          : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200'
+                      }`}>
+                        {set.isSuccess ? '성공' : '실패'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                  세트 정보가 없습니다.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -163,6 +163,14 @@ const WorkoutList: React.FC = () => {
     }
   ];
 
+  // 달력 연도/월 표시 추가
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthYearText = new Date(currentYear, currentMonth).toLocaleDateString('ko-KR', { 
+    year: 'numeric', 
+    month: 'long' 
+  });
+
   // 날짜별 운동 기록 그룹화
   const workoutsByDate = workouts.reduce<Record<string, Workout[]>>((acc, workout) => {
     const date = workout.date;
@@ -201,7 +209,12 @@ const WorkoutList: React.FC = () => {
     <div className="space-y-6">
       {/* 달력 */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">운동 달력</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">운동 달력</h3>
+          <div className="text-gray-700 dark:text-gray-300 font-medium">
+            {monthYearText}
+          </div>
+        </div>
         
         <div className="mb-4 grid grid-cols-7 gap-1">
           {/* 요일 헤더 */}
@@ -245,16 +258,27 @@ const WorkoutList: React.FC = () => {
                 {/* 운동 마커 */}
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
-                    {dayWorkouts.map((workout, j) => (
-                      <span 
-                        key={`workout-${j}`} 
-                        className={`text-xs px-1 py-0.5 rounded-sm truncate ${getPartColor(workout.part, workout.isAllSuccess)}`}
-                        title={`${getPartLabel(workout.part)} - ${workout.isAllSuccess ? '성공' : '실패'}`}
-                      >
-                        {getPartLabel(workout.part).substring(0, 1)}
-                        {workout.isAllSuccess ? '✓' : '✗'}
-                      </span>
-                    ))}
+                    {dayWorkouts.map((workout, j) => {
+                      // 주요 정보 추출
+                      const mainExerciseWeight = workout.mainExercise.weight;
+                      const partLabel = getPartLabel(workout.part);
+                      const statusLabel = workout.isAllSuccess ? '성공' : '실패';
+                      
+                      return (
+                        <div 
+                          key={`workout-${j}`} 
+                          className={`text-xs px-1 py-0.5 rounded-sm truncate ${getPartColor(workout.part, workout.isAllSuccess)}`}
+                          title={`${partLabel} - ${workout.mainExercise.name} ${mainExerciseWeight}kg - ${statusLabel}`}
+                        >
+                          <span className="font-medium">{partLabel}</span>
+                          <span className="mx-1">-</span>
+                          <span>{mainExerciseWeight}kg</span>
+                          <span className="ml-1">
+                            {workout.isAllSuccess ? '✓' : '✗'}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

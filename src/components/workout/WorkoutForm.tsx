@@ -99,37 +99,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     // 새 타이머 시작 (2분 = 120초)
     setActiveTimers(prev => ({ ...prev, [timerId]: 120 }));
     
-    // 타이머 시작 토스트 메시지
-    toast.success(
-      <div className="text-center">
-        <div className="font-bold text-lg mb-1">휴식 타이머</div>
-        <div className="font-mono" id={`timer-toast-${timerId}`}>02:00</div>
-      </div>,
-      {
-        id: timerId,
-        duration: 120000, // 2분
-        position: 'bottom-center',
-        style: {
-          background: '#1E40AF',
-          color: 'white',
-          fontWeight: 'bold',
-          minWidth: '200px',
-        },
-      }
-    );
-    
-    // 토스트 내의 타이머 업데이트
-    const toastTimerInterval = setInterval(() => {
-      const timeLeft = activeTimers[timerId];
-      if (timeLeft) {
-        const element = document.getElementById(`timer-toast-${timerId}`);
-        if (element) {
-          element.textContent = formatTime(timeLeft);
-        }
-      } else {
-        clearInterval(toastTimerInterval);
-      }
-    }, 1000);
+    // 타이머 시작 알림 (토스트 대신 작은 알림만 표시)
+    toast.success('타이머 시작됨', {
+      duration: 1500,
+      style: {
+        background: '#1E40AF',
+        color: 'white',
+        fontWeight: 'bold',
+      },
+    });
   };
 
   const addSet = (exerciseIndex: number = -1) => {
