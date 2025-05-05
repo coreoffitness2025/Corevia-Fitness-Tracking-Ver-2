@@ -97,6 +97,20 @@ const NutritionScout = () => {
     loadCSV();
   }, []);
 
+  // 한글 인코딩 처리 함수
+  const decodeKoreanText = (text: string): string => {
+    try {
+      // 텍스트가 EUC-KR, CP949 등으로 인코딩되어 깨지는 경우 처리
+      // 이 방법이 완벽하지는 않지만, 일부 케이스에서 도움이 될 수 있음
+      const decoder = new TextDecoder('utf-8');
+      const encoder = new TextEncoder();
+      return decoder.decode(encoder.encode(text));
+    } catch (error) {
+      console.error('텍스트 디코딩 오류:', error);
+      return text;
+    }
+  };
+
   const loadCSV = async () => {
     setIsLoading(true);
     setLoadError(null);
@@ -114,6 +128,10 @@ const NutritionScout = () => {
         'nutrition_db.csv',
         `/public/nutrition_db.csv`,
         `${window.location.origin}/nutrition_db.csv`,
+        '/assets/nutrition_db.csv',
+        './assets/nutrition_db.csv',
+        '../assets/nutrition_db.csv',
+        `${baseUrl}/assets/nutrition_db.csv`,
       ];
       
       let response;
@@ -123,7 +141,11 @@ const NutritionScout = () => {
       for (const path of possiblePaths) {
         try {
           console.log(`CSV 로드 시도: ${path}`);
-          const tempResponse = await fetch(path);
+          const tempResponse = await fetch(path, {
+            headers: {
+              'Content-Type': 'text/csv; charset=UTF-8',
+            }
+          });
           if (tempResponse.ok) {
             response = tempResponse;
             successPath = path;
@@ -142,12 +164,15 @@ const NutritionScout = () => {
       const csvText = await response.text();
       console.log(`CSV 로드 성공. 파일 크기: ${csvText.length} bytes, 경로: ${successPath}`);
       
+      // 한글 인코딩 처리
+      const decodedText = decodeKoreanText(csvText);
+      
       // CSV 내용 로깅 (디버깅용)
-      console.log('CSV 처음 500자:', csvText.substring(0, 500));
+      console.log('CSV 처음 500자:', decodedText.substring(0, 500));
       
       // CSV 파싱
-      if (csvText) {
-        const lines = csvText.split('\n');
+      if (decodedText) {
+        const lines = decodedText.split('\n');
         
         if (lines.length <= 1) {
           console.error('CSV 파일 형식 오류: 줄이 충분하지 않음');
@@ -189,31 +214,28 @@ const NutritionScout = () => {
         
         if (data.length === 0) {
           console.warn('CSV에서 항목을 찾지 못했습니다. 기본 데이터만 사용합니다.');
-        }
-        
-        // 중복 데이터 제거 (요리명 기준)
-        const uniqueNames = new Set();
-        const uniqueData = [...DEFAULT_FOOD_DATA];
-        
-        data.forEach(item => {
-          if (!uniqueNames.has(item.요리명)) {
-            uniqueNames.add(item.요리명);
-            uniqueData.push(item);
-          }
-        });
-        
-        console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
-        setFoodData(uniqueData);
-        
-        if (data.length > 0) {
-          toast.success(`${data.length}개의 음식 데이터를 로드했습니다.`, {
-            duration: 3000,
-            icon: '🍽️'
-          });
-        } else {
           toast.warning('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.', {
             duration: 3000,
             icon: '⚠️'
+          });
+        } else {
+          // 중복 데이터 제거 (요리명 기준)
+          const uniqueNames = new Set();
+          const uniqueData = [...DEFAULT_FOOD_DATA];
+          
+          data.forEach(item => {
+            if (!uniqueNames.has(item.요리명)) {
+              uniqueNames.add(item.요리명);
+              uniqueData.push(item);
+            }
+          });
+          
+          console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
+          setFoodData(uniqueData);
+          
+          toast.success(`${data.length}개의 음식 데이터를 로드했습니다.`, {
+            duration: 3000,
+            icon: '🍽️'
           });
         }
       }
