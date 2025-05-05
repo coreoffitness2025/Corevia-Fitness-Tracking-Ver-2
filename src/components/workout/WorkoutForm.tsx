@@ -438,7 +438,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             onClick={() => removeSet(-1, index)}
                             icon={<X size={16} className="text-danger-500" />}
                             className="ml-auto"
-                          />
+                          >
+                            삭제
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -468,7 +470,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       size="sm"
                       onClick={() => removeAccessoryExercise(index)}
                       icon={<X size={16} className="text-danger-500" />}
-                    />
+                    >
+                      삭제
+                    </Button>
                   </div>
                   <input
                     type="text"
@@ -557,7 +561,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               onClick={() => removeSet(index, setIndex)}
                               icon={<X size={16} className="text-danger-500" />}
                               className="ml-auto"
-                            />
+                            >
+                              삭제
+                            </Button>
                           )}
                         </div>
                       </div>
