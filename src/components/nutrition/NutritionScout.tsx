@@ -141,20 +141,6 @@ const NutritionScout = () => {
     loadCSV();
   }, []);
 
-  // 한글 인코딩 처리 함수
-  const decodeKoreanText = (text: string): string => {
-    try {
-      // 텍스트가 EUC-KR, CP949 등으로 인코딩되어 깨지는 경우 처리
-      // 이 방법이 완벽하지는 않지만, 일부 케이스에서 도움이 될 수 있음
-      const decoder = new TextDecoder('utf-8');
-      const encoder = new TextEncoder();
-      return decoder.decode(encoder.encode(text));
-    } catch (error) {
-      console.error('텍스트 디코딩 오류:', error);
-      return text;
-    }
-  };
-
   const loadCSV = async () => {
     setIsLoading(true);
     setLoadError(null);
@@ -185,11 +171,7 @@ const NutritionScout = () => {
       for (const path of possiblePaths) {
         try {
           console.log(`CSV 로드 시도: ${path}`);
-          const tempResponse = await fetch(path, {
-            headers: {
-              'Content-Type': 'text/csv; charset=UTF-8',
-            }
-          });
+          const tempResponse = await fetch(path);
           if (tempResponse.ok) {
             response = tempResponse;
             successPath = path;
@@ -205,18 +187,43 @@ const NutritionScout = () => {
         throw new Error(`모든 경로에서 CSV 로드 실패`);
       }
       
-      const csvText = await response.text();
-      console.log(`CSV 로드 성공. 파일 크기: ${csvText.length} bytes, 경로: ${successPath}`);
+      // ArrayBuffer로 응답 받기 (인코딩 처리를 위해)
+      const buffer = await response.arrayBuffer();
+      console.log(`CSV 로드 성공. 파일 크기: ${buffer.byteLength} bytes, 경로: ${successPath}`);
       
-      // 한글 인코딩 처리
-      const decodedText = decodeKoreanText(csvText);
+      // 다양한 인코딩 시도
+      const encodings = ['UTF-8', 'EUC-KR', 'cp949'];
+      let csvText = '';
+      let success = false;
+      
+      for (const encoding of encodings) {
+        try {
+          // TextDecoder로 다양한 인코딩 시도
+          const decoder = new TextDecoder(encoding);
+          const decodedText = decoder.decode(buffer);
+          
+          // 첫 줄에 '요리명' 또는 '음식명'이 포함되어 있는지 확인
+          if (decodedText.includes('요리명') || decodedText.includes('음식명')) {
+            console.log(`${encoding} 인코딩으로 성공적으로 디코딩했습니다.`);
+            csvText = decodedText;
+            success = true;
+            break;
+          }
+        } catch (e) {
+          console.log(`${encoding} 인코딩 시도 실패:`, e);
+        }
+      }
+      
+      if (!success) {
+        throw new Error('지원되는 인코딩으로 CSV를 읽을 수 없습니다.');
+      }
       
       // CSV 내용 로깅 (디버깅용)
-      console.log('CSV 처음 500자:', decodedText.substring(0, 500));
+      console.log('CSV 처음 500자:', csvText.substring(0, 500));
       
       // CSV 파싱
-      if (decodedText) {
-        const lines = decodedText.split('\n');
+      if (csvText) {
+        const lines = csvText.split('\n');
         
         if (lines.length <= 1) {
           console.error('CSV 파일 형식 오류: 줄이 충분하지 않음');
@@ -231,6 +238,34 @@ const NutritionScout = () => {
           throw new Error('CSV 헤더 형식 오류');
         }
         
+        // 필드명 표준화 함수
+        const standardizeFieldName = (field: string) => {
+          // 요리명/음식명 표준화
+          if (field.includes('음식') || field.includes('요리') || field.includes('이름')) {
+            return '요리명';
+          }
+          // 탄수화물 표준화
+          if (field.includes('탄수화물') || field.includes('carbs') || field.includes('탄수')) {
+            return '탄수화물(g/100g)';
+          }
+          // 단백질 표준화
+          if (field.includes('단백질') || field.includes('protein') || field.includes('단백')) {
+            return '단백질(g/100g)';
+          }
+          // 지방 표준화
+          if (field.includes('지방') || field.includes('fat')) {
+            return '지방(g/100g)';
+          }
+          // 코멘트 표준화
+          if (field.includes('코멘트') || field.includes('comment') || field.includes('설명') || field.includes('메모')) {
+            return '코멘트';
+          }
+          return field;
+        };
+        
+        // 헤더 표준화
+        const standardizedHeaders = headers.map(standardizeFieldName);
+        
         const data: NutritionData[] = [];
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
@@ -244,8 +279,9 @@ const NutritionScout = () => {
           const row: any = {};
           
           headers.forEach((header, j) => {
+            const standardHeader = standardizedHeaders[j];
             const value = values[j]?.trim() || '';
-            row[header] = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
+            row[standardHeader] = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
           });
           
           // 요리명이 있는 경우만 추가
@@ -258,7 +294,6 @@ const NutritionScout = () => {
         
         if (data.length === 0) {
           console.warn('CSV에서 항목을 찾지 못했습니다. 기본 데이터만 사용합니다.');
-          // 안전하게 커스텀 토스트 함수 사용
           showToast.warning('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.');
         } else {
           // 중복 데이터 제거 (요리명 기준)
@@ -275,7 +310,6 @@ const NutritionScout = () => {
           console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
           setFoodData(uniqueData);
           
-          // 안전하게 커스텀 토스트 함수 사용
           showToast.success(`${data.length}개의 음식 데이터를 로드했습니다.`);
         }
       }
@@ -283,7 +317,6 @@ const NutritionScout = () => {
       console.error('CSV 로드 에러:', error);
       setLoadError(`CSV 로드 실패: ${error.message}`);
       
-      // 안전하게 커스텀 토스트 함수 사용
       showToast.error('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.');
     } finally {
       setIsLoading(false);
@@ -292,31 +325,31 @@ const NutritionScout = () => {
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
-      // 안전하게 커스텀 토스트 함수 사용
       showToast.error('검색어를 입력해주세요.');
       return;
     }
     
-    const result = foodData.find(
-      item => item.요리명 && item.요리명.toLowerCase() === searchQuery.toLowerCase()
+    const query = searchQuery.trim().toLowerCase();
+    
+    // 정확한 일치 검색
+    const exactMatch = foodData.find(
+      item => item.요리명 && item.요리명.toLowerCase() === query
     );
     
-    if (result) {
-      setSearchResult(result);
+    // 부분 일치 검색
+    const partialMatch = foodData.find(
+      item => item.요리명 && item.요리명.toLowerCase().includes(query)
+    );
+    
+    if (exactMatch) {
+      setSearchResult(exactMatch);
+      setShowAutoComplete(false);
+    } else if (partialMatch) {
+      setSearchResult(partialMatch);
       setShowAutoComplete(false);
     } else {
-      const partialMatch = foodData.find(
-        item => item.요리명 && item.요리명.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      if (partialMatch) {
-        setSearchResult(partialMatch);
-        setShowAutoComplete(false);
-      } else {
-        setSearchResult(null);
-        // 안전하게 커스텀 토스트 함수 사용
-        showToast.error('검색 결과가 없습니다.');
-      }
+      setSearchResult(null);
+      showToast.error('검색 결과가 없습니다.');
     }
   };
 
@@ -325,12 +358,19 @@ const NutritionScout = () => {
     setSearchQuery(value);
     
     if (value.trim()) {
-      const filtered = foodData
-        .filter(item => 
-          item.요리명 && 
-          item.요리명.toLowerCase().includes(value.toLowerCase())
-        )
-        .slice(0, 5);
+      // 첫 글자 일치 우선, 그 후 포함 항목
+      const exactMatches = foodData.filter(item => 
+        item.요리명 && item.요리명.toLowerCase().startsWith(value.toLowerCase())
+      );
+      
+      const partialMatches = foodData.filter(item => 
+        item.요리명 && 
+        item.요리명.toLowerCase().includes(value.toLowerCase()) && 
+        !item.요리명.toLowerCase().startsWith(value.toLowerCase())
+      );
+      
+      // 정확한 일치 항목을 먼저 보여주고, 그 다음 부분 일치 항목
+      const filtered = [...exactMatches, ...partialMatches].slice(0, 5);
       
       setSuggestions(filtered);
       setShowAutoComplete(filtered.length > 0);
@@ -404,16 +444,40 @@ const NutritionScout = () => {
 
         {/* 자동완성 리스트 */}
         {showAutoComplete && (
-          <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto">
-            {suggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                onClick={() => selectSuggestion(suggestion)}
-                className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-white"
-              >
-                {suggestion.요리명}
-              </div>
-            ))}
+          <div className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+            {suggestions.map((suggestion, index) => {
+              // 검색어 하이라이트를 위한 처리
+              const itemName = suggestion.요리명;
+              const lowerName = itemName.toLowerCase();
+              const lowerQuery = searchQuery.toLowerCase();
+              const matchIndex = lowerName.indexOf(lowerQuery);
+              
+              let highlightedName;
+              if (matchIndex >= 0) {
+                const before = itemName.substring(0, matchIndex);
+                const match = itemName.substring(matchIndex, matchIndex + lowerQuery.length);
+                const after = itemName.substring(matchIndex + lowerQuery.length);
+                highlightedName = (
+                  <>
+                    {before}
+                    <span className="font-bold text-blue-600 dark:text-blue-400">{match}</span>
+                    {after}
+                  </>
+                );
+              } else {
+                highlightedName = itemName;
+              }
+              
+              return (
+                <div
+                  key={index}
+                  onClick={() => selectSuggestion(suggestion)}
+                  className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-white"
+                >
+                  {highlightedName}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -427,25 +491,25 @@ const NutritionScout = () => {
       )}
 
       {searchResult && (
-        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 transition-all duration-300 transform">
           <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b border-blue-500 pb-2">
             {searchResult.요리명}
           </h3>
           
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm">
               <p className="text-sm text-gray-600 dark:text-gray-400">탄수화물</p>
               <p className="text-lg font-bold text-blue-500">
                 {formatNumber(searchResult['탄수화물(g/100g)'])}g
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm">
               <p className="text-sm text-gray-600 dark:text-gray-400">단백질</p>
               <p className="text-lg font-bold text-blue-500">
                 {formatNumber(searchResult['단백질(g/100g)'])}g
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm">
               <p className="text-sm text-gray-600 dark:text-gray-400">지방</p>
               <p className="text-lg font-bold text-blue-500">
                 {formatNumber(searchResult['지방(g/100g)'])}g
@@ -456,7 +520,7 @@ const NutritionScout = () => {
           {searchResult.코멘트 && (
             <div className="bg-blue-50 dark:bg-blue-900 border-l-4 border-blue-500 p-3 rounded">
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                {searchResult.코멘트}
+                {searchResult.코멘트.replace(/\\n/g, '\n')}
               </p>
             </div>
           )}
