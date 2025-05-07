@@ -64,81 +64,67 @@ const DEFAULT_FOOD_DATA: NutritionData[] = [
     '코멘트': '고단백 저지방 식품'
   },
   {
+    '요리명': '계란',
+    '탄수화물(g/100g)': 1.1,
+    '단백질(g/100g)': 12.5,
+    '지방(g/100g)': 10.6,
+    '코멘트': '필수 아미노산이 풍부한 완전식품'
+  },
+  {
+    '요리명': '우유',
+    '탄수화물(g/100g)': 4.9,
+    '단백질(g/100g)': 3.3,
+    '지방(g/100g)': 3.2,
+    '코멘트': '칼슘이 풍부한 유제품'
+  },
+  {
+    '요리명': '두부',
+    '탄수화물(g/100g)': 1.9,
+    '단백질(g/100g)': 8.1,
+    '지방(g/100g)': 4.2,
+    '코멘트': '식물성 단백질 공급원'
+  },
+  {
     '요리명': '현미밥',
-    '탄수화물(g/100g)': 35,
-    '단백질(g/100g)': 3,
-    '지방(g/100g)': 1,
-    '코멘트': '고탄수화물 식품'
+    '탄수화물(g/100g)': 34.6,
+    '단백질(g/100g)': 2.7,
+    '지방(g/100g)': 0.6,
+    '코멘트': '식이섬유가 풍부한 탄수화물 공급원'
+  },
+  {
+    '요리명': '고구마',
+    '탄수화물(g/100g)': 20.1,
+    '단백질(g/100g)': 1.6,
+    '지방(g/100g)': 0.1,
+    '코멘트': '비타민 A가 풍부한 복합 탄수화물'
+  },
+  {
+    '요리명': '아보카도',
+    '탄수화물(g/100g)': 8.5,
+    '단백질(g/100g)': 2,
+    '지방(g/100g)': 14.7,
+    '코멘트': '건강한 지방과 비타민이 풍부한 과일'
   },
   {
     '요리명': '연어',
     '탄수화물(g/100g)': 0,
-    '단백질(g/100g)': 20,
-    '지방(g/100g)': 13,
-    '코멘트': '고단백 고지방 식품'
-  },
-  {
-    '요리명': '고구마',
-    '탄수화물(g/100g)': 30,
-    '단백질(g/100g)': 1.5,
-    '지방(g/100g)': 0.1,
-    '코멘트': '고탄수화물 저지방 식품'
-  },
-  {
-    '요리명': '계란',
-    '탄수화물(g/100g)': 1,
-    '단백질(g/100g)': 12,
-    '지방(g/100g)': 10,
-    '코멘트': '고단백 식품'
-  },
-  {
-    '요리명': '아보카도',
-    '탄수화물(g/100g)': 9,
-    '단백질(g/100g)': 2,
-    '지방(g/100g)': 15,
-    '코멘트': '건강한 지방이 풍부한 식품'
-  },
-  {
-    '요리명': '두부',
-    '탄수화물(g/100g)': 2,
-    '단백질(g/100g)': 8,
-    '지방(g/100g)': 4,
-    '코멘트': '식물성 단백질이 풍부한 식품'
+    '단백질(g/100g)': 20.4,
+    '지방(g/100g)': 13.4,
+    '코멘트': '오메가-3 지방산이 풍부한 생선'
   },
   {
     '요리명': '견과류',
-    '탄수화물(g/100g)': 20,
-    '단백질(g/100g)': 15,
-    '지방(g/100g)': 50,
-    '코멘트': '건강한 지방과 단백질이 풍부한 식품'
+    '탄수화물(g/100g)': 16.2,
+    '단백질(g/100g)': 14.3,
+    '지방(g/100g)': 49.9,
+    '코멘트': '건강한 지방과 단백질 공급원'
   },
   {
     '요리명': '바나나',
-    '탄수화물(g/100g)': 23,
-    '단백질(g/100g)': 1,
+    '탄수화물(g/100g)': 22.8,
+    '단백질(g/100g)': 1.1,
     '지방(g/100g)': 0.3,
     '코멘트': '칼륨이 풍부한 과일'
-  },
-  {
-    '요리명': '오트밀',
-    '탄수화물(g/100g)': 67,
-    '단백질(g/100g)': 13,
-    '지방(g/100g)': 7,
-    '코멘트': '식이섬유가 풍부한 건강한 탄수화물 식품'
-  },
-  {
-    '요리명': '치킨',
-    '탄수화물(g/100g)': 8.2,
-    '단백질(g/100g)': 22.5,
-    '지방(g/100g)': 9.8,
-    '코멘트': '치킨,부위와 조리법에 따라 지방 함량이 크게 달라집니다. 껍질에는 포화지방이 집중되어 있으니 제거하는 것이 좋습니다. 프라이드 치킨은 트랜스지방과 포화지방이 많으므로, 구운 닭가슴살이나 닭다리살을 선택하세요. 단백질 함량이 높아 근비대에 좋지만, 조리법을 건강하게 선택하는 것이 중요합니다.'
-  },
-  {
-    '요리명': '데리야끼킨롤밥',
-    '탄수화물(g/100g)': 21.0,
-    '단백질(g/100g)': 14.4,
-    '지방(g/100g)': 0,
-    '코멘트': '데리야끼 킨롤밥은 식이섬유가 풍부해 포만감을 주고 소화를 돕습니다. 다만 일반적인 가지볶음은 식용유를 많이 사용하는 경향이 있어 지방 섭취에 주의가 필요합니다. 단백질 함량이 높아 근비대에 좋습니다.'
   }
 ];
 
@@ -177,197 +163,32 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // Vite에서는 import.meta.env.BASE_URL 사용
-      const baseUrl = import.meta.env.BASE_URL || '';
-      
-      // 시도할 수 있는 모든 경로
-      const possiblePaths = [
-        '/nutrition_db.csv',
-        './nutrition_db.csv',
-        '../nutrition_db.csv',
-        `${baseUrl}/nutrition_db.csv`,
-        'nutrition_db.csv',
-        `/public/nutrition_db.csv`,
-        `${window.location.origin}/nutrition_db.csv`,
-        '/assets/nutrition_db.csv',
-        './assets/nutrition_db.csv',
-        '../assets/nutrition_db.csv',
-        `${baseUrl}/assets/nutrition_db.csv`,
-      ];
-      
-      let response;
-      let successPath = '';
-      
-      // 모든 가능한 경로를 순차적으로 시도
-      for (const path of possiblePaths) {
-        try {
-          console.log(`CSV 로드 시도: ${path}`);
-          const tempResponse = await fetch(path);
-          if (tempResponse.ok) {
-            response = tempResponse;
-            successPath = path;
-            console.log(`CSV 로드 성공: ${path}`);
-            break;
-          }
-        } catch (error) {
-          console.log(`${path} 경로 시도 실패:`, error);
-        }
+      // 직접 임베디드 데이터 활용
+      if (DEFAULT_FOOD_DATA.length > 0) {
+        setFoodData(DEFAULT_FOOD_DATA);
+        setIsLoading(false);
+        return;
       }
       
-      if (!response || !response.ok) {
-        throw new Error(`모든 경로에서 CSV 로드 실패`);
+      // 외부 CSV 로드 시도
+      const response = await fetch('/nutrition_db.csv');
+      if (!response.ok) {
+        throw new Error(`CSV 로드 실패: ${response.status} ${response.statusText}`);
       }
       
-      // ArrayBuffer로 응답 받기 (인코딩 처리를 위해)
-      const buffer = await response.arrayBuffer();
-      console.log(`CSV 로드 성공. 파일 크기: ${buffer.byteLength} bytes, 경로: ${successPath}`);
+      const text = await response.text();
+      const data = parseCSV(text);
       
-      // 다양한 인코딩 시도
-      const encodings = ['UTF-8', 'EUC-KR', 'cp949'];
-      let csvText = '';
-      let success = false;
-      
-      for (const encoding of encodings) {
-        try {
-          // TextDecoder로 다양한 인코딩 시도
-          const decoder = new TextDecoder(encoding);
-          const decodedText = decoder.decode(buffer);
-          
-          // 첫 줄에 '요리명' 또는 '음식명'이 포함되어 있는지 확인
-          if (decodedText.includes('요리명') || decodedText.includes('음식명')) {
-            console.log(`${encoding} 인코딩으로 성공적으로 디코딩했습니다.`);
-            csvText = decodedText;
-            success = true;
-            break;
-          }
-        } catch (e) {
-          console.log(`${encoding} 인코딩 시도 실패:`, e);
-        }
+      if (data.length > 0) {
+        setFoodData(data);
+      } else {
+        throw new Error('CSV 데이터가 비어있습니다.');
       }
-      
-      if (!success) {
-        throw new Error('지원되는 인코딩으로 CSV를 읽을 수 없습니다.');
-      }
-      
-      // CSV 내용 로깅 (디버깅용)
-      console.log('CSV 처음 500자:', csvText.substring(0, 500));
-      
-      // CSV 파싱
-      if (csvText) {
-        const lines = csvText.split('\n');
-        
-        if (lines.length <= 1) {
-          console.error('CSV 파일 형식 오류: 줄이 충분하지 않음');
-          throw new Error('CSV 파일 형식 오류');
-        }
-        
-        const headers = lines[0].split(',').map(h => h.trim());
-        console.log('CSV 헤더:', headers);
-        
-        if (headers.length < 3) {
-          console.error('CSV 헤더 형식 오류:', headers);
-          throw new Error('CSV 헤더 형식 오류');
-        }
-        
-        // 필드명 표준화 함수
-        const standardizeFieldName = (field: string) => {
-          // 요리명/음식명 표준화
-          if (field.includes('음식') || field.includes('요리') || field.includes('이름')) {
-            return '요리명';
-          }
-          // 탄수화물 표준화
-          if (field.includes('탄수화물') || field.includes('carbs') || field.includes('탄수')) {
-            return '탄수화물(g/100g)';
-          }
-          // 단백질 표준화
-          if (field.includes('단백질') || field.includes('protein') || field.includes('단백')) {
-            return '단백질(g/100g)';
-          }
-          // 지방 표준화 - 더 많은 키워드 추가
-          if (field.includes('지방') || field.includes('fat') || field.includes('지방함량') || field.includes('지방량')) {
-            return '지방(g/100g)';
-          }
-          // 코멘트 표준화 - 모든 가능한 코멘트 필드명 포함
-          if (field.includes('코멘트') || field.includes('comment') || field.includes('설명') || 
-              field.includes('메모') || field.includes('비고') || field.includes('특징') || 
-              field.includes('참고사항') || field.includes('note')) {
-            return '코멘트';
-          }
-          return field;
-        };
-        
-        // 헤더 표준화
-        const standardizedHeaders = headers.map(standardizeFieldName);
-        console.log('표준화된 헤더:', standardizedHeaders);
-        
-        const data: NutritionData[] = [];
-        for (let i = 1; i < lines.length; i++) {
-          if (!lines[i].trim()) continue;
-          
-          const values = lines[i].split(',');
-          if (values.length < 3) {
-            console.log(`유효하지 않은 행 스킵 (${i}):`, lines[i]);
-            continue;
-          }
-          
-          const row: Record<string, any> = {};
-          
-          // 헤더를 통한 값 매핑
-          standardizedHeaders.forEach((standardHeader, j) => {
-            const value = values[j]?.trim() || '';
-            
-            // 숫자 값을 숫자 타입으로 변환, 문자열은 그대로
-            if (!isNaN(parseFloat(value)) && standardHeader !== '코멘트') {
-              row[standardHeader] = parseFloat(value);
-            } else {
-              row[standardHeader] = value;
-            }
-          });
-          
-          // 요리명이 있는 경우만 추가
-          if (row['요리명']) {
-            // 필수 필드 확인 및 기본값 설정
-            if (row['탄수화물(g/100g)'] === undefined) row['탄수화물(g/100g)'] = 0;
-            if (row['단백질(g/100g)'] === undefined) row['단백질(g/100g)'] = 0;
-            if (row['지방(g/100g)'] === undefined) row['지방(g/100g)'] = 0;
-            
-            // 코멘트 필드가 없다면 빈 문자열로 설정
-            if (row['코멘트'] === undefined || row['코멘트'] === '') {
-              row['코멘트'] = '';
-            }
-            
-            console.log(`항목 추가: ${row['요리명']} - 지방: ${row['지방(g/100g)']} - 코멘트: ${row['코멘트'].substring(0, 20)}...`);
-            
-            data.push(row as NutritionData);
-          }
-        }
-        
-        console.log(`CSV에서 ${data.length}개의 항목 로드됨`);
-        
-        if (data.length === 0) {
-          console.warn('CSV에서 항목을 찾지 못했습니다. 기본 데이터만 사용합니다.');
-          showToast.warning('CSV 파일에서 데이터를 로드하지 못했습니다. 기본 데이터만 사용합니다.');
-        } else {
-          // 중복 데이터 제거 (요리명 기준)
-          const uniqueNames = new Set();
-          const uniqueData = [...DEFAULT_FOOD_DATA];
-          
-          data.forEach(item => {
-            if (!uniqueNames.has(item.요리명)) {
-              uniqueNames.add(item.요리명);
-              uniqueData.push(item);
-            }
-          });
-          
-          console.log(`중복 제거 후 총 ${uniqueData.length}개 항목`);
-          setFoodData(uniqueData);
-        }
-      }
-    } catch (error: any) {
-      console.error('CSV 로드 에러:', error);
-      setLoadError(`CSV 로드 실패: ${error.message}`);
-      
-      showToast.error('데이터를 불러오는 중 오류가 발생했습니다. 기본 데이터만 사용합니다.');
+    } catch (error) {
+      console.error('CSV 로드 오류:', error);
+      // 로드 실패 시 기본 데이터 사용
+      setFoodData(DEFAULT_FOOD_DATA);
+      setLoadError(error instanceof Error ? error.message : '알 수 없는 오류');
     } finally {
       setIsLoading(false);
     }
@@ -463,6 +284,29 @@ const NutritionScout = () => {
     
     // 칼로리 계산: 1g 탄수화물 = 4kcal, 1g 단백질 = 4kcal, 1g 지방 = 9kcal
     return Math.round((carbs * 4) + (protein * 4) + (fat * 9));
+  };
+
+  // CSV 데이터 파싱 함수
+  const parseCSV = (text: string): NutritionData[] => {
+    const rows = text.split('\n');
+    const headers = rows[0].split(',');
+    
+    return rows.slice(1).filter(row => row.trim()).map(row => {
+      const values = row.split(',');
+      const item: Record<string, any> = {};
+      
+      headers.forEach((header, index) => {
+        const value = values[index]?.trim() || '';
+        // 숫자로 변환 가능한 경우 숫자로 변환
+        if (header.includes('g/100g') && !isNaN(parseFloat(value))) {
+          item[header] = parseFloat(value);
+        } else {
+          item[header] = value;
+        }
+      });
+      
+      return item as NutritionData;
+    }).filter(item => item['요리명']); // 요리명이 있는 항목만 필터링
   };
 
   return (

@@ -297,48 +297,69 @@ const WorkoutGraph: React.FC = () => {
         <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
           <div className="flex space-x-2 items-center">
             <label className="text-sm text-gray-600 dark:text-gray-400">부위:</label>
-            <select
-              value={selectedPart}
-              onChange={(e) => handlePartChange(e.target.value as ExercisePart)}
-              className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              {exercisePartOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative inline-block">
+              <select
+                value={selectedPart}
+                onChange={(e) => handlePartChange(e.target.value as ExercisePart)}
+                className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-8 appearance-none"
+              >
+                {exercisePartOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
           </div>
           
           <div className="flex space-x-2 items-center">
             <label className="text-sm text-gray-600 dark:text-gray-400">운동:</label>
-            <select
-              value={selectedMainExercise}
-              onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-              className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              {mainExerciseOptions[selectedPart].map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative inline-block">
+              <select
+                value={selectedMainExercise}
+                onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
+                className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-8 appearance-none"
+              >
+                {mainExerciseOptions[selectedPart].map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
           </div>
           
           <div className="flex space-x-2 items-center">
             <label className="text-sm text-gray-600 dark:text-gray-400">기간:</label>
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-              className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="all">전체 기간</option>
-              <option value="1week">최근 1주</option>
-              <option value="1month">최근 1개월</option>
-              <option value="3months">최근 3개월</option>
-              <option value="6months">최근 6개월</option>
-              <option value="1year">최근 1년</option>
-            </select>
+            <div className="relative inline-block">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+                className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-8 appearance-none"
+              >
+                <option value="all">전체 기간</option>
+                <option value="1week">최근 1주</option>
+                <option value="1month">최근 1개월</option>
+                <option value="3months">최근 3개월</option>
+                <option value="6months">최근 6개월</option>
+                <option value="1year">최근 1년</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
       </div>

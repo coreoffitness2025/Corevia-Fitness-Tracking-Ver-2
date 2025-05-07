@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, weekdays } from '../../utils/dateUtils';
 import { ExercisePart } from '../../types';
@@ -83,6 +83,7 @@ const WorkoutList: React.FC = () => {
   // 스탬프 이미지 상태
   const [stampImage, setStampImage] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   
   // 선택된 년도와 월에 따라 달력 데이터 생성
   const calendarDays = generateCalendarDays(currentYear, currentMonth);
@@ -256,40 +257,21 @@ const WorkoutList: React.FC = () => {
   // 선택된 날짜의 운동 기록
   const selectedWorkouts = workoutsByDate[selectedDate] || [];
 
-  // 스탬프 캡처 및 다운로드 기능
-  const captureWorkoutStamp = async () => {
-    if (!workoutStampRef.current || selectedWorkouts.length === 0) return;
-    
-    try {
-      const canvas = await html2canvas(workoutStampRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        logging: false,
-        allowTaint: true,
-        useCORS: true
-      });
-      
-      const dataUrl = canvas.toDataURL('image/png');
-      setStampImage(dataUrl);
-    } catch (error) {
-      console.error('스탬프 캡처 중 오류:', error);
-    }
-  };
-
   // 카메라로 촬영 (모바일 웹앱에서 작동)
   const handleCameraCapture = () => {
     setShowCamera(true);
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.capture = 'environment'; // 모바일 기기에서 카메라 활성화
+    // TypeScript에서 HTMLInputElement는 capture 속성을 직접 지원하지 않으므로 attribute로 설정
+    input.setAttribute('capture', 'environment'); // 모바일 기기에서 카메라 활성화
     input.onchange = (e: Event) => {
       const fileInput = e.target as HTMLInputElement;
       if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
         reader.onload = () => {
           if (typeof reader.result === 'string') {
-            setStampImage(reader.result);
+            setUploadedImage(reader.result);
             setShowCamera(false);
           }
         };
@@ -312,7 +294,7 @@ const WorkoutList: React.FC = () => {
         const reader = new FileReader();
         reader.onload = () => {
           if (typeof reader.result === 'string') {
-            setStampImage(reader.result);
+            setUploadedImage(reader.result);
           }
         };
         reader.readAsDataURL(fileInput.files[0]);
@@ -320,6 +302,104 @@ const WorkoutList: React.FC = () => {
     };
     input.click();
   };
+
+  // 스탬프 캡처 및 다운로드 기능
+  const captureWorkoutStamp = async () => {
+    if (!workoutStampRef.current || selectedWorkouts.length === 0) return;
+    
+    try {
+      const canvas = await html2canvas(workoutStampRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        allowTaint: true,
+        useCORS: true
+      });
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      setStampImage(dataUrl);
+    } catch (error) {
+      console.error('스탬프 캡처 중 오류:', error);
+    }
+  };
+  
+  // 업로드된 이미지에 운동 내용 오버레이 하기
+  const createStampWithImage = async () => {
+    if (!uploadedImage || !workoutStampRef.current || selectedWorkouts.length === 0) return;
+    
+    try {
+      // 운동 정보 캡처
+      const infoCanvas = await html2canvas(workoutStampRef.current, {
+        backgroundColor: null, // 투명 배경
+        scale: 2,
+        logging: false,
+        allowTaint: true,
+        useCORS: true
+      });
+      
+      // 새 캔버스 생성
+      const finalCanvas = document.createElement('canvas');
+      const ctx = finalCanvas.getContext('2d');
+      
+      if (!ctx) return;
+      
+      // 업로드된 이미지 로드
+      const img: HTMLImageElement = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = uploadedImage;
+      
+      img.onload = () => {
+        // 캔버스 크기 설정
+        finalCanvas.width = img.width;
+        finalCanvas.height = img.height;
+        
+        // 배경 이미지 그리기
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+        
+        // 운동 정보를 반투명하게 오버레이
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        
+        // 오버레이 영역 (이미지 하단 40% 영역)
+        const overlayHeight = img.height * 0.4;
+        ctx.fillRect(0, img.height - overlayHeight, img.width, overlayHeight);
+        
+        // 운동 정보 오버레이
+        ctx.globalAlpha = 1.0;
+        const scale = img.width / infoCanvas.width;
+        const scaledHeight = infoCanvas.height * scale * 0.7; // 70% 크기로 조정
+        
+        ctx.drawImage(
+          infoCanvas, 
+          0, 0, infoCanvas.width, infoCanvas.height,
+          img.width * 0.05, // 좌측 5% 여백
+          img.height - scaledHeight - (img.height * 0.05), // 하단 5% 여백
+          img.width * 0.9, // 90% 너비 사용
+          scaledHeight
+        );
+        
+        // 앱 워터마크 추가
+        ctx.font = `bold ${Math.round(img.width * 0.04)}px Arial`;
+        ctx.fillStyle = '#3B82F6';
+        ctx.textAlign = 'right';
+        ctx.fillText('Corevia Fitness', img.width - (img.width * 0.05), img.height - (img.height * 0.02));
+        
+        // 최종 이미지 설정
+        const finalImage = finalCanvas.toDataURL('image/jpeg', 0.9);
+        setStampImage(finalImage);
+        setUploadedImage(null);
+      };
+    } catch (error) {
+      console.error('스탬프 생성 중 오류:', error);
+    }
+  };
+  
+  // 업로드된 이미지가 있으면 스탬프 생성
+  useEffect(() => {
+    if (uploadedImage && selectedWorkouts.length > 0) {
+      createStampWithImage();
+    }
+  }, [uploadedImage]);
 
   // 이미지 다운로드
   const downloadStampImage = () => {
@@ -382,22 +462,28 @@ const WorkoutList: React.FC = () => {
               <select
                 value={currentYear}
                 onChange={(e) => goToSelectedMonth(parseInt(e.target.value), currentMonth)}
-                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-8 appearance-none"
               >
                 {yearOptions.map(year => (
                   <option key={year} value={year}>{year}년</option>
                 ))}
               </select>
-              
-              <select
-                value={currentMonth}
-                onChange={(e) => goToSelectedMonth(currentYear, parseInt(e.target.value))}
-                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                {monthOptions.map(month => (
-                  <option key={month.value} value={month.value}>{month.label}</option>
-                ))}
-              </select>
+              <div className="relative inline-block">
+                <select
+                  value={currentMonth}
+                  onChange={(e) => goToSelectedMonth(currentYear, parseInt(e.target.value))}
+                  className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-8 appearance-none"
+                >
+                  {monthOptions.map(month => (
+                    <option key={month.value} value={month.value}>{month.label}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
             </div>
             
             <button 
@@ -495,33 +581,27 @@ const WorkoutList: React.FC = () => {
         
         {selectedWorkouts.length > 0 && (
           <div className="flex space-x-2">
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="sm"
+              className="flex items-center px-3 py-1 rounded text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
               onClick={captureWorkoutStamp}
-              icon={<Camera size={16} />}
             >
-              스탬프 생성
-            </Button>
-            <Button
+              <Camera size={16} className="mr-1" /> 스탬프 생성
+            </button>
+            <button
               type="button"
-              variant="outline" 
-              size="sm"
+              className="flex items-center px-3 py-1 rounded text-sm bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
               onClick={handleCameraCapture}
-              icon={<Camera size={16} />}
             >
-              카메라로 촬영
-            </Button>
-            <Button
+              <Camera size={16} className="mr-1" /> 카메라로 촬영
+            </button>
+            <button
               type="button"
-              variant="outline" 
-              size="sm"
+              className="flex items-center px-3 py-1 rounded text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-800 dark:text-purple-200"
               onClick={handleFileSelect}
-              icon={<Image size={16} />}
             >
-              앨범에서 선택
-            </Button>
+              <Image size={16} className="mr-1" /> 앨범에서 선택
+            </button>
           </div>
         )}
         
@@ -540,33 +620,27 @@ const WorkoutList: React.FC = () => {
               운동 스탬프
             </h3>
             <div className="flex space-x-2">
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
+                className="flex items-center px-3 py-1 rounded text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
                 onClick={downloadStampImage}
-                icon={<Download size={16} />}
               >
-                저장
-              </Button>
-              <Button
+                <Download size={16} className="mr-1" /> 저장
+              </button>
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
+                className="flex items-center px-3 py-1 rounded text-sm bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
                 onClick={shareWorkoutStamp}
-                icon={<Share size={16} />}
               >
-                공유
-              </Button>
-              <Button
+                <Share size={16} className="mr-1" /> 공유
+              </button>
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
+                className="flex items-center px-3 py-1 rounded text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200"
                 onClick={() => setStampImage(null)}
-                icon={<span>✕</span>}
               >
-                닫기
-              </Button>
+                <span>✕</span> 닫기
+              </button>
             </div>
           </div>
           <div className="flex justify-center">
@@ -584,7 +658,7 @@ const WorkoutList: React.FC = () => {
       {selectedWorkouts.length > 0 && (
         <div 
           ref={workoutStampRef}
-          className={`bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6 ${stampImage ? 'hidden' : ''}`}
+          className={`bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6 ${stampImage || uploadedImage ? 'hidden' : ''}`}
         >
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">

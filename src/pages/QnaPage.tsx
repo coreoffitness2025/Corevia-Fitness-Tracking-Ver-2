@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ExerciseFaq from '../components/exercise/ExerciseFaq';
 import NutritionScout from '../components/nutrition/NutritionScout';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
@@ -7,7 +7,7 @@ import Layout from '../components/common/Layout';
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
 type Goal = 'lose' | 'maintain' | 'gain';
-type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
+type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps' | 'abs' | 'cardio';
 
 interface Exercise {
   id: string;
@@ -200,6 +200,158 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
         '천천히 시작 위치로 돌아옵니다.'
       ]
     }
+  ],
+  biceps: [
+    {
+      id: 'barbell_curl',
+      name: '바벨 컬',
+      description: '이두근을 발달시키는 기본 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=kwG2ipFRgfo',
+      steps: [
+        '어깨너비로 바벨을 잡습니다.',
+        '상체를 곧게 유지하고 팔꿈치를 고정합니다.',
+        '바벨을 들어올려 이두근을 완전히 수축시킵니다.',
+        '천천히 원래 위치로 돌아옵니다.'
+      ]
+    },
+    {
+      id: 'dumbbell_curl',
+      name: '덤벨 컬',
+      description: '양팔을 따로 훈련할 수 있는 이두 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=sAq_ocpRh_I',
+      steps: [
+        '양손에 덤벨을 들고 팔을 자연스럽게 내립니다.',
+        '팔꿈치를 고정한 채로 덤벨을 어깨쪽으로 들어올립니다.',
+        '이두근이 최대로 수축된 상태에서 잠시 멈춥니다.',
+        '천천히 원래 위치로 돌아옵니다.'
+      ]
+    },
+    {
+      id: 'hammer_curl',
+      name: '해머 컬',
+      description: '이두근과 전완근을 함께 발달시키는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=TwD-YGVP4Bk',
+      steps: [
+        '덤벨을 수직으로 잡고(망치 쥐는 자세) 팔을 내립니다.',
+        '팔꿈치를 고정한 채로 덤벨을 어깨쪽으로 들어올립니다.',
+        '이두근과 전완근이 수축된 상태에서 잠시 멈춥니다.',
+        '천천히 원래 위치로 돌아옵니다.'
+      ]
+    }
+  ],
+  triceps: [
+    {
+      id: 'triceps_pushdown',
+      name: '트라이셉스 푸시다운',
+      description: '삼두근을 집중적으로 발달시키는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=2-LAMcpzODU',
+      steps: [
+        '케이블 머신 앞에 서서 바를 어깨너비로 잡습니다.',
+        '팔꿈치를 몸에 붙이고 고정합니다.',
+        '팔을 완전히 펴서 케이블을 아래로 밀어냅니다.',
+        '천천히 시작 위치로 돌아옵니다.'
+      ]
+    },
+    {
+      id: 'overhead_extension',
+      name: '오버헤드 익스텐션',
+      description: '삼두근의 긴 머리를 타겟으로 하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=_gsUck-7M74',
+      steps: [
+        '덤벨을 양손으로 잡고 머리 위로 들어올립니다.',
+        '팔꿈치를 구부려 덤벨을 머리 뒤로 내립니다.',
+        '삼두근을 사용해 팔을 완전히 펴고 덤벨을 들어올립니다.',
+        '천천히 원래 위치로 돌아옵니다.'
+      ]
+    },
+    {
+      id: 'bench_dips',
+      name: '벤치 딥스',
+      description: '자신의 체중을 이용한 삼두 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=0326dy_-CzM',
+      steps: [
+        '두 개의 벤치 사이에 앉아 손을 뒤쪽 벤치에 놓습니다.',
+        '다리를 앞으로 뻗고 엉덩이를 벤치에서 떼어 공중에 띄웁니다.',
+        '팔꿈치를 구부려 몸을 내립니다.',
+        '삼두근을 사용해 몸을 다시 들어올립니다.'
+      ]
+    }
+  ],
+  abs: [
+    {
+      id: 'crunches',
+      name: '크런치',
+      description: '복부 근육을 발달시키는 기본 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=Xyd_fa5zoEU',
+      steps: [
+        '바닥에 누워 무릎을 구부리고 발을 바닥에 붙입니다.',
+        '손을 귀 옆에 두거나 가슴에 교차시킵니다.',
+        '복부 근육을 사용해 상체를 들어올립니다.',
+        '천천히 원래 위치로 돌아옵니다.'
+      ]
+    },
+    {
+      id: 'leg_raises',
+      name: '레그 레이즈',
+      description: '하복부를 타겟으로 하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=JB2oyawG9KI',
+      steps: [
+        '바닥에 누워 손을 몸 옆이나 엉덩이 아래에 둡니다.',
+        '다리를 모아 바닥과 평행하게 들어올립니다.',
+        '복부 근육을 사용해 다리를 천천히 위로 들어올립니다.',
+        '천천히 시작 위치로 돌아옵니다.'
+      ]
+    },
+    {
+      id: 'plank',
+      name: '플랭크',
+      description: '코어 전체를 강화하는 정적 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=pSHjTRCQxIw',
+      steps: [
+        '엎드린 자세에서 팔꿈치와 발끝으로 몸을 지지합니다.',
+        '몸을 일직선으로 유지합니다.',
+        '복부에 힘을 주고 호흡을 유지합니다.',
+        '30초에서 1분간 자세를 유지합니다.'
+      ]
+    }
+  ],
+  cardio: [
+    {
+      id: 'treadmill',
+      name: '트레드밀 (런닝머신)',
+      description: '유산소 운동의 기본 형태로 심폐 지구력을 향상시킵니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=9L2b2khySLE',
+      steps: [
+        '런닝머신에 올라 안전 클립을 부착합니다.',
+        '낮은 속도로 시작하여 워밍업을 합니다.',
+        '원하는 속도와 경사도로 조절하여 20-30분간 운동합니다.',
+        '운동 종료 전 속도를 낮추어 쿨다운합니다.'
+      ]
+    },
+    {
+      id: 'cycling',
+      name: '싸이클 (실내 자전거)',
+      description: '무릎에 부담이 적은 유산소 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=fCXbJ9pky_Y',
+      steps: [
+        '안장 높이를 조절하여 페달을 밟을 때 무릎이 약간 구부러지도록 합니다.',
+        '낮은 저항으로 시작하여 워밍업을 합니다.',
+        '원하는 저항과 속도로 20-30분간 운동합니다.',
+        '운동 종료 전 저항을 낮추어 쿨다운합니다.'
+      ]
+    },
+    {
+      id: 'elliptical',
+      name: '일립티컬 트레이너',
+      description: '전신을 사용하는 저충격 유산소 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=xLd7zsHtatU',
+      steps: [
+        '기계에 올라 손잡이를 잡고 페달에 발을 올립니다.',
+        '자연스러운 움직임으로 워밍업을 시작합니다.',
+        '원하는 저항으로 20-30분간 운동합니다.',
+        '운동 종료 전 저항을 낮추어 쿨다운합니다.'
+      ]
+    }
   ]
 };
 
@@ -208,13 +360,22 @@ const partIcons: Record<ExercisePart, string> = {
   chest: '💪',
   back: '🔙',
   shoulder: '🏋️',
-  leg: '🦵'
+  leg: '🦵',
+  biceps: '💪',
+  triceps: '💪',
+  abs: '🧘',
+  cardio: '🏃'
 };
 
 const QnaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('exercise');
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Exercise[]>([]);
+  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const [handbookSearchTerm, setHandbookSearchTerm] = useState<string>('');
+  const [handbookSearchResults, setHandbookSearchResults] = useState<any[]>([]);
   
   // 칼로리 계산기 상태
   const [calculatorInputs, setCalculatorInputs] = useState<CalorieCalculatorInputs>({
@@ -289,9 +450,78 @@ const QnaPage: React.FC = () => {
       chest: '가슴',
       back: '등',
       shoulder: '어깨',
-      leg: '하체'
+      leg: '하체',
+      biceps: '이두',
+      triceps: '삼두',
+      abs: '복근',
+      cardio: '유산소'
     };
     return labels[part];
+  };
+  
+  // 검색어 변경 시 검색 결과 업데이트
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+    
+    if (term.length < 1) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    
+    // 모든 운동 데이터를 하나의 배열로 합침
+    const allExercises = Object.values(exercisesByPart).flat();
+    
+    // 검색어와 일치하는 운동 찾기
+    const results = allExercises.filter(ex => 
+      ex.name.toLowerCase().includes(term) || 
+      ex.description.toLowerCase().includes(term)
+    );
+    
+    setSearchResults(results);
+    setShowDropdown(results.length > 0);
+  };
+  
+  // 검색 결과에서 운동 선택
+  const handleSearchSelect = (exercise: Exercise) => {
+    // 해당 운동이 속한 부위 찾기
+    for (const [part, exercises] of Object.entries(exercisesByPart)) {
+      if (exercises.some(ex => ex.id === exercise.id)) {
+        setSelectedPart(part as ExercisePart);
+        setSelectedExercise(exercise);
+        setSearchTerm(exercise.name);
+        setShowDropdown(false);
+        break;
+      }
+    }
+  };
+  
+  // 핸드북 검색
+  const handleHandbookSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value.toLowerCase();
+    setHandbookSearchTerm(term);
+    
+    // FAQ 데이터 가져오기
+    const faqData = [
+      { title: "운동 전 스트레칭은 꼭 해야 하나요?", content: "운동 전 워밍업과 스트레칭은 부상 방지와 운동 효과 증대를 위해 매우 중요합니다." },
+      { title: "근육통이 생겼을 때 계속 운동해도 되나요?", content: "가벼운 근육통은 정상이지만, 심한 통증이 있다면 휴식을 취하는 것이 좋습니다." },
+      { title: "단백질 섭취는 언제 하는 것이 가장 효과적인가요?", content: "운동 후 30분 이내에 섭취하는 것이 근육 회복과 성장에 가장 효과적입니다." },
+      { title: "체중 감량을 위한 최적의 운동 방법은?", content: "유산소 운동과 근력 운동을 병행하는 것이 가장 효과적입니다. 식이 조절도 중요합니다." },
+      { title: "하루에 몇 시간 운동하는 것이 적당한가요?", content: "개인의 체력과 목표에 따라 다르지만, 일반적으로 30분~1시간 정도가 적당합니다." }
+    ];
+    
+    if (term.length < 1) {
+      setHandbookSearchResults([]);
+      return;
+    }
+    
+    const results = faqData.filter(item => 
+      item.title.toLowerCase().includes(term) || 
+      item.content.toLowerCase().includes(term)
+    );
+    
+    setHandbookSearchResults(results);
   };
 
   return (
@@ -337,29 +567,10 @@ const QnaPage: React.FC = () => {
                 <div className="mb-4 relative">
                   <input
                     type="text"
+                    value={searchTerm}
                     className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     placeholder="운동 이름 검색..."
-                    onChange={(e) => {
-                      const searchTerm = e.target.value.toLowerCase();
-                      if (searchTerm) {
-                        // 모든 운동 데이터를 하나의 배열로 합침
-                        const allExercises = Object.values(exercisesByPart).flat();
-                        // 검색어와 일치하는 운동 찾기
-                        const foundExercise = allExercises.find(ex => 
-                          ex.name.toLowerCase().includes(searchTerm)
-                        );
-                        if (foundExercise) {
-                          // 해당 운동이 속한 부위 찾기
-                          for (const [part, exercises] of Object.entries(exercisesByPart)) {
-                            if (exercises.some(ex => ex.id === foundExercise.id)) {
-                              setSelectedPart(part as ExercisePart);
-                              setSelectedExercise(foundExercise);
-                              break;
-                            }
-                          }
-                        }
-                      }
-                    }}
+                    onChange={handleSearchChange}
                     style={{
                       backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\'%3E%3C/path%3E%3C/svg%3E")',
                       backgroundRepeat: 'no-repeat',
@@ -367,16 +578,29 @@ const QnaPage: React.FC = () => {
                       backgroundSize: '20px',
                     }}
                   />
-                  <div className="absolute right-2 top-2 text-gray-500 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transform -rotate-90">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </div>
+                  
+                  {/* 자동완성 드롭다운 */}
+                  {showDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
+                      {searchResults.map(exercise => (
+                        <div
+                          key={exercise.id}
+                          className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => handleSearchSelect(exercise)}
+                        >
+                          <div className="font-medium">{exercise.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {exercise.description}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* 운동 부위 선택 버튼 */}
                 <div className="flex flex-wrap gap-3 mb-6">
-                  {(['chest', 'back', 'shoulder', 'leg'] as const).map((part) => (
+                  {(['chest', 'back', 'shoulder', 'leg', 'biceps', 'triceps', 'abs', 'cardio'] as const).map((part) => (
                     <button
                       key={part}
                       onClick={() => handlePartSelect(part)}
@@ -629,16 +853,10 @@ const QnaPage: React.FC = () => {
             <div className="mb-4 relative">
               <input
                 type="text"
+                value={handbookSearchTerm}
                 className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="핸드북 검색..."
-                onChange={(e) => {
-                  // 검색 기능 구현
-                  const searchTerm = e.target.value.toLowerCase();
-                  // 검색어를 ExerciseFaq 컴포넌트에 전달할 수 있도록 상태 저장
-                  localStorage.setItem('handbookSearchTerm', searchTerm);
-                  // 검색 이벤트 발생
-                  document.dispatchEvent(new Event('handbookSearch'));
-                }}
+                onChange={handleHandbookSearch}
                 style={{
                   backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\'%3E%3C/path%3E%3C/svg%3E")',
                   backgroundRepeat: 'no-repeat',
@@ -646,13 +864,33 @@ const QnaPage: React.FC = () => {
                   backgroundSize: '20px',
                 }}
               />
-              <div className="absolute right-2 top-2 text-gray-500 pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transform -rotate-90">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </div>
+              
+              {/* 핸드북 자동완성 드롭다운 */}
+              {handbookSearchResults.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
+                  {handbookSearchResults.map((item, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        setHandbookSearchTerm(item.title);
+                        // 검색 이벤트 발생 - FAQ 항목 자동 확장을 위해
+                        document.dispatchEvent(new CustomEvent('handbookSearch', {
+                          detail: { searchTerm: item.title }
+                        }));
+                        setHandbookSearchResults([]);
+                      }}
+                    >
+                      <div className="font-medium">{item.title}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        {item.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <ExerciseFaq />
+            <ExerciseFaq searchTerm={handbookSearchTerm} />
           </div>
         )}
       </div>

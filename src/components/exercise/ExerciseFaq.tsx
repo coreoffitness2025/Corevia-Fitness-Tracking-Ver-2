@@ -1,232 +1,259 @@
-import { useState } from 'react';
-import { ChevronRight, Dumbbell, Utensils, Scale, Pizza, Coffee, Heart, BookOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Dumbbell, Utensils, Scale, Pizza, Coffee, Heart } from 'lucide-react';
 import Card, { CardTitle } from '../common/Card';
 
-// 핸드북 카테고리 타입 정의
-type HandbookCategory = 'workout' | 'nutrition' | 'diet' | 'cheating' | 'health';
+type HandbookCategory = 'exercise' | 'nutrition' | 'weight' | 'diet' | 'supplement' | 'health';
 
-// 핸드북 카드 데이터 타입 정의
-interface HandbookCard {
+interface HandbookItem {
   id: string;
   title: string;
   content: string;
   category: HandbookCategory;
-  imageUrl?: string;
+  tags: string[];
 }
 
-// 카테고리별 아이콘 및 레이블 매핑
-const categoryInfo: Record<HandbookCategory, { icon: React.ReactNode; label: string }> = {
-  workout: { icon: <Dumbbell className="w-5 h-5" />, label: '운동 정보' },
-  nutrition: { icon: <Utensils className="w-5 h-5" />, label: '영양 정보' },
-  diet: { icon: <Scale className="w-5 h-5" />, label: '다이어트 방법' },
-  cheating: { icon: <Pizza className="w-5 h-5" />, label: '치팅' },
-  health: { icon: <Heart className="w-5 h-5" />, label: '건강' },
-};
+interface ExerciseFaqProps {
+  searchTerm?: string;
+}
 
-// 핸드북 카드 데이터
-const handbookData: HandbookCard[] = [
-  {
-    id: '1',
-    title: '근육 생성에 필요한 단백질 양',
-    content: '근육 성장을 위해서는 체중 1kg당 1.6~2.2g의 단백질이 필요합니다. 70kg 체중인 사람은 하루에 112~154g의 단백질을 섭취해야 합니다. 단백질은 여러 끼니에 나눠 섭취하는 것이 효율적이며, 운동 후 30분 이내에 20~40g 정도의 단백질을 섭취하는 것이 근육 회복에 도움이 됩니다.',
-    category: 'nutrition',
-    imageUrl: 'https://images.unsplash.com/photo-1545247181-516773cae754'
-  },
-  {
-    id: '2',
-    title: '올바른 스쿼트 자세',
-    content: '스쿼트를 할 때는 발을 어깨 너비로 벌리고, 발끝은 약간 바깥쪽으로 향하게 합니다. 상체를 곧게 펴고 복부에 힘을 주어 안정성을 유지합니다. 내려갈 때는 엉덩이를 뒤로 빼면서 무릎이 발끝보다 앞으로 나가지 않도록 주의합니다. 대퇴부가 바닥과 평행해질 때까지 내려간 후 발바닥으로 바닥을 강하게 밀어 올라옵니다.',
-    category: 'workout'
-  },
-  {
-    id: '3',
-    title: '운동 시 물 섭취량',
-    content: '운동 중 적절한 수분 섭취는 체온 조절과 영양소 운반에 중요합니다. 일반적으로 운동 시작 2시간 전에 500ml, 30분 전에 250ml 정도의 물을 마시는 것이 좋습니다. 운동 중에는 15~20분마다 150~250ml 정도를 마시고, 운동 후에는 소실된 체중 1kg당 1.5L의 물을 마셔야 합니다.',
-    category: 'health'
-  },
-  {
-    id: '4',
-    title: '체중 감량을 위한 식단 구성',
-    content: '체중 감량을 위해서는 단백질 비중을 높이고 탄수화물과 지방의 비중을 적절히 조절해야 합니다. 하루 칼로리 소모량보다 10~20% 정도 적게 섭취하는 것이 이상적입니다. 식단 구성은 단백질 30~35%, 탄수화물 40~45%, 지방 20~25% 정도로 구성하는 것이 효과적입니다. 과일과 채소는 충분히 섭취하고, 가공식품과 설탕이 많은 음식은 피하는 것이 좋습니다.',
-    category: 'diet'
-  },
-  {
-    id: '5',
-    title: '치팅데이의 효과적인 활용법',
-    content: '치팅데이(Cheating Day)는 다이어트 중 계획적으로 평소 제한하던 음식을 먹는 날입니다. 치팅데이를 통해 정신적 피로감을 줄이고, 대사량 감소를 방지하며, 렙틴 호르몬 분비를 촉진할 수 있습니다. 효과적인 활용법은 주 1회로 제한하고, 아침부터 시작하며, 과도한 폭식은 피하는 것입니다. 또한 치팅데이 다음 날에는 바로 정상 식단으로 복귀해야 합니다.',
-    category: 'cheating'
-  },
-  {
-    id: '6',
-    title: '운동 전후 적절한 식사 시간',
-    content: '운동 성과를 최대화하기 위해서는 식사 시간이 중요합니다. 큰 식사는 운동 2~3시간 전에, 가벼운 간식은 운동 30분~1시간 전에 먹는 것이 좋습니다. 운동 전에는 탄수화물 위주로, 운동 후에는 단백질과 탄수화물을 함께 섭취하는 것이 효과적입니다. 운동 후 30분 이내에 영양소를 섭취하면 근육 회복과 성장에 도움이 됩니다.',
-    category: 'nutrition'
-  },
-  {
-    id: '7',
-    title: '유산소 vs 무산소 운동: 어떤 것이 더 효과적인가?',
-    content: '유산소 운동은 지방 연소와 심폐 기능 향상에 효과적이며, 무산소 운동은 근력 강화와 대사량 증가에 좋습니다. 최적의 효과를 위해서는 두 가지를 병행하는 것이 좋습니다. 체중 감량이 목표라면 무산소 운동 후 유산소 운동을 하는 것이 효과적이며, 근육 발달이 목표라면 유산소 운동은 별도 일자에 하거나 무산소 운동 후 20~30분 정도만 가볍게 하는 것이 좋습니다.',
-    category: 'workout'
-  },
-  {
-    id: '8',
-    title: '간헐적 단식의 효과와 방법',
-    content: '간헐적 단식은 일정 시간 동안 음식 섭취를 제한하는 방법입니다. 16:8 방식(16시간 금식, 8시간 섭취), 5:2 방식(주 5일 정상 식사, 2일 저칼로리 식사) 등 다양한 방법이 있습니다. 간헐적 단식은 인슐린 감수성을 높이고, 세포 재생을 촉진하며, 지방 연소에 도움이 됩니다. 단, 급격한 도입보다는 점진적으로 적응하는 것이 중요하며, 금식 시간 동안 충분한 수분 섭취가 필요합니다.',
-    category: 'diet'
-  },
-  {
-    id: '9',
-    title: '운동 중 빠른 에너지 보충법',
-    content: '장시간 운동 시에는 에너지 보충이 필요합니다. 운동 중에는 빠르게 흡수되는 단순 탄수화물이 효과적입니다. 스포츠 음료, 바나나, 에너지 젤 등이 좋은 선택입니다. 1시간 이상의 운동에서는 30~60분마다 30~60g의 탄수화물을 섭취하는 것이 권장됩니다. 단, 짧은 운동에서는 별도의 에너지 보충 없이 물만 마셔도 충분합니다.',
-    category: 'nutrition'
-  },
-  {
-    id: '10',
-    title: '건강한 치팅 음식 선택하기',
-    content: '치팅데이에도 완전히 건강을 무시할 필요는 없습니다. 다크 초콜릿(70% 이상 카카오 함유), 수제 버거(품질 좋은 고기와 통밀 빵 사용), 홈메이드 피자(얇은 도우와 다양한 야채 토핑), 그릭 요거트와 과일, 구운 고구마 칩 등은 상대적으로 건강하면서도 만족감을 주는 치팅 음식입니다. 과도한 당분, 트랜스 지방, 인공 첨가물이 많은 음식은 피하는 것이 좋습니다.',
-    category: 'cheating'
-  },
-  {
-    id: '11',
-    title: '수면과 근육 회복의 관계',
-    content: '충분한 수면은 근육 회복과 성장에 필수적입니다. 수면 중에는 성장호르몬이 분비되어 근육 회복과 단백질 합성을 촉진합니다. 성인은 하루 7~9시간의 수면이 권장되며, 강도 높은 운동을 하는 사람은 더 많은 수면이 필요할 수 있습니다. 수면의 질을 높이기 위해 일정한 취침 시간을 유지하고, 취침 전 카페인과 블루라이트 노출을 피하며, 편안한 수면 환경을 조성하는 것이 중요합니다.',
-    category: 'health'
-  },
-  {
-    id: '12',
-    title: '효과적인 유연성 훈련',
-    content: '유연성 훈련은 부상 예방과 운동 능력 향상에 중요합니다. 정적 스트레칭(15~30초 유지)은 운동 후 회복에 좋고, 동적 스트레칭(움직임을 포함)은 운동 전 워밍업에 적합합니다. 주요 근육군에 대해 주 2~3회, 각 스트레칭을 2~4회 반복하는 것이 권장됩니다. 호흡을 조절하며 천천히 진행하고, 통증이 느껴지는 지점을 넘어가지 않는 것이 중요합니다.',
-    category: 'workout'
-  }
-];
-
-const ExerciseFaq = () => {
+const ExerciseFaq: React.FC<ExerciseFaqProps> = ({ searchTerm = '' }) => {
   const [selectedCategory, setSelectedCategory] = useState<HandbookCategory | 'all'>('all');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [filteredCards, setFilteredCards] = useState<HandbookItem[]>(handbookData);
 
   // 카드 확장/축소 토글
   const toggleCard = (id: string) => {
     setExpandedCard(expandedCard === id ? null : id);
   };
 
-  // 카테고리별 필터링
-  const filteredCards = selectedCategory === 'all' 
-    ? handbookData 
-    : handbookData.filter(card => card.category === selectedCategory);
+  // 카테고리 필터
+  const handleCategoryChange = (category: HandbookCategory | 'all') => {
+    setSelectedCategory(category);
+  };
+
+  // 검색어 또는 카테고리 변경 시 필터링
+  useEffect(() => {
+    let filtered = handbookData;
+    
+    // 카테고리 필터링
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(card => card.category === selectedCategory);
+    }
+    
+    // 검색어 필터링
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(item => 
+        item.title.toLowerCase().includes(term) || 
+        item.content.toLowerCase().includes(term) ||
+        item.tags.some(tag => tag.toLowerCase().includes(term))
+      );
+      
+      // 검색어가 있으면 첫 번째 결과를 자동으로 열기
+      if (filtered.length > 0) {
+        setExpandedCard(filtered[0].id);
+      }
+    }
+    
+    setFilteredCards(filtered);
+  }, [searchTerm, selectedCategory]);
+
+  // 핸드북 검색 이벤트 리스너
+  useEffect(() => {
+    const handleHandbookSearch = (e: Event) => {
+      const customEvent = e as CustomEvent<{searchTerm: string}>;
+      if (customEvent.detail?.searchTerm) {
+        const term = customEvent.detail.searchTerm;
+        
+        // 해당 검색어와 일치하는 항목 찾기
+        const matchingItem = handbookData.find(item => 
+          item.title.toLowerCase().includes(term.toLowerCase())
+        );
+        
+        // 일치하는 항목이 있으면 열기
+        if (matchingItem) {
+          setExpandedCard(matchingItem.id);
+        }
+      }
+    };
+    
+    document.addEventListener('handbookSearch', handleHandbookSearch as EventListener);
+    
+    return () => {
+      document.removeEventListener('handbookSearch', handleHandbookSearch as EventListener);
+    };
+  }, []);
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-lg p-6 transition-all duration-300">
-      <div className="flex items-center mb-6">
-        <BookOpen className="w-6 h-6 text-blue-500 mr-2" />
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white">핸드북</h2>
-      </div>
-      
       {/* 카테고리 선택 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <CardTitle>카테고리</CardTitle>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-4">
+      <div className="mb-6 flex flex-wrap gap-3">
+        <button
+          onClick={() => handleCategoryChange('all')}
+          className={`px-3 py-1.5 rounded-full text-sm flex items-center ${
+            selectedCategory === 'all'
+              ? 'bg-[#4285F4] text-white'
+              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+          }`}
+        >
+          <ChevronRight size={16} className="mr-1" />
+          전체
+        </button>
+        
+        {categories.map((category) => (
           <button
-            onClick={() => setSelectedCategory('all')}
-            className={`py-2 px-3 rounded-lg flex flex-col items-center justify-center transition-all duration-300 ${
-              selectedCategory === 'all'
-                ? 'bg-blue-500 text-white shadow-md transform scale-105'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            key={category.value}
+            onClick={() => handleCategoryChange(category.value)}
+            className={`px-3 py-1.5 rounded-full text-sm flex items-center ${
+              selectedCategory === category.value
+                ? 'bg-[#4285F4] text-white'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
-            <span className="font-semibold">전체</span>
+            {category.icon}
+            {category.label}
           </button>
-          
-          {Object.entries(categoryInfo).map(([category, info]) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category as HandbookCategory)}
-              className={`py-2 px-3 rounded-lg flex flex-col items-center justify-center transition-all duration-300 ${
-                selectedCategory === category
-                  ? 'bg-blue-500 text-white shadow-md transform scale-105'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <span className="mb-1">{info.icon}</span>
-              <span className="text-xs font-semibold text-center">{info.label}</span>
-            </button>
-          ))}
-        </div>
+        ))}
       </div>
-
-      {/* 카드 리스트 */}
-      <div className="space-y-4">
-        {filteredCards.length === 0 ? (
-          <div className="text-center py-8 bg-white dark:bg-gray-700 rounded-lg">
-            <p className="text-gray-500 dark:text-gray-400">
-              해당 카테고리에 대한 정보가 없습니다.
-            </p>
-          </div>
-        ) : (
-          filteredCards.map((card) => (
-            <Card
+      
+      {/* 카드 그리드 */}
+      {filteredCards.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          검색 결과가 없습니다.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredCards.map((card) => (
+            <Card 
               key={card.id}
-              className={`border-l-4 overflow-hidden transition-all duration-300 ${
-                expandedCard === card.id 
-                  ? 'border-blue-500 shadow-md' 
-                  : `border-gray-200 dark:border-gray-700 hover:border-${card.category === 'workout' ? 'blue' : 
-                     card.category === 'nutrition' ? 'green' : 
-                     card.category === 'diet' ? 'indigo' : 
-                     card.category === 'cheating' ? 'yellow' : 'red'}-300`
+              className={`overflow-hidden transition-all duration-300 ${
+                expandedCard === card.id ? 'ring-2 ring-blue-500' : 'hover:bg-white/50 dark:hover:bg-gray-700/50'
               }`}
             >
               <div 
-                className="flex justify-between items-center cursor-pointer p-4"
+                className="p-4 cursor-pointer flex justify-between items-center"
                 onClick={() => toggleCard(card.id)}
               >
-                <div className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 
-                    ${card.category === 'workout' ? 'bg-blue-100 text-blue-600' : 
-                     card.category === 'nutrition' ? 'bg-green-100 text-green-600' : 
-                     card.category === 'diet' ? 'bg-indigo-100 text-indigo-600' : 
-                     card.category === 'cheating' ? 'bg-yellow-100 text-yellow-600' : 
-                     'bg-red-100 text-red-600'} dark:bg-opacity-20`}
-                  >
-                    {categoryInfo[card.category].icon}
-                  </div>
-                  <h3 className={`font-bold text-lg ${
-                    expandedCard === card.id 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-gray-800 dark:text-white'
-                  }`}>
-                    {card.title}
-                  </h3>
-                </div>
-                <ChevronRight className={`w-5 h-5 transition-transform duration-300 ${
-                  expandedCard === card.id ? 'transform rotate-90 text-blue-500' : 'text-gray-400'
-                }`} />
+                <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
+                  {card.title}
+                </CardTitle>
+                <span className={`transform transition-transform duration-300 ${
+                  expandedCard === card.id ? 'rotate-90' : ''
+                }`}>
+                  <ChevronRight size={20} />
+                </span>
               </div>
               
               {expandedCard === card.id && (
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 animate-slideDown">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-gray-700 dark:text-gray-300">
-                    <p className="leading-relaxed">{card.content}</p>
-                  </div>
-                  
-                  {card.imageUrl && (
-                    <div className="mt-4 rounded-lg overflow-hidden">
-                      <img 
-                        src={card.imageUrl} 
-                        alt={card.title} 
-                        className="w-full h-auto object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
+                <div className="p-4 pt-0">
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                      {card.content}
+                    </p>
+                    
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {card.tags.map((tag, i) => (
+                        <span 
+                          key={i} 
+                          className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
+
+// 카테고리 데이터
+const categories = [
+  { value: 'exercise' as HandbookCategory, label: '운동', icon: <Dumbbell size={16} className="mr-1" /> },
+  { value: 'nutrition' as HandbookCategory, label: '영양', icon: <Utensils size={16} className="mr-1" /> },
+  { value: 'weight' as HandbookCategory, label: '체중 관리', icon: <Scale size={16} className="mr-1" /> },
+  { value: 'diet' as HandbookCategory, label: '식단', icon: <Pizza size={16} className="mr-1" /> },
+  { value: 'supplement' as HandbookCategory, label: '보충제', icon: <Coffee size={16} className="mr-1" /> },
+  { value: 'health' as HandbookCategory, label: '건강', icon: <Heart size={16} className="mr-1" /> }
+];
+
+// 핸드북 데이터
+const handbookData: HandbookItem[] = [
+  {
+    id: 'ex1',
+    title: '운동 전 스트레칭은 꼭 해야 하나요?',
+    content: '운동 전 워밍업과 동적 스트레칭은 부상 방지와 운동 효과 증대를 위해 매우 중요합니다. 일반적인 권장사항은 다음과 같습니다:\n\n1. 5-10분간 가벼운 유산소 운동으로 체온을 올리세요.\n2. 운동에 사용할 근육군을 위한 동적 스트레칭을 실시하세요.\n3. 정적 스트레칭은 운동 후에 하는 것이 더 효과적입니다.\n\n워밍업은 근육에 혈류를 증가시켜 부상 위험을 줄이고 운동 성과를 향상시킵니다.',
+    category: 'exercise',
+    tags: ['스트레칭', '워밍업', '부상 방지', '초보자 가이드']
+  },
+  {
+    id: 'ex2',
+    title: '근육통이 생겼을 때 계속 운동해도 되나요?',
+    content: '가벼운 근육통(DOMS)은 운동 24-72시간 후에 나타나는 정상적인 반응입니다. 이런 경우에는 다음 지침을 따르는 것이 좋습니다:\n\n1. 가벼운 통증: 강도를 낮추거나 다른 부위 운동으로 전환해도 됩니다.\n2. 중간 정도의 통증: 활동적 회복(가벼운 유산소, 스트레칭)이 도움이 됩니다.\n3. 심한 통증: 완전한 휴식이 필요합니다.\n\n단, 날카로운 통증, 관절 통증, 또는 부종이 있다면 운동을 중단하고 전문가의 조언을 구하세요.',
+    category: 'exercise',
+    tags: ['근육통', 'DOMS', '회복', '과훈련']
+  },
+  {
+    id: 'nt1',
+    title: '단백질 섭취는 언제 하는 것이 가장 효과적인가요?',
+    content: '단백질 섭취 타이밍은 다음과 같이 권장됩니다:\n\n1. 운동 후 30분-2시간 내: 이는 '단백질 섭취 골든 타임'으로 근육 회복과 성장에 가장 효과적입니다.\n2. 균등한 분배: 하루 총 단백질 섭취량을 3-5끼로 나누어 섭취하는 것이 지속적인 근단백질 합성에 도움이 됩니다.\n3. 취침 전: 카제인 단백질과 같은 천천히 소화되는 단백질은 취침 전 섭취 시 야간 회복을 도울 수 있습니다.\n\n체중 1kg당 1.6-2.2g의 단백질 섭취가 근육 성장에 이상적입니다.',
+    category: 'nutrition',
+    tags: ['단백질', '영양', '식이요법', '근육 성장']
+  },
+  {
+    id: 'wt1',
+    title: '체중 감량을 위한 최적의 운동 방법은?',
+    content: '효과적인 체중 감량을 위해서는 다음과 같은 복합적 접근이 필요합니다:\n\n1. 유산소 운동: 주 3-5회, 30-60분의 중강도 유산소 운동(조깅, 사이클링, 수영 등)\n2. 근력 운동: 주 2-3회의 전신 근력 운동으로 기초 대사량 증가\n3. HIIT(고강도 인터벌 트레이닝): 주 1-2회 실시하여 운동 후 칼로리 소모량 극대화\n4. 활동적 생활 습관: 일상 생활에서의 활동량 증가(계단 이용, 걷기 등)\n\n이와 함께 적절한 칼로리 제한(10-20%)과 균형 잡힌 식단이 중요합니다. 급격한 체중 감량보다는 주당 0.5-1kg의 완만한 감량이 더 건강하고 지속 가능합니다.',
+    category: 'weight',
+    tags: ['체중 감량', '다이어트', '유산소', 'HIIT', '칼로리 적자']
+  },
+  {
+    id: 'ex3',
+    title: '하루에 몇 시간 운동하는 것이 적당한가요?',
+    content: '적절한 운동 시간은 개인의 체력, 경험, 목표에 따라 다르지만, 일반적인 지침은 다음과 같습니다:\n\n1. 초보자: 일일 30-45분, 주 3-4회\n2. 중급자: 일일 45-75분, 주 4-5회\n3. 상급자: 일일 60-90분, 주 5-6회\n\n운동 종류에 따라 다를 수 있으며, 강도 높은 운동은 짧게, 가벼운 운동은 조금 더 길게 할 수 있습니다. 중요한 것은 일관성과 점진적 증가입니다. 과훈련 징후(지속적 피로, 수행능력 저하, 부상 등)가 나타나면 휴식을 취하세요.',
+    category: 'exercise',
+    tags: ['운동 시간', '트레이닝 빈도', '과훈련', '회복']
+  },
+  {
+    id: 'wt2',
+    title: '어떤 운동이 복부 지방 감소에 가장 효과적인가요?',
+    content: '복부 지방을 특정하여 감소시키는 '국소 지방 감량'은 과학적으로 입증되지 않았습니다. 효과적인 복부 지방 감소를 위해서는 전체적인 접근이 필요합니다:\n\n1. 전신 운동: HIIT, 조깅, 사이클링 등의 유산소 운동이 전반적인 체지방 감소에 효과적입니다.\n2. 근력 운동: 복부 운동(플랭크, 크런치 등)뿐만 아니라 전신 근력 운동이 중요합니다.\n3. 식이 관리: 설탕, 가공식품, 정제된 탄수화물 섭취를 줄이고 단백질과 섬유질 섭취를 늘리세요.\n4. 스트레스 관리: 코르티솔 수치를 낮추기 위한 스트레스 관리도 중요합니다.\n\n복부 지방 감소는 시간이 필요한 과정이므로 꾸준함과 인내심이 중요합니다.',
+    category: 'weight',
+    tags: ['복부 지방', '코어 운동', '지방 감량', '대사율']
+  },
+  {
+    id: 'ex4',
+    title: '헬스장 없이 집에서 할 수 있는 효과적인 운동은?',
+    content: '집에서 할 수 있는 효과적인 운동들은 다음과 같습니다:\n\n1. 체중 운동: 스쿼트, 푸시업, 런지, 플랭크, 버피, 마운틴 클라이머 등\n2. 서킷 트레이닝: 여러 운동을 쉬지 않고 연속해서 수행하여 심박수 유지\n3. 타바타 훈련: 20초 고강도 운동 후 10초 휴식을 8세트 반복\n4. 요가/필라테스: 유연성, 코어 강화, 자세 개선에 효과적\n5. 홈트레이닝 장비(선택적): 덤벨, 저항 밴드, 케틀벨 등을 활용\n\n유튜브나 피트니스 앱을 통해 다양한 홈트레이닝 루틴을 찾을 수 있습니다. 공간과 소음 제약을 고려한 운동 선택이 중요합니다.',
+    category: 'exercise',
+    tags: ['홈트레이닝', '맨몸운동', '서킷 트레이닝', '타바타']
+  },
+  {
+    id: 'sp1',
+    title: '운동 후 단백질 셰이크는 꼭 필요한가요?',
+    content: '단백질 셰이크가 필수는 아니지만, 다음과 같은 이점이 있습니다:\n\n1. 편의성: 운동 직후 빠르게 단백질을 섭취할 수 있습니다.\n2. 흡수율: 유청 단백질은 빠르게 흡수되어 근육 회복을 돕습니다.\n3. 정량화: 정확한 단백질 양을 쉽게 측정할 수 있습니다.\n\n그러나 닭가슴살, 계란, 그릭 요거트 등의 자연식품을 통해서도 충분한 단백질을 섭취할 수 있습니다. 중요한 것은 총 단백질 섭취량으로, 식사만으로 충분한 단백질을 섭취하기 어렵다면 보충제가 도움이 될 수 있습니다.',
+    category: 'supplement',
+    tags: ['단백질 보충제', '근육 회복', '영양 보충', '운동 후 영양']
+  },
+  {
+    id: 'ex5',
+    title: '근력 운동과 유산소 운동의 순서는 어떻게 해야 하나요?',
+    content: '일반적인 권장사항은 다음과 같습니다:\n\n1. 주요 목표가 근력 향상인 경우: 근력 운동 → 유산소 운동\n2. 주요 목표가 체중 감량인 경우: 유산소 운동 → 근력 운동 또는 HIIT → 근력 운동\n3. 주요 목표가 지구력 향상인 경우: 유산소 운동 → 근력 운동\n\n같은 날 두 운동을 모두 할 경우, 먼저 하는 운동에 더 많은 에너지를 쓰게 됩니다. 또한 근력 운동과 유산소 운동을 다른 날에 나누어 하는 분할 트레이닝도 효과적인 방법입니다.',
+    category: 'exercise',
+    tags: ['운동 순서', '근력 운동', '유산소 운동', '트레이닝 계획']
+  },
+  {
+    id: 'nt2',
+    title: '운동 전후에 탄수화물 섭취가 필요한가요?',
+    content: '운동 전후 탄수화물 섭취에 대한 지침은 다음과 같습니다:\n\n운동 전 (1-3시간 전):\n1. 중강도 이상 운동 시 유용합니다.\n2. 복합 탄수화물(오트밀, 현미, 고구마 등) 섭취가 좋습니다.\n3. 개인차가 있으므로, 자신에게 맞는 양과 타이밍을 찾는 것이 중요합니다.\n\n운동 후 (30분-2시간 내):\n1. 글리코겐 재합성을 위해 단순 탄수화물과 단백질을 함께 섭취하는 것이 좋습니다.\n2. 체중 감량이 목표라면 탄수화물 양을 조절할 수 있습니다.\n\n장시간 운동(90분 이상)이나 고강도 운동에서는 탄수화물 섭취가 더 중요합니다.',
+    category: 'nutrition',
+    tags: ['탄수화물', '영양 타이밍', '글리코겐', '운동 전 식사', '운동 후 식사']
+  }
+];
 
 export default ExerciseFaq;
