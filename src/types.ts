@@ -7,7 +7,7 @@ export interface User {
 }
 
 /* ---------- 운동 타입 ---------- */
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
 
 export interface Set {
   reps: number;
@@ -27,6 +27,25 @@ export interface AccessoryExercise {
   reps: number;
   sets?: Set[];
 }
+
+// 메인 운동 타입
+export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress';
+export type BackMainExercise = 'deadlift' | 'pullUp' | 'bentOverRow';
+export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull';
+export type LegMainExercise = 'squat' | 'legPress' | 'lungue';
+export type BicepsMainExercise = 'dumbbellCurl' | 'barbelCurl' | 'hammerCurl';
+export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingExtension';
+
+export type MainExerciseType = 
+  | ChestMainExercise 
+  | BackMainExercise 
+  | ShoulderMainExercise 
+  | LegMainExercise
+  | BicepsMainExercise
+  | TricepsMainExercise;
+
+// 세트 설정 타입
+export type SetConfiguration = '5x5' | '10x5' | '6x5' | 'custom';
 
 /* ---------- 세션 ---------- */
 export interface Session {
@@ -99,6 +118,25 @@ export interface UserProfile {
       maxWeight: number;
       maxReps: number;
     };
+  };
+  preferredExercises?: {
+    chest: ChestMainExercise;
+    back: BackMainExercise;
+    shoulder: ShoulderMainExercise;
+    leg: LegMainExercise;
+    biceps: BicepsMainExercise;
+    triceps: TricepsMainExercise;
+  };
+  setConfiguration?: {
+    preferredSetup: SetConfiguration;
+    customSets?: number;
+    customReps?: number;
+  };
+  oneRepMax?: {
+    bench: number;
+    squat: number;
+    deadlift: number;
+    overheadPress: number;
   };
   settings?: UserSettings;
 }

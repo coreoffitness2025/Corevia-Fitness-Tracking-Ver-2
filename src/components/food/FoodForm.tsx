@@ -1,12 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { Food } from '../../types';
 import { toast } from 'react-hot-toast';
 import { saveFoodRecord } from '../../services/foodService';
+import Card from '../common/Card';
+import { Info } from 'lucide-react';
 
 interface FoodFormProps {
   onSuccess?: () => void; // 식단 저장 후 호출될 콜백
+}
+
+// 활동 수준에 따른 칼로리 계수
+const activityMultipliers = {
+  low: 1.2,      // 거의 운동하지 않음
+  moderate: 1.5, // 주 3-5회 운동
+  high: 1.8      // 거의 매일 운동
+};
+
+// 목표에 따른 칼로리 조정
+const goalMultipliers = {
+  loss: 0.8,     // 체중 감량
+  maintain: 1.0, // 체중 유지
+  gain: 1.2      // 체중 증가
+};
+
+// 성별에 따른 기초 대사량 계산 (Harris-Benedict 방정식)
+function calculateBMR(gender: 'male' | 'female', weight: number, height: number, age: number) {
+  if (gender === 'male') {
+    return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+  } else {
+    return 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+  }
 }
 
 const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
@@ -21,6 +46,59 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const [imageUrl, setImageUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // 칼로리 목표 관련 상태
+  const [targetCalories, setTargetCalories] = useState<number>(0);
+  const [proteinTarget, setProteinTarget] = useState<number>(0);
+  const [carbsTarget, setCarbsTarget] = useState<number>(0);
+  const [fatTarget, setFatTarget] = useState<number>(0);
+
+  // 사용자 프로필에서 목표 칼로리 계산
+  useEffect(() => {
+    if (user) {
+      // 실제 앱에서는 Firebase에서 사용자 프로필을 가져와야 함
+      // 여기서는 임시 데이터 사용
+      const mockUserProfile = {
+        height: 175,
+        weight: 70,
+        age: 30,
+        gender: 'male' as 'male' | 'female',
+        activityLevel: 'moderate' as 'low' | 'moderate' | 'high',
+        fitnessGoal: 'maintain' as 'loss' | 'maintain' | 'gain'
+      };
+      
+      // 기초 대사량(BMR) 계산
+      const bmr = calculateBMR(
+        mockUserProfile.gender, 
+        mockUserProfile.weight, 
+        mockUserProfile.height, 
+        mockUserProfile.age
+      );
+      
+      // 총 일일 에너지 소비량(TDEE) 계산
+      const tdee = bmr * activityMultipliers[mockUserProfile.activityLevel];
+      
+      // 목표에 따른 칼로리 조정
+      const calculatedCalories = Math.round(tdee * goalMultipliers[mockUserProfile.fitnessGoal]);
+      
+      setTargetCalories(calculatedCalories);
+      
+      // 단백질, 탄수화물, 지방 목표량 계산
+      // 체중 1kg당 단백질 1.6g, 탄수화물과 지방은 남은 칼로리에서 분배
+      const proteinGrams = Math.round(mockUserProfile.weight * 1.6);
+      const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
+      
+      const remainingCalories = calculatedCalories - proteinCalories;
+      
+      // 탄수화물 45-65%, 지방 20-35% (여기서는 중간값 사용)
+      const carbsCalories = remainingCalories * 0.55;
+      const fatCalories = remainingCalories * 0.3;
+      
+      setProteinTarget(proteinGrams);
+      setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
+      setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
+    }
+  }, [user]);
 
   // 가상의 파일 선택 처리 (실제로는 Firebase Storage 등을 사용해야 함)
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,6 +193,42 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
+      {/* 목표 칼로리 및 영양소 가이드 */}
+      <Card className="mb-6 border-l-4 border-blue-500">
+        <div className="flex items-start">
+          <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
+          <div>
+            <h3 className="text-lg font-semibold mb-2">영양소 목표</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
+                <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{targetCalories} kcal</span>
+              </div>
+              
+              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
+                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
+              </div>
+              
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
+                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
+              </div>
+              
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
+                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
+              </div>
+            </div>
+            
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+              <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
+              <p className="mt-1">💡 단백질은 근육 합성과 유지를 돕고, 적절한 탄수화물은 에너지를 공급하며, 지방은 호르몬 생성을 지원합니다.</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
         식단 입력
       </h1>

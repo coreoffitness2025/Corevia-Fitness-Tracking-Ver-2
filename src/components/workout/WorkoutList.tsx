@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, weekdays } from '../../utils/dateUtils';
 import { ExercisePart } from '../../types';
+import { Camera, Download, Share } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import Button from '../common/Button';
 
 interface WorkoutSet {
   reps: number;
@@ -60,7 +63,9 @@ const getPartLabel = (part: ExercisePart): string => {
     chest: '가슴',
     back: '등',
     shoulder: '어깨',
-    leg: '하체'
+    leg: '하체',
+    biceps: '이두',
+    triceps: '삼두'
   };
   return labels[part];
 };
@@ -68,6 +73,7 @@ const getPartLabel = (part: ExercisePart): string => {
 const WorkoutList: React.FC = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
+  const workoutStampRef = useRef<HTMLDivElement>(null);
   
   // 년도와 월 상태 추가
   const today = new Date();
@@ -236,13 +242,73 @@ const WorkoutList: React.FC = () => {
       chest: isSuccess ? 'bg-blue-200 text-blue-800 border-blue-400' : 'bg-red-200 text-red-800 border-red-400',
       back: isSuccess ? 'bg-green-200 text-green-800 border-green-400' : 'bg-red-200 text-red-800 border-red-400',
       shoulder: isSuccess ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-red-200 text-red-800 border-red-400',
-      leg: isSuccess ? 'bg-orange-200 text-orange-800 border-orange-400' : 'bg-red-200 text-red-800 border-red-400'
+      leg: isSuccess ? 'bg-orange-200 text-orange-800 border-orange-400' : 'bg-red-200 text-red-800 border-red-400',
+      biceps: isSuccess ? 'bg-pink-200 text-pink-800 border-pink-400' : 'bg-red-200 text-red-800 border-red-400',
+      triceps: isSuccess ? 'bg-indigo-200 text-indigo-800 border-indigo-400' : 'bg-red-200 text-red-800 border-red-400'
     };
     return baseColors[part];
   };
 
   // 선택된 날짜의 운동 기록
   const selectedWorkouts = workoutsByDate[selectedDate] || [];
+
+  // 스탬프 캡처 및 다운로드 기능
+  const captureWorkoutStamp = async () => {
+    if (!workoutStampRef.current || selectedWorkouts.length === 0) return;
+    
+    try {
+      const canvas = await html2canvas(workoutStampRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        allowTaint: true,
+        useCORS: true
+      });
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `운동스탬프_${selectedDate}.png`;
+      link.click();
+    } catch (error) {
+      console.error('스탬프 캡처 중 오류:', error);
+    }
+  };
+
+  // 스탬프 공유 기능
+  const shareWorkoutStamp = async () => {
+    if (!workoutStampRef.current || selectedWorkouts.length === 0) return;
+    
+    try {
+      const canvas = await html2canvas(workoutStampRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        allowTaint: true,
+        useCORS: true
+      });
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      // 공유 API 사용 (if supported)
+      if (navigator.share) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], `운동스탬프_${selectedDate}.png`, { type: 'image/png' });
+        
+        await navigator.share({
+          title: `${selectedDate} 운동 기록`,
+          text: '오늘의 운동 기록입니다!',
+          files: [file]
+        });
+      } else {
+        // 클립보드에 복사 (fallback)
+        await navigator.clipboard.writeText(`${selectedDate} 운동 기록`);
+        alert('이미지 URL이 클립보드에 복사되었습니다.');
+      }
+    } catch (error) {
+      console.error('스탬프 공유 중 오류:', error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -305,7 +371,7 @@ const WorkoutList: React.FC = () => {
           {/* 날짜 */}
           {calendarDays.map((day, i) => {
             const dateStr = formatDate(day);
-            const isCurrentMonth = day.getMonth() === new Date().getMonth();
+            const isCurrentMonth = day.getMonth() === currentMonth;
             const isToday = dateStr === formatDate(new Date());
             const isSelected = dateStr === selectedDate;
             const dayWorkouts = workoutsByDate[dateStr] || [];
@@ -315,7 +381,7 @@ const WorkoutList: React.FC = () => {
               <div 
                 key={`day-${i}`} 
                 onClick={() => setSelectedDate(dateStr)}
-                className={`relative p-2 min-h-[60px] text-center cursor-pointer border rounded-lg
+                className={`relative p-2 min-h-[80px] text-center cursor-pointer border rounded-lg
                   ${isCurrentMonth ? 'hover:bg-gray-100 dark:hover:bg-gray-700' : 'opacity-40'}
                   ${isToday ? 'border-blue-500' : 'border-transparent'}
                   ${isSelected ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
@@ -328,11 +394,12 @@ const WorkoutList: React.FC = () => {
                   {day.getDate()}
                 </span>
                 
-                {/* 운동 마커 */}
+                {/* 운동 마커 - 메인 운동명 포함 */}
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
                     {dayWorkouts.map((workout, j) => {
                       // 주요 정보 추출
+                      const mainExerciseName = workout.mainExercise.name;
                       const mainExerciseWeight = workout.mainExercise.weight;
                       const partLabel = getPartLabel(workout.part);
                       const statusLabel = workout.isAllSuccess ? '성공' : '실패';
@@ -341,10 +408,11 @@ const WorkoutList: React.FC = () => {
                         <div 
                           key={`workout-${j}`} 
                           className={`text-xs px-1 py-0.5 rounded-sm truncate ${getPartColor(workout.part, workout.isAllSuccess)}`}
-                          title={`${partLabel} - ${workout.mainExercise.name} ${mainExerciseWeight}kg - ${statusLabel}`}
+                          title={`${partLabel} - ${mainExerciseName} ${mainExerciseWeight}kg - ${statusLabel}`}
                         >
                           <span className="font-medium">{partLabel}</span>
                           <span className="mx-1">-</span>
+                          <span className="hidden md:inline">{mainExerciseName}</span>
                           <span>{mainExerciseWeight}kg</span>
                           <span className="ml-1">
                             {workout.isAllSuccess ? '✓' : '✗'}
@@ -360,7 +428,7 @@ const WorkoutList: React.FC = () => {
         </div>
       </div>
       
-      {/* 선택된 날짜 표시 */}
+      {/* 선택된 날짜 표시 및 스탬프 기능 */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           {new Date(selectedDate).toLocaleDateString('ko-KR', { 
@@ -370,12 +438,101 @@ const WorkoutList: React.FC = () => {
             weekday: 'long' 
           })}
         </h3>
+        
+        {selectedWorkouts.length > 0 && (
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={captureWorkoutStamp}
+              icon={<Download size={16} />}
+            >
+              스탬프 저장
+            </Button>
+            <Button
+              type="button"
+              variant="outline" 
+              size="sm"
+              onClick={shareWorkoutStamp}
+              icon={<Share size={16} />}
+            >
+              스탬프 공유
+            </Button>
+          </div>
+        )}
+        
         {selectedWorkouts.length === 0 && (
           <span className="text-sm text-gray-500">
             운동 기록이 없습니다
           </span>
         )}
       </div>
+      
+      {/* 운동 스탬프 영역 */}
+      {selectedWorkouts.length > 0 && (
+        <div 
+          ref={workoutStampRef}
+          className="bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              {new Date(selectedDate).toLocaleDateString('ko-KR', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+              })} 운동 스탬프
+            </h3>
+            <div className="flex items-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full">
+              <Camera size={16} className="mr-1" />
+              <span className="text-sm">Corevia Fitness</span>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {selectedWorkouts.map((workout, index) => (
+              <div 
+                key={index}
+                className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center">
+                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${workout.isAllSuccess ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    <span className={`py-1 px-2 rounded-md text-sm mr-2 ${getPartColor(workout.part, workout.isAllSuccess)}`}>
+                      {getPartLabel(workout.part)}
+                    </span>
+                    <h4 className="font-semibold">{workout.mainExercise.name}</h4>
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    {workout.successSets}/{workout.mainExercise.sets.length} 세트
+                  </span>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {workout.mainExercise.sets.map((set, setIndex) => (
+                    <div 
+                      key={setIndex}
+                      className={`text-xs py-1 px-2 rounded ${set.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                    >
+                      {set.weight}kg x {set.reps}회
+                    </div>
+                  ))}
+                </div>
+                
+                {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="font-medium">보조 운동:</span> {workout.accessoryExercises.map(ex => ex.name).join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            Corevia Fitness Tracking App에서 생성됨
+          </div>
+        </div>
+      )}
       
       {/* 선택된 날짜의 운동 기록 목록 */}
       <div className="space-y-6">

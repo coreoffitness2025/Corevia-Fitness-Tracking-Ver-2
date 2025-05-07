@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { ExercisePart, Session } from '../../types';
+import { 
+  ExercisePart, 
+  Session, 
+  ChestMainExercise, 
+  BackMainExercise, 
+  ShoulderMainExercise, 
+  LegMainExercise,
+  BicepsMainExercise,
+  TricepsMainExercise,
+  MainExerciseType
+} from '../../types';
 import { addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
@@ -8,7 +18,7 @@ import Layout from '../common/Layout';
 import Card, { CardTitle, CardSection } from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
-import { Plus, X, Clock, CheckCircle, XCircle, Save } from 'lucide-react';
+import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle } from 'lucide-react';
 
 interface WorkoutFormProps {
   onSuccess?: () => void; // 저장 성공 시 호출될 콜백
@@ -18,12 +28,59 @@ const exercisePartOptions = [
   { value: 'chest',    label: '가슴',   icon: '💪', mainExerciseName: '벤치 프레스' },
   { value: 'back',     label: '등',     icon: '🔙', mainExerciseName: '데드리프트' },
   { value: 'shoulder', label: '어깨',   icon: '🏋️', mainExerciseName: '오버헤드 프레스' },
-  { value: 'leg',      label: '하체',   icon: '🦵', mainExerciseName: '스쿼트' }
+  { value: 'leg',      label: '하체',   icon: '🦵', mainExerciseName: '스쿼트' },
+  { value: 'biceps',   label: '이두',   icon: '💪', mainExerciseName: '덤벨 컬' },
+  { value: 'triceps',  label: '삼두',   icon: '💪', mainExerciseName: '케이블 푸시다운' }
 ];
+
+// 각 부위별 메인 운동 옵션
+const mainExerciseOptions = {
+  chest: [
+    { value: 'benchPress', label: '벤치 프레스' },
+    { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
+    { value: 'declineBenchPress', label: '디클라인 벤치 프레스' }
+  ],
+  back: [
+    { value: 'deadlift', label: '데드리프트' },
+    { value: 'pullUp', label: '턱걸이' },
+    { value: 'bentOverRow', label: '벤트오버 로우' }
+  ],
+  shoulder: [
+    { value: 'overheadPress', label: '오버헤드 프레스' },
+    { value: 'lateralRaise', label: '레터럴 레이즈' },
+    { value: 'facePull', label: '페이스 풀' }
+  ],
+  leg: [
+    { value: 'squat', label: '스쿼트' },
+    { value: 'legPress', label: '레그 프레스' },
+    { value: 'lungue', label: '런지' }
+  ],
+  biceps: [
+    { value: 'dumbbellCurl', label: '덤벨 컬' },
+    { value: 'barbelCurl', label: '바벨 컬' },
+    { value: 'hammerCurl', label: '해머 컬' }
+  ],
+  triceps: [
+    { value: 'cablePushdown', label: '케이블 푸시다운' },
+    { value: 'overheadExtension', label: '오버헤드 익스텐션' },
+    { value: 'lyingExtension', label: '라잉 익스텐션' }
+  ]
+};
+
+// 웜업 세트 추천 운동
+const warmupExercises = {
+  chest: ['가벼운 푸시업 10-15회', '라이트 벤치프레스 15회', '밴드 풀 아파트 15-20회'],
+  back: ['경량 데드리프트 10-15회', '밴드 풀다운 15-20회', '슈퍼맨 홀드 3세트 x 10초'],
+  shoulder: ['월 슬라이드 10-15회', '페이스 풀 15-20회', '밴드 외전 운동 15-20회'],
+  leg: ['맨몸 스쿼트 15-20회', '카프 레이즈 20회', '랭킹 런지 10회(양쪽)'],
+  biceps: ['가벼운 덤벨 컬 15-20회', '밴드 컬 15-20회', '손목 유연성 운동 10회'],
+  triceps: ['가벼운 푸시업 10-15회', '가벼운 덤벨 킥백 15-20회', '밴드 푸시다운 15-20회']
+};
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { user } = useAuthStore();
   const [part, setPart] = useState<ExercisePart>('chest');
+  const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>('benchPress');
   const [mainExercise, setMainExercise] = useState({
     name: exercisePartOptions[0].mainExerciseName,
     sets: [{ reps: 0, weight: 0, isSuccess: false }]
@@ -40,17 +97,35 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 타이머 관련 상태
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // 웜업 팁 표시 상태
+  const [showWarmupTips, setShowWarmupTips] = useState(true);
   
-  // 파트가 변경될 때 메인 운동 이름 자동 변경
+  // 파트가 변경될 때 메인 운동 옵션 업데이트
   useEffect(() => {
     const selectedPart = exercisePartOptions.find(option => option.value === part);
     if (selectedPart) {
+      // 해당 부위의 첫 번째 운동으로 선택
+      const firstOption = mainExerciseOptions[part][0];
+      setSelectedMainExercise(firstOption.value as MainExerciseType);
       setMainExercise(prev => ({
         ...prev,
-        name: selectedPart.mainExerciseName
+        name: firstOption.label
       }));
     }
   }, [part]);
+
+  // 메인 운동이 변경될 때 이름 업데이트
+  useEffect(() => {
+    const options = mainExerciseOptions[part];
+    const selectedOption = options.find(option => option.value === selectedMainExercise);
+    if (selectedOption) {
+      setMainExercise(prev => ({
+        ...prev,
+        name: selectedOption.label
+      }));
+    }
+  }, [selectedMainExercise, part]);
 
   // 폼 유효성 검사
   useEffect(() => {
@@ -325,6 +400,39 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 웜업 안내 카드 */}
+          {showWarmupTips && (
+            <Card className="border-2 border-yellow-400 animate-pulse mb-4">
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center text-yellow-600">
+                  <AlertTriangle size={20} className="mr-2" />
+                  웜업 세트 안내
+                </CardTitle>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowWarmupTips(false)}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                부상 방지와 최적의 운동 효과를 위해 충분한 웜업 세트와 스트레칭을 완료한 후에 시작해주세요.
+              </p>
+              <div className="bg-yellow-50 dark:bg-gray-700 p-3 rounded-lg">
+                <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
+                  {part.charAt(0).toUpperCase() + part.slice(1)} 웜업 세트 추천
+                </h4>
+                <ul className="list-disc pl-5 space-y-1">
+                  {warmupExercises[part].map((exercise, index) => (
+                    <li key={index} className="text-gray-600 dark:text-gray-300">{exercise}</li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+          )}
+
           <Card className="animate-slideUp">
             <div className="flex items-center mb-6">
               <div className="flex items-center space-x-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
@@ -350,18 +458,35 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
             <div className="space-y-6">
               <CardSection>
-                <CardTitle>
-                  <span className="flex items-center">
-                    메인 운동: {mainExercise.name}
-                    <Badge
-                      variant={mainExercise.sets.some(set => set.isSuccess) ? "success" : "gray"}
-                      className="ml-2"
-                      size="sm"
+                <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+                  <CardTitle className="mb-2 md:mb-0">
+                    <span className="flex items-center">
+                      메인 운동
+                      <Badge
+                        variant={mainExercise.sets.some(set => set.isSuccess) ? "success" : "gray"}
+                        className="ml-2"
+                        size="sm"
+                      >
+                        {mainExercise.sets.filter(set => set.isSuccess).length}/{mainExercise.sets.length} 세트
+                      </Badge>
+                    </span>
+                  </CardTitle>
+                  
+                  {/* 메인 운동 선택 드롭다운 */}
+                  <div className="w-full md:w-auto">
+                    <select
+                      value={selectedMainExercise}
+                      onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
+                      className="w-full md:w-auto p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      {mainExercise.sets.filter(set => set.isSuccess).length}/{mainExercise.sets.length} 세트
-                    </Badge>
-                  </span>
-                </CardTitle>
+                      {mainExerciseOptions[part].map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   {mainExercise.sets.map((set, index) => (
                     <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-fadeIn transition-all duration-300 hover:shadow-md">

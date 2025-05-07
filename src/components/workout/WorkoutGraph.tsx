@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { ExercisePart } from '../../types';
+import { 
+  ExercisePart, 
+  ChestMainExercise, 
+  BackMainExercise, 
+  ShoulderMainExercise, 
+  LegMainExercise,
+  BicepsMainExercise,
+  TricepsMainExercise,
+  MainExerciseType
+} from '../../types';
 
 interface WorkoutData {
   date: string;
@@ -11,26 +20,63 @@ interface WorkoutData {
 interface ExercisePartOption {
   value: ExercisePart;
   label: string;
-  mainExerciseName: string;
 }
 
 type TimeRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'all';
 
 const exercisePartOptions: ExercisePartOption[] = [
-  { value: 'chest',    label: '가슴',   mainExerciseName: '벤치 프레스' },
-  { value: 'back',     label: '등',     mainExerciseName: '데드리프트' },
-  { value: 'shoulder', label: '어깨',   mainExerciseName: '오버헤드 프레스' },
-  { value: 'leg',      label: '하체',   mainExerciseName: '스쿼트' }
+  { value: 'chest',    label: '가슴' },
+  { value: 'back',     label: '등' },
+  { value: 'shoulder', label: '어깨' },
+  { value: 'leg',      label: '하체' },
+  { value: 'biceps',   label: '이두' },
+  { value: 'triceps',  label: '삼두' }
 ];
+
+// 각 부위별 메인 운동 옵션
+const mainExerciseOptions = {
+  chest: [
+    { value: 'benchPress', label: '벤치 프레스' },
+    { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
+    { value: 'declineBenchPress', label: '디클라인 벤치 프레스' }
+  ],
+  back: [
+    { value: 'deadlift', label: '데드리프트' },
+    { value: 'pullUp', label: '턱걸이' },
+    { value: 'bentOverRow', label: '벤트오버 로우' }
+  ],
+  shoulder: [
+    { value: 'overheadPress', label: '오버헤드 프레스' },
+    { value: 'lateralRaise', label: '레터럴 레이즈' },
+    { value: 'facePull', label: '페이스 풀' }
+  ],
+  leg: [
+    { value: 'squat', label: '스쿼트' },
+    { value: 'legPress', label: '레그 프레스' },
+    { value: 'lungue', label: '런지' }
+  ],
+  biceps: [
+    { value: 'dumbbellCurl', label: '덤벨 컬' },
+    { value: 'barbelCurl', label: '바벨 컬' },
+    { value: 'hammerCurl', label: '해머 컬' }
+  ],
+  triceps: [
+    { value: 'cablePushdown', label: '케이블 푸시다운' },
+    { value: 'overheadExtension', label: '오버헤드 익스텐션' },
+    { value: 'lyingExtension', label: '라잉 익스텐션' }
+  ]
+};
 
 const WorkoutGraph: React.FC = () => {
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
+  const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>('benchPress');
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutData | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
   
   // 선택된 부위에 따른 데이터 필터링 (실제로는 API에서 데이터 가져와야 함)
-  const workoutData: Record<ExercisePart, WorkoutData[]> = {
-    chest: [
+  const workoutData: Record<string, WorkoutData[]> = {
+    // 가슴 운동
+    benchPress: [
       { 
         date: '2024-03-01', 
         weight: 80, 
@@ -82,29 +128,65 @@ const WorkoutGraph: React.FC = () => {
         ]
       }
     ],
-    back: [
+    inclineBenchPress: [
+      { date: '2024-03-02', weight: 70, isSuccess: true },
+      { date: '2024-03-09', weight: 72.5, isSuccess: true },
+      { date: '2024-03-16', weight: 75, isSuccess: true },
+      { date: '2024-03-23', weight: 77.5, isSuccess: false }
+    ],
+    // 등 운동
+    deadlift: [
       { date: '2024-03-02', weight: 100, isSuccess: true },
       { date: '2024-03-09', weight: 105, isSuccess: true },
       { date: '2024-03-16', weight: 110, isSuccess: false },
       { date: '2024-03-23', weight: 110, isSuccess: true }
     ],
-    shoulder: [
+    pullUp: [
+      { date: '2024-03-05', weight: 0, isSuccess: true },
+      { date: '2024-03-12', weight: 5, isSuccess: true }, // 가중치 추가
+      { date: '2024-03-19', weight: 7.5, isSuccess: true },
+      { date: '2024-03-26', weight: 10, isSuccess: false }
+    ],
+    // 어깨 운동
+    overheadPress: [
       { date: '2024-03-03', weight: 60, isSuccess: true },
       { date: '2024-03-10', weight: 62.5, isSuccess: true },
       { date: '2024-03-17', weight: 65, isSuccess: true },
       { date: '2024-03-24', weight: 67.5, isSuccess: false }
     ],
-    leg: [
+    // 하체 운동
+    squat: [
       { date: '2024-03-04', weight: 120, isSuccess: true },
       { date: '2024-03-11', weight: 125, isSuccess: true },
       { date: '2024-03-18', weight: 130, isSuccess: false },
       { date: '2024-03-25', weight: 130, isSuccess: true }
+    ],
+    // 이두 운동
+    dumbbellCurl: [
+      { date: '2024-03-05', weight: 15, isSuccess: true },
+      { date: '2024-03-12', weight: 17.5, isSuccess: true },
+      { date: '2024-03-19', weight: 20, isSuccess: false },
+      { date: '2024-03-26', weight: 20, isSuccess: true }
+    ],
+    // 삼두 운동
+    cablePushdown: [
+      { date: '2024-03-06', weight: 40, isSuccess: true },
+      { date: '2024-03-13', weight: 45, isSuccess: true },
+      { date: '2024-03-20', weight: 50, isSuccess: false },
+      { date: '2024-03-27', weight: 50, isSuccess: true }
     ]
+  };
+
+  // 부위 변경 시 해당 부위의 첫 번째 메인 운동으로 변경
+  const handlePartChange = (newPart: ExercisePart) => {
+    setSelectedPart(newPart);
+    setSelectedMainExercise(mainExerciseOptions[newPart][0].value as MainExerciseType);
   };
 
   // 필터링된 데이터를 반환하는 함수
   const getFilteredWorkouts = () => {
-    let filteredWorkouts = [...workoutData[selectedPart]];
+    const exerciseData = workoutData[selectedMainExercise] || [];
+    let filteredWorkouts = [...exerciseData];
     
     // 기간별 필터링
     if (timeRange !== 'all') {
@@ -156,8 +238,10 @@ const WorkoutGraph: React.FC = () => {
   const minWeight = Math.max(0, Math.min(...currentWorkouts.map(d => d.weight)) - 10);
   const range = maxWeight - minWeight > 0 ? maxWeight - minWeight : 10;
   
-  // 선택된 부위의 메인 운동 이름
-  const selectedExercise = exercisePartOptions.find(opt => opt.value === selectedPart)?.mainExerciseName || '';
+  // 선택된 메인 운동 이름
+  const selectedExerciseLabel = mainExerciseOptions[selectedPart].find(
+    option => option.value === selectedMainExercise
+  )?.label || '';
 
   // 그래프 SVG 관련 설정
   const graphHeight = 250;  
@@ -205,36 +289,57 @@ const WorkoutGraph: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-          {selectedExercise} 무게 추이
+          {selectedExerciseLabel} 무게 추이
         </h2>
         
-        <div className="flex space-x-4">
-          <select
-            value={selectedPart}
-            onChange={(e) => setSelectedPart(e.target.value as ExercisePart)}
-            className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          >
-            {exercisePartOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label} ({option.mainExerciseName})
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+          <div className="flex space-x-2 items-center">
+            <label className="text-sm text-gray-600 dark:text-gray-400">부위:</label>
+            <select
+              value={selectedPart}
+              onChange={(e) => handlePartChange(e.target.value as ExercisePart)}
+              className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              {exercisePartOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
           
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-            className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          >
-            <option value="all">전체 기간</option>
-            <option value="1week">최근 1주</option>
-            <option value="1month">최근 1개월</option>
-            <option value="3months">최근 3개월</option>
-            <option value="6months">최근 6개월</option>
-            <option value="1year">최근 1년</option>
-          </select>
+          <div className="flex space-x-2 items-center">
+            <label className="text-sm text-gray-600 dark:text-gray-400">운동:</label>
+            <select
+              value={selectedMainExercise}
+              onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
+              className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              {mainExerciseOptions[selectedPart].map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex space-x-2 items-center">
+            <label className="text-sm text-gray-600 dark:text-gray-400">기간:</label>
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+              className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="all">전체 기간</option>
+              <option value="1week">최근 1주</option>
+              <option value="1month">최근 1개월</option>
+              <option value="3months">최근 3개월</option>
+              <option value="6months">최근 6개월</option>
+              <option value="1year">최근 1년</option>
+            </select>
+          </div>
         </div>
       </div>
       
@@ -375,7 +480,7 @@ const WorkoutGraph: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {selectedExercise} - {new Date(selectedWorkout.date).toLocaleDateString('ko-KR')}
+                {selectedExerciseLabel} - {new Date(selectedWorkout.date).toLocaleDateString('ko-KR')}
               </h3>
               <button 
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"

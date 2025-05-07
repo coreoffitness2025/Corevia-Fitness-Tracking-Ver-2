@@ -314,7 +314,7 @@ const QnaPage: React.FC = () => {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-lg ${
                 activeTab === tab
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-[#4285F4] text-white'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               }`}
             >
@@ -330,7 +330,7 @@ const QnaPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 왼쪽: 운동 유형 선택 */}
             <div className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-[#4285F4]">
                 <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">문의 유형 선택</h2>
                 
                 {/* 운동 부위 선택 버튼 */}
@@ -341,7 +341,7 @@ const QnaPage: React.FC = () => {
                       onClick={() => handlePartSelect(part)}
                       className={`px-4 py-2 rounded-lg flex items-center transition-all duration-300 ${
                         selectedPart === part
-                          ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                          ? 'bg-[#4285F4] text-white shadow-md transform scale-105'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
@@ -368,7 +368,7 @@ const QnaPage: React.FC = () => {
                           onClick={() => handleExerciseSelect(exercise)}
                           className={`p-4 cursor-pointer ${
                             selectedExercise?.id === exercise.id
-                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                              ? 'border-[#4285F4] bg-blue-50 dark:bg-blue-900/30'
                               : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                           }`}
                         >
@@ -405,7 +405,7 @@ const QnaPage: React.FC = () => {
                                 href={exercise.videoUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow transition-colors duration-300"
+                                className="inline-flex items-center px-4 py-2 bg-[#4285F4] hover:bg-[#3b78db] text-white rounded-lg shadow transition-colors duration-300"
                               >
                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
@@ -527,7 +527,7 @@ const QnaPage: React.FC = () => {
                   
                   <button 
                     onClick={calculateCalories}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 mt-4"
+                    className="w-full bg-[#4285F4] text-white py-2 px-4 rounded-md hover:bg-[#3b78db] mt-4"
                   >
                     계산하기
                   </button>
@@ -546,7 +546,7 @@ const QnaPage: React.FC = () => {
                         </div>
                         <div className="col-span-2">
                           <p className="text-sm text-gray-600 dark:text-gray-400">하루 권장 칼로리</p>
-                          <p className="font-medium text-blue-600 dark:text-blue-400 text-lg">
+                          <p className="font-medium text-[#4285F4] dark:text-blue-400 text-lg">
                             {calculatorResults.targetCalories.toLocaleString()} kcal
                           </p>
                         </div>
