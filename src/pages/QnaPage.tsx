@@ -566,7 +566,7 @@ const QnaPage: React.FC = () => {
             {/* 왼쪽: 운동 유형 선택 */}
             <div className="space-y-6">
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-[#4285F4]">
-                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">문의 유형 선택</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">운동 정보 검색</h2>
                 
                 {/* 검색 기능 추가 */}
                 <div className="mb-4 relative">
@@ -603,93 +603,157 @@ const QnaPage: React.FC = () => {
                   )}
                 </div>
                 
-                {/* 운동 부위 선택 버튼 */}
-                <div className="flex flex-wrap gap-3 mb-6">
-                  {(['chest', 'back', 'shoulder', 'leg', 'biceps', 'triceps', 'abs', 'cardio'] as const).map((part) => (
-                    <button
-                      key={part}
-                      onClick={() => handlePartSelect(part)}
-                      className={`px-4 py-2 rounded-lg flex items-center transition-all duration-300 ${
-                        selectedPart === part
-                          ? 'bg-[#4285F4] text-white shadow-md transform scale-105'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      <span className="mr-2">{partIcons[part]}</span>
-                      {getPartLabel(part)}
-                    </button>
-                  ))}
-                </div>
-                
-                {/* 선택된 부위의 운동 목록 */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-gray-800 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
-                    {partIcons[selectedPart]} {getPartLabel(selectedPart)} 운동 목록
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    {exercisesByPart[selectedPart].map((exercise) => (
-                      <div 
-                        key={exercise.id}
-                        className="border rounded-lg transition-all duration-300 overflow-hidden"
-                      >
-                        {/* 운동 헤더 부분 */}
-                        <div 
-                          onClick={() => handleExerciseSelect(exercise)}
-                          className={`p-4 cursor-pointer ${
-                            selectedExercise?.id === exercise.id
-                              ? 'border-[#4285F4] bg-blue-50 dark:bg-blue-900/30'
-                              : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                {/* 검색 결과가 없을 때만 운동 부위 선택 버튼 표시 */}
+                {!searchTerm && (
+                  <>
+                    <div className="flex flex-wrap gap-3 mb-6">
+                      {(['chest', 'back', 'shoulder', 'leg', 'biceps', 'triceps', 'abs', 'cardio'] as const).map((part) => (
+                        <button
+                          key={part}
+                          onClick={() => handlePartSelect(part)}
+                          className={`px-4 py-2 rounded-lg flex items-center transition-all duration-300 ${
+                            selectedPart === part
+                              ? 'bg-[#4285F4] text-white shadow-md transform scale-105'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
-                          <div className="flex justify-between items-center">
-                            <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
-                              {exercise.name}
-                            </h4>
-                            <span className={`transform transition-transform duration-300 ${
-                              selectedExercise?.id === exercise.id ? 'rotate-180' : ''
-                            }`}>
-                              ▼
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                            {exercise.description}
-                          </p>
-                        </div>
-                        
-                        {/* 접히는 상세 내용 부분 */}
-                        {selectedExercise?.id === exercise.id && (
-                          <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-t border-blue-200 dark:border-blue-800 animate-slideDown">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 border-b border-blue-200 dark:border-blue-700 pb-2">
-                              수행 방법
-                            </h3>
-                            <ol className="list-decimal list-inside space-y-3 mb-6 pl-2">
-                              {exercise.steps.map((step, index) => (
-                                <li key={index} className="text-gray-700 dark:text-gray-300">
-                                  {step}
-                                </li>
-                              ))}
-                            </ol>
-                            {exercise.videoUrl && (
-                              <a 
-                                href={exercise.videoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-4 py-2 bg-[#4285F4] hover:bg-[#3b78db] text-white rounded-lg shadow transition-colors duration-300"
-                              >
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                영상으로 보기
-                              </a>
+                          <span className="mr-2">{partIcons[part]}</span>
+                          {getPartLabel(part)}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* 선택된 부위의 운동 목록 */}
+                    <div className="space-y-4">
+                      <h3 className="font-medium text-gray-800 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+                        {partIcons[selectedPart]} {getPartLabel(selectedPart)} 운동 목록
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                        {exercisesByPart[selectedPart].map((exercise) => (
+                          <div 
+                            key={exercise.id}
+                            className="border rounded-lg transition-all duration-300 overflow-hidden"
+                          >
+                            {/* 운동 헤더 부분 */}
+                            <div 
+                              onClick={() => handleExerciseSelect(exercise)}
+                              className={`p-4 cursor-pointer ${
+                                selectedExercise?.id === exercise.id
+                                  ? 'border-[#4285F4] bg-blue-50 dark:bg-blue-900/30'
+                                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
+                                  {exercise.name}
+                                </h4>
+                                <span className={`transform transition-transform duration-300 ${
+                                  selectedExercise?.id === exercise.id ? 'rotate-180' : ''
+                                }`}>
+                                  ▼
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                {exercise.description}
+                              </p>
+                            </div>
+                            
+                            {/* 접히는 상세 내용 부분 */}
+                            {selectedExercise?.id === exercise.id && (
+                              <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-t border-blue-200 dark:border-blue-800 animate-slideDown">
+                                <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 border-b border-blue-200 dark:border-blue-700 pb-2">
+                                  수행 방법
+                                </h3>
+                                <ol className="list-decimal list-inside space-y-3 mb-6 pl-2">
+                                  {exercise.steps.map((step, index) => (
+                                    <li key={index} className="text-gray-700 dark:text-gray-300">
+                                      {step}
+                                    </li>
+                                  ))}
+                                </ol>
+                                {exercise.videoUrl && (
+                                  <a 
+                                    href={exercise.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-4 py-2 bg-[#4285F4] hover:bg-[#3b78db] text-white rounded-lg shadow transition-colors duration-300"
+                                  >
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    영상으로 보기
+                                  </a>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  </>
+                )}
+                
+                {/* 검색 결과가 있을 때 표시 */}
+                {searchTerm && selectedExercise && (
+                  <div className="mt-4 animate-fadeIn">
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-blue-200 dark:border-blue-800">
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="flex items-center">
+                            <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full text-sm mr-2">
+                              {getPartLabel(selectedPart)}
+                            </span>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedExercise.name}</h3>
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-700 dark:text-gray-300 mb-6">{selectedExercise.description}</p>
+                        
+                        <div className="bg-white dark:bg-gray-700 p-4 rounded-lg mb-6">
+                          <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                            수행 방법
+                          </h4>
+                          <ol className="list-decimal list-inside space-y-3 pl-2">
+                            {selectedExercise.steps.map((step, index) => (
+                              <li key={index} className="text-gray-700 dark:text-gray-300">
+                                {step}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                        
+                        {selectedExercise.videoUrl && (
+                          <div className="text-center">
+                            <a 
+                              href={selectedExercise.videoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-6 py-3 bg-[#4285F4] hover:bg-[#3b78db] text-white rounded-lg shadow transition-colors duration-300"
+                            >
+                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                              영상으로 보기
+                            </a>
+                          </div>
+                        )}
+                        
+                        <button 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setSelectedExercise(null);
+                          }}
+                          className="mt-6 w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          목록으로 돌아가기
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
             

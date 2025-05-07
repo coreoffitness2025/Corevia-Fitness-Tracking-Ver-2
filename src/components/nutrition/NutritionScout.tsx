@@ -163,23 +163,29 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // 직접 임베디드 데이터 활용
-      if (DEFAULT_FOOD_DATA.length > 0) {
-        setFoodData(DEFAULT_FOOD_DATA);
-        setIsLoading(false);
-        return;
-      }
-      
       // 외부 CSV 로드 시도
-      const response = await fetch('/nutrition_db.csv');
+      const response = await fetch('/data/nutrition_db.csv');
       if (!response.ok) {
-        throw new Error(`CSV 로드 실패: ${response.status} ${response.statusText}`);
+        // 첫 번째 경로에서 실패했다면 다른 경로로 시도
+        const altResponse = await fetch('/nutrition_db.csv');
+        if (!altResponse.ok) {
+          throw new Error(`CSV 로드 실패: ${response.status} ${response.statusText}`);
+        }
+        const text = await altResponse.text();
+        const data = parseCSV(text);
+        
+        if (data.length > 0) {
+          console.log('대체 경로에서 CSV 로드 성공:', data.length);
+          setFoodData(data);
+          return;
+        }
       }
       
       const text = await response.text();
       const data = parseCSV(text);
       
       if (data.length > 0) {
+        console.log('CSV 로드 성공:', data.length);
         setFoodData(data);
       } else {
         throw new Error('CSV 데이터가 비어있습니다.');
@@ -189,6 +195,7 @@ const NutritionScout = () => {
       // 로드 실패 시 기본 데이터 사용
       setFoodData(DEFAULT_FOOD_DATA);
       setLoadError(error instanceof Error ? error.message : '알 수 없는 오류');
+      showToast.warning('영양 데이터베이스 로드에 실패하여 기본 데이터를 사용합니다.');
     } finally {
       setIsLoading(false);
     }
@@ -289,24 +296,51 @@ const NutritionScout = () => {
   // CSV 데이터 파싱 함수
   const parseCSV = (text: string): NutritionData[] => {
     const rows = text.split('\n');
+    if (rows.length <= 1) {
+      throw new Error('CSV 데이터 형식이 올바르지 않습니다.');
+    }
+    
     const headers = rows[0].split(',');
     
-    return rows.slice(1).filter(row => row.trim()).map(row => {
-      const values = row.split(',');
-      const item: Record<string, any> = {};
-      
-      headers.forEach((header, index) => {
-        const value = values[index]?.trim() || '';
-        // 숫자로 변환 가능한 경우 숫자로 변환
-        if (header.includes('g/100g') && !isNaN(parseFloat(value))) {
-          item[header] = parseFloat(value);
-        } else {
-          item[header] = value;
+    return rows.slice(1)
+      .filter(row => row.trim()) // 빈 줄 제거
+      .map(row => {
+        // 따옴표로 묶인 내용 처리를 위한 로직 추가
+        const values: string[] = [];
+        let inQuotes = false;
+        let currentValue = '';
+        
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          
+          if (char === '"' && (i === 0 || row[i-1] !== '\\')) {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(currentValue);
+            currentValue = '';
+          } else {
+            currentValue += char;
+          }
         }
-      });
-      
-      return item as NutritionData;
-    }).filter(item => item['요리명']); // 요리명이 있는 항목만 필터링
+        
+        // 마지막 값 추가
+        values.push(currentValue);
+        
+        const item: Record<string, any> = {};
+        
+        headers.forEach((header, index) => {
+          const value = values[index]?.trim().replace(/^"|"$/g, '') || '';
+          // 숫자로 변환 가능한 경우 숫자로 변환
+          if (header.includes('g/100g') && !isNaN(parseFloat(value))) {
+            item[header] = parseFloat(value);
+          } else {
+            item[header] = value;
+          }
+        });
+        
+        return item as NutritionData;
+      })
+      .filter(item => item['요리명']); // 요리명이 있는 항목만 필터링
   };
 
   return (

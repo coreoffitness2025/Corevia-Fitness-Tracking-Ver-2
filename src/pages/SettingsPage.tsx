@@ -2,16 +2,18 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import Layout from '../components/common/Layout';
 import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { UserProfile } from '../types';
 import Card from '../components/common/Card';
+import PersonalizationModal from '../components/auth/PersonalizationModal';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [userProfile, setUserProfile] = useState<Partial<UserProfile> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -26,6 +28,9 @@ const SettingsPage = () => {
         } finally {
           setIsLoading(false);
         }
+      } else {
+        // 로그인하지 않은 경우 로딩 상태 해제
+        setIsLoading(false);
       }
     };
 
@@ -35,6 +40,24 @@ const SettingsPage = () => {
   const handleLogout = async () => {
     logout();
     navigate('/login');
+  };
+
+  // 개인화 설정 저장 핸들러
+  const handleSavePersonalization = async (profile: Partial<UserProfile>) => {
+    try {
+      // 로그인한 사용자인 경우 파이어스토어에 저장
+      if (user?.uid) {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, profile);
+      }
+      
+      // 로컬 상태 업데이트
+      setUserProfile(prev => ({...prev, ...profile}));
+      setIsPersonalizationModalOpen(false);
+    } catch (error) {
+      console.error('Error saving personalization settings:', error);
+      alert('설정을 저장하는 중 오류가 발생했습니다.');
+    }
   };
 
   // 메인 운동 이름 가져오기
@@ -110,20 +133,28 @@ const SettingsPage = () => {
 
             <div>
               <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                {user?.displayName || '사용자'}
+                {user?.displayName || '로그인하지 않음'}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">{user?.email}</p>
+              <p className="text-gray-600 dark:text-gray-400">{user?.email || '로그인하여 설정을 저장하세요'}</p>
             </div>
           </div>
         </div>
 
         {/* 개인화 설정 정보 표시 */}
-        {!isLoading && userProfile && (
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
               운동 개인화 설정
             </h3>
-            
+            <button
+              onClick={() => setIsPersonalizationModalOpen(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              {userProfile ? '설정 변경' : '새로 설정하기'}
+            </button>
+          </div>
+          
+          {!isLoading && userProfile && (
             <div className="space-y-4">
               {/* 신체 정보 */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -242,24 +273,26 @@ const SettingsPage = () => {
                   </div>
                 </div>
               )}
-              
-              <button
-                onClick={() => navigate('/login')}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-              >
-                개인화 설정 변경
-              </button>
             </div>
-          </div>
-        )}
+          )}
+          
+          {!isLoading && !userProfile && (
+            <div className="text-center py-6">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">아직 설정된 개인화 정보가 없습니다.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">개인화 설정을 통해 더 맞춤형 경험을 제공받을 수 있습니다.</p>
+            </div>
+          )}
+        </div>
 
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          <button
-            onClick={handleLogout}
-            className="w-full text-left px-6 py-4 text-red-500 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
-          >
-            로그아웃
-          </button>
+          {user && (
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-6 py-4 text-red-500 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+            >
+              로그아웃
+            </button>
+          )}
 
           <a
             href="https://corevia.com/privacy"
@@ -292,6 +325,13 @@ const SettingsPage = () => {
           <p>© 2025 Corevia. All rights reserved.</p>
         </div>
       </div>
+      
+      {/* 개인화 모달 */}
+      <PersonalizationModal
+        isOpen={isPersonalizationModalOpen}
+        onClose={() => setIsPersonalizationModalOpen(false)}
+        onSave={handleSavePersonalization}
+      />
     </Layout>
   );
 };
