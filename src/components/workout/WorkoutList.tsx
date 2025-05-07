@@ -344,7 +344,7 @@ const WorkoutList: React.FC = () => {
       if (!ctx) return;
       
       // 업로드된 이미지 로드
-      const img: HTMLImageElement = new Image();
+      const img = document.createElement('img');
       img.crossOrigin = 'anonymous';
       img.src = uploadedImage;
       

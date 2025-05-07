@@ -273,7 +273,7 @@ const FoodLog: React.FC = () => {
       if (!ctx) return;
       
       // 업로드된 이미지 로드
-      const img: HTMLImageElement = new Image();
+      const img = document.createElement('img');
       img.crossOrigin = 'anonymous';
       img.src = uploadedImage;
       
@@ -502,230 +502,45 @@ const FoodLog: React.FC = () => {
         </div>
       </div>
       
-      {/* 날짜 선택 (일별 보기에서만 표시) */}
-      {viewMode === 'day' && (
-        <div className="mb-4">
-          <label htmlFor="date-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            날짜 선택
-          </label>
-          <input
-            id="date-select"
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-        </div>
-      )}
-      
-      {/* 식단 스탬프 버튼 (식단이 있을 때만 표시) */}
-      {dates.length > 0 && (
-        <div className="flex justify-end space-x-2 mb-4">
-          <button
-            onClick={captureFoodStamp}
-            className="flex items-center px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200 dark:hover:bg-blue-700"
-          >
-            <Camera size={16} className="mr-1" /> 스탬프 생성
-          </button>
-          <button
-            onClick={handleCameraCapture}
-            className="flex items-center px-3 py-2 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 dark:bg-green-800 dark:text-green-200 dark:hover:bg-green-700"
-          >
-            <Camera size={16} className="mr-1" /> 카메라로 촬영
-          </button>
-          <button
-            onClick={handleFileSelect}
-            className="flex items-center px-3 py-2 text-sm bg-purple-100 text-purple-700 rounded hover:bg-purple-200 dark:bg-purple-800 dark:text-purple-200 dark:hover:bg-purple-700"
-          >
-            <ImageIcon size={16} className="mr-1" /> 앨범에서 선택
-          </button>
-        </div>
-      )}
-      
-      {/* 식단 스탬프 이미지 */}
-      {stampImage && (
-        <div className="mt-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              식단 스탬프
-            </h3>
-            <div className="flex space-x-2">
-              <button
-                onClick={downloadStampImage}
-                className="flex items-center px-3 py-1 rounded text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
-              >
-                <Download size={16} className="mr-1" /> 저장
-              </button>
-              <button
-                onClick={shareFoodStamp}
-                className="flex items-center px-3 py-1 rounded text-sm bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
-              >
-                <Share size={16} className="mr-1" /> 공유
-              </button>
-              <button
-                onClick={() => setStampImage(null)}
-                className="flex items-center px-3 py-1 rounded text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200"
-              >
-                <span>✕</span> 닫기
-              </button>
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <img
-              src={stampImage}
-              alt="식단 스탬프"
-              className="max-w-full h-auto rounded-lg shadow-lg"
-              style={{ maxHeight: '500px' }}
-            />
-          </div>
-        </div>
-      )}
-      
-      {/* 식단 스탬프 영역 */}
-      {dates.length > 0 && (
-        <div 
-          ref={foodStampRef}
-          className={`bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6 ${stampImage || uploadedImage ? 'hidden' : ''}`}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              {new Date(selectedDate).toLocaleDateString('ko-KR', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric'
-              })} 식단 스탬프
-            </h3>
-            <div className="flex items-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full">
-              <Camera size={16} className="mr-1" />
-              <span className="text-sm">Corevia Fitness</span>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {dates.map(dateStr => (
-              <div key={dateStr}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {foodGroups[dateStr].map(food => (
-                    <div key={food.id} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-medium text-gray-900 dark:text-white">{food.name}</h4>
-                          {food.type && (
-                            <span className="text-sm text-blue-500 dark:text-blue-400">{food.type}</span>
-                          )}
-                        </div>
-                        <span className="text-sm text-gray-500">
-                          {new Date(food.date).toLocaleTimeString('ko-KR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                      
-                      {food.imageUrl && (
-                        <div className="mt-2 mb-3">
-                          <img 
-                            src={food.imageUrl} 
-                            alt={food.name} 
-                            className="w-full h-32 object-cover rounded-lg"
-                            onError={(e) => {
-                              // 이미지 로드 실패 시 기본 이미지 표시
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=이미지+없음';
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+      {/* 식단 그룹화 및 표시 */}
+      {foodGroups && (
+        <div className="space-y-4">
+          {dates.map(date => (
+            <div key={date}>
+              <h2 className="text-2xl font-semibold mb-2">{date}</h2>
+              <div className="space-y-2">
+                {foodGroups[date].map(food => (
+                  <FoodItem key={food.id} food={food} />
+                ))}
               </div>
-            ))}
-          </div>
-          
-          {/* 영양소 요약 */}
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h4 className="text-md font-medium mb-2">영양소 합계</h4>
-            <div className="flex justify-between">
-              <div>칼로리: <span className="font-semibold">{totalNutrition.calories}kcal</span> / {targetCalories}kcal</div>
-              <div>단백질: <span className="font-semibold">{totalNutrition.protein}g</span> / {proteinTarget}g</div>
-              <div>탄수화물: <span className="font-semibold">{totalNutrition.carbs}g</span> / {carbsTarget}g</div>
-              <div>지방: <span className="font-semibold">{totalNutrition.fat}g</span> / {fatTarget}g</div>
             </div>
-          </div>
-          
-          <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-            Corevia Fitness Tracking App에서 생성됨
-          </div>
+          ))}
         </div>
       )}
-      
-      {isLoading ? (
-        <div className="flex justify-center p-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : dates.length > 0 ? (
-        dates.map(dateStr => (
-          <div key={dateStr} className="space-y-4">
-            <h3 className="text-lg font-semibold border-b pb-2">
-              {formatDate(new Date(dateStr))}
-            </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {foodGroups[dateStr].map(food => (
-                <div key={food.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="font-medium text-gray-900 dark:text-white">{food.name}</h4>
-                      {food.type && (
-                        <span className="text-sm text-blue-500 dark:text-blue-400">{food.type}</span>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      {new Date(food.date).toLocaleTimeString('ko-KR', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                  
-                  {food.imageUrl && (
-                    <div className="mt-2 mb-3">
-                      <img 
-                        src={food.imageUrl} 
-                        alt={food.name} 
-                        className="w-full h-40 object-cover rounded-lg"
-                        onError={(e) => {
-                          // 이미지 로드 실패 시 기본 이미지 표시
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=이미지+없음';
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  {food.notes && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      {food.notes}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400">
-            {viewMode === 'day' && '이 날짜에 기록된 식단이 없습니다.'}
-            {viewMode === 'week' && '이 주에 기록된 식단이 없습니다.'}
-            {viewMode === 'month' && '이 달에 기록된 식단이 없습니다.'}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            식단 입력 탭에서 식사를 기록해보세요.
-          </p>
-        </div>
-      )}
+
+      {/* 스탬프 캡처 및 다운로드 기능 */}
+      <div className="mt-4 flex flex-col md:flex-row justify-between items-center">
+        <button
+          onClick={captureFoodStamp}
+          className="flex items-center px-3 py-1 rounded bg-blue-500 text-white"
+        >
+          <Camera size={16} className="mr-1" /> 스탬프 캡처
+        </button>
+        <button
+          onClick={downloadStampImage}
+          className="flex items-center px-3 py-1 rounded bg-blue-500 text-white ml-2"
+        >
+          <Download size={16} className="mr-1" /> 스탬프 다운로드
+        </button>
+        <button
+          onClick={shareFoodStamp}
+          className="flex items-center px-3 py-1 rounded bg-blue-500 text-white ml-2"
+        >
+          <Share size={16} className="mr-1" /> 스탬프 공유
+        </button>
+      </div>
     </div>
   );
 };
 
-export default FoodLog; 
+export default FoodLog;
