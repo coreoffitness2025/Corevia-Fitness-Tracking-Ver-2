@@ -135,45 +135,66 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   성별
                 </label>
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value as 'male' | 'female')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="male">남성</option>
-                  <option value="female">여성</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value as 'male' | 'female')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
+                    required
+                  >
+                    <option value="male">남성</option>
+                    <option value="female">여성</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   활동 수준
                 </label>
-                <select
-                  value={activityLevel}
-                  onChange={(e) => setActivityLevel(e.target.value as 'low' | 'moderate' | 'high')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="low">낮음</option>
-                  <option value="moderate">보통</option>
-                  <option value="high">높음</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={activityLevel}
+                    onChange={(e) => setActivityLevel(e.target.value as 'low' | 'moderate' | 'high')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
+                    required
+                  >
+                    <option value="low">낮음</option>
+                    <option value="moderate">보통</option>
+                    <option value="high">높음</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   목표
                 </label>
-                <select
-                  value={fitnessGoal}
-                  onChange={(e) => setFitnessGoal(e.target.value as 'loss' | 'maintain' | 'gain')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="loss">체중 감소</option>
-                  <option value="maintain">체중 유지</option>
-                  <option value="gain">체중 증가</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={fitnessGoal}
+                    onChange={(e) => setFitnessGoal(e.target.value as 'loss' | 'maintain' | 'gain')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
+                    required
+                  >
+                    <option value="loss">체중 감소</option>
+                    <option value="maintain">체중 유지</option>
+                    <option value="gain">체중 증가</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -184,15 +205,22 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   가슴 메인 운동
                 </label>
-                <select
-                  value={chestExercise}
-                  onChange={(e) => setChestExercise(e.target.value as ChestMainExercise)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="benchPress">벤치 프레스</option>
-                  <option value="inclineBenchPress">인클라인 벤치 프레스</option>
-                  <option value="declineBenchPress">디클라인 벤치 프레스</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={chestExercise}
+                    onChange={(e) => setChestExercise(e.target.value as ChestMainExercise)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
+                  >
+                    <option value="benchPress">벤치 프레스</option>
+                    <option value="inclineBenchPress">인클라인 벤치 프레스</option>
+                    <option value="declineBenchPress">디클라인 벤치 프레스</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -278,16 +306,23 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   세트 구성
                 </label>
-                <select
-                  value={setConfig}
-                  onChange={(e) => setSetConfig(e.target.value as SetConfiguration)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                >
-                  <option value="5x5">5세트 5회 (강도: 중상)</option>
-                  <option value="10x5">10세트 5회 (강도: 상)</option>
-                  <option value="6x5">6세트 5회 (강도: 중)</option>
-                  <option value="custom">직접 설정</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={setConfig}
+                    onChange={(e) => setSetConfig(e.target.value as SetConfiguration)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
+                  >
+                    <option value="5x5">5세트 5회 (강도: 중상)</option>
+                    <option value="10x5">10세트 5회 (강도: 상)</option>
+                    <option value="6x5">6세트 5회 (강도: 중)</option>
+                    <option value="custom">직접 설정</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               {setConfig === 'custom' && (

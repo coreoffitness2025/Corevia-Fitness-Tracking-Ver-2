@@ -402,7 +402,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 웜업 안내 카드 */}
           {showWarmupTips && (
-            <Card className="border-2 border-yellow-400 animate-pulse mb-4">
+            <Card className="border-2 border-yellow-400 mb-4">
               <div className="flex justify-between items-center">
                 <CardTitle className="flex items-center text-yellow-600">
                   <AlertTriangle size={20} className="mr-2" />
@@ -461,7 +461,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 <div className="flex flex-col md:flex-row justify-between items-center mb-4">
                   <CardTitle className="mb-2 md:mb-0">
                     <span className="flex items-center">
-                      메인 운동
+                      메인 운동: <span className="font-bold ml-2">{mainExercise.name}</span>
                       <Badge
                         variant={mainExercise.sets.some(set => set.isSuccess) ? "success" : "gray"}
                         className="ml-2"
@@ -478,6 +478,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       value={selectedMainExercise}
                       onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
                       className="w-full md:w-auto p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      style={{ paddingRight: '2.5rem', backgroundPosition: 'right 0.75rem center' }}
                     >
                       {mainExerciseOptions[part].map(option => (
                         <option key={option.value} value={option.value}>

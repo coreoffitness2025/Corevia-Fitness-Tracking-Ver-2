@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, weekdays } from '../../utils/dateUtils';
 import { ExercisePart } from '../../types';
-import { Camera, Download, Share } from 'lucide-react';
+import { Camera, Download, Share, Image } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import Button from '../common/Button';
 
@@ -79,6 +79,10 @@ const WorkoutList: React.FC = () => {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
+  
+  // 스탬프 이미지 상태
+  const [stampImage, setStampImage] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
   
   // 선택된 년도와 월에 따라 달력 데이터 생성
   const calendarDays = generateCalendarDays(currentYear, currentMonth);
@@ -266,47 +270,97 @@ const WorkoutList: React.FC = () => {
       });
       
       const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `운동스탬프_${selectedDate}.png`;
-      link.click();
+      setStampImage(dataUrl);
     } catch (error) {
       console.error('스탬프 캡처 중 오류:', error);
     }
   };
 
+  // 카메라로 촬영 (모바일 웹앱에서 작동)
+  const handleCameraCapture = () => {
+    setShowCamera(true);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment'; // 모바일 기기에서 카메라 활성화
+    input.onchange = (e: Event) => {
+      const fileInput = e.target as HTMLInputElement;
+      if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            setStampImage(reader.result);
+            setShowCamera(false);
+          }
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        setShowCamera(false);
+      }
+    };
+    input.click();
+  };
+
+  // 앨범에서 이미지 선택
+  const handleFileSelect = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: Event) => {
+      const fileInput = e.target as HTMLInputElement;
+      if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            setStampImage(reader.result);
+          }
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      }
+    };
+    input.click();
+  };
+
+  // 이미지 다운로드
+  const downloadStampImage = () => {
+    if (stampImage) {
+      const link = document.createElement('a');
+      link.href = stampImage;
+      link.download = `운동스탬프_${selectedDate}.png`;
+      link.click();
+    }
+  };
+
   // 스탬프 공유 기능
   const shareWorkoutStamp = async () => {
-    if (!workoutStampRef.current || selectedWorkouts.length === 0) return;
-    
-    try {
-      const canvas = await html2canvas(workoutStampRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        logging: false,
-        allowTaint: true,
-        useCORS: true
-      });
-      
-      const dataUrl = canvas.toDataURL('image/png');
-      
-      // 공유 API 사용 (if supported)
-      if (navigator.share) {
-        const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], `운동스탬프_${selectedDate}.png`, { type: 'image/png' });
-        
-        await navigator.share({
-          title: `${selectedDate} 운동 기록`,
-          text: '오늘의 운동 기록입니다!',
-          files: [file]
-        });
+    if (!stampImage) {
+      if (workoutStampRef.current) {
+        await captureWorkoutStamp();
       } else {
-        // 클립보드에 복사 (fallback)
-        await navigator.clipboard.writeText(`${selectedDate} 운동 기록`);
-        alert('이미지 URL이 클립보드에 복사되었습니다.');
+        return;
       }
-    } catch (error) {
-      console.error('스탬프 공유 중 오류:', error);
+    }
+    
+    if (stampImage) {
+      try {
+        // 공유 API 사용 (if supported)
+        if (navigator.share) {
+          const blob = await (await fetch(stampImage)).blob();
+          const file = new File([blob], `운동스탬프_${selectedDate}.png`, { type: 'image/png' });
+          
+          await navigator.share({
+            title: `${selectedDate} 운동 기록`,
+            text: '오늘의 운동 기록입니다!',
+            files: [file]
+          });
+        } else {
+          // 클립보드에 복사 (fallback)
+          await navigator.clipboard.writeText(`${selectedDate} 운동 기록`);
+          alert('이미지 URL이 클립보드에 복사되었습니다.');
+        }
+      } catch (error) {
+        console.error('스탬프 공유 중 오류:', error);
+      }
     }
   };
 
@@ -446,18 +500,27 @@ const WorkoutList: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={captureWorkoutStamp}
-              icon={<Download size={16} />}
+              icon={<Camera size={16} />}
             >
-              스탬프 저장
+              스탬프 생성
             </Button>
             <Button
               type="button"
               variant="outline" 
               size="sm"
-              onClick={shareWorkoutStamp}
-              icon={<Share size={16} />}
+              onClick={handleCameraCapture}
+              icon={<Camera size={16} />}
             >
-              스탬프 공유
+              카메라로 촬영
+            </Button>
+            <Button
+              type="button"
+              variant="outline" 
+              size="sm"
+              onClick={handleFileSelect}
+              icon={<Image size={16} />}
+            >
+              앨범에서 선택
             </Button>
           </div>
         )}
@@ -469,11 +532,59 @@ const WorkoutList: React.FC = () => {
         )}
       </div>
       
-      {/* 운동 스탬프 영역 */}
+      {/* 운동 스탬프 이미지 */}
+      {stampImage && (
+        <div className="mt-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              운동 스탬프
+            </h3>
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={downloadStampImage}
+                icon={<Download size={16} />}
+              >
+                저장
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={shareWorkoutStamp}
+                icon={<Share size={16} />}
+              >
+                공유
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setStampImage(null)}
+                icon={<span>✕</span>}
+              >
+                닫기
+              </Button>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <img
+              src={stampImage}
+              alt="운동 스탬프"
+              className="max-w-full h-auto rounded-lg shadow-lg"
+              style={{ maxHeight: '500px' }}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* 기존 운동 스탬프 영역 - 캡처용으로만 사용 */}
       {selectedWorkouts.length > 0 && (
         <div 
           ref={workoutStampRef}
-          className="bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6"
+          className={`bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6 ${stampImage ? 'hidden' : ''}`}
         >
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">

@@ -333,6 +333,47 @@ const QnaPage: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-[#4285F4]">
                 <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">문의 유형 선택</h2>
                 
+                {/* 검색 기능 추가 */}
+                <div className="mb-4 relative">
+                  <input
+                    type="text"
+                    className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    placeholder="운동 이름 검색..."
+                    onChange={(e) => {
+                      const searchTerm = e.target.value.toLowerCase();
+                      if (searchTerm) {
+                        // 모든 운동 데이터를 하나의 배열로 합침
+                        const allExercises = Object.values(exercisesByPart).flat();
+                        // 검색어와 일치하는 운동 찾기
+                        const foundExercise = allExercises.find(ex => 
+                          ex.name.toLowerCase().includes(searchTerm)
+                        );
+                        if (foundExercise) {
+                          // 해당 운동이 속한 부위 찾기
+                          for (const [part, exercises] of Object.entries(exercisesByPart)) {
+                            if (exercises.some(ex => ex.id === foundExercise.id)) {
+                              setSelectedPart(part as ExercisePart);
+                              setSelectedExercise(foundExercise);
+                              break;
+                            }
+                          }
+                        }
+                      }
+                    }}
+                    style={{
+                      backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\'%3E%3C/path%3E%3C/svg%3E")',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: '10px center',
+                      backgroundSize: '20px',
+                    }}
+                  />
+                  <div className="absolute right-2 top-2 text-gray-500 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transform -rotate-90">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                
                 {/* 운동 부위 선택 버튼 */}
                 <div className="flex flex-wrap gap-3 mb-6">
                   {(['chest', 'back', 'shoulder', 'leg'] as const).map((part) => (
@@ -584,7 +625,35 @@ const QnaPage: React.FC = () => {
         )}
 
         {activeTab === 'handbook' && (
-          <ExerciseFaq />
+          <div>
+            <div className="mb-4 relative">
+              <input
+                type="text"
+                className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="핸드북 검색..."
+                onChange={(e) => {
+                  // 검색 기능 구현
+                  const searchTerm = e.target.value.toLowerCase();
+                  // 검색어를 ExerciseFaq 컴포넌트에 전달할 수 있도록 상태 저장
+                  localStorage.setItem('handbookSearchTerm', searchTerm);
+                  // 검색 이벤트 발생
+                  document.dispatchEvent(new Event('handbookSearch'));
+                }}
+                style={{
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\'%3E%3C/path%3E%3C/svg%3E")',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: '10px center',
+                  backgroundSize: '20px',
+                }}
+              />
+              <div className="absolute right-2 top-2 text-gray-500 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transform -rotate-90">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+            <ExerciseFaq />
+          </div>
         )}
       </div>
     </Layout>

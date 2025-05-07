@@ -283,13 +283,14 @@ const NutritionScout = () => {
           if (field.includes('단백질') || field.includes('protein') || field.includes('단백')) {
             return '단백질(g/100g)';
           }
-          // 지방 표준화
-          if (field.includes('지방') || field.includes('fat')) {
+          // 지방 표준화 - 더 많은 키워드 추가
+          if (field.includes('지방') || field.includes('fat') || field.includes('지방함량') || field.includes('지방량')) {
             return '지방(g/100g)';
           }
-          // 코멘트 표준화 (모든 가능한 코멘트 필드명 포함)
+          // 코멘트 표준화 - 모든 가능한 코멘트 필드명 포함
           if (field.includes('코멘트') || field.includes('comment') || field.includes('설명') || 
-              field.includes('메모') || field.includes('비고') || field.includes('특징')) {
+              field.includes('메모') || field.includes('비고') || field.includes('특징') || 
+              field.includes('참고사항') || field.includes('note')) {
             return '코멘트';
           }
           return field;
@@ -309,38 +310,33 @@ const NutritionScout = () => {
             continue;
           }
           
-          const row: any = {};
+          const row: Record<string, any> = {};
           
-          headers.forEach((header, j) => {
-            const standardHeader = standardizedHeaders[j];
+          // 헤더를 통한 값 매핑
+          standardizedHeaders.forEach((standardHeader, j) => {
             const value = values[j]?.trim() || '';
-            row[standardHeader] = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
+            
+            // 숫자 값을 숫자 타입으로 변환, 문자열은 그대로
+            if (!isNaN(parseFloat(value)) && standardHeader !== '코멘트') {
+              row[standardHeader] = parseFloat(value);
+            } else {
+              row[standardHeader] = value;
+            }
           });
           
           // 요리명이 있는 경우만 추가
           if (row['요리명']) {
+            // 필수 필드 확인 및 기본값 설정
+            if (row['탄수화물(g/100g)'] === undefined) row['탄수화물(g/100g)'] = 0;
+            if (row['단백질(g/100g)'] === undefined) row['단백질(g/100g)'] = 0;
+            if (row['지방(g/100g)'] === undefined) row['지방(g/100g)'] = 0;
+            
             // 코멘트 필드가 없다면 빈 문자열로 설정
-            if (!row['코멘트']) {
-              // 코멘트 필드 표준화 - 모든 가능한 코멘트 필드명 확인
-              for (const key of Object.keys(row)) {
-                if (key.includes('코멘트') || key.includes('comment') || 
-                    key.includes('설명') || key.includes('메모') || 
-                    key.includes('비고') || key.includes('특징')) {
-                  row['코멘트'] = row[key];
-                  break;
-                }
-              }
-              
-              // 그래도 없으면 빈 문자열 설정
-              if (!row['코멘트']) {
-                row['코멘트'] = '';
-              }
+            if (row['코멘트'] === undefined || row['코멘트'] === '') {
+              row['코멘트'] = '';
             }
             
-            // 코멘트 디버깅 로그 (각 항목의 코멘트 확인)
-            if (row['요리명'] === '비빔밥') {
-              console.log('비빔밥 코멘트:', row['코멘트']);
-            }
+            console.log(`항목 추가: ${row['요리명']} - 지방: ${row['지방(g/100g)']} - 코멘트: ${row['코멘트'].substring(0, 20)}...`);
             
             data.push(row as NutritionData);
           }
@@ -509,6 +505,7 @@ const NutritionScout = () => {
           <div 
             ref={autoCompleteRef}
             className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg"
+            style={{ right: 0, left: 0 }}
           >
             {suggestions.map((suggestion, index) => {
               // 검색어 하이라이트를 위한 처리
@@ -613,13 +610,13 @@ const NutritionScout = () => {
               <div className="flex justify-between mb-1 items-center">
                 <span className="text-gray-700 dark:text-gray-300">지방</span>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  {formatNumber(searchResult['지방(g/100g)'])}g/100g
+                  {formatNumber(searchResult['지방(g/100g)'] || 0)}g/100g
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
                 <div 
                   className="bg-[#ea4335] h-2.5 rounded-full" 
-                  style={{ width: `${Math.min(100, searchResult['지방(g/100g)'] * 2)}%` }}
+                  style={{ width: `${Math.min(100, (searchResult['지방(g/100g)'] || 0) * 2)}%` }}
                 ></div>
               </div>
             </div>
@@ -634,7 +631,7 @@ const NutritionScout = () => {
           </div>
           
           {/* 코멘트 */}
-          {searchResult.코멘트 && searchResult.코멘트.trim() !== '' && (
+          {searchResult?.코멘트 && searchResult.코멘트.trim() !== '' && (
             <div className="p-5 bg-[#f0f0f0] dark:bg-[#1E2235] border-t border-gray-200 dark:border-gray-600">
               <div className="bg-[#E8F0FE] dark:bg-[#1A3A6B] border-l-4 border-[#4285F4] p-4 rounded-r">
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
