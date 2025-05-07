@@ -462,7 +462,7 @@ const WorkoutList: React.FC = () => {
               <select
                 value={currentYear}
                 onChange={(e) => goToSelectedMonth(parseInt(e.target.value), currentMonth)}
-                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-8 appearance-none"
+                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
               >
                 {yearOptions.map(year => (
                   <option key={year} value={year}>{year}년</option>
@@ -472,13 +472,13 @@ const WorkoutList: React.FC = () => {
                 <select
                   value={currentMonth}
                   onChange={(e) => goToSelectedMonth(currentYear, parseInt(e.target.value))}
-                  className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-8 appearance-none"
+                  className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
                 >
                   {monthOptions.map(month => (
                     <option key={month.value} value={month.value}>{month.label}</option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700 dark:text-gray-300">
                   <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                     <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                   </svg>

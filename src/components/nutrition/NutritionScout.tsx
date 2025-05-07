@@ -475,11 +475,11 @@ const NutritionScout = () => {
           </div>
           
           {/* 코멘트 */}
-          {searchResult?.코멘트 && searchResult.코멘트.trim() !== '' && (
+          {searchResult?.코멘트 && typeof searchResult.코멘트 === 'string' && searchResult.코멘트.trim() !== '' && (
             <div className="p-5 bg-[#f0f0f0] dark:bg-[#1E2235] border-t border-gray-200 dark:border-gray-600">
               <div className="bg-[#E8F0FE] dark:bg-[#1A3A6B] border-l-4 border-[#4285F4] p-4 rounded-r">
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
-                  {typeof searchResult.코멘트 === 'string' ? searchResult.코멘트.replace(/\\n/g, '\n') : ''}
+                  {searchResult.코멘트.replace(/\\n/g, '\n')}
                 </p>
               </div>
             </div>

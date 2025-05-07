@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Dumbbell, Utensils, Scale, Pizza, Coffee, Heart } from 'lucide-react';
 import Card, { CardTitle } from '../common/Card';
 
@@ -20,6 +20,7 @@ const ExerciseFaq: React.FC<ExerciseFaqProps> = ({ searchTerm = '' }) => {
   const [selectedCategory, setSelectedCategory] = useState<HandbookCategory | 'all'>('all');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [filteredCards, setFilteredCards] = useState<HandbookItem[]>(handbookData);
+  const expandedCardRef = useRef<HTMLDivElement>(null);
 
   // 카드 확장/축소 토글
   const toggleCard = (id: string) => {
@@ -57,6 +58,18 @@ const ExerciseFaq: React.FC<ExerciseFaqProps> = ({ searchTerm = '' }) => {
     
     setFilteredCards(filtered);
   }, [searchTerm, selectedCategory]);
+
+  // 확장된 카드로 스크롤
+  useEffect(() => {
+    if (expandedCard && expandedCardRef.current) {
+      setTimeout(() => {
+        expandedCardRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        });
+      }, 100);
+    }
+  }, [expandedCard]);
 
   // 핸드북 검색 이벤트 리스너
   useEffect(() => {
@@ -124,47 +137,48 @@ const ExerciseFaq: React.FC<ExerciseFaqProps> = ({ searchTerm = '' }) => {
       ) : (
         <div className="space-y-4">
           {filteredCards.map((card) => (
-            <Card 
-              key={card.id}
-              className={`overflow-hidden transition-all duration-300 ${
-                expandedCard === card.id ? 'ring-2 ring-blue-500' : 'hover:bg-white/50 dark:hover:bg-gray-700/50'
-              }`}
-            >
-              <div 
-                className="p-4 cursor-pointer flex justify-between items-center"
-                onClick={() => toggleCard(card.id)}
+            <div key={card.id} ref={expandedCard === card.id ? expandedCardRef : null}>
+              <Card 
+                className={`overflow-hidden transition-all duration-300 ${
+                  expandedCard === card.id ? 'ring-2 ring-blue-500' : 'hover:bg-white/50 dark:hover:bg-gray-700/50'
+                }`}
               >
-                <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
-                  {card.title}
-                </CardTitle>
-                <span className={`transform transition-transform duration-300 ${
-                  expandedCard === card.id ? 'rotate-90' : ''
-                }`}>
-                  <ChevronRight size={20} />
-                </span>
-              </div>
-              
-              {expandedCard === card.id && (
-                <div className="p-4 pt-0">
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                      {card.content}
-                    </p>
-                    
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {card.tags.map((tag, i) => (
-                        <span 
-                          key={i} 
-                          className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                <div 
+                  className="p-4 cursor-pointer flex justify-between items-center"
+                  onClick={() => toggleCard(card.id)}
+                >
+                  <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
+                    {card.title}
+                  </CardTitle>
+                  <span className={`transform transition-transform duration-300 ${
+                    expandedCard === card.id ? 'rotate-90' : ''
+                  }`}>
+                    <ChevronRight size={20} />
+                  </span>
+                </div>
+                
+                {expandedCard === card.id && (
+                  <div className="p-4 pt-0 animate-fadeIn">
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                        {card.content}
+                      </p>
+                      
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {card.tags.map((tag, i) => (
+                          <span 
+                            key={i} 
+                            className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </Card>
+                )}
+              </Card>
+            </div>
           ))}
         </div>
       )}
