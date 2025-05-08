@@ -1,27 +1,33 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
+import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/common/Layout';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { UserProfile } from '../types';
 import Card from '../components/common/Card';
+import Button from '../components/common/Button';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import { LogOut, Settings, FileText, Info } from 'lucide-react';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
-  const [userProfile, setUserProfile] = useState<Partial<UserProfile> | null>(null);
+  const { currentUser, userProfile: authUserProfile, logout } = useAuth();
+  const [userSettings, setUserSettings] = useState<Partial<UserProfile> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (user?.uid) {
+      if (currentUser?.uid) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            setUserProfile(userDoc.data() as Partial<UserProfile>);
+            setUserSettings(userDoc.data() as Partial<UserProfile>);
+          } else if (authUserProfile) {
+            // 파이어스토어에 문서가 없지만 AuthContext에 userProfile이 있는 경우
+            setUserSettings(authUserProfile);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -29,36 +35,51 @@ const SettingsPage = () => {
           setIsLoading(false);
         }
       } else {
-        // 로그인하지 않은 경우 로딩 상태 해제
+        // 로딩 상태 해제
         setIsLoading(false);
       }
     };
 
     fetchUserProfile();
-  }, [user]);
+  }, [currentUser, authUserProfile]);
 
   const handleLogout = async () => {
-    logout();
-    navigate('/login');
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('로그아웃 중 오류가 발생했습니다:', error);
+    }
   };
 
   // 개인화 설정 저장 핸들러
   const handleSavePersonalization = async (profile: Partial<UserProfile>) => {
     try {
       // 로그인한 사용자인 경우 파이어스토어에 저장
-      if (user?.uid) {
-        const userRef = doc(db, 'users', user.uid);
+      if (currentUser?.uid) {
+        const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, profile);
       }
       
       // 로컬 상태 업데이트
-      setUserProfile(prev => ({...prev, ...profile}));
+      setUserSettings(prev => ({...prev, ...profile}));
       setIsPersonalizationModalOpen(false);
     } catch (error) {
       console.error('Error saving personalization settings:', error);
       alert('설정을 저장하는 중 오류가 발생했습니다.');
     }
   };
+
+  // 전체 로딩 중이면 로딩 표시
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-96">
+          <LoadingSpinner />
+        </div>
+      </Layout>
+    );
+  }
 
   // 메인 운동 이름 가져오기
   const getMainExerciseName = (key: string | undefined) => {
@@ -108,6 +129,9 @@ const SettingsPage = () => {
     return configDesc[config] || config;
   };
 
+  // 사용자 프로필 데이터 (AuthContext의 userProfile과 파이어스토어에서 불러온 데이터 병합)
+  const userProfile = userSettings || authUserProfile;
+
   return (
     <Layout>
       <div className="mb-6">
@@ -119,23 +143,23 @@ const SettingsPage = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
-            {user?.photoURL ? (
+            {currentUser?.photoURL ? (
               <img
-                src={user.photoURL}
-                alt={user.displayName || '사용자'}
+                src={currentUser.photoURL}
+                alt={currentUser.displayName || '사용자'}
                 className="w-12 h-12 rounded-full mr-4"
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold mr-4">
-                {user?.displayName?.[0] || 'U'}
+                {currentUser?.displayName?.[0] || 'U'}
               </div>
             )}
 
             <div>
               <h2 className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                {user?.displayName || '로그인하지 않음'}
+                {currentUser?.displayName || '로그인하지 않음'}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">{user?.email || '로그인하여 설정을 저장하세요'}</p>
+              <p className="text-gray-600 dark:text-gray-400">{currentUser?.email || '로그인하여 설정을 저장하세요'}</p>
             </div>
           </div>
         </div>
@@ -146,12 +170,13 @@ const SettingsPage = () => {
             <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
               운동 개인화 설정
             </h3>
-            <button
+            <Button
               onClick={() => setIsPersonalizationModalOpen(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              variant="primary"
+              size="md"
             >
               {userProfile ? '설정 변경' : '새로 설정하기'}
-            </button>
+            </Button>
           </div>
           
           {!isLoading && userProfile && (
@@ -273,6 +298,17 @@ const SettingsPage = () => {
                   </div>
                 </div>
               )}
+
+              {/* 목표 칼로리 정보 */}
+              {userProfile.targetCalories && (
+                <div className="mt-6">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">목표 칼로리</h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">일일 목표 칼로리</p>
+                    <p className="font-medium">{userProfile.targetCalories} kcal</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
@@ -285,13 +321,16 @@ const SettingsPage = () => {
         </div>
 
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {user && (
-            <button
+          {currentUser && (
+            <Button
               onClick={handleLogout}
+              variant="ghost"
+              size="md"
               className="w-full text-left px-6 py-4 text-red-500 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+              icon={<LogOut size={16} />}
             >
               로그아웃
-            </button>
+            </Button>
           )}
 
           <a

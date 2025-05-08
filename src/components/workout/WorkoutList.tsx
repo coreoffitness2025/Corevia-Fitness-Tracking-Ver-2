@@ -1,11 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, weekdays } from '../../utils/dateUtils';
-import { ExercisePart } from '../../types';
-import { Camera, Download, Share, Image } from 'lucide-react';
+import { ExercisePart, Session, AccessoryExercise } from '../../types';
+import { Camera, Download, Share, Image, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import Button from '../common/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from '../../firebase/firebaseConfig';
+import LoadingSpinner from '../common/LoadingSpinner';
 
+// WorkoutSet 인터페이스 로컬 정의
 interface WorkoutSet {
   reps: number;
   weight: number;
@@ -21,10 +26,7 @@ interface Workout {
     weight: number;
     sets: WorkoutSet[];
   };
-  accessoryExercises?: Array<{
-    name: string;
-    sets: WorkoutSet[];
-  }>;
+  accessoryExercises?: AccessoryExercise[];
   notes?: string;
   isAllSuccess: boolean;
   successSets?: number;
@@ -72,6 +74,7 @@ const getPartLabel = (part: ExercisePart): string => {
 
 const WorkoutList: React.FC = () => {
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
   const workoutStampRef = useRef<HTMLDivElement>(null);
   
@@ -85,8 +88,57 @@ const WorkoutList: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   
+  // 세션 데이터 상태
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
   // 선택된 년도와 월에 따라 달력 데이터 생성
   const calendarDays = generateCalendarDays(currentYear, currentMonth);
+  
+  // Firebase에서 운동 세션 데이터 불러오기
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!userProfile?.uid) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // 현재 년월의 시작일과 종료일 계산
+        const startDate = new Date(currentYear, currentMonth, 1);
+        const endDate = new Date(currentYear, currentMonth + 1, 0);
+        
+        // 세션 데이터 쿼리
+        const sessionsQuery = query(
+          collection(db, 'sessions'),
+          where('userId', '==', userProfile.uid),
+          where('date', '>=', startDate),
+          where('date', '<=', endDate),
+          orderBy('date', 'desc')
+        );
+        
+        const querySnapshot = await getDocs(sessionsQuery);
+        const sessionData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            ...data,
+            id: doc.id,
+            date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date)
+          } as Session;
+        });
+        
+        setSessions(sessionData);
+      } catch (err) {
+        console.error('Error fetching sessions:', err);
+        setError('운동 기록을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSessions();
+  }, [userProfile, currentYear, currentMonth]);
   
   // 이전/다음 달 이동 함수
   const goToPreviousMonth = () => {
@@ -132,112 +184,14 @@ const WorkoutList: React.FC = () => {
     { value: 11, label: '12월' }
   ];
   
-  // 임시 데이터 (나중에 실제 데이터로 교체)
-  const workouts: Workout[] = [
-    {
-      id: '1',
-      date: '2024-03-20',
-      part: 'chest',
-      mainExercise: {
-        name: '벤치프레스',
-        weight: 80,
-        sets: [
-          { reps: 10, weight: 80, isSuccess: true },
-          { reps: 10, weight: 80, isSuccess: true },
-          { reps: 8, weight: 80, isSuccess: false },
-          { reps: 10, weight: 80, isSuccess: true },
-          { reps: 10, weight: 80, isSuccess: true }
-        ]
-      },
-      accessoryExercises: [
-        {
-          name: '인클라인 덤벨 프레스',
-          sets: [
-            { reps: 12, weight: 20, isSuccess: true },
-            { reps: 12, weight: 20, isSuccess: true },
-            { reps: 10, weight: 20, isSuccess: true }
-          ]
-        },
-        {
-          name: '케이블 플라이',
-          sets: [
-            { reps: 15, weight: 15, isSuccess: true },
-            { reps: 15, weight: 15, isSuccess: true }
-          ]
-        }
-      ],
-      notes: '오늘은 컨디션이 좋아서 잘 진행했습니다. 다음에는 벤치프레스 무게를 조금 더 올려볼 예정입니다.',
-      isAllSuccess: false,
-      successSets: 4
-    },
-    {
-      id: '2',
-      date: '2024-03-18',
-      part: 'back',
-      mainExercise: {
-        name: '데드리프트',
-        weight: 100,
-        sets: [
-          { reps: 8, weight: 100, isSuccess: true },
-          { reps: 8, weight: 100, isSuccess: true },
-          { reps: 7, weight: 100, isSuccess: false }
-        ]
-      },
-      accessoryExercises: [
-        {
-          name: '랫 풀다운',
-          sets: [
-            { reps: 12, weight: 60, isSuccess: true },
-            { reps: 12, weight: 60, isSuccess: true }
-          ]
-        }
-      ],
-      notes: '허리 통증이 약간 있어서 조심하며 진행했습니다.',
-      isAllSuccess: false,
-      successSets: 2
-    },
-    // 현재 날짜에 대한 더미 데이터 추가
-    {
-      id: '3',
-      date: formatDate(new Date()), // 오늘 날짜
-      part: 'shoulder',
-      mainExercise: {
-        name: '오버헤드 프레스',
-        weight: 60,
-        sets: [
-          { reps: 8, weight: 60, isSuccess: true },
-          { reps: 8, weight: 60, isSuccess: true },
-          { reps: 10, weight: 60, isSuccess: true }
-        ]
-      },
-      accessoryExercises: [
-        {
-          name: '사이드 레터럴 레이즈',
-          sets: [
-            { reps: 12, weight: 10, isSuccess: true },
-            { reps: 12, weight: 10, isSuccess: true }
-          ]
-        }
-      ],
-      notes: '어깨 컨디션이 좋았습니다.',
-      isAllSuccess: true,
-      successSets: 3
-    }
-  ];
-
-  // 달력 연도/월 표시 수정
-  const monthYearText = new Date(currentYear, currentMonth).toLocaleDateString('ko-KR', { 
-    year: 'numeric', 
-    month: 'long' 
-  });
-
   // 날짜별 운동 기록 그룹화
-  const workoutsByDate = workouts.reduce<Record<string, Workout[]>>((acc, workout) => {
-    const date = workout.date;
-    if (!acc[date]) {
-      acc[date] = [];
+  const workoutsByDate = sessions.reduce<Record<string, Session[]>>((acc, session) => {
+    // date가 Date 객체인 경우 문자열로 변환
+    const dateStr = formatDate(session.date);
+    if (!acc[dateStr]) {
+      acc[dateStr] = [];
     }
-    acc[date].push(workout);
+    acc[dateStr].push(session);
     return acc;
   }, {});
   
@@ -444,6 +398,22 @@ const WorkoutList: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* 달력 */}
@@ -451,12 +421,15 @@ const WorkoutList: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">운동 달력</h3>
           <div className="flex items-center space-x-4">
-            <button 
+            <Button 
               onClick={goToPreviousMonth} 
+              variant="ghost"
+              size="sm"
+              icon={<ChevronLeft size={16} />}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              &lt;
-            </button>
+              이전
+            </Button>
             
             <div className="flex items-center space-x-2">
               <select
@@ -486,12 +459,15 @@ const WorkoutList: React.FC = () => {
               </div>
             </div>
             
-            <button 
+            <Button 
               onClick={goToNextMonth} 
+              variant="ghost"
+              size="sm"
+              icon={<ChevronRight size={16} />}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              &gt;
-            </button>
+              다음
+            </Button>
           </div>
         </div>
         
@@ -539,8 +515,7 @@ const WorkoutList: React.FC = () => {
                   <div className="mt-1 flex flex-col gap-1">
                     {dayWorkouts.map((workout, j) => {
                       // 주요 정보 추출
-                      const mainExerciseName = workout.mainExercise.name;
-                      const mainExerciseWeight = workout.mainExercise.weight;
+                      const mainExerciseWeight = workout.mainExercise.weight || 0;
                       const partLabel = getPartLabel(workout.part);
                       const statusLabel = workout.isAllSuccess ? '성공' : '실패';
                       
@@ -548,11 +523,10 @@ const WorkoutList: React.FC = () => {
                         <div 
                           key={`workout-${j}`} 
                           className={`text-xs px-1 py-0.5 rounded-sm truncate ${getPartColor(workout.part, workout.isAllSuccess)}`}
-                          title={`${partLabel} - ${mainExerciseName} ${mainExerciseWeight}kg - ${statusLabel}`}
+                          title={`${partLabel} - ${mainExerciseWeight}kg - ${statusLabel}`}
                         >
                           <span className="font-medium">{partLabel}</span>
                           <span className="mx-1">-</span>
-                          <span className="hidden md:inline">{mainExerciseName}</span>
                           <span>{mainExerciseWeight}kg</span>
                           <span className="ml-1">
                             {workout.isAllSuccess ? '✓' : '✗'}
@@ -581,27 +555,33 @@ const WorkoutList: React.FC = () => {
         
         {selectedWorkouts.length > 0 && (
           <div className="flex space-x-2">
-            <button
-              type="button"
-              className="flex items-center px-3 py-1 rounded text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
+            <Button
               onClick={captureWorkoutStamp}
+              variant="secondary"
+              size="sm"
+              icon={<Camera size={16} />}
+              className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
             >
-              <Camera size={16} className="mr-1" /> 스탬프 생성
-            </button>
-            <button
-              type="button"
-              className="flex items-center px-3 py-1 rounded text-sm bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
+              스탬프 생성
+            </Button>
+            <Button
               onClick={handleCameraCapture}
+              variant="secondary"
+              size="sm"
+              icon={<Camera size={16} />}
+              className="bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
             >
-              <Camera size={16} className="mr-1" /> 카메라로 촬영
-            </button>
-            <button
-              type="button"
-              className="flex items-center px-3 py-1 rounded text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-800 dark:text-purple-200"
+              카메라로 촬영
+            </Button>
+            <Button
               onClick={handleFileSelect}
+              variant="secondary"
+              size="sm"
+              icon={<Image size={16} />}
+              className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-800 dark:text-purple-200"
             >
-              <Image size={16} className="mr-1" /> 앨범에서 선택
-            </button>
+              앨범에서 선택
+            </Button>
           </div>
         )}
         
@@ -620,27 +600,33 @@ const WorkoutList: React.FC = () => {
               운동 스탬프
             </h3>
             <div className="flex space-x-2">
-              <button
-                type="button"
-                className="flex items-center px-3 py-1 rounded text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
+              <Button
                 onClick={downloadStampImage}
+                variant="secondary"
+                size="sm"
+                icon={<Download size={16} />}
+                className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
               >
-                <Download size={16} className="mr-1" /> 저장
-              </button>
-              <button
-                type="button"
-                className="flex items-center px-3 py-1 rounded text-sm bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
+                저장
+              </Button>
+              <Button
                 onClick={shareWorkoutStamp}
+                variant="secondary"
+                size="sm"
+                icon={<Share size={16} />}
+                className="bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
               >
-                <Share size={16} className="mr-1" /> 공유
-              </button>
-              <button
-                type="button"
-                className="flex items-center px-3 py-1 rounded text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200"
+                공유
+              </Button>
+              <Button
                 onClick={() => setStampImage(null)}
+                variant="secondary"
+                size="sm"
+                icon={<X size={16} />}
+                className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200"
               >
-                <span>✕</span> 닫기
-              </button>
+                닫기
+              </Button>
             </div>
           </div>
           <div className="flex justify-center">
@@ -686,10 +672,12 @@ const WorkoutList: React.FC = () => {
                     <span className={`py-1 px-2 rounded-md text-sm mr-2 ${getPartColor(workout.part, workout.isAllSuccess)}`}>
                       {getPartLabel(workout.part)}
                     </span>
-                    <h4 className="font-semibold">{workout.mainExercise.name}</h4>
                   </div>
-                  <span className="text-sm text-gray-500">
-                    {workout.successSets}/{workout.mainExercise.sets.length} 세트
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
+                    {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
                   </span>
                 </div>
                 
@@ -706,7 +694,7 @@ const WorkoutList: React.FC = () => {
                 
                 {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
                   <div className="text-sm text-gray-600 dark:text-gray-300">
-                    <span className="font-medium">보조 운동:</span> {workout.accessoryExercises.map(ex => ex.name).join(', ')}
+                    <span className="font-medium">보조 운동:</span> {workout.accessoryExercises.map(ex => ex.name || '보조운동').join(', ')}
                   </div>
                 )}
               </div>
@@ -744,10 +732,9 @@ const WorkoutList: React.FC = () => {
                   <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full text-sm mr-2">
                     {getPartLabel(workout.part)}
                   </span>
-                  <h3 className="text-lg font-semibold">{workout.mainExercise.name}</h3>
                 </div>
                 <span className="text-gray-600 dark:text-gray-400 text-sm">
-                  {new Date(workout.date).toLocaleTimeString('ko-KR', { 
+                  {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                   })}
@@ -787,11 +774,16 @@ const WorkoutList: React.FC = () => {
                 <div className="mb-6">
                   <h4 className="text-md font-medium mb-2">보조 운동</h4>
                   <div className="space-y-3">
-                    {workout.accessoryExercises.map((exercise, exIndex) => (
-                      <div key={exIndex} className="ml-2">
-                        <p className="text-gray-700 dark:text-gray-300 mb-1">{exercise.name}</p>
-                        <div className="flex flex-wrap gap-2">
-                          {exercise.sets.map((set, setIndex) => (
+                    {workout.accessoryExercises.map((exercise, exIndex) => {
+                      const exerciseSets = exercise.sets;
+                      return (
+                        <div key={exIndex} className="ml-2">
+                          <p className="text-gray-700 dark:text-gray-300 mb-1">{exercise.name || '보조운동'}</p>
+                          {typeof exerciseSets === 'number' ? (
+                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-sm">
+                              {exercise.weight}kg x {exercise.reps}회 x {exerciseSets}세트
+                            </div>
+                          ) : Array.isArray(exerciseSets) && exerciseSets.map((set, setIndex) => (
                             <div 
                               key={setIndex} 
                               className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-sm"
@@ -800,8 +792,8 @@ const WorkoutList: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

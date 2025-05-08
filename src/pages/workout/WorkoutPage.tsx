@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../contexts/AuthContext';
 import Layout from '../../components/common/Layout';
 import WorkoutForm from '../../components/workout/WorkoutForm';
 import WorkoutList from '../../components/workout/WorkoutList';
 import WorkoutGraph from '../../components/workout/WorkoutGraph';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 type WorkoutTab = 'input' | 'records' | 'graph';
 
 const WorkoutPage: React.FC = () => {
-  const { user } = useAuthStore();
+  const { userProfile, loading, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<WorkoutTab>('input');
 
   const today = new Date().toLocaleDateString('ko-KR', {
@@ -18,8 +19,27 @@ const WorkoutPage: React.FC = () => {
     weekday: 'long'
   });
   
-  // 더미 사용자 정보
-  const displayName = user?.displayName || '테스트 사용자';
+  // 로딩 중이면 로딩 스피너 표시
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-96">
+          <LoadingSpinner />
+        </div>
+      </Layout>
+    );
+  }
+
+  // 인증되지 않았으면 로그인 필요 메시지 표시
+  if (!isAuthenticated || !userProfile) {
+    return (
+      <Layout>
+        <div className="text-center py-10">
+          <p className="text-lg text-gray-600 dark:text-gray-300">로그인이 필요합니다.</p>
+        </div>
+      </Layout>
+    );
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -38,7 +58,7 @@ const WorkoutPage: React.FC = () => {
     <Layout>
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-          안녕하세요, {displayName}님!
+          안녕하세요, {userProfile.displayName || '회원님'}!
         </h1>
         <p className="text-gray-600 dark:text-gray-400">{today}</p>
       </div>

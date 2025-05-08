@@ -1,9 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import { useAuth } from '../contexts/AuthContext';
+import { signInWithGoogle, signInWithEmail } from '../firebase/firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 
 const LoginButton = ({ 
   isLoading, 
@@ -97,7 +100,7 @@ const EmailLoginForm = ({
       </div>
       <LoginButton 
         isLoading={isLoading} 
-        onClick={() => onSubmit(email, password, rememberMe)}
+        onClick={() => {}}
         type="email"
       />
     </form>
@@ -106,72 +109,112 @@ const EmailLoginForm = ({
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { updateProfile } = useAuth();
+  const { currentUser, updateProfile, isAuthenticated } = useAuth();
   const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAuthStateChange = async (user: User | null) => {
-    if (user) {
-      setIsLoading(true);
-      try {
-        const userProfile: UserProfile = {
-          uid: user.uid,
-          displayName: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          height: 170,
-          weight: 70,
-          age: 25,
-          gender: 'male',
-          activityLevel: 'moderate',
-          fitnessGoal: 'maintain',
-          experience: {
-            years: 0,
-            level: 'beginner',
-            squat: {
-              maxWeight: 0,
-              maxReps: 0
-            }
-          }
-        };
-        setUserProfile(userProfile);
+  // 이미 로그인되어 있으면 홈으로 리디렉션
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkIfNeedsPersonalization();
+    }
+  }, [isAuthenticated]);
+
+  // 사용자가 개인화 설정이 필요한지 확인
+  const checkIfNeedsPersonalization = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as UserProfile;
+        // 중요 필드가 없으면 개인화 필요
+        if (!userData.height || !userData.weight || !userData.age) {
+          setUserProfile(userData);
+          setIsPersonalizationOpen(true);
+        } else {
+          // 개인화 완료된 사용자는 홈으로
+          navigate('/');
+        }
+      } else {
+        // 문서가 없으면 개인화 필요
         setIsPersonalizationOpen(true);
-      } catch (error) {
-        console.error('Error creating user profile:', error);
-      } finally {
-        setIsLoading(false);
       }
+    } catch (error) {
+      console.error('Error checking personalization:', error);
+      setError('사용자 데이터를 확인하는 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await signInWithGoogle();
+      // Auth 컨텍스트의 useEffect가 로그인 상태를 감지하고 처리
+    } catch (error) {
+      console.error('Google 로그인 오류:', error);
+      setError('Google 로그인 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (email: string, password: string, rememberMe: boolean) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await signInWithEmail(email, password);
+      // Auth 컨텍스트의 useEffect가 로그인 상태를 감지하고 처리
+    } catch (error) {
+      console.error('이메일 로그인 오류:', error);
+      setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handlePersonalizationSave = async (profile: Partial<UserProfile>) => {
-    setUserProfile(profile);
-    setIsPersonalizationOpen(false);
-    navigate('/');
+    try {
+      await updateProfile(profile);
+      setIsPersonalizationOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('프로필 저장 오류:', error);
+      setError('프로필 저장 중 오류가 발생했습니다.');
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <LoginHeader />
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+        
         <div className="space-y-4">
           <LoginButton 
             isLoading={isLoading} 
-            onClick={() => handleAuthStateChange({ uid: 'test', displayName: 'Test User', email: 'test@example.com' } as User)}
+            onClick={handleGoogleLogin}
           />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">또는</span>
+            </div>
+          </div>
           <EmailLoginForm 
-            onSubmit={async (email, password, rememberMe) => {
-              setIsLoading(true);
-              try {
-                // TODO: Implement email login
-                console.log('Email login:', { email, password, rememberMe });
-              } catch (error) {
-                console.error('Login error:', error);
-              } finally {
-                setIsLoading(false);
-              }
-            }} 
+            onSubmit={handleEmailLogin} 
             isLoading={isLoading} 
           />
         </div>

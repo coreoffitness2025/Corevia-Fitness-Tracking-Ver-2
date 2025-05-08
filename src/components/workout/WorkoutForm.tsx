@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   ExercisePart, 
   Session, 
@@ -78,7 +78,7 @@ const warmupExercises = {
 };
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
-  const { user } = useAuthStore();
+  const { userProfile } = useAuth();
   const [part, setPart] = useState<ExercisePart>('chest');
   const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>('benchPress');
   const [mainExercise, setMainExercise] = useState({
@@ -302,14 +302,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!userProfile) return;
 
     // 최근 7일 내의 기록만 저장
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const sessionData: Session = {
-      userId: user.uid,
+      userId: userProfile.uid,
       date: new Date(),
       part,
       mainExercise: {
@@ -328,7 +328,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       // 기존 기록 확인
       const q = query(
         collection(db, 'sessions'),
-        where('userId', '==', user.uid),
+        where('userId', '==', userProfile.uid),
         where('date', '>=', Timestamp.fromDate(sevenDaysAgo))
       );
       const querySnapshot = await getDocs(q);

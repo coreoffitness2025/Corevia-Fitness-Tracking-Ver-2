@@ -4,6 +4,9 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 
+// 보호된 라우트 컴포넌트 import
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
 // Pages
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
@@ -13,6 +16,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import WorkoutPage from './pages/workout/WorkoutPage';
 import FoodPage from './pages/food/FoodPage';
 import RegisterPage from './pages/RegisterPage';
+import LoginPage from './pages/LoginPage';
 
 const App: React.FC = () => {
   return (
@@ -20,18 +24,43 @@ const App: React.FC = () => {
       <AuthProvider>
         <Toaster position="top-center" />
         <Routes>
-          {/* 항상 로그인된 것처럼 동작 - 리디렉션 없이 직접 페이지 렌더링 */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/workout/*" element={<WorkoutPage />} />
-          <Route path="/food/*" element={<FoodPage />} />
-          <Route path="/qna" element={<QnaPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          {/* 공개 라우트 */}
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           
-          {/* 로그인 페이지는 항상 홈페이지로 리디렉션 */}
-          <Route path="/login" element={<Navigate to="/" replace />} />
+          {/* 보호된 라우트 */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/workout/*" element={
+            <ProtectedRoute>
+              <WorkoutPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/food/*" element={
+            <ProtectedRoute>
+              <FoodPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/qna" element={
+            <ProtectedRoute>
+              <QnaPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
           
+          {/* 404 페이지 */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>

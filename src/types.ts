@@ -111,6 +111,7 @@ export interface UserProfile {
   gender: 'male' | 'female';
   activityLevel: 'low' | 'moderate' | 'high';
   fitnessGoal: 'loss' | 'maintain' | 'gain';
+  targetCalories?: number;
   experience: {
     years: number;
     level: 'beginner' | 'intermediate' | 'advanced';
