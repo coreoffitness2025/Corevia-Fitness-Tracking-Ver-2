@@ -4,8 +4,8 @@ import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import { useAuth } from '../contexts/AuthContext';
-import { signInWithGoogle, signInWithEmail } from '../firebase/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { signInWithGoogle, signInWithEmail, getGoogleRedirectResult } from '../firebase/firebaseConfig';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 
 const LoginButton = ({ 
@@ -131,6 +131,43 @@ export default function LoginPage() {
     }
   }, [isAuthenticated]);
 
+  // 구글 리디렉션 결과 처리
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getGoogleRedirectResult();
+        if (result && result.user) {
+          // 사용자가 리디렉션으로 로그인에 성공했을 때
+          console.log('Google 리디렉션 로그인 성공:', result.user);
+          
+          // Firestore에 사용자 정보가 없으면 기본 정보로 저장
+          const userDocRef = doc(db, 'users', result.user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (!userDoc.exists()) {
+            // 기본 사용자 프로필 데이터 생성 (타입 단언 사용)
+            const userProfileData = {
+              uid: result.user.uid,
+              displayName: result.user.displayName,
+              email: result.user.email,
+              photoURL: result.user.photoURL,
+            } as UserProfile;
+            
+            await setDoc(userDocRef, userProfileData);
+          }
+          
+          // 로그인 후 처리는 isAuthenticated가 변경될 때 처리됨
+        }
+      } catch (error) {
+        console.error('리디렉션 결과 처리 오류:', error);
+        setError('Google 로그인 처리 중 오류가 발생했습니다.');
+        setIsLoading(false);
+      }
+    };
+
+    handleRedirectResult();
+  }, []);
+
   // 사용자가 개인화 설정이 필요한지 확인
   const checkIfNeedsPersonalization = async () => {
     if (!currentUser) return;
@@ -163,11 +200,11 @@ export default function LoginPage() {
     
     try {
       await signInWithGoogle();
-      // Auth 컨텍스트의 useEffect가 로그인 상태를 감지하고 처리
+      // 리디렉션 방식으로 인해 페이지가 새로고침되므로 
+      // 추가 처리는 useEffect의 handleRedirectResult에서 처리됨
     } catch (error) {
       console.error('Google 로그인 오류:', error);
       setError('Google 로그인 중 오류가 발생했습니다.');
-    } finally {
       setIsLoading(false);
     }
   };

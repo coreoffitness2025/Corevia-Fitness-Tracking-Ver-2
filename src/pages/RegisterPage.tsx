@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../firebase/firebaseConfig';
+import { auth, db } from '../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/common/Layout';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { signInWithGoogle, getGoogleRedirectResult } from '../firebase/firebaseConfig';
+import { FcGoogle } from 'react-icons/fc';
+import { UserProfile } from '../types';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +16,58 @@ const RegisterPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // 구글 리디렉션 결과 처리
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getGoogleRedirectResult();
+        if (result && result.user) {
+          // 사용자가 리디렉션으로 로그인에 성공했을 때
+          console.log('Google 리디렉션 회원가입 성공:', result.user);
+          
+          // Firestore에 사용자 정보가 없으면 기본 정보로 저장
+          const userDocRef = doc(db, 'users', result.user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (!userDoc.exists()) {
+            // 기본 사용자 프로필 데이터 생성 (타입 단언 사용)
+            const userProfileData = {
+              uid: result.user.uid,
+              displayName: result.user.displayName,
+              email: result.user.email,
+              photoURL: result.user.photoURL,
+            } as UserProfile;
+            
+            await setDoc(userDocRef, userProfileData);
+            toast.success('Google 계정으로 회원가입이 완료되었습니다.');
+          }
+          
+          // 프로필 수정 페이지로 이동하여 추가 정보 입력
+          navigate('/profile/edit');
+        }
+      } catch (error) {
+        console.error('리디렉션 결과 처리 오류:', error);
+        toast.error('Google 로그인 처리 중 오류가 발생했습니다.');
+        setLoading(false);
+      }
+    };
+
+    handleRedirectResult();
+  }, [navigate]);
+
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      // 리디렉션 방식이므로 페이지가 새로고침됨
+      // 추가 처리는 useEffect의 handleRedirectResult에서 처리됨
+    } catch (error: any) {
+      console.error('Google 회원가입 오류:', error);
+      toast.error('Google 계정으로 회원가입 중 오류가 발생했습니다.');
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +91,18 @@ const RegisterPage: React.FC = () => {
         displayName: displayName
       });
 
+      // Firestore에 사용자 기본 정보 저장
+      const userProfileData = {
+        uid: userCredential.user.uid,
+        displayName: displayName,
+        email: userCredential.user.email,
+        photoURL: userCredential.user.photoURL,
+      } as UserProfile;
+      
+      await setDoc(doc(db, 'users', userCredential.user.uid), userProfileData);
+
       toast.success('회원가입이 완료되었습니다.');
-      navigate('/');
+      navigate('/profile/edit');
     } catch (error: any) {
       console.error('Error registering user:', error);
       if (error.code === 'auth/email-already-in-use') {
@@ -67,6 +133,46 @@ const RegisterPage: React.FC = () => {
               </button>
             </p>
           </div>
+          
+          {/* 구글 회원가입 버튼 */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                  간편 회원가입
+                </span>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleGoogleSignUp}
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
+              >
+                <FcGoogle className="h-5 w-5 mr-2" />
+                Google로 회원가입
+              </button>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                  또는 이메일로 회원가입
+                </span>
+              </div>
+            </div>
+          </div>
+          
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
