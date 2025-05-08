@@ -33,11 +33,20 @@ const LoginButton = ({
   </button>
 );
 
-const LoginHeader = () => (
+const LoginHeader = ({ navigate }: { navigate: (path: string) => void }) => (
   <>
     <h1 className="text-2xl font-bold mb-4">Corevia Fitness</h1>
     <p className="text-gray-600 dark:text-gray-300 mb-6">
       계정으로 로그인하고<br />나만의 운동 기록을 시작하세요.
+    </p>
+    <p className="text-gray-600 dark:text-gray-300 mb-6">
+      계정이 없으신가요?{' '}
+      <button
+        onClick={() => navigate('/register')}
+        className="text-blue-500 hover:text-blue-700 font-medium"
+      >
+        회원가입
+      </button>
     </p>
   </>
 );
@@ -192,7 +201,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <LoginHeader />
+        <LoginHeader navigate={navigate} />
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
