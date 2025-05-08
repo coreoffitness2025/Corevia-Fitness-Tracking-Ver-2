@@ -1,6 +1,6 @@
 import { User, UserCredential } from 'firebase/auth';
 import { useCallback } from 'react';
-import { signInWithGoogle, signInWithEmail, getUserProfile } from '../firebase/firebaseConfig';
+import { signInWithGoogle, signInWithEmail, getUserProfile, getGoogleRedirectResult } from '../firebase/firebaseConfig';
 import { UserProfile } from '../types';
 import { toast } from 'react-hot-toast';
 import { DEFAULT_PROFILE } from '../constants/profile';
@@ -51,13 +51,14 @@ export const useLogin = ({ onSuccess, onError }: UseLoginProps = {}) => {
   const handleGoogleLogin = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await signInWithGoogle();
-      const user = result.user as User | null;
+      await signInWithGoogle();
+      const result = await getGoogleRedirectResult();
       
-      if (!user) {
+      if (!result || !result.user) {
         throw new Error('로그인에 실패했습니다.');
       }
       
+      const user = result.user;
       const existingProfile = await getUserProfile(user.uid);
       const profile = existingProfile || createUserProfile(user);
       
