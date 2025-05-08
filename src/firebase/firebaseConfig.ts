@@ -57,13 +57,26 @@ export const signInWithGoogle = async () => {
   // 브라우저 환경에서만 실행
   if (typeof window !== 'undefined') {
     try {
-      // 리디렉션 방식 사용 (쿠키 문제 해결)
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error) {
+      // 개발 환경에서는 팝업 방식 사용 (리디렉션 문제 해결)
+      if (import.meta.env.DEV) {
+        return await signInWithPopup(auth, googleProvider);
+      } else {
+        // 프로덕션에서는 리디렉션 방식 사용
+        await signInWithRedirect(auth, googleProvider);
+      }
+    } catch (error: any) {
       console.error('리디렉션 로그인 오류:', error);
+      
+      // 도메인 인증 오류인 경우 더 명확한 오류 메시지
+      if (error.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.origin;
+        throw new Error(`현재 도메인(${currentDomain})이 Firebase 인증에 허용되지 않았습니다. Firebase 콘솔에서 '인증 > 설정 > 승인된 도메인'에 이 도메인을 추가해주세요.`);
+      }
+      
       throw error;
     }
   }
+  return null;
 };
 
 // 리디렉션 결과 처리
