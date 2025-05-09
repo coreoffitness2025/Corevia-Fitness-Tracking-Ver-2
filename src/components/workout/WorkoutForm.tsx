@@ -101,34 +101,53 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 웜업 팁 표시 상태
   const [showWarmupTips, setShowWarmupTips] = useState(true);
   
+  // 추가 상태 변수 정의
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
+  const [preferredExercises, setPreferredExercises] = useState<Record<string, string>>({});
+  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<'5x5' | '3x10' | 'custom'>('5x5');
+  const [sets, setSets] = useState<number>(5);
+  const [reps, setReps] = useState<number>(5);
+
   // 컴포넌트 마운트 시 사용자 프로필에서 선호 운동과 세트 설정을 가져와 초기화
   useEffect(() => {
     if (userProfile) {
       console.log('운동 컴포넌트: 사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
       
-      // 선호하는 운동 설정이 있는 경우 해당 부위의 메인 운동 설정
       if (userProfile.preferredExercises) {
+        console.log('운동 컴포넌트: 선호 운동 설정 적용:', userProfile.preferredExercises);
+        
         // 초기 부위는 가슴으로 설정하고 해당 부위의 선호 운동 적용
-        const initialExercise = userProfile.preferredExercises.chest;
-        if (initialExercise) {
-          setSelectedMainExercise(initialExercise as MainExerciseType);
-          
-          // 메인 운동 이름 가져오기
-          const chestOptions = mainExerciseOptions.chest;
-          const selectedOption = chestOptions.find(option => option.value === initialExercise);
-          
-          if (selectedOption) {
-            setMainExercise(prev => ({
-              ...prev,
-              name: selectedOption.label
-            }));
-          }
+        const prefExercises = userProfile.preferredExercises;
+        
+        // 부위별 선호 운동 설정
+        if (prefExercises.chest) {
+          setSelectedMainExercise(prefExercises.chest as MainExerciseType);
         }
+        
+        // 부위 변경 시 해당 부위의 선호 운동 적용을 위해 저장
+        setPreferredExercises(prefExercises);
       }
       
-      // 선호하는 세트 구성이 있는 경우 적용
+      // 세트 구성 설정
       if (userProfile.setConfiguration) {
-        applySetConfiguration(userProfile.setConfiguration);
+        console.log('운동 컴포넌트: 세트 구성 설정 적용:', userProfile.setConfiguration);
+        const config = userProfile.setConfiguration;
+        
+        if (config.preferredSetup) {
+          setSelectedSetConfiguration(config.preferredSetup);
+          
+          // 세트 구성에 따라 입력 필드 초기화
+          if (config.preferredSetup === '5x5') {
+            setSets(5);
+            setReps(5);
+          } else if (config.preferredSetup === '3x10') {
+            setSets(3);
+            setReps(10);
+          } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
+            setSets(config.customSets);
+            setReps(config.customReps);
+          }
+        }
       }
     }
   }, [userProfile]);
@@ -136,30 +155,34 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 전역 이벤트 리스너로 프로필 변경 감지
   useEffect(() => {
     const handleProfileUpdate = (event: CustomEvent) => {
-      console.log('운동 컴포넌트: 프로필 업데이트 감지됨:', event.detail.profile);
-      
-      // 프로필 데이터로 폼 업데이트
       const updatedProfile = event.detail.profile;
-      if (updatedProfile) {
-        // 운동 세트 구성 업데이트
-        if (updatedProfile.setConfiguration) {
-          applySetConfiguration(updatedProfile.setConfiguration);
-        }
+      console.log('운동 컴포넌트: 프로필 업데이트 감지됨:', updatedProfile);
+      
+      if (updatedProfile && updatedProfile.preferredExercises) {
+        // 상태 업데이트
+        setPreferredExercises(updatedProfile.preferredExercises);
         
-        // 선호 운동 업데이트
-        if (updatedProfile.preferredExercises && updatedProfile.preferredExercises[part]) {
-          const preferredExercise = updatedProfile.preferredExercises[part];
-          // 메인 운동 선택
-          setSelectedMainExercise(preferredExercise as MainExerciseType);
+        // 현재 선택된 부위에 맞는 운동 업데이트
+        const muscleKey = selectedMuscleGroup as keyof typeof updatedProfile.preferredExercises;
+        if (muscleKey && updatedProfile.preferredExercises[muscleKey]) {
+          setSelectedMainExercise(updatedProfile.preferredExercises[muscleKey] as MainExerciseType);
+        }
+      }
+      
+      if (updatedProfile && updatedProfile.setConfiguration) {
+        const config = updatedProfile.setConfiguration;
+        if (config.preferredSetup) {
+          setSelectedSetConfiguration(config.preferredSetup);
           
-          // 메인 운동 이름 업데이트
-          const options = mainExerciseOptions[part];
-          const selectedOption = options.find(option => option.value === preferredExercise);
-          if (selectedOption) {
-            setMainExercise(prev => ({
-              ...prev,
-              name: selectedOption.label
-            }));
+          if (config.preferredSetup === '5x5') {
+            setSets(5);
+            setReps(5);
+          } else if (config.preferredSetup === '3x10') {
+            setSets(3);
+            setReps(10);
+          } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
+            setSets(config.customSets);
+            setReps(config.customReps);
           }
         }
       }
@@ -171,7 +194,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     return () => {
       window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
     };
-  }, [part]);
+  }, [selectedMuscleGroup]);
 
   // 파트가 변경될 때 메인 운동 옵션 업데이트 및 선호 운동 적용
   useEffect(() => {

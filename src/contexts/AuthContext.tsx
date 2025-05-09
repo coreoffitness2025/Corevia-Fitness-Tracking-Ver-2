@@ -224,6 +224,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userDoc = await getDoc(userDocRef);
       const previousData = userDoc.exists() ? userDoc.data() as UserProfile : null;
       
+      console.log('AuthContext: 이전 프로필 데이터', previousData);
+      
       // 새 데이터 병합 (중첩된 객체도 올바르게 병합)
       const updatedProfile = deepMerge(
         previousData || defaultProfile,
@@ -256,8 +258,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // Firestore에 전체 업데이트된 프로필 저장 - merge:true로 일부 필드만 업데이트하지 않고 전체 문서 저장
-      await setDoc(userDocRef, updatedProfile);
+      console.log('AuthContext: 업데이트할 프로필 데이터', updatedProfile);
+      
+      // Firestore에 전체 업데이트된 프로필 저장 - merge 옵션 추가
+      await setDoc(userDocRef, updatedProfile, { merge: true });
       
       // 로컬 상태 업데이트
       setUserProfile(updatedProfile);
