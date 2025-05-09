@@ -234,40 +234,51 @@ export default function LoginPage() {
         console.log('Google 로그인 성공:', result.user.uid);
         setDebugInfo(prev => `${prev}\nGoogle 로그인 성공: ${result.user.uid}`);
         
-        // Firestore에 사용자 정보가 없으면 기본 정보로 저장
-        const userDocRef = doc(db, 'users', result.user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-          // 기본 사용자 프로필 데이터 생성
-          const userProfileData = {
-            uid: result.user.uid,
-            displayName: result.user.displayName,
-            email: result.user.email,
-            photoURL: result.user.photoURL,
-          } as UserProfile;
+        try {
+          // Firestore에 사용자 정보가 없으면 기본 정보로 저장
+          const userDocRef = doc(db, 'users', result.user.uid);
+          const userDoc = await getDoc(userDocRef);
           
-          await setDoc(userDocRef, userProfileData);
-          setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
-          
-          // 사용자 정보가 없으므로 개인화 모달 표시
-          setUserProfile(userProfileData);
-          setIsPersonalizationOpen(true);
-        } else {
-          // 이미 정보가 있는 경우 개인화 필요 여부 확인
-          const userData = userDoc.data() as UserProfile;
-          if (!userData.height || !userData.weight || !userData.age) {
-            setUserProfile(userData);
+          if (!userDoc.exists()) {
+            // 기본 사용자 프로필 데이터 생성
+            const userProfileData = {
+              uid: result.user.uid,
+              displayName: result.user.displayName,
+              email: result.user.email,
+              photoURL: result.user.photoURL,
+            } as UserProfile;
+            
+            await setDoc(userDocRef, userProfileData);
+            setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
+            
+            // 사용자 정보가 없으므로 개인화 모달 표시
+            setUserProfile(userProfileData);
             setIsPersonalizationOpen(true);
+            setDebugInfo(prev => `${prev}\n개인화 모달 표시됨: ${isPersonalizationOpen}`);
           } else {
-            // 모든 데이터가 있으면 홈으로 이동
-            navigate('/');
+            // 이미 정보가 있는 경우 개인화 필요 여부 확인
+            const userData = userDoc.data() as UserProfile;
+            setDebugInfo(prev => `${prev}\n사용자 데이터 확인: 키-${userData.height || 'none'}, 몸무게-${userData.weight || 'none'}, 나이-${userData.age || 'none'}`);
+            
+            if (!userData.height || !userData.weight || !userData.age) {
+              setUserProfile(userData);
+              setIsPersonalizationOpen(true);
+              setDebugInfo(prev => `${prev}\n개인화 모달 표시됨: ${isPersonalizationOpen}`);
+            } else {
+              // 모든 데이터가 있으면 홈으로 이동
+              setDebugInfo(prev => `${prev}\n홈으로 이동`);
+              navigate('/');
+            }
           }
+          
+          // 로그인 성공 메시지
+          toast.success('Google 로그인이 완료되었습니다.');
+        } catch (firestoreError: any) {
+          console.error('Firestore 데이터 처리 중 오류:', firestoreError);
+          setDebugInfo(prev => `${prev}\nFirestore 오류: ${firestoreError.message || '알 수 없는 오류'}`);
+          // 오류가 발생해도 사용자는 로그인된 상태이므로 홈으로 이동
+          navigate('/');
         }
-        
-        // 로그인 성공 메시지
-        toast.success('Google 로그인이 완료되었습니다.');
-        setDebugInfo(prev => `${prev}\n로그인 완료 - 개인화 상태: ${isPersonalizationOpen ? '필요' : '완료'}`);
       } else {
         setError('Google 로그인에 실패했습니다.');
         setDebugInfo(prev => `${prev}\nGoogle 로그인 결과 없음`);

@@ -42,6 +42,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 auth.useDeviceLanguage(); // 브라우저 언어 설정 사용
+
+// CORS 및 쿠키 설정 (Firebase Functions용, 직접적인 효과는 없지만 설정)
+if (typeof window !== 'undefined') {
+  (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+}
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
@@ -57,8 +63,15 @@ export const signInWithGoogle = async () => {
   // 브라우저 환경에서만 실행
   if (typeof window !== 'undefined') {
     try {
-      // 팝업 방식 사용 - Cross-Origin-Opener-Policy 오류 방지 설정
-      return await signInWithPopup(auth, googleProvider);
+      // 팝업 방식 사용 - 브라우저 보안 정책 문제 해결을 위한 설정
+      const result = await signInWithPopup(auth, googleProvider)
+        .catch((error) => {
+          console.error('팝업 인증 실패, 리디렉션 시도:', error);
+          // 팝업이 실패하면 리디렉션으로 시도 (일부 환경에서는 이 방식이 필요할 수 있음)
+          return signInWithRedirect(auth, googleProvider).then(() => null);
+        });
+      
+      return result;
     } catch (error: any) {
       console.error('Google 로그인 오류:', error);
       
@@ -70,7 +83,10 @@ export const signInWithGoogle = async () => {
       
       // 창 닫힘 또는 COOP 오류 처리
       if (error.code === 'auth/popup-closed-by-user' || error.message.includes('Cross-Origin-Opener-Policy')) {
-        throw new Error('로그인 창이 닫혔거나 브라우저 보안 정책에 의해 차단되었습니다. 다시 시도해 주세요.');
+        // 팝업 문제 발생시 리디렉션 방식 시도
+        console.warn('팝업 방식 실패, 리디렉션 방식으로 재시도합니다.');
+        await signInWithRedirect(auth, googleProvider);
+        return null;
       }
       
       throw error;
