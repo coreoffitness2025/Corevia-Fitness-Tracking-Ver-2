@@ -379,6 +379,7 @@ const SettingsPage = () => {
         isOpen={isPersonalizationModalOpen}
         onClose={() => setIsPersonalizationModalOpen(false)}
         onSave={handleSavePersonalization}
+        userProfile={userProfile}
       />
     </Layout>
   );

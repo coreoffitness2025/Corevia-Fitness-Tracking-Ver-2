@@ -454,27 +454,48 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     e.preventDefault();
     if (!userProfile) return;
 
-    // 최근 7일 내의 기록만 저장
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const sessionData: Session = {
-      userId: userProfile.uid,
-      date: new Date(),
-      part,
-      mainExercise: {
-        part,
-        weight: mainExercise.sets[0].weight,
-        sets: mainExercise.sets
-      },
-      accessoryExercises,
-      notes,
-      isAllSuccess: mainExercise.sets.every(set => set.isSuccess),
-      successSets: mainExercise.sets.filter(set => set.isSuccess).length,
-      accessoryNames: accessoryExercises.map(ex => ex.name)
-    };
-
     try {
+      // 최근 7일 내의 기록만 저장
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      // mainExercise와 accessoryExercises의 undefined 값 처리
+      const cleanMainExercise = {
+        part,
+        name: mainExercise.name, // 이름 필드 추가
+        weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0,
+        sets: mainExercise.sets.map(set => ({
+          reps: set.reps || 0,
+          weight: set.weight || 0,
+          isSuccess: set.isSuccess || false
+        }))
+      };
+
+      const cleanAccessoryExercises = accessoryExercises.map(exercise => ({
+        name: exercise.name || '',
+        weight: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].weight : 0,
+        reps: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].reps : 0,
+        sets: (exercise.sets || []).map(set => ({
+          reps: set.reps || 0,
+          weight: set.weight || 0,
+          isSuccess: set.isSuccess || false
+        }))
+      }));
+
+      const sessionData: Session = {
+        userId: userProfile.uid,
+        date: new Date(),
+        part,
+        mainExercise: cleanMainExercise,
+        accessoryExercises: cleanAccessoryExercises,
+        notes: notes || '',
+        isAllSuccess: mainExercise.sets.every(set => set.isSuccess),
+        successSets: mainExercise.sets.filter(set => set.isSuccess).length,
+        accessoryNames: cleanAccessoryExercises.map(ex => ex.name)
+      };
+
+      console.log('저장할 세션 데이터:', sessionData);
+
       // 기존 기록 확인
       const q = query(
         collection(db, 'sessions'),

@@ -14,6 +14,7 @@ interface PersonalizationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (profile: Partial<UserProfile>) => void;
+  userProfile?: Partial<UserProfile> | null;
 }
 
 // 1RM 계산기 컴포넌트
@@ -115,31 +116,55 @@ const OneRMCalculator = ({
   );
 };
 
-const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalProps) => {
-  const [height, setHeight] = useState<number>(0);
-  const [weight, setWeight] = useState<number>(0);
-  const [age, setAge] = useState<number>(0);
-  const [gender, setGender] = useState<'male' | 'female'>('male');
-  const [activityLevel, setActivityLevel] = useState<'low' | 'moderate' | 'high'>('moderate');
-  const [fitnessGoal, setFitnessGoal] = useState<'loss' | 'maintain' | 'gain'>('maintain');
-  const [benchPressMax, setBenchPressMax] = useState<number>(0);
-  const [squatMax, setSquatMax] = useState<number>(0);
-  const [deadliftMax, setDeadliftMax] = useState<number>(0);
-  const [ohpMax, setOhpMax] = useState<number>(0);
+const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: PersonalizationModalProps) => {
+  const [height, setHeight] = useState<number>(userProfile?.height || 170);
+  const [weight, setWeight] = useState<number>(userProfile?.weight || 70);
+  const [age, setAge] = useState<number>(userProfile?.age || 25);
+  const [gender, setGender] = useState<'male' | 'female'>(userProfile?.gender || 'male');
+  const [activityLevel, setActivityLevel] = useState<'low' | 'moderate' | 'high'>(userProfile?.activityLevel || 'moderate');
+  const [fitnessGoal, setFitnessGoal] = useState<'loss' | 'maintain' | 'gain'>(userProfile?.fitnessGoal || 'maintain');
   
-  const [chestExercise, setChestExercise] = useState<ChestMainExercise>('benchPress');
-  const [backExercise, setBackExercise] = useState<BackMainExercise>('deadlift');
-  const [shoulderExercise, setShoulderExercise] = useState<ShoulderMainExercise>('overheadPress');
-  const [legExercise, setLegExercise] = useState<LegMainExercise>('squat');
-  const [bicepsExercise, setBicepsExercise] = useState<BicepsMainExercise>('dumbbellCurl');
-  const [tricepsExercise, setTricepsExercise] = useState<TricepsMainExercise>('cablePushdown');
+  // 1RM 데이터 초기화
+  const [benchPressMax, setBenchPressMax] = useState<number>(userProfile?.oneRepMax?.bench || 0);
+  const [squatMax, setSquatMax] = useState<number>(userProfile?.oneRepMax?.squat || 0);
+  const [deadliftMax, setDeadliftMax] = useState<number>(userProfile?.oneRepMax?.deadlift || 0);
+  const [ohpMax, setOhpMax] = useState<number>(userProfile?.oneRepMax?.overheadPress || 0);
   
-  const [setConfig, setSetConfig] = useState<SetConfiguration>('5x5');
-  const [customSets, setCustomSets] = useState<number>(5);
-  const [customReps, setCustomReps] = useState<number>(5);
+  // 선호 운동 초기화
+  const [chestExercise, setChestExercise] = useState<ChestMainExercise>(
+    userProfile?.preferredExercises?.chest as ChestMainExercise || 'benchPress'
+  );
+  const [backExercise, setBackExercise] = useState<BackMainExercise>(
+    userProfile?.preferredExercises?.back as BackMainExercise || 'deadlift'
+  );
+  const [shoulderExercise, setShoulderExercise] = useState<ShoulderMainExercise>(
+    userProfile?.preferredExercises?.shoulder as ShoulderMainExercise || 'overheadPress'
+  );
+  const [legExercise, setLegExercise] = useState<LegMainExercise>(
+    userProfile?.preferredExercises?.leg as LegMainExercise || 'squat'
+  );
+  const [bicepsExercise, setBicepsExercise] = useState<BicepsMainExercise>(
+    userProfile?.preferredExercises?.biceps as BicepsMainExercise || 'dumbbellCurl'
+  );
+  const [tricepsExercise, setTricepsExercise] = useState<TricepsMainExercise>(
+    userProfile?.preferredExercises?.triceps as TricepsMainExercise || 'cablePushdown'
+  );
+  
+  // 세트 구성 초기화
+  const [setConfig, setSetConfig] = useState<SetConfiguration>(
+    userProfile?.setConfiguration?.preferredSetup || '5x5'
+  );
+  const [customSets, setCustomSets] = useState<number>(
+    userProfile?.setConfiguration?.customSets || 5
+  );
+  const [customReps, setCustomReps] = useState<number>(
+    userProfile?.setConfiguration?.customReps || 5
+  );
   
   // 목표 칼로리 관련 상태
-  const [targetCalories, setTargetCalories] = useState<number>(0);
+  const [targetCalories, setTargetCalories] = useState<number>(
+    userProfile?.targetCalories || 0
+  );
   const [calculatedCalories, setCalculatedCalories] = useState<{
     bmr: number;
     maintenance: number;

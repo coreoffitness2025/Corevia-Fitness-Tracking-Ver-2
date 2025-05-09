@@ -83,7 +83,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
 
   const updateNutritionTargets = (profile: any) => {
     // 이미 계산된 목표 칼로리가 있으면 사용
-    if (profile.targetCalories) {
+    if (profile.targetCalories && !isNaN(profile.targetCalories)) {
       console.log('계산된 목표 칼로리 사용:', profile.targetCalories);
       setTargetCalories(profile.targetCalories);
     } else {
@@ -92,9 +92,9 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       if (profile.height && profile.weight && profile.age && profile.gender) {
         const bmr = calculateBMR(
           profile.gender, 
-          profile.weight, 
-          profile.height, 
-          profile.age
+          Number(profile.weight), 
+          Number(profile.height), 
+          Number(profile.age)
         );
         
         // 기본값 사용 및 타입 안전성 확보
@@ -115,7 +115,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     }
     
     // 단백질, 탄수화물, 지방 목표량 계산
-    calculateMacroNutrientTargets(profile.weight || 70);
+    calculateMacroNutrientTargets(Number(profile.weight) || 70);
   };
 
   const calculateMacroNutrientTargets = (weight: number) => {

@@ -265,17 +265,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // 키, 몸무게, 활동 수준 등에 따라 목표 칼로리 계산
       if (profile.height || profile.weight || profile.activityLevel || profile.gender || profile.age || profile.fitnessGoal) {
-        const targetCalories = calculateTargetCalories(
-          updatedProfile.height,
-          updatedProfile.weight,
-          updatedProfile.age,
-          updatedProfile.gender,
-          updatedProfile.activityLevel,
-          updatedProfile.fitnessGoal
-        );
-        // 사용자가 직접 설정한 칼로리가 있으면 그 값을 우선함
-        if (!profile.targetCalories) {
-          updatedProfile.targetCalories = targetCalories;
+        // 모든 값이 유효한지 확인하고 기본값 제공
+        const height = Number(updatedProfile.height) || 170;
+        const weight = Number(updatedProfile.weight) || 70;
+        const age = Number(updatedProfile.age) || 25;
+        const gender = updatedProfile.gender || 'male';
+        const activityLevel = updatedProfile.activityLevel || 'moderate';
+        const fitnessGoal = updatedProfile.fitnessGoal || 'maintain';
+        
+        try {
+          const targetCalories = calculateTargetCalories(
+            height,
+            weight,
+            age,
+            gender,
+            activityLevel,
+            fitnessGoal
+          );
+          
+          // targetCalories가 NaN인지 확인
+          if (!isNaN(targetCalories) && targetCalories > 0) {
+            // 사용자가 직접 설정한 칼로리가 있으면 그 값을 우선함
+            if (!profile.targetCalories) {
+              updatedProfile.targetCalories = targetCalories;
+            }
+          } else {
+            console.warn('목표 칼로리 계산 결과가 유효하지 않습니다:', targetCalories);
+          }
+        } catch (err) {
+          console.error('목표 칼로리 계산 중 오류:', err);
         }
       }
       
