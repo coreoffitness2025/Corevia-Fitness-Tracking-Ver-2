@@ -104,7 +104,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 컴포넌트 마운트 시 사용자 프로필에서 선호 운동과 세트 설정을 가져와 초기화
   useEffect(() => {
     if (userProfile) {
-      console.log('사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
+      console.log('운동 컴포넌트: 사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
       
       // 선호하는 운동 설정이 있는 경우 해당 부위의 메인 운동 설정
       if (userProfile.preferredExercises) {
@@ -136,7 +136,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 전역 이벤트 리스너로 프로필 변경 감지
   useEffect(() => {
     const handleProfileUpdate = (event: CustomEvent) => {
-      console.log('프로필 업데이트 감지됨:', event.detail.profile);
+      console.log('운동 컴포넌트: 프로필 업데이트 감지됨:', event.detail.profile);
       
       // 프로필 데이터로 폼 업데이트
       const updatedProfile = event.detail.profile;

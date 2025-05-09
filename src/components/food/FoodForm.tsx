@@ -58,8 +58,8 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   // 전역 이벤트 리스너로 프로필 변경 감지
   useEffect(() => {
     const handleProfileUpdate = (event: CustomEvent) => {
-      console.log('식단 컴포넌트: 프로필 업데이트 감지됨:', event.detail.profile);
       const updatedProfile = event.detail.profile;
+      console.log('식단 컴포넌트: 프로필 업데이트 감지됨:', updatedProfile);
       if (updatedProfile) {
         updateNutritionTargets(updatedProfile);
       }
@@ -76,6 +76,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   // 사용자 프로필에서 목표 칼로리 계산
   useEffect(() => {
     if (userProfile) {
+      console.log('식단 컴포넌트: 사용자 프로필 로드됨, 목표 칼로리 설정:', userProfile.targetCalories);
       updateNutritionTargets(userProfile);
     }
   }, [userProfile]);

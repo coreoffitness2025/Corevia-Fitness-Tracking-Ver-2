@@ -227,7 +227,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 새 데이터 병합 (중첩된 객체도 올바르게 병합)
       const updatedProfile = deepMerge(
         previousData || defaultProfile,
-        profile
+        {
+          ...profile,
+          // 타임스탬프 추가로 최신 데이터 확인 가능
+          lastUpdated: new Date().toISOString()
+        }
       );
       
       // 필수 사용자 정보 유지
@@ -237,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (currentUser.photoURL) updatedProfile.photoURL = currentUser.photoURL;
       
       // 키, 몸무게, 활동 수준 등에 따라 목표 칼로리 계산
-      if (profile.height || profile.weight || profile.activityLevel || profile.gender || profile.age) {
+      if (profile.height || profile.weight || profile.activityLevel || profile.gender || profile.age || profile.fitnessGoal) {
         const targetCalories = calculateTargetCalories(
           updatedProfile.height,
           updatedProfile.weight,
@@ -246,11 +250,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           updatedProfile.activityLevel,
           updatedProfile.fitnessGoal
         );
-        updatedProfile.targetCalories = targetCalories;
+        // 사용자가 직접 설정한 칼로리가 있으면 그 값을 우선함
+        if (!profile.targetCalories) {
+          updatedProfile.targetCalories = targetCalories;
+        }
       }
       
-      // Firestore에 전체 업데이트된 프로필 저장
-      await setDoc(userDocRef, updatedProfile, { merge: true });
+      // Firestore에 전체 업데이트된 프로필 저장 - merge:true로 일부 필드만 업데이트하지 않고 전체 문서 저장
+      await setDoc(userDocRef, updatedProfile);
       
       // 로컬 상태 업데이트
       setUserProfile(updatedProfile);

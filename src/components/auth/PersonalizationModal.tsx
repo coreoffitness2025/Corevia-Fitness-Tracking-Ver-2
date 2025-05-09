@@ -200,6 +200,16 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 계산된 칼로리가 없으면 계산하기
+    if (!calculatedCalories) {
+      calculateBMR();
+    }
+    
+    // 계산된 칼로리 또는 사용자 입력값 사용
+    const finalCalories = targetCalories || (calculatedCalories ? calculatedCalories.target : 0);
+    
+    // 모든 정보를 포함하는 완전한 프로필 업데이트
     onSave({
       height,
       weight,
@@ -207,7 +217,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
       gender,
       activityLevel,
       fitnessGoal,
-      targetCalories,
+      targetCalories: finalCalories,
       preferredExercises: {
         chest: chestExercise,
         back: backExercise,
@@ -228,6 +238,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
         overheadPress: ohpMax
       }
     });
+    
     onClose();
   };
   
