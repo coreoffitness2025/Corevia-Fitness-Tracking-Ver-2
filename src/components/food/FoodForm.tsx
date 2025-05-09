@@ -12,7 +12,7 @@ interface FoodFormProps {
 }
 
 // 활동 수준에 따른 칼로리 계수
-const activityMultipliers = {
+const activityMultipliers: Record<string, number> = {
   sedentary: 1.2,    // 거의 운동 안함
   light: 1.375,      // 가벼운 운동 (주 1-3회)
   moderate: 1.55,    // 중간 정도 운동 (주 3-5회)
@@ -21,7 +21,7 @@ const activityMultipliers = {
 };
 
 // 목표에 따른 칼로리 조정
-const goalMultipliers = {
+const goalMultipliers: Record<string, number> = {
   lose: 0.8,     // 체중 감량
   maintain: 1.0, // 체중 유지
   gain: 1.15     // 체중 증가
@@ -96,8 +96,9 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           profile.age
         );
         
-        const activityLevel = profile.activityLevel || 'moderate';
-        const fitnessGoal = profile.fitnessGoal || 'maintain';
+        // 기본값 사용 및 타입 안전성 확보
+        const activityLevel = profile.activityLevel && activityMultipliers[profile.activityLevel] ? profile.activityLevel : 'moderate';
+        const fitnessGoal = profile.fitnessGoal && goalMultipliers[profile.fitnessGoal] ? profile.fitnessGoal : 'maintain';
         
         // 총 일일 에너지 소비량(TDEE) 계산
         const tdee = bmr * activityMultipliers[activityLevel];
