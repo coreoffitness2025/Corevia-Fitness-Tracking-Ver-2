@@ -141,12 +141,42 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           if (config.preferredSetup === '5x5') {
             setSets(5);
             setReps(5);
+            // 메인 운동 세트 설정 초기화
+            const initialSets = Array(5).fill(0).map(() => ({
+              reps: 5,  // 5x5 설정
+              weight: 0,
+              isSuccess: false
+            }));
+            setMainExercise(prev => ({
+              ...prev,
+              sets: initialSets
+            }));
           } else if (config.preferredSetup === '3x10') {
             setSets(3);
             setReps(10);
+            // 메인 운동 세트 설정 초기화
+            const initialSets = Array(3).fill(0).map(() => ({
+              reps: 10,  // 3x10 설정
+              weight: 0,
+              isSuccess: false
+            }));
+            setMainExercise(prev => ({
+              ...prev,
+              sets: initialSets
+            }));
           } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
             setSets(config.customSets);
             setReps(config.customReps);
+            // 메인 운동 세트 설정 초기화
+            const initialSets = Array(config.customSets).fill(0).map(() => ({
+              reps: config.customReps || 5,
+              weight: 0,
+              isSuccess: false
+            }));
+            setMainExercise(prev => ({
+              ...prev,
+              sets: initialSets
+            }));
           }
         }
       }

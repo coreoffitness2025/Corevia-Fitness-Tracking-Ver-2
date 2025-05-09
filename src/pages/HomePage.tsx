@@ -192,7 +192,7 @@ const HomePage = () => {
             <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  {userProfile.targetCalories ? `${userProfile.targetCalories} kcal/일` : '목표 칼로리를 설정해주세요'}
+                  {userProfile.targetCalories && !isNaN(userProfile.targetCalories) ? `${userProfile.targetCalories} kcal/일` : '목표 칼로리를 설정해주세요'}
                 </p>
                 <span className="text-xs text-gray-500">
                   활동 수준: {

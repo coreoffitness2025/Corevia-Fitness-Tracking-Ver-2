@@ -309,12 +309,12 @@ const SettingsPage = () => {
               )}
 
               {/* 목표 칼로리 정보 */}
-              {userProfile.targetCalories && (
+              {userProfile.targetCalories !== undefined && (
                 <div className="mt-6">
                   <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">목표 칼로리</h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                     <p className="text-sm text-gray-500 dark:text-gray-400">일일 목표 칼로리</p>
-                    <p className="font-medium">{userProfile.targetCalories} kcal</p>
+                    <p className="font-medium">{isNaN(userProfile.targetCalories) ? '목표 칼로리를 설정해주세요' : `${userProfile.targetCalories} kcal`}</p>
                   </div>
                 </div>
               )}

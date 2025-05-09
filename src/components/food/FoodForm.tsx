@@ -123,11 +123,11 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     const proteinGrams = Math.round(weight * 1.6);
     const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
     
-    const remainingCalories = targetCalories - proteinCalories;
+    const remainingCalories = Math.max(0, targetCalories - proteinCalories);
     
     // 탄수화물 45-65%, 지방 20-35% (여기서는 중간값 사용)
-    const carbsCalories = remainingCalories * 0.55;
-    const fatCalories = remainingCalories * 0.3;
+    const carbsCalories = Math.max(0, remainingCalories * 0.55);
+    const fatCalories = Math.max(0, remainingCalories * 0.3);
     
     setProteinTarget(proteinGrams);
     setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
