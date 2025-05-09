@@ -133,7 +133,7 @@ export default function LoginPage() {
     console.log('Authentication state changed:', isAuthenticated, currentUser?.uid);
     setDebugInfo(prev => `${prev}\n인증 상태: ${isAuthenticated ? '로그인됨' : '로그인되지 않음'}\n사용자 ID: ${currentUser?.uid || 'none'}`);
     
-    if (isAuthenticated) {
+    if (isAuthenticated && currentUser) {
       checkIfNeedsPersonalization();
     }
   }, [isAuthenticated, currentUser]);
@@ -193,6 +193,7 @@ export default function LoginPage() {
     try {
       setDebugInfo(prev => `${prev}\n개인화 설정 확인 중...`);
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      
       if (userDoc.exists()) {
         const userData = userDoc.data() as UserProfile;
         setDebugInfo(prev => `${prev}\n사용자 데이터 로드됨`);
@@ -201,7 +202,7 @@ export default function LoginPage() {
         if (!userData.height || !userData.weight || !userData.age) {
           setUserProfile(userData);
           setIsPersonalizationOpen(true);
-          setDebugInfo(prev => `${prev}\n개인화 필요: 모달 표시`);
+          setDebugInfo(prev => `${prev}\n개인화 필요: 모달 표시됨`);
         } else {
           // 개인화 완료된 사용자는 홈으로
           setDebugInfo(prev => `${prev}\n개인화 완료: 홈으로 이동`);
@@ -210,7 +211,7 @@ export default function LoginPage() {
       } else {
         // 문서가 없으면 개인화 필요
         setIsPersonalizationOpen(true);
-        setDebugInfo(prev => `${prev}\n사용자 문서 없음: 개인화 모달 표시`);
+        setDebugInfo(prev => `${prev}\n사용자 문서 없음: 개인화 모달 표시됨`);
       }
     } catch (error: any) {
       console.error('Error checking personalization:', error);
@@ -225,10 +226,12 @@ export default function LoginPage() {
     setDebugInfo('Google 로그인 시작...');
     
     try {
+      // Cross-Origin-Opener-Policy 관련 오류 방지를 위한 설정
       const result = await signInWithGoogle();
+      
       if (result && result.user) {
         // 사용자가 로그인에 성공했을 때
-        console.log('Google 로그인 성공:', result.user);
+        console.log('Google 로그인 성공:', result.user.uid);
         setDebugInfo(prev => `${prev}\nGoogle 로그인 성공: ${result.user.uid}`);
         
         // Firestore에 사용자 정보가 없으면 기본 정보로 저장
@@ -246,13 +249,25 @@ export default function LoginPage() {
           
           await setDoc(userDocRef, userProfileData);
           setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
+          
+          // 사용자 정보가 없으므로 개인화 모달 표시
+          setUserProfile(userProfileData);
+          setIsPersonalizationOpen(true);
+        } else {
+          // 이미 정보가 있는 경우 개인화 필요 여부 확인
+          const userData = userDoc.data() as UserProfile;
+          if (!userData.height || !userData.weight || !userData.age) {
+            setUserProfile(userData);
+            setIsPersonalizationOpen(true);
+          } else {
+            // 모든 데이터가 있으면 홈으로 이동
+            navigate('/');
+          }
         }
         
         // 로그인 성공 메시지
         toast.success('Google 로그인이 완료되었습니다.');
-        setDebugInfo(prev => `${prev}\n로그인 완료 - AuthContext 상태 업데이트 대기 중`);
-        
-        // 로그인 후 처리는 isAuthenticated가 변경될 때 처리됨
+        setDebugInfo(prev => `${prev}\n로그인 완료 - 개인화 상태: ${isPersonalizationOpen ? '필요' : '완료'}`);
       } else {
         setError('Google 로그인에 실패했습니다.');
         setDebugInfo(prev => `${prev}\nGoogle 로그인 결과 없음`);

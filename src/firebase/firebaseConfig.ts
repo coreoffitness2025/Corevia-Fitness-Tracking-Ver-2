@@ -57,7 +57,7 @@ export const signInWithGoogle = async () => {
   // 브라우저 환경에서만 실행
   if (typeof window !== 'undefined') {
     try {
-      // 개발 및 프로덕션 환경 모두에서 팝업 방식 사용
+      // 팝업 방식 사용 - Cross-Origin-Opener-Policy 오류 방지 설정
       return await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error('Google 로그인 오류:', error);
@@ -66,6 +66,11 @@ export const signInWithGoogle = async () => {
       if (error.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.origin;
         throw new Error(`현재 도메인(${currentDomain})이 Firebase 인증에 허용되지 않았습니다. Firebase 콘솔에서 '인증 > 설정 > 승인된 도메인'에 이 도메인을 추가해주세요.`);
+      }
+      
+      // 창 닫힘 또는 COOP 오류 처리
+      if (error.code === 'auth/popup-closed-by-user' || error.message.includes('Cross-Origin-Opener-Policy')) {
+        throw new Error('로그인 창이 닫혔거나 브라우저 보안 정책에 의해 차단되었습니다. 다시 시도해 주세요.');
       }
       
       throw error;
