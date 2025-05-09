@@ -137,6 +137,27 @@ const checkPersonalizationNeeded = async (uid: string) => {
   }
 };
 
+// Firestore에 저장할 수 없는 undefined 값을 제거하는 함수
+const removeUndefined = (obj: any): any => {
+  if (obj === undefined) return null;
+  
+  if (typeof obj !== 'object' || obj === null) return obj;
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefined(item));
+  }
+  
+  const result: any = {};
+  for (const key in obj) {
+    const value = removeUndefined(obj[key]);
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  
+  return result;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -260,8 +281,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log('AuthContext: 업데이트할 프로필 데이터', updatedProfile);
       
+      // undefined 값을 모두 제거 (Firestore는 undefined 값을 저장할 수 없음)
+      const cleanProfile = removeUndefined(updatedProfile);
+      console.log('AuthContext: 정제된 프로필 데이터', cleanProfile);
+      
       // Firestore에 전체 업데이트된 프로필 저장 - merge 옵션 추가
-      await setDoc(userDocRef, updatedProfile, { merge: true });
+      await setDoc(userDocRef, cleanProfile, { merge: true });
       
       // 로컬 상태 업데이트
       setUserProfile(updatedProfile);

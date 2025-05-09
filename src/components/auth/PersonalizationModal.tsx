@@ -209,6 +209,13 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
     // 계산된 칼로리 또는 사용자 입력값 사용
     const finalCalories = targetCalories || (calculatedCalories ? calculatedCalories.target : 0);
     
+    // setConfiguration 객체 생성 - custom이 아닌 경우에도 값을 0으로 설정
+    const setConfigObject = {
+      preferredSetup: setConfig,
+      customSets: setConfig === 'custom' ? customSets : 0,
+      customReps: setConfig === 'custom' ? customReps : 0
+    };
+    
     // 모든 정보를 포함하는 완전한 프로필 업데이트
     onSave({
       height,
@@ -226,11 +233,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
         biceps: bicepsExercise,
         triceps: tricepsExercise
       },
-      setConfiguration: {
-        preferredSetup: setConfig,
-        customSets: setConfig === 'custom' ? customSets : undefined,
-        customReps: setConfig === 'custom' ? customReps : undefined
-      },
+      setConfiguration: setConfigObject,
       oneRepMax: {
         bench: benchPressMax,
         squat: squatMax,
