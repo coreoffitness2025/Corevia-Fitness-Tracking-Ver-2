@@ -9,7 +9,8 @@ import {
   LegMainExercise,
   BicepsMainExercise,
   TricepsMainExercise,
-  MainExerciseType
+  MainExerciseType,
+  SetConfiguration
 } from '../../types';
 import { addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
@@ -104,7 +105,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 추가 상태 변수 정의
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
   const [preferredExercises, setPreferredExercises] = useState<Record<string, string>>({});
-  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<'5x5' | '3x10' | 'custom'>('5x5');
+  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<SetConfiguration>('5x5');
   const [sets, setSets] = useState<number>(5);
   const [reps, setReps] = useState<number>(5);
 
@@ -529,6 +530,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     } else if (config.preferredSetup === '6x5') {
       setsCount = 6;
       repsCount = 5;
+    } else if (config.preferredSetup === '3x10') {
+      setsCount = 3;
+      repsCount = 10;
     } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
       setsCount = config.customSets;
       repsCount = config.customReps;
