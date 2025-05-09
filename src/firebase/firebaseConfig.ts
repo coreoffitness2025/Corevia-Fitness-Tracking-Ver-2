@@ -26,7 +26,6 @@ import {
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
-import { useState } from 'react';
 
 // Firebase 환경 설정 - GitHub Secrets에서 관리되는 환경 변수 사용
 const firebaseConfig = {
@@ -216,8 +215,3 @@ export const getFAQs = async (part?: ExercisePart, type?: 'method' | 'sets'): Pr
     return [];
   }
 };
-
-const [profileLoading, setProfileLoading] = useState(true);
-const [settingsLoading, setSettingsLoading] = useState(true);
-
-// 각 부분이 로드되었는지 명확하게 추적
