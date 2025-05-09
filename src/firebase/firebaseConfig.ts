@@ -26,6 +26,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
+import { useState } from 'react';
 
 // Firebase 환경 설정 - GitHub Secrets에서 관리되는 환경 변수 사용
 const firebaseConfig = {
@@ -136,7 +137,29 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
   try {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, profile);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      // 새 문서 생성 시 전체 데이터 한번에 저장 (merge 옵션 없음)
+      await setDoc(userRef, profile);
+    } else {
+      // 기존 문서 업데이트 시 merge 옵션 사용
+      console.log('프로필 저장 전:', profile);
+      await setDoc(userRef, profile, { merge: true });
+      console.log('프로필 저장 후 재확인:');
+      const verifyDoc = await getDoc(userRef);
+      console.log(verifyDoc.data());
+    }
+
+    // 업데이트 후 명시적으로 최신 데이터 가져오기
+    const updateAndRefresh = async () => {
+      await setDoc(userRef, profile, { merge: true });
+      // 강제로 최신 데이터 다시 로드
+      const freshData = await getDoc(userRef);
+      return freshData.data() as UserProfile;
+    };
+
+    return updateAndRefresh();
   } catch (error) {
     console.error('Error updating user profile:', error);
     throw error;
@@ -193,3 +216,8 @@ export const getFAQs = async (part?: ExercisePart, type?: 'method' | 'sets'): Pr
     return [];
   }
 };
+
+const [profileLoading, setProfileLoading] = useState(true);
+const [settingsLoading, setSettingsLoading] = useState(true);
+
+// 각 부분이 로드되었는지 명확하게 추적
