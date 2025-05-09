@@ -101,11 +101,99 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 웜업 팁 표시 상태
   const [showWarmupTips, setShowWarmupTips] = useState(true);
   
-  // 파트가 변경될 때 메인 운동 옵션 업데이트
+  // 컴포넌트 마운트 시 사용자 프로필에서 선호 운동과 세트 설정을 가져와 초기화
+  useEffect(() => {
+    if (userProfile) {
+      console.log('사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
+      
+      // 선호하는 운동 설정이 있는 경우 해당 부위의 메인 운동 설정
+      if (userProfile.preferredExercises) {
+        // 초기 부위는 가슴으로 설정하고 해당 부위의 선호 운동 적용
+        const initialExercise = userProfile.preferredExercises.chest;
+        if (initialExercise) {
+          setSelectedMainExercise(initialExercise as MainExerciseType);
+          
+          // 메인 운동 이름 가져오기
+          const chestOptions = mainExerciseOptions.chest;
+          const selectedOption = chestOptions.find(option => option.value === initialExercise);
+          
+          if (selectedOption) {
+            setMainExercise(prev => ({
+              ...prev,
+              name: selectedOption.label
+            }));
+          }
+        }
+      }
+      
+      // 선호하는 세트 구성이 있는 경우 적용
+      if (userProfile.setConfiguration) {
+        const config = userProfile.setConfiguration;
+        
+        // 세트 구성에 따라 초기 세트 수 설정
+        let setsCount = 5; // 기본값
+        let repsCount = 5; // 기본값
+        
+        // 설정된 세트 구성에 따라 세트 수와 반복 수 결정
+        if (config.preferredSetup === '5x5') {
+          setsCount = 5;
+          repsCount = 5;
+        } else if (config.preferredSetup === '10x5') {
+          setsCount = 10;
+          repsCount = 5;
+        } else if (config.preferredSetup === '6x5') {
+          setsCount = 6;
+          repsCount = 5;
+        } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
+          setsCount = config.customSets;
+          repsCount = config.customReps;
+        }
+        
+        // 해당 세트 수만큼 초기 세트 배열 생성
+        const initialSets = Array(setsCount).fill(0).map(() => ({
+          reps: repsCount,  // 선호 반복 수로 초기화
+          weight: 0,        // 무게는 사용자가 입력
+          isSuccess: false
+        }));
+        
+        console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
+        setMainExercise(prev => ({
+          ...prev,
+          sets: initialSets
+        }));
+      }
+    }
+  }, [userProfile]);
+  
+  // 파트가 변경될 때 메인 운동 옵션 업데이트 및 선호 운동 적용
   useEffect(() => {
     const selectedPart = exercisePartOptions.find(option => option.value === part);
-    if (selectedPart) {
-      // 해당 부위의 첫 번째 운동으로 선택
+    if (selectedPart && userProfile) {
+      console.log('운동 부위 변경됨:', part);
+      
+      // 사용자 선호 운동이 있으면 해당 부위의 선호 운동으로 설정
+      if (userProfile.preferredExercises) {
+        const preferredExercise = userProfile.preferredExercises[part];
+        
+        if (preferredExercise) {
+          console.log('선호 운동 적용:', preferredExercise);
+          setSelectedMainExercise(preferredExercise as MainExerciseType);
+          
+          // 메인 운동 이름 가져오기
+          const options = mainExerciseOptions[part];
+          const selectedOption = options.find(option => option.value === preferredExercise);
+          
+          if (selectedOption) {
+            setMainExercise(prev => ({
+              ...prev,
+              name: selectedOption.label
+            }));
+          }
+          return; // 선호 운동 적용 후 종료
+        }
+      }
+      
+      // 선호 운동이 없으면 해당 부위의 첫 번째 운동으로 선택
       const firstOption = mainExerciseOptions[part][0];
       setSelectedMainExercise(firstOption.value as MainExerciseType);
       setMainExercise(prev => ({
@@ -113,8 +201,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         name: firstOption.label
       }));
     }
-  }, [part]);
-
+  }, [part, userProfile]);
+  
   // 메인 운동이 변경될 때 이름 업데이트
   useEffect(() => {
     const options = mainExerciseOptions[part];

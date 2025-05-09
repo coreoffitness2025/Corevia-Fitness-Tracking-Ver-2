@@ -126,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       setLoading(true);
+      console.log('AuthContext: 프로필 업데이트 시작', profile);
       
       // 현재 프로필과 새 데이터 병합
       const updatedProfile: UserProfile = {
@@ -137,10 +138,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         photoURL: currentUser.photoURL
       };
       
-      // Firestore 업데이트
-      await updateDoc(doc(db, 'users', currentUser.uid), profile);
+      // Firestore 업데이트 - 객체 그대로가 아니라 필요한 필드만 업데이트
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, profile as { [x: string]: any });
+      console.log('AuthContext: Firestore 업데이트 완료', profile);
       
+      // 로컬 상태는 완전한 객체로 업데이트
       setUserProfile(updatedProfile);
+      console.log('AuthContext: 로컬 상태 업데이트 완료');
       setError(null);
     } catch (err) {
       console.error('Error updating profile:', err);
