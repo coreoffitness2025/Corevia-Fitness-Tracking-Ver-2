@@ -134,7 +134,17 @@ export default function LoginPage() {
     setDebugInfo(prev => `${prev}\n인증 상태: ${isAuthenticated ? '로그인됨' : '로그인되지 않음'}\n사용자 ID: ${currentUser?.uid || 'none'}`);
     
     if (isAuthenticated && currentUser) {
-      checkIfNeedsPersonalization();
+      // 세션 스토리지에서 개인화 필요 여부 확인
+      const needsPersonalization = sessionStorage.getItem('needsPersonalization');
+      if (needsPersonalization === 'true') {
+        // 개인화 필요 여부 세션 스토리지에서 삭제
+        sessionStorage.removeItem('needsPersonalization');
+        // 개인화 모달 표시
+        checkIfNeedsPersonalization();
+      } else {
+        // 기존 로직으로 체크
+        checkIfNeedsPersonalization();
+      }
     }
   }, [isAuthenticated, currentUser]);
 

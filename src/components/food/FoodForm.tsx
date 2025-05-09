@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../contexts/AuthContext';
 import { useFoodStore } from '../../stores/foodStore';
 import { Food } from '../../types';
 import { toast } from 'react-hot-toast';
@@ -13,16 +13,18 @@ interface FoodFormProps {
 
 // 활동 수준에 따른 칼로리 계수
 const activityMultipliers = {
-  low: 1.2,      // 거의 운동하지 않음
-  moderate: 1.5, // 주 3-5회 운동
-  high: 1.8      // 거의 매일 운동
+  sedentary: 1.2,    // 거의 운동 안함
+  light: 1.375,      // 가벼운 운동 (주 1-3회)
+  moderate: 1.55,    // 중간 정도 운동 (주 3-5회)
+  active: 1.725,     // 활발한 운동 (주 6-7회)
+  veryActive: 1.9    // 매우 활발한 운동 (하루 2회 이상)
 };
 
 // 목표에 따른 칼로리 조정
 const goalMultipliers = {
-  loss: 0.8,     // 체중 감량
+  lose: 0.8,     // 체중 감량
   maintain: 1.0, // 체중 유지
-  gain: 1.2      // 체중 증가
+  gain: 1.15     // 체중 증가
 };
 
 // 성별에 따른 기초 대사량 계산 (Harris-Benedict 방정식)
@@ -35,7 +37,7 @@ function calculateBMR(gender: 'male' | 'female', weight: number, height: number,
 }
 
 const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
-  const { user } = useAuthStore();
+  const { currentUser, userProfile } = useAuth();
   const { addFood } = useFoodStore();
   const [foodName, setFoodName] = useState('');
   const [mealType, setMealType] = useState('아침');
@@ -53,52 +55,82 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const [carbsTarget, setCarbsTarget] = useState<number>(0);
   const [fatTarget, setFatTarget] = useState<number>(0);
 
+  // 전역 이벤트 리스너로 프로필 변경 감지
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('식단 컴포넌트: 프로필 업데이트 감지됨:', event.detail.profile);
+      const updatedProfile = event.detail.profile;
+      if (updatedProfile) {
+        updateNutritionTargets(updatedProfile);
+      }
+    };
+    
+    // 이벤트 리스너 등록
+    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    };
+  }, []);
+
   // 사용자 프로필에서 목표 칼로리 계산
   useEffect(() => {
-    if (user) {
-      // 실제 앱에서는 Firebase에서 사용자 프로필을 가져와야 함
-      // 여기서는 임시 데이터 사용
-      const mockUserProfile = {
-        height: 175,
-        weight: 70,
-        age: 30,
-        gender: 'male' as 'male' | 'female',
-        activityLevel: 'moderate' as 'low' | 'moderate' | 'high',
-        fitnessGoal: 'maintain' as 'loss' | 'maintain' | 'gain'
-      };
-      
-      // 기초 대사량(BMR) 계산
-      const bmr = calculateBMR(
-        mockUserProfile.gender, 
-        mockUserProfile.weight, 
-        mockUserProfile.height, 
-        mockUserProfile.age
-      );
-      
-      // 총 일일 에너지 소비량(TDEE) 계산
-      const tdee = bmr * activityMultipliers[mockUserProfile.activityLevel];
-      
-      // 목표에 따른 칼로리 조정
-      const calculatedCalories = Math.round(tdee * goalMultipliers[mockUserProfile.fitnessGoal]);
-      
-      setTargetCalories(calculatedCalories);
-      
-      // 단백질, 탄수화물, 지방 목표량 계산
-      // 체중 1kg당 단백질 1.6g, 탄수화물과 지방은 남은 칼로리에서 분배
-      const proteinGrams = Math.round(mockUserProfile.weight * 1.6);
-      const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
-      
-      const remainingCalories = calculatedCalories - proteinCalories;
-      
-      // 탄수화물 45-65%, 지방 20-35% (여기서는 중간값 사용)
-      const carbsCalories = remainingCalories * 0.55;
-      const fatCalories = remainingCalories * 0.3;
-      
-      setProteinTarget(proteinGrams);
-      setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
-      setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
+    if (userProfile) {
+      updateNutritionTargets(userProfile);
     }
-  }, [user]);
+  }, [userProfile]);
+
+  const updateNutritionTargets = (profile: any) => {
+    // 이미 계산된 목표 칼로리가 있으면 사용
+    if (profile.targetCalories) {
+      console.log('계산된 목표 칼로리 사용:', profile.targetCalories);
+      setTargetCalories(profile.targetCalories);
+    } else {
+      // 계산된 목표 칼로리가 없으면 직접 계산
+      console.log('목표 칼로리 직접 계산');
+      if (profile.height && profile.weight && profile.age && profile.gender) {
+        const bmr = calculateBMR(
+          profile.gender, 
+          profile.weight, 
+          profile.height, 
+          profile.age
+        );
+        
+        const activityLevel = profile.activityLevel || 'moderate';
+        const fitnessGoal = profile.fitnessGoal || 'maintain';
+        
+        // 총 일일 에너지 소비량(TDEE) 계산
+        const tdee = bmr * activityMultipliers[activityLevel];
+        
+        // 목표에 따른 칼로리 조정
+        const calculatedCalories = Math.round(tdee * goalMultipliers[fitnessGoal]);
+        
+        setTargetCalories(calculatedCalories);
+      } else {
+        // 기본 목표 칼로리 설정
+        setTargetCalories(2000);
+      }
+    }
+    
+    // 단백질, 탄수화물, 지방 목표량 계산
+    calculateMacroNutrientTargets(profile.weight || 70);
+  };
+
+  const calculateMacroNutrientTargets = (weight: number) => {
+    // 체중 1kg당 단백질 1.6g, 탄수화물과 지방은 남은 칼로리에서 분배
+    const proteinGrams = Math.round(weight * 1.6);
+    const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
+    
+    const remainingCalories = targetCalories - proteinCalories;
+    
+    // 탄수화물 45-65%, 지방 20-35% (여기서는 중간값 사용)
+    const carbsCalories = remainingCalories * 0.55;
+    const fatCalories = remainingCalories * 0.3;
+    
+    setProteinTarget(proteinGrams);
+    setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
+    setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
+  };
 
   // 가상의 파일 선택 처리 (실제로는 Firebase Storage 등을 사용해야 함)
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,7 +175,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user) {
+    if (!currentUser) {
       toast.error('로그인이 필요합니다.');
       return;
     }
@@ -157,7 +189,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       const mealDateTime = new Date(`${mealDate}T${mealTime}`);
       
       const foodData: Omit<Food, 'id'> = {
-        userId: user.uid,
+        userId: currentUser.uid,
         date: mealDateTime,
         name: foodName || `${mealType} 식사`,
         imageUrl: imageUrl,

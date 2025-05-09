@@ -128,43 +128,51 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       
       // 선호하는 세트 구성이 있는 경우 적용
       if (userProfile.setConfiguration) {
-        const config = userProfile.setConfiguration;
-        
-        // 세트 구성에 따라 초기 세트 수 설정
-        let setsCount = 5; // 기본값
-        let repsCount = 5; // 기본값
-        
-        // 설정된 세트 구성에 따라 세트 수와 반복 수 결정
-        if (config.preferredSetup === '5x5') {
-          setsCount = 5;
-          repsCount = 5;
-        } else if (config.preferredSetup === '10x5') {
-          setsCount = 10;
-          repsCount = 5;
-        } else if (config.preferredSetup === '6x5') {
-          setsCount = 6;
-          repsCount = 5;
-        } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
-          setsCount = config.customSets;
-          repsCount = config.customReps;
-        }
-        
-        // 해당 세트 수만큼 초기 세트 배열 생성
-        const initialSets = Array(setsCount).fill(0).map(() => ({
-          reps: repsCount,  // 선호 반복 수로 초기화
-          weight: 0,        // 무게는 사용자가 입력
-          isSuccess: false
-        }));
-        
-        console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
-        setMainExercise(prev => ({
-          ...prev,
-          sets: initialSets
-        }));
+        applySetConfiguration(userProfile.setConfiguration);
       }
     }
   }, [userProfile]);
   
+  // 전역 이벤트 리스너로 프로필 변경 감지
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('프로필 업데이트 감지됨:', event.detail.profile);
+      
+      // 프로필 데이터로 폼 업데이트
+      const updatedProfile = event.detail.profile;
+      if (updatedProfile) {
+        // 운동 세트 구성 업데이트
+        if (updatedProfile.setConfiguration) {
+          applySetConfiguration(updatedProfile.setConfiguration);
+        }
+        
+        // 선호 운동 업데이트
+        if (updatedProfile.preferredExercises && updatedProfile.preferredExercises[part]) {
+          const preferredExercise = updatedProfile.preferredExercises[part];
+          // 메인 운동 선택
+          setSelectedMainExercise(preferredExercise as MainExerciseType);
+          
+          // 메인 운동 이름 업데이트
+          const options = mainExerciseOptions[part];
+          const selectedOption = options.find(option => option.value === preferredExercise);
+          if (selectedOption) {
+            setMainExercise(prev => ({
+              ...prev,
+              name: selectedOption.label
+            }));
+          }
+        }
+      }
+    };
+    
+    // 이벤트 리스너 등록
+    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
+    };
+  }, [part]);
+
   // 파트가 변경될 때 메인 운동 옵션 업데이트 및 선호 운동 적용
   useEffect(() => {
     const selectedPart = exercisePartOptions.find(option => option.value === part);
@@ -478,6 +486,43 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       console.error('Error saving session:', error);
       toast.error('운동 기록 저장에 실패했습니다.');
     }
+  };
+
+  // 세트 구성 적용 함수
+  const applySetConfiguration = (config: any) => {
+    console.log('세트 구성 적용:', config);
+    
+    // 세트 구성에 따라 초기 세트 수 설정
+    let setsCount = 5; // 기본값
+    let repsCount = 5; // 기본값
+    
+    // 설정된 세트 구성에 따라 세트 수와 반복 수 결정
+    if (config.preferredSetup === '5x5') {
+      setsCount = 5;
+      repsCount = 5;
+    } else if (config.preferredSetup === '10x5') {
+      setsCount = 10;
+      repsCount = 5;
+    } else if (config.preferredSetup === '6x5') {
+      setsCount = 6;
+      repsCount = 5;
+    } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
+      setsCount = config.customSets;
+      repsCount = config.customReps;
+    }
+    
+    // 해당 세트 수만큼 초기 세트 배열 생성
+    const initialSets = Array(setsCount).fill(0).map(() => ({
+      reps: repsCount,  // 선호 반복 수로 초기화
+      weight: 0,        // 무게는 사용자가 입력
+      isSuccess: false
+    }));
+    
+    console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
+    setMainExercise(prev => ({
+      ...prev,
+      sets: initialSets
+    }));
   };
 
   return (
