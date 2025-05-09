@@ -13,7 +13,7 @@ import { LogOut, Settings, FileText, Info } from 'lucide-react';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { currentUser, userProfile: authUserProfile, logout } = useAuth();
+  const { currentUser, userProfile: authUserProfile, logout, updateProfile } = useAuth();
   const [userSettings, setUserSettings] = useState<Partial<UserProfile> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
@@ -55,15 +55,24 @@ const SettingsPage = () => {
   // 개인화 설정 저장 핸들러
   const handleSavePersonalization = async (profile: Partial<UserProfile>) => {
     try {
+      console.log('개인화 설정 저장 시도:', profile);
+      
       // 로그인한 사용자인 경우 파이어스토어에 저장
       if (currentUser?.uid) {
-        const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, profile);
+        // context의 updateProfile 사용 (이것이 AuthContext 내부에서 Firestore 업데이트 처리)
+        await updateProfile(profile);
+        console.log('개인화 설정 저장 성공');
+        
+        // 로컬 상태 업데이트
+        setUserSettings(prev => ({...prev, ...profile}));
+        setIsPersonalizationModalOpen(false);
+        
+        // 성공 메시지
+        alert('설정이 성공적으로 저장되었습니다.');
+      } else {
+        console.error('로그인된 사용자가 없습니다.');
+        alert('로그인 후 설정을 저장할 수 있습니다.');
       }
-      
-      // 로컬 상태 업데이트
-      setUserSettings(prev => ({...prev, ...profile}));
-      setIsPersonalizationModalOpen(false);
     } catch (error) {
       console.error('Error saving personalization settings:', error);
       alert('설정을 저장하는 중 오류가 발생했습니다.');
