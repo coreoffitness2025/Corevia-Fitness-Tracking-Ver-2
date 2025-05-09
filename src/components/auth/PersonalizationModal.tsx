@@ -250,10 +250,10 @@ const PersonalizationModal = ({ isOpen, onClose, onSave }: PersonalizationModalP
 
   return (
     <div 
-      className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isOpen ? 'block' : 'hidden'}`}
+      className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50`}
       style={{ display: isOpen ? 'flex' : 'none' }}
     >
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-auto">
         <h2 className="text-xl font-bold mb-4">프로필 설정 (단계 {currentStep}/{totalSteps})</h2>
         
         {showCalculator ? (

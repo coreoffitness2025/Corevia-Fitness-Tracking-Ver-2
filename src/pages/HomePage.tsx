@@ -61,7 +61,7 @@ const HomePage = () => {
           collection(db, 'sessions'),
           where('userId', '==', userProfile.uid),
           orderBy('date', 'desc'),
-          limit(3)
+          limit(3)  // 최대 3개만 가져오도록 제한
         );
         
         const sessionsSnapshot = await getDocs(sessionsQuery);
@@ -86,7 +86,8 @@ const HomePage = () => {
           where('userId', '==', userProfile.uid),
           where('date', '>=', yesterday),
           where('date', '<', todayStart),
-          orderBy('date', 'asc')
+          orderBy('date', 'asc'),
+          limit(10)  // 최대 10개만 가져오도록 제한
         );
         
         const mealsSnapshot = await getDocs(mealsQuery);

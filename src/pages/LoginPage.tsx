@@ -134,17 +134,10 @@ export default function LoginPage() {
     setDebugInfo(prev => `${prev}\n인증 상태: ${isAuthenticated ? '로그인됨' : '로그인되지 않음'}\n사용자 ID: ${currentUser?.uid || 'none'}`);
     
     if (isAuthenticated && currentUser) {
-      // 세션 스토리지에서 개인화 필요 여부 확인
-      const needsPersonalization = sessionStorage.getItem('needsPersonalization');
-      if (needsPersonalization === 'true') {
-        // 개인화 필요 여부 세션 스토리지에서 삭제
-        sessionStorage.removeItem('needsPersonalization');
-        // 개인화 모달 표시
+      // 로그인 상태 확인 후 즉시 개인화 필요 여부 확인
+      setTimeout(() => {
         checkIfNeedsPersonalization();
-      } else {
-        // 기존 로직으로 체크
-        checkIfNeedsPersonalization();
-      }
+      }, 500); // 약간의 지연 시간을 두어 다른 상태가 업데이트될 시간을 줌
     }
   }, [isAuthenticated, currentUser]);
 
@@ -210,6 +203,7 @@ export default function LoginPage() {
         
         // 중요 필드가 없으면 개인화 필요
         if (!userData.height || !userData.weight || !userData.age) {
+          console.log('개인화 필요: 모달 표시됨');
           setUserProfile(userData);
           setIsPersonalizationOpen(true);
           setDebugInfo(prev => `${prev}\n개인화 필요: 모달 표시됨`);
@@ -220,6 +214,7 @@ export default function LoginPage() {
         }
       } else {
         // 문서가 없으면 개인화 필요
+        console.log('사용자 문서 없음: 개인화 모달 표시됨');
         setIsPersonalizationOpen(true);
         setDebugInfo(prev => `${prev}\n사용자 문서 없음: 개인화 모달 표시됨`);
       }
@@ -396,13 +391,11 @@ export default function LoginPage() {
         </div>
       </div>
       
-      {isPersonalizationOpen && (
-        <PersonalizationModal
-          isOpen={isPersonalizationOpen}
-          onClose={() => setIsPersonalizationOpen(false)}
-          onSave={handlePersonalizationSave}
-        />
-      )}
+      <PersonalizationModal
+        isOpen={isPersonalizationOpen}
+        onClose={() => setIsPersonalizationOpen(false)}
+        onSave={handlePersonalizationSave}
+      />
     </div>
   );
 }
