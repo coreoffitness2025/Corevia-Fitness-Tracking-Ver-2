@@ -225,13 +225,43 @@ export default function LoginPage() {
     setDebugInfo('Google 로그인 시작...');
     
     try {
-      await signInWithGoogle();
-      // 리디렉션 방식으로 인해 페이지가 새로고침됨
-      // 추가 처리는 useEffect의 handleRedirectResult에서 처리됨
+      const result = await signInWithGoogle();
+      if (result && result.user) {
+        // 사용자가 로그인에 성공했을 때
+        console.log('Google 로그인 성공:', result.user);
+        setDebugInfo(prev => `${prev}\nGoogle 로그인 성공: ${result.user.uid}`);
+        
+        // Firestore에 사용자 정보가 없으면 기본 정보로 저장
+        const userDocRef = doc(db, 'users', result.user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+          // 기본 사용자 프로필 데이터 생성
+          const userProfileData = {
+            uid: result.user.uid,
+            displayName: result.user.displayName,
+            email: result.user.email,
+            photoURL: result.user.photoURL,
+          } as UserProfile;
+          
+          await setDoc(userDocRef, userProfileData);
+          setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
+        }
+        
+        // 로그인 성공 메시지
+        toast.success('Google 로그인이 완료되었습니다.');
+        setDebugInfo(prev => `${prev}\n로그인 완료 - AuthContext 상태 업데이트 대기 중`);
+        
+        // 로그인 후 처리는 isAuthenticated가 변경될 때 처리됨
+      } else {
+        setError('Google 로그인에 실패했습니다.');
+        setDebugInfo(prev => `${prev}\nGoogle 로그인 결과 없음`);
+      }
     } catch (error: any) {
       console.error('Google 로그인 오류:', error);
       setError('Google 로그인 중 오류가 발생했습니다.');
       setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
+    } finally {
       setIsLoading(false);
     }
   };

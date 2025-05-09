@@ -57,15 +57,10 @@ export const signInWithGoogle = async () => {
   // 브라우저 환경에서만 실행
   if (typeof window !== 'undefined') {
     try {
-      // 개발 환경에서는 팝업 방식 사용 (리디렉션 문제 해결)
-      if (import.meta.env.DEV) {
-        return await signInWithPopup(auth, googleProvider);
-      } else {
-        // 프로덕션에서는 리디렉션 방식 사용
-        await signInWithRedirect(auth, googleProvider);
-      }
+      // 개발 및 프로덕션 환경 모두에서 팝업 방식 사용
+      return await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
-      console.error('리디렉션 로그인 오류:', error);
+      console.error('Google 로그인 오류:', error);
       
       // 도메인 인증 오류인 경우 더 명확한 오류 메시지
       if (error.code === 'auth/unauthorized-domain') {
