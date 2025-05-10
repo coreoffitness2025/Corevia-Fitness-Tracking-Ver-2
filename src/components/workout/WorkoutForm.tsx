@@ -743,31 +743,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           />
                         </div>
-                        {!set.isSuccess && typeof set.isSuccess !== 'boolean' ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleTrainingComplete(index, true)}
-                            icon={<CheckCircle size={16} />}
-                          >
-                            훈련 완료
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant={set.isSuccess ? "success" : "danger"}
-                            size="sm"
-                            onClick={() => {
-                              const newSets = [...mainExercise.sets];
-                              newSets[index].isSuccess = !newSets[index].isSuccess;
-                              setMainExercise(prev => ({ ...prev, sets: newSets }));
-                            }}
-                            icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                          >
-                            {set.isSuccess ? '성공' : '실패'}
-                          </Button>
-                        )}
+                        <Button
+                          type="button"
+                          variant={
+                            typeof set.isSuccess === 'boolean'
+                              ? set.isSuccess ? "success" : "danger"
+                              : "outline"
+                          }
+                          size="sm"
+                          onClick={() => handleTrainingComplete(index, true)}
+                          icon={
+                            typeof set.isSuccess === 'boolean'
+                              ? set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />
+                              : <CheckCircle size={16} />
+                          }
+                        >
+                          훈련 완료
+                        </Button>
                         <Button
                           type="button"
                           variant={
@@ -886,31 +878,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                           </div>
-                          {!set.isSuccess && typeof set.isSuccess !== 'boolean' ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleTrainingComplete(setIndex, false, index)}
-                              icon={<CheckCircle size={16} />}
-                            >
-                              훈련 완료
-                            </Button>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant={set.isSuccess ? "success" : "danger"}
-                              size="sm"
-                              onClick={() => {
-                                const newExercises = [...accessoryExercises];
-                                newExercises[index].sets[setIndex].isSuccess = !newExercises[index].sets[setIndex].isSuccess;
-                                setAccessoryExercises(newExercises);
-                              }}
-                              icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                            >
-                              {set.isSuccess ? '성공' : '실패'}
-                            </Button>
-                          )}
+                          <Button
+                            type="button"
+                            variant={
+                              typeof set.isSuccess === 'boolean'
+                                ? set.isSuccess ? "success" : "danger"
+                                : "outline"
+                            }
+                            size="sm"
+                            onClick={() => handleTrainingComplete(setIndex, false, index)}
+                            icon={
+                              typeof set.isSuccess === 'boolean'
+                                ? set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />
+                                : <CheckCircle size={16} />
+                            }
+                          >
+                            훈련 완료
+                          </Button>
                           <Button
                             type="button"
                             variant={
