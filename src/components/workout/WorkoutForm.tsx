@@ -143,6 +143,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           setSelectedSetConfiguration(config.preferredSetup);
           applySetConfiguration(config);
         }
+      } else {
+        // 기본값으로 10x5 설정
+        setSelectedSetConfiguration('10x5');
+        applySetConfiguration({ preferredSetup: '10x5' });
       }
     }
   }, [userProfile]);
@@ -332,24 +336,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     
     // 세트 구성에 따라 초기 세트 수 설정
     let setsCount = 5; // 기본값
-    let repsCount = 5; // 기본값
+    let repsCount = 10; // 기본값
     
     // 설정된 세트 구성에 따라 세트 수와 반복 수 결정
-    if (config.preferredSetup === '5x5') {
+    if (config.preferredSetup === '10x5') {
       setsCount = 5;
-      repsCount = 5;
-    } else if (config.preferredSetup === '10x5') {
-      setsCount = 10;
-      repsCount = 5;
-    } else if (config.preferredSetup === '6x5') {
-      setsCount = 6;
-      repsCount = 5;
-    } else if (config.preferredSetup === ('15x5' as SetConfiguration)) {
-      setsCount = 15;
-      repsCount = 5;
-    } else if (config.preferredSetup === '3x10') {
-      setsCount = 3;
       repsCount = 10;
+    } else if (config.preferredSetup === '15x5') {
+      setsCount = 5;
+      repsCount = 15;
+    } else if (config.preferredSetup === '6x3') {
+      setsCount = 3;
+      repsCount = 6;
     } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
       setsCount = config.customSets;
       repsCount = config.customReps;
@@ -538,30 +536,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           {/* 세트 구성 선택 섹션 추가 */}
           <Card className="animate-slideUp">
             <CardTitle>세트 구성 설정</CardTitle>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-              <Button
-                type="button"
-                variant={selectedSetConfiguration === '5x5' ? "primary" : "outline"}
-                size="sm"
-                onClick={() => handleSetConfigChange('5x5')}
-              >
-                5세트 x 5회
-              </Button>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
               <Button
                 type="button"
                 variant={selectedSetConfiguration === '10x5' ? "primary" : "outline"}
                 size="sm"
                 onClick={() => handleSetConfigChange('10x5')}
               >
-                10세트 x 5회
-              </Button>
-              <Button
-                type="button"
-                variant={selectedSetConfiguration === '6x5' ? "primary" : "outline"}
-                size="sm"
-                onClick={() => handleSetConfigChange('6x5')}
-              >
-                6세트 x 5회
+                10회 x 5세트
               </Button>
               <Button
                 type="button"
@@ -569,15 +551,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
               >
-                15세트 x 5회
+                15회 x 5세트
               </Button>
               <Button
                 type="button"
-                variant={selectedSetConfiguration === '3x10' ? "primary" : "outline"}
+                variant={selectedSetConfiguration === ('6x3' as SetConfiguration) ? "primary" : "outline"}
                 size="sm"
-                onClick={() => handleSetConfigChange('3x10')}
+                onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
               >
-                3세트 x 10회
+                6회 x 3세트
               </Button>
               <Button
                 type="button"

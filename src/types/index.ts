@@ -103,7 +103,7 @@ export interface UserProfile {
   targetCalories?: number;
 }
 
-export type SetConfiguration = '5x5' | '10x5' | '6x5' | '15x5' | '3x10' | 'custom';
+export type SetConfiguration = '10x5' | '15x5' | '6x3' | 'custom';
 
 export interface UserSettings {
   darkMode: boolean;
