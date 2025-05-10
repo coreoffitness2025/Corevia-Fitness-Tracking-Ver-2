@@ -297,19 +297,32 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setAccessoryExercises(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 횟수 자동 성공 처리
+  // 횟수 자동 성공 처리 함수 수정
   const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
+    // 횟수 제한: 1-10 사이만 허용
+    const limitedReps = Math.max(1, Math.min(10, newReps));
+    
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
-      newSets[setIndex].reps = newReps;
-      // 10회 이상이면 자동으로 성공 처리
-      newSets[setIndex].isSuccess = newReps >= 10;
+      newSets[setIndex].reps = limitedReps;
       setMainExercise(prev => ({ ...prev, sets: newSets }));
     } else if (accessoryIndex !== undefined) {
       const newExercises = [...accessoryExercises];
-      newExercises[accessoryIndex].sets[setIndex].reps = newReps;
-      // 10회 이상이면 자동으로 성공 처리
-      newExercises[accessoryIndex].sets[setIndex].isSuccess = newReps >= 10;
+      newExercises[accessoryIndex].sets[setIndex].reps = limitedReps;
+      setAccessoryExercises(newExercises);
+    }
+  };
+
+  // 훈련 완료 처리 함수 추가
+  const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
+    if (isMainExercise) {
+      const newSets = [...mainExercise.sets];
+      // 10회이면 성공, 그렇지 않으면 실패
+      newSets[setIndex].isSuccess = newSets[setIndex].reps >= 10;
+      setMainExercise(prev => ({ ...prev, sets: newSets }));
+    } else if (accessoryIndex !== undefined) {
+      const newExercises = [...accessoryExercises];
+      newExercises[accessoryIndex].sets[setIndex].isSuccess = newExercises[accessoryIndex].sets[setIndex].reps >= 10;
       setAccessoryExercises(newExercises);
     }
   };
@@ -690,30 +703,42 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           />
                         </div>
                         <div className="flex flex-col">
-                          <label className="text-xs text-gray-500 mb-1">횟수</label>
+                          <label className="text-xs text-gray-500 mb-1">횟수 (최대 10)</label>
                           <input
                             type="number"
                             value={set.reps}
                             onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
                             placeholder="횟수"
+                            min="1"
+                            max="10"
                             className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           />
                         </div>
-                        <Button
-                          type="button"
-                          variant={set.isSuccess ? "success" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            const newSets = [...mainExercise.sets];
-                            newSets[index].isSuccess = !newSets[index].isSuccess;
-                            setMainExercise(prev => ({ ...prev, sets: newSets }));
-                          }}
-                          icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                        >
-                          {set.isSuccess ? '성공' : '실패'}
-                        </Button>
-                        <span className="text-xs text-gray-500 italic ml-2">(* 10회 이상 성공시 성공으로 계산)</span>
-                        
+                        {!set.isSuccess && typeof set.isSuccess !== 'boolean' ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTrainingComplete(index, true)}
+                            icon={<CheckCircle size={16} />}
+                          >
+                            훈련 완료
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant={set.isSuccess ? "success" : "danger"}
+                            size="sm"
+                            onClick={() => {
+                              const newSets = [...mainExercise.sets];
+                              newSets[index].isSuccess = !newSets[index].isSuccess;
+                              setMainExercise(prev => ({ ...prev, sets: newSets }));
+                            }}
+                            icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                          >
+                            {set.isSuccess ? '성공' : '실패'}
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant={
@@ -813,30 +838,42 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             />
                           </div>
                           <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">횟수</label>
+                            <label className="text-xs text-gray-500 mb-1">횟수 (최대 10)</label>
                             <input
                               type="number"
                               value={set.reps}
                               onChange={(e) => handleRepsChange(Number(e.target.value), setIndex, false, index)}
                               placeholder="횟수"
+                              min="1"
+                              max="10"
                               className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                           </div>
-                          <Button
-                            type="button"
-                            variant={set.isSuccess ? "success" : "outline"}
-                            size="sm"
-                            onClick={() => {
-                              const newExercises = [...accessoryExercises];
-                              newExercises[index].sets[setIndex].isSuccess = !newExercises[index].sets[setIndex].isSuccess;
-                              setAccessoryExercises(newExercises);
-                            }}
-                            icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                          >
-                            {set.isSuccess ? '성공' : '실패'}
-                          </Button>
-                          <span className="text-xs text-gray-500 italic ml-2">(* 10회 이상 성공시 성공으로 계산)</span>
-                          
+                          {!set.isSuccess && typeof set.isSuccess !== 'boolean' ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleTrainingComplete(setIndex, false, index)}
+                              icon={<CheckCircle size={16} />}
+                            >
+                              훈련 완료
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant={set.isSuccess ? "success" : "danger"}
+                              size="sm"
+                              onClick={() => {
+                                const newExercises = [...accessoryExercises];
+                                newExercises[index].sets[setIndex].isSuccess = !newExercises[index].sets[setIndex].isSuccess;
+                                setAccessoryExercises(newExercises);
+                              }}
+                              icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                            >
+                              {set.isSuccess ? '성공' : '실패'}
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             variant={
