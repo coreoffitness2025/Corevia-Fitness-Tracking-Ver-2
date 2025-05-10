@@ -90,7 +90,7 @@ export interface UserProfile {
     triceps?: string;
   };
   setConfiguration?: {
-    preferredSetup?: string;
+    preferredSetup?: SetConfiguration;
     customSets?: number;
     customReps?: number;
   };
@@ -102,6 +102,8 @@ export interface UserProfile {
   };
   targetCalories?: number;
 }
+
+export type SetConfiguration = '5x5' | '10x5' | '6x3' | '15x5' | '3x10' | 'custom';
 
 export interface UserSettings {
   darkMode: boolean;

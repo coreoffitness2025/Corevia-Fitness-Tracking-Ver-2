@@ -108,6 +108,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<SetConfiguration>('5x5');
   const [sets, setSets] = useState<number>(5);
   const [reps, setReps] = useState<number>(5);
+  const [customSets, setCustomSets] = useState<number>(5);
+  const [customReps, setCustomReps] = useState<number>(5);
 
   // 컴포넌트 마운트 시 사용자 프로필에서 선호 운동과 세트 설정을 가져와 초기화
   useEffect(() => {
@@ -136,146 +138,39 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         if (config.preferredSetup) {
           setSelectedSetConfiguration(config.preferredSetup);
-          
-          // 세트 구성에 따라 입력 필드 초기화
-          if (config.preferredSetup === '5x5') {
-            setSets(5);
-            setReps(5);
-            // 메인 운동 세트 설정 초기화
-            const initialSets = Array(5).fill(0).map(() => ({
-              reps: 5,  // 5x5 설정
-              weight: 0,
-              isSuccess: false
-            }));
-            setMainExercise(prev => ({
-              ...prev,
-              sets: initialSets
-            }));
-          } else if (config.preferredSetup === '3x10') {
-            setSets(3);
-            setReps(10);
-            // 메인 운동 세트 설정 초기화
-            const initialSets = Array(3).fill(0).map(() => ({
-              reps: 10,  // 3x10 설정
-              weight: 0,
-              isSuccess: false
-            }));
-            setMainExercise(prev => ({
-              ...prev,
-              sets: initialSets
-            }));
-          } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
-            setSets(config.customSets);
-            setReps(config.customReps);
-            // 메인 운동 세트 설정 초기화
-            const initialSets = Array(config.customSets).fill(0).map(() => ({
-              reps: config.customReps || 5,
-              weight: 0,
-              isSuccess: false
-            }));
-            setMainExercise(prev => ({
-              ...prev,
-              sets: initialSets
-            }));
-          }
+          applySetConfiguration(config);
         }
       }
     }
   }, [userProfile]);
-  
-  // 전역 이벤트 리스너로 프로필 변경 감지
-  useEffect(() => {
-    const handleProfileUpdate = (event: CustomEvent) => {
-      const updatedProfile = event.detail.profile;
-      console.log('운동 컴포넌트: 프로필 업데이트 감지됨:', updatedProfile);
-      
-      if (updatedProfile && updatedProfile.preferredExercises) {
-        // 상태 업데이트
-        setPreferredExercises(updatedProfile.preferredExercises);
-        
-        // 현재 선택된 부위에 맞는 운동 업데이트
-        const muscleKey = selectedMuscleGroup as keyof typeof updatedProfile.preferredExercises;
-        if (muscleKey && updatedProfile.preferredExercises[muscleKey]) {
-          setSelectedMainExercise(updatedProfile.preferredExercises[muscleKey] as MainExerciseType);
-        }
-      }
-      
-      if (updatedProfile && updatedProfile.setConfiguration) {
-        const config = updatedProfile.setConfiguration;
-        if (config.preferredSetup) {
-          setSelectedSetConfiguration(config.preferredSetup);
-          
-          if (config.preferredSetup === '5x5') {
-            setSets(5);
-            setReps(5);
-          } else if (config.preferredSetup === '3x10') {
-            setSets(3);
-            setReps(10);
-          } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
-            setSets(config.customSets);
-            setReps(config.customReps);
-          }
-        }
-      }
-    };
-    
-    // 이벤트 리스너 등록
-    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
-    
-    return () => {
-      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
-    };
-  }, [selectedMuscleGroup]);
 
-  // 파트가 변경될 때 메인 운동 옵션 업데이트 및 선호 운동 적용
-  useEffect(() => {
-    const selectedPart = exercisePartOptions.find(option => option.value === part);
-    if (selectedPart && userProfile) {
-      console.log('운동 부위 변경됨:', part);
+  // 세트 구성 변경 핸들러
+  const handleSetConfigChange = (configType: SetConfiguration) => {
+    setSelectedSetConfiguration(configType);
+    
+    // 세트 구성 객체 생성
+    const config = {
+      preferredSetup: configType,
+      customSets: customSets || 5,
+      customReps: customReps || 5
+    };
+    
+    // 세트 구성 적용
+    applySetConfiguration(config);
+  };
+
+  // 커스텀 세트/횟수 변경 시 적용 함수
+  const applyCustomConfiguration = () => {
+    if (selectedSetConfiguration === 'custom') {
+      const config = {
+        preferredSetup: 'custom',
+        customSets,
+        customReps
+      };
       
-      // 사용자 선호 운동이 있으면 해당 부위의 선호 운동으로 설정
-      if (userProfile.preferredExercises) {
-        const preferredExercise = userProfile.preferredExercises[part];
-        
-        if (preferredExercise) {
-          console.log('선호 운동 적용:', preferredExercise);
-          setSelectedMainExercise(preferredExercise as MainExerciseType);
-          
-          // 메인 운동 이름 가져오기
-          const options = mainExerciseOptions[part];
-          const selectedOption = options.find(option => option.value === preferredExercise);
-          
-          if (selectedOption) {
-            setMainExercise(prev => ({
-              ...prev,
-              name: selectedOption.label
-            }));
-          }
-          return; // 선호 운동 적용 후 종료
-        }
-      }
-      
-      // 선호 운동이 없으면 해당 부위의 첫 번째 운동으로 선택
-      const firstOption = mainExerciseOptions[part][0];
-      setSelectedMainExercise(firstOption.value as MainExerciseType);
-      setMainExercise(prev => ({
-        ...prev,
-        name: firstOption.label
-      }));
+      applySetConfiguration(config);
     }
-  }, [part, userProfile]);
-  
-  // 메인 운동이 변경될 때 이름 업데이트
-  useEffect(() => {
-    const options = mainExerciseOptions[part];
-    const selectedOption = options.find(option => option.value === selectedMainExercise);
-    if (selectedOption) {
-      setMainExercise(prev => ({
-        ...prev,
-        name: selectedOption.label
-      }));
-    }
-  }, [selectedMainExercise, part]);
+  };
 
   // 폼 유효성 검사
   useEffect(() => {
@@ -294,103 +189,64 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setIsFormValid(isMainExerciseValid && areAccessoryExercisesValid);
   }, [mainExercise, accessoryExercises]);
 
-  // 타이머 효과
-  useEffect(() => {
-    // 활성화된 타이머들에 대한 처리
-    Object.entries(activeTimers).forEach(([timerId, timerInfo]) => {
-      // 일시정지 상태면 타이머를 진행하지 않음
-      if (timerInfo.isPaused) {
-        if (timerRefs.current[timerId]) {
-          clearInterval(timerRefs.current[timerId]);
-          delete timerRefs.current[timerId];
-        }
-        return;
-      }
-      
-      if (timerInfo.timeLeft > 0 && !timerRefs.current[timerId]) {
-        timerRefs.current[timerId] = setInterval(() => {
-          setActiveTimers(prev => {
-            const prevTimer = prev[timerId];
-            if (!prevTimer) return prev;
-            
-            const newTime = prevTimer.timeLeft - 1;
-            if (newTime <= 0) {
-              clearInterval(timerRefs.current[timerId]);
-              delete timerRefs.current[timerId];
-              // 타이머 종료 알림
-              toast('휴식 시간이 끝났습니다. 다음 세트를 진행해주세요!', {
-                icon: '⏰',
-                style: {
-                  borderRadius: '10px',
-                  background: '#333',
-                  color: '#fff',
-                },
-              });
-              
-              // 타이머 제거
-              const newTimers = { ...prev };
-              delete newTimers[timerId];
-              return newTimers;
-            }
-            return { ...prev, [timerId]: { ...prevTimer, timeLeft: newTime } };
-          });
-        }, 1000);
-      }
-    });
-    
-    return () => {
-      // 모든 타이머 정리
-      Object.values(timerRefs.current).forEach(timer => clearInterval(timer));
-    };
-  }, [activeTimers]);
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   const toggleTimer = (exerciseIndex: number = -1, setIndex: number) => {
-    // 타이머 ID 생성 (메인 운동 또는 보조 운동에 따라 다름)
-    const timerId = exerciseIndex === -1 
-      ? `main_${setIndex}` 
-      : `accessory_${exerciseIndex}_${setIndex}`;
+    const timerKey = exerciseIndex === -1 ? `main_${setIndex}` : `accessory_${exerciseIndex}_${setIndex}`;
     
-    setActiveTimers(prev => {
-      // 타이머가 이미 존재하는 경우
-      if (prev[timerId]) {
-        const currentTimer = prev[timerId];
-        
-        // 타이머가 일시정지 상태인 경우 => 재개
-        if (currentTimer.isPaused) {
-          toast.success('타이머 재개됨', { duration: 1500 });
-          return { ...prev, [timerId]: { ...currentTimer, isPaused: false } };
-        } 
-        // 타이머가 실행 중인 경우 => 일시정지
-        else {
-          toast.success('타이머 일시정지됨', { duration: 1500 });
-          return { ...prev, [timerId]: { ...currentTimer, isPaused: true } };
-        }
-      } 
-      // 새 타이머 시작 (2분 = 120초)
-      else {
-        toast.success('타이머 시작됨', { duration: 1500 });
-        return { ...prev, [timerId]: { timeLeft: 120, isPaused: false } };
-      }
-    });
+    if (!activeTimers[timerKey]) {
+      // 타이머 시작
+      const newTimers = { ...activeTimers };
+      newTimers[timerKey] = { timeLeft: 60, isPaused: false };
+      setActiveTimers(newTimers);
+      
+      timerRefs.current[timerKey] = setInterval(() => {
+        setActiveTimers(prev => {
+          const updated = { ...prev };
+          if (updated[timerKey] && !updated[timerKey].isPaused) {
+            updated[timerKey].timeLeft -= 1;
+            
+            if (updated[timerKey].timeLeft <= 0) {
+              clearInterval(timerRefs.current[timerKey]);
+              toast.success('휴식 시간이 끝났습니다!', { position: 'top-center' });
+              return { ...prev, [timerKey]: undefined };
+            }
+          }
+          return updated;
+        });
+      }, 1000);
+    } else if (activeTimers[timerKey].isPaused) {
+      // 타이머 재개
+      setActiveTimers(prev => ({
+        ...prev,
+        [timerKey]: { ...prev[timerKey], isPaused: false }
+      }));
+    } else {
+      // 타이머 일시정지
+      setActiveTimers(prev => ({
+        ...prev,
+        [timerKey]: { ...prev[timerKey], isPaused: true }
+      }));
+    }
   };
 
   const addSet = (exerciseIndex: number = -1) => {
-    const newSet = { reps: 0, weight: 0, isSuccess: false };
     if (exerciseIndex === -1) {
       setMainExercise(prev => ({
         ...prev,
-        sets: [...prev.sets, newSet]
+        sets: [...prev.sets, { reps: 0, weight: 0, isSuccess: false }]
       }));
     } else {
       setAccessoryExercises(prev => {
         const newExercises = [...prev];
-        newExercises[exerciseIndex].sets.push(newSet);
+        newExercises[exerciseIndex].sets = [
+          ...newExercises[exerciseIndex].sets,
+          { reps: 0, weight: 0, isSuccess: false }
+        ];
         return newExercises;
       });
     }
@@ -449,17 +305,85 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       setAccessoryExercises(newExercises);
     }
   };
+  
+  // 커스텀 이벤트 핸들러 - 세션 저장 이벤트 발생 시 프로필 업데이트
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('커스텀 이벤트 발생: profileUpdated', event.detail);
+      // 필요한 경우, 여기서 추가 로직 처리
+    };
+
+    // 커스텀 이벤트 리스너 추가
+    window.addEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
+    };
+  }, []);
+
+  // 세트 구성 적용 함수
+  const applySetConfiguration = (config: any) => {
+    console.log('세트 구성 적용:', config);
+    
+    // 세트 구성에 따라 초기 세트 수 설정
+    let setsCount = 5; // 기본값
+    let repsCount = 5; // 기본값
+    
+    // 설정된 세트 구성에 따라 세트 수와 반복 수 결정
+    if (config.preferredSetup === '5x5') {
+      setsCount = 5;
+      repsCount = 5;
+    } else if (config.preferredSetup === '10x5') {
+      setsCount = 10;
+      repsCount = 5;
+    } else if (config.preferredSetup === '6x5') {
+      setsCount = 6;
+      repsCount = 5;
+    } else if (config.preferredSetup === '3x10') {
+      setsCount = 3;
+      repsCount = 10;
+    } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
+      setsCount = config.customSets;
+      repsCount = config.customReps;
+    }
+    
+    // 상태 업데이트
+    setSets(setsCount);
+    setReps(repsCount);
+    
+    // 해당 세트 수만큼 초기 세트 배열 생성
+    const initialSets = Array(setsCount).fill(0).map(() => ({
+      reps: repsCount,  // 선호 반복 수로 초기화
+      weight: 0,        // 무게는 사용자가 입력
+      isSuccess: false
+    }));
+    
+    console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
+    setMainExercise(prev => ({
+      ...prev,
+      sets: initialSets
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userProfile) return;
+    if (!userProfile) {
+      toast.error('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!isFormValid) {
+      toast.error('필수 필드를 모두 입력해주세요.');
+      return;
+    }
 
     try {
-      // 최근 7일 내의 기록만 저장
+      // 일주일 전 날짜 계산
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      // mainExercise와 accessoryExercises의 undefined 값 처리
+      
+      // 메인 운동 데이터 정리: 무게와 반복 수가 0인 세트 제외
       const cleanMainExercise = {
         part,
         name: mainExercise.name, // 이름 필드 추가
@@ -563,46 +487,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
 
-  // 세트 구성 적용 함수
-  const applySetConfiguration = (config: any) => {
-    console.log('세트 구성 적용:', config);
-    
-    // 세트 구성에 따라 초기 세트 수 설정
-    let setsCount = 5; // 기본값
-    let repsCount = 5; // 기본값
-    
-    // 설정된 세트 구성에 따라 세트 수와 반복 수 결정
-    if (config.preferredSetup === '5x5') {
-      setsCount = 5;
-      repsCount = 5;
-    } else if (config.preferredSetup === '10x5') {
-      setsCount = 10;
-      repsCount = 5;
-    } else if (config.preferredSetup === '6x5') {
-      setsCount = 6;
-      repsCount = 5;
-    } else if (config.preferredSetup === '3x10') {
-      setsCount = 3;
-      repsCount = 10;
-    } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
-      setsCount = config.customSets;
-      repsCount = config.customReps;
-    }
-    
-    // 해당 세트 수만큼 초기 세트 배열 생성
-    const initialSets = Array(setsCount).fill(0).map(() => ({
-      reps: repsCount,  // 선호 반복 수로 초기화
-      weight: 0,        // 무게는 사용자가 입력
-      isSuccess: false
-    }));
-    
-    console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
-    setMainExercise(prev => ({
-      ...prev,
-      sets: initialSets
-    }));
-  };
-
   return (
     <Layout>
       <div className="space-y-6">
@@ -643,6 +527,92 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </div>
             </Card>
           )}
+
+          {/* 세트 구성 선택 섹션 추가 */}
+          <Card className="animate-slideUp">
+            <CardTitle>세트 구성 설정</CardTitle>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === '5x5' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('5x5')}
+              >
+                5x5
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === '10x5' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('10x5')}
+              >
+                10x5
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === '6x5' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('6x5')}
+              >
+                6x5
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === '3x10' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('3x10')}
+              >
+                3x10
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === 'custom' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('custom')}
+              >
+                커스텀
+              </Button>
+            </div>
+            
+            {selectedSetConfiguration === 'custom' && (
+              <div className="flex gap-4 mb-4 items-end">
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-500 mb-1">세트 수</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={customSets}
+                    onChange={(e) => setCustomSets(Number(e.target.value))}
+                    className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-500 mb-1">반복 횟수</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={customReps}
+                    onChange={(e) => setCustomReps(Number(e.target.value))}
+                    className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={applyCustomConfiguration}
+                >
+                  적용
+                </Button>
+              </div>
+            )}
+            
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              현재 구성: {sets}세트 x {reps}회
+            </div>
+          </Card>
 
           <Card className="animate-slideUp">
             <div className="flex items-center mb-6">
