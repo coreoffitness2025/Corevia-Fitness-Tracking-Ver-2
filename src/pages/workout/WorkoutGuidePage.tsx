@@ -520,20 +520,12 @@ const WorkoutGuidePage: React.FC = () => {
       
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">부위별 1RM 무게 입력</h2>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setShowCalculator(true)}
-          icon={<Calculator size={16} />}
-        >
-          1RM 계산기
-        </Button>
       </div>
       
       <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           1RM(One Repetition Maximum)은 한 번에 들 수 있는 최대 무게를 의미합니다.
-          정확한 수치를 모르신다면 1RM 계산기를 이용하세요.
+          정확한 수치를 모르신다면 각 운동 옆의 1RM 예상 계산기를 이용하세요.
         </p>
       </div>
       
@@ -549,7 +541,7 @@ const WorkoutGuidePage: React.FC = () => {
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('squat')}
             >
-              계산하기
+              1RM 예상 계산기
             </Button>
           </div>
           <input
@@ -573,7 +565,7 @@ const WorkoutGuidePage: React.FC = () => {
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('deadlift')}
             >
-              계산하기
+              1RM 예상 계산기
             </Button>
           </div>
           <input
@@ -597,7 +589,7 @@ const WorkoutGuidePage: React.FC = () => {
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('bench')}
             >
-              계산하기
+              1RM 예상 계산기
             </Button>
           </div>
           <input
@@ -621,7 +613,7 @@ const WorkoutGuidePage: React.FC = () => {
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('overheadPress')}
             >
-              계산하기
+              1RM 예상 계산기
             </Button>
           </div>
           <input
