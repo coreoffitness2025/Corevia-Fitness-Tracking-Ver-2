@@ -5,10 +5,110 @@ import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { WorkoutGuideInfo, WorkoutGuideResult } from '../../types/index';
+import { updateDoc, doc } from 'firebase/firestore';
+import { db } from '../../firebase/firebaseConfig';
+import { toast } from 'react-hot-toast';
+import { ArrowRight, Calculator } from 'lucide-react';
+
+// 1RM 계산기 컴포넌트
+const OneRMCalculator = ({
+  onCalculate,
+  onClose,
+}: {
+  onCalculate: (exercise: string, calculatedRM: number) => void;
+  onClose: () => void;
+}) => {
+  const [exercise, setExercise] = useState<string>('squat');
+  const [weight, setWeight] = useState<number>(0);
+  const [reps, setReps] = useState<number>(0);
+  const [calculatedRM, setCalculatedRM] = useState<number | null>(null);
+
+  const calculate1RM = () => {
+    // 브레찌키 공식: 1RM = 무게 * (36 / (37 - 반복횟수))
+    const rm = Math.round(weight * (36 / (37 - reps)));
+    setCalculatedRM(rm);
+    onCalculate(exercise, rm);
+  };
+
+  return (
+    <div className="absolute inset-0 bg-white dark:bg-gray-800 p-6 z-10 rounded-lg">
+      <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">1RM 계산기</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        여러 번 들 수 있는 무게와 반복 횟수를 입력하면 1RM을 예상해 드립니다.
+      </p>
+      
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          운동 종류
+        </label>
+        <select
+          value={exercise}
+          onChange={(e) => setExercise(e.target.value)}
+          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+        >
+          <option value="squat">스쿼트</option>
+          <option value="deadlift">데드리프트</option>
+          <option value="bench">벤치 프레스</option>
+          <option value="overheadPress">오버헤드 프레스</option>
+        </select>
+      </div>
+      
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          무게 (kg)
+        </label>
+        <input
+          type="number"
+          value={weight || ''}
+          onChange={(e) => setWeight(Number(e.target.value))}
+          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+          min="0"
+        />
+      </div>
+      
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          반복 횟수
+        </label>
+        <input
+          type="number"
+          value={reps || ''}
+          onChange={(e) => setReps(Number(e.target.value))}
+          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+          min="1"
+          max="15"
+        />
+      </div>
+      
+      {calculatedRM && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-800/30 rounded-md text-center mb-6">
+          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            예상 1RM: <span className="text-lg font-bold">{calculatedRM} kg</span>
+          </p>
+        </div>
+      )}
+      
+      <div className="flex justify-between">
+        <Button
+          variant="secondary"
+          onClick={onClose}
+        >
+          돌아가기
+        </Button>
+        <Button
+          variant="primary"
+          onClick={calculate1RM}
+        >
+          계산하기
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const WorkoutGuidePage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, updateProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [guideInfo, setGuideInfo] = useState<WorkoutGuideInfo>({
     gender: userProfile?.gender || 'male',
@@ -24,6 +124,8 @@ const WorkoutGuidePage: React.FC = () => {
     preferredSetConfig: '10x5',
   });
   const [result, setResult] = useState<WorkoutGuideResult | null>(null);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calculatorExercise, setCalculatorExercise] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -65,10 +167,72 @@ const WorkoutGuidePage: React.FC = () => {
     }
   };
 
-  const handleOneRmCalculator = () => {
-    // 임시로 새 탭에서 열기
-    window.open("https://www.calculator.net/one-rep-max-calculator.html", "_blank");
-    // TODO: 내부 1RM 계산기로 교체
+  const handleOneRmCalculator = (exercise: string) => {
+    setCalculatorExercise(exercise);
+    setShowCalculator(true);
+  };
+
+  const handleCalculatorClose = () => {
+    setShowCalculator(false);
+  };
+
+  const handleCalculatorResult = (exercise: string, result: number) => {
+    const newOneRepMaxes = { ...guideInfo.oneRepMaxes };
+    if (exercise === 'squat') {
+      newOneRepMaxes.squat = result;
+    } else if (exercise === 'deadlift') {
+      newOneRepMaxes.deadlift = result;
+    } else if (exercise === 'bench') {
+      newOneRepMaxes.bench = result;
+    } else if (exercise === 'overheadPress') {
+      newOneRepMaxes.overheadPress = result;
+    }
+
+    setGuideInfo(prev => ({
+      ...prev,
+      oneRepMaxes: newOneRepMaxes
+    }));
+    setShowCalculator(false);
+  };
+
+  // 개인화 설정에 적용하는 함수
+  const applyToProfile = async () => {
+    if (!currentUser || !result) return;
+    
+    try {
+      // 1. 1RM 업데이트
+      const oneRepMax = {
+        bench: guideInfo.oneRepMaxes.bench || 0,
+        squat: guideInfo.oneRepMaxes.squat || 0,
+        deadlift: guideInfo.oneRepMaxes.deadlift || 0,
+        overheadPress: guideInfo.oneRepMaxes.overheadPress || 0,
+      };
+      
+      // 2. 세트 구성 업데이트
+      const setConfiguration = {
+        preferredSetup: result.setConfig.type as any, // 타입 캐스팅으로 오류 해결
+        customSets: 0,
+        customReps: 0
+      };
+      
+      // 3. 프로필 업데이트
+      const profileUpdate = {
+        oneRepMax,
+        setConfiguration,
+      };
+      
+      // Firebase와 컨텍스트 상태 모두 업데이트
+      await updateProfile(profileUpdate);
+      
+      // 성공 메시지
+      toast.success('프로필에 설정이 적용되었습니다', {
+        duration: 3000,
+        position: 'top-center'
+      });
+    } catch (error) {
+      console.error('프로필 업데이트 중 오류 발생:', error);
+      toast.error('설정 적용 중 오류가 발생했습니다');
+    }
   };
 
   const calculateResults = () => {
@@ -346,25 +510,52 @@ const WorkoutGuidePage: React.FC = () => {
   );
   
   const renderOneRMInputStep = () => (
-    <Card className="p-6">
-      <h2 className="text-xl font-bold mb-6">부위별 1RM 무게 입력</h2>
+    <Card className="p-6 relative">
+      {showCalculator && (
+        <OneRMCalculator 
+          onCalculate={handleCalculatorResult} 
+          onClose={handleCalculatorClose} 
+        />
+      )}
+      
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">부위별 1RM 무게 입력</h2>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowCalculator(true)}
+          icon={<Calculator size={16} />}
+        >
+          1RM 계산기
+        </Button>
+      </div>
       
       <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           1RM(One Repetition Maximum)은 한 번에 들 수 있는 최대 무게를 의미합니다.
-          정확한 수치를 모르신다면 오른쪽의 1RM 계산기를 이용하세요.
+          정확한 수치를 모르신다면 1RM 계산기를 이용하세요.
         </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="mb-4">
-          <label className="block text-gray-700 dark:text-gray-300 mb-2">
-            스쿼트 1RM (kg)
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-gray-700 dark:text-gray-300">
+              스쿼트 1RM (kg)
+            </label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 dark:text-blue-400"
+              onClick={() => handleOneRmCalculator('squat')}
+            >
+              계산하기
+            </Button>
+          </div>
           <input
             type="number"
             name="oneRepMaxes.squat"
-            value={guideInfo.oneRepMaxes.squat}
+            value={guideInfo.oneRepMaxes.squat || ''}
             onChange={handleInputChange}
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             min="0"
@@ -372,13 +563,23 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-700 dark:text-gray-300 mb-2">
-            데드리프트 1RM (kg)
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-gray-700 dark:text-gray-300">
+              데드리프트 1RM (kg)
+            </label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 dark:text-blue-400"
+              onClick={() => handleOneRmCalculator('deadlift')}
+            >
+              계산하기
+            </Button>
+          </div>
           <input
             type="number"
             name="oneRepMaxes.deadlift"
-            value={guideInfo.oneRepMaxes.deadlift}
+            value={guideInfo.oneRepMaxes.deadlift || ''}
             onChange={handleInputChange}
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             min="0"
@@ -386,13 +587,23 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-700 dark:text-gray-300 mb-2">
-            벤치프레스 1RM (kg)
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-gray-700 dark:text-gray-300">
+              벤치프레스 1RM (kg)
+            </label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 dark:text-blue-400"
+              onClick={() => handleOneRmCalculator('bench')}
+            >
+              계산하기
+            </Button>
+          </div>
           <input
             type="number"
             name="oneRepMaxes.bench"
-            value={guideInfo.oneRepMaxes.bench}
+            value={guideInfo.oneRepMaxes.bench || ''}
             onChange={handleInputChange}
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             min="0"
@@ -400,13 +611,23 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-700 dark:text-gray-300 mb-2">
-            오버헤드프레스 1RM (kg)
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-gray-700 dark:text-gray-300">
+              오버헤드프레스 1RM (kg)
+            </label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 dark:text-blue-400"
+              onClick={() => handleOneRmCalculator('overheadPress')}
+            >
+              계산하기
+            </Button>
+          </div>
           <input
             type="number"
             name="oneRepMaxes.overheadPress"
-            value={guideInfo.oneRepMaxes.overheadPress}
+            value={guideInfo.oneRepMaxes.overheadPress || ''}
             onChange={handleInputChange}
             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             min="0"
@@ -414,17 +635,7 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex justify-center mb-4">
-        <Button
-          variant="secondary"
-          onClick={handleOneRmCalculator}
-          className="w-full md:w-auto"
-        >
-          1RM 계산기 사용하기
-        </Button>
-      </div>
-      
-      <div className="flex justify-between">
+      <div className="flex justify-between mt-4">
         <Button variant="ghost" onClick={handlePrevStep}>
           이전
         </Button>
@@ -622,13 +833,19 @@ const WorkoutGuidePage: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row justify-between gap-4">
           <Button variant="ghost" onClick={() => setCurrentStep(3)}>
             설정 변경
           </Button>
-          <Button variant="primary" onClick={() => navigate('/settings')}>
-            설정 페이지로 돌아가기
-          </Button>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button variant="primary" onClick={applyToProfile} icon={<ArrowRight size={16} />}>
+              프로필에 적용하기
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/workout')}>
+              운동 입력으로 이동
+            </Button>
+          </div>
         </div>
       </Card>
     );
