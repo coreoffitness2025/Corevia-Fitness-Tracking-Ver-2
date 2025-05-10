@@ -78,6 +78,9 @@ const warmupExercises = {
   triceps: ['가벼운 푸시업 10-15회', '가벼운 덤벨 킥백 15-20회', '밴드 푸시다운 15-20회']
 };
 
+// 선호하는 세트 구성에 '15x5' 추가
+type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
+
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { userProfile } = useAuth();
   const [part, setPart] = useState<ExercisePart>('chest');
@@ -564,7 +567,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 type="button"
                 variant={selectedSetConfiguration === '15x5' ? "primary" : "outline"}
                 size="sm"
-                onClick={() => handleSetConfigChange('15x5')}
+                onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
               >
                 15세트 x 5회
               </Button>

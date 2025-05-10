@@ -278,7 +278,7 @@ const WorkoutGuidePage: React.FC = () => {
     let percentageOfOneRM = 0;
     
     // 세트 유형에 따른 설명 및 장점
-    const setConfigDetails: Record<'10x5' | '6x3' | '15x5', {
+    const setConfigDetails: Record<'10x5' | '6x5' | '15x5', {
       description: string;
       advantages: string[];
     }> = {
@@ -291,8 +291,8 @@ const WorkoutGuidePage: React.FC = () => {
           '대사 스트레스(metabolic stress)를 적절히 유발하여 근육 성장 자극'
         ]
       },
-      '6x3': {
-        description: '6회 3세트',
+      '6x5': {
+        description: '6회 5세트',
         advantages: [
           '근력 향상에 중점을 둔 구성',
           '중추신경계 활성화 및 신경근 효율성 개선',
@@ -320,37 +320,37 @@ const WorkoutGuidePage: React.FC = () => {
         // 남성 초보자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x3' ? 0.75 : 0.5;
+                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.55 : 
-                              preferredSetConfig === '6x3' ? 0.7 : 0.45;
+                              preferredSetConfig === '6x5' ? 0.7 : 0.45;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.5 : 
-                              preferredSetConfig === '6x3' ? 0.65 : 0.4;
+                              preferredSetConfig === '6x5' ? 0.65 : 0.4;
         }
       } else if (userLevel === 'intermediate') {
         // 남성 중급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.7 : 
-                              preferredSetConfig === '6x3' ? 0.85 : 0.6;
+                              preferredSetConfig === '6x5' ? 0.85 : 0.6;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x3' ? 0.8 : 0.55;
+                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x3' ? 0.75 : 0.5;
+                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
         }
       } else {
         // 남성 고급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.75 : 
-                              preferredSetConfig === '6x3' ? 0.9 : 0.65;
+                              preferredSetConfig === '6x5' ? 0.9 : 0.65;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.7 : 
-                              preferredSetConfig === '6x3' ? 0.85 : 0.6;
+                              preferredSetConfig === '6x5' ? 0.85 : 0.6;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x3' ? 0.8 : 0.55;
+                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
         }
       }
     } else {
@@ -359,37 +359,37 @@ const WorkoutGuidePage: React.FC = () => {
         // 여성 초보자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.55 : 
-                              preferredSetConfig === '6x3' ? 0.7 : 0.45;
+                              preferredSetConfig === '6x5' ? 0.7 : 0.45;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.5 : 
-                              preferredSetConfig === '6x3' ? 0.65 : 0.4;
+                              preferredSetConfig === '6x5' ? 0.65 : 0.4;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.45 : 
-                              preferredSetConfig === '6x3' ? 0.6 : 0.35;
+                              preferredSetConfig === '6x5' ? 0.6 : 0.35;
         }
       } else if (userLevel === 'intermediate') {
         // 여성 중급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x3' ? 0.8 : 0.55;
+                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x3' ? 0.75 : 0.5;
+                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.55 : 
-                              preferredSetConfig === '6x3' ? 0.7 : 0.45;
+                              preferredSetConfig === '6x5' ? 0.7 : 0.45;
         }
       } else {
         // 여성 고급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.7 : 
-                              preferredSetConfig === '6x3' ? 0.85 : 0.6;
+                              preferredSetConfig === '6x5' ? 0.85 : 0.6;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x3' ? 0.8 : 0.55;
+                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x3' ? 0.75 : 0.5;
+                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
         }
       }
     }
@@ -403,7 +403,7 @@ const WorkoutGuidePage: React.FC = () => {
     };
     
     // 회복 시간 설정
-    const recoveryTime = preferredSetConfig === '6x3' ? '세트 간 3분' : '세트 간 2분';
+    const recoveryTime = preferredSetConfig === '6x5' ? '세트 간 3분' : '세트 간 2분';
     
     // 결과 저장
     setResult({
@@ -674,13 +674,13 @@ const WorkoutGuidePage: React.FC = () => {
             <input
               type="radio"
               name="preferredSetConfig"
-              value="6x3"
-              checked={guideInfo.preferredSetConfig === '6x3'}
+              value="6x5"
+              checked={guideInfo.preferredSetConfig === '6x5'}
               onChange={handleInputChange}
               className="mr-3"
             />
             <div>
-              <h3 className="font-medium">6x3세트 (6회 3세트)</h3>
+              <h3 className="font-medium">6x5세트 (6회 5세트)</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">근력 향상 - 스트렝스 초점</p>
             </div>
           </label>
