@@ -30,13 +30,19 @@ const WorkoutGuidePage: React.FC = () => {
     
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
-      setGuideInfo((prev: WorkoutGuideInfo) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof WorkoutGuideInfo],
-          [child]: name.includes('oneRepMaxes') ? Number(value) : value
-        }
-      }));
+      setGuideInfo((prev: WorkoutGuideInfo) => {
+        const parentObj = prev[parent as keyof WorkoutGuideInfo] || {};
+        // 타입 안전을 위해 객체인지 확인
+        const parentValue = typeof parentObj === 'object' && parentObj !== null ? parentObj : {};
+        
+        return {
+          ...prev,
+          [parent]: {
+            ...parentValue,
+            [child]: name.includes('oneRepMaxes') ? Number(value) : value
+          }
+        };
+      });
     } else {
       setGuideInfo((prev: WorkoutGuideInfo) => ({
         ...prev,
