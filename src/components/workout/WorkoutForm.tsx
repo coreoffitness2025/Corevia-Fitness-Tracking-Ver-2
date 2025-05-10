@@ -556,7 +556,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('10x5')}
               >
-                10회 x 5세트
+                10회 반복 x 5set
               </Button>
               <Button
                 type="button"
@@ -564,7 +564,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
               >
-                15회 x 5세트
+                15회 반복 x 5set
               </Button>
               <Button
                 type="button"
@@ -572,7 +572,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
               >
-                6회 x 3세트
+                6회 반복 x 3set
               </Button>
               <Button
                 type="button"
@@ -618,11 +618,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 </Button>
               </div>
             )}
-            
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              현재 구성: <span className="font-medium">{sets}세트</span> x <span className="font-medium">{reps}회</span> 
-              <span className="text-xs ml-2 text-gray-500">(세트 수 x 반복 횟수)</span>
-            </div>
           </Card>
 
           <Card className="animate-slideUp">
