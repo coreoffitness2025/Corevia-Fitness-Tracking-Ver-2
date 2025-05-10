@@ -1,0 +1,970 @@
+﻿import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { 
+  ExercisePart, 
+  Session, 
+  ChestMainExercise, 
+  BackMainExercise, 
+  ShoulderMainExercise, 
+  LegMainExercise,
+  BicepsMainExercise,
+  TricepsMainExercise,
+  MainExerciseType,
+  SetConfiguration
+} from '../../types';
+import { addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '../../firebase/firebaseConfig';
+import { toast } from 'react-hot-toast';
+import Layout from '../common/Layout';
+import Card, { CardTitle, CardSection } from '../common/Card';
+import Button from '../common/Button';
+import Badge from '../common/Badge';
+import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle } from 'lucide-react';
+
+interface WorkoutFormProps {
+  onSuccess?: () => void; // ????깃났 ???몄텧??肄쒕갚
+}
+
+const exercisePartOptions = [
+  { value: 'chest',    label: '媛??,   icon: '?뮞', mainExerciseName: '踰ㅼ튂 ?꾨젅?? },
+  { value: 'back',     label: '??,     icon: '?뵗', mainExerciseName: '?곕뱶由ы봽?? },
+  { value: 'shoulder', label: '?닿묠',   icon: '?룍截?, mainExerciseName: '?ㅻ쾭?ㅻ뱶 ?꾨젅?? },
+  { value: 'leg',      label: '?섏껜',   icon: '?┻', mainExerciseName: '?ㅼ옘?? },
+  { value: 'biceps',   label: '?대몢',   icon: '?뮞', mainExerciseName: '?ㅻ꺼 而? },
+  { value: 'triceps',  label: '?쇰몢',   icon: '?뮞', mainExerciseName: '耳?대툝 ?몄떆?ㅼ슫' }
+];
+
+// 媛?遺?꾨퀎 硫붿씤 ?대룞 ?듭뀡
+const mainExerciseOptions = {
+  chest: [
+    { value: 'benchPress', label: '踰ㅼ튂 ?꾨젅?? },
+    { value: 'inclineBenchPress', label: '?명겢?쇱씤 踰ㅼ튂 ?꾨젅?? },
+    { value: 'declineBenchPress', label: '?뷀겢?쇱씤 踰ㅼ튂 ?꾨젅?? }
+  ],
+  back: [
+    { value: 'deadlift', label: '?곕뱶由ы봽?? },
+    { value: 'pullUp', label: '?깃구?? },
+    { value: 'bentOverRow', label: '踰ㅽ듃?ㅻ쾭 濡쒖슦' }
+  ],
+  shoulder: [
+    { value: 'overheadPress', label: '?ㅻ쾭?ㅻ뱶 ?꾨젅?? },
+    { value: 'lateralRaise', label: '?덊꽣???덉씠利? },
+    { value: 'facePull', label: '?섏씠???' }
+  ],
+  leg: [
+    { value: 'squat', label: '?ㅼ옘?? },
+    { value: 'legPress', label: '?덇렇 ?꾨젅?? },
+    { value: 'lungue', label: '?곗?' }
+  ],
+  biceps: [
+    { value: 'dumbbellCurl', label: '?ㅻ꺼 而? },
+    { value: 'barbelCurl', label: '諛붾꺼 而? },
+    { value: 'hammerCurl', label: '?대㉧ 而? }
+  ],
+  triceps: [
+    { value: 'cablePushdown', label: '耳?대툝 ?몄떆?ㅼ슫' },
+    { value: 'overheadExtension', label: '?ㅻ쾭?ㅻ뱶 ?듭뒪?먯뀡' },
+    { value: 'lyingExtension', label: '?쇱엵 ?듭뒪?먯뀡' }
+  ]
+};
+
+// ?쒖뾽 ?명듃 異붿쿇 ?대룞
+const warmupExercises = {
+  chest: ['媛踰쇱슫 ?몄떆??10-15??, '?쇱씠??踰ㅼ튂?꾨젅??15??, '諛대뱶 ? ?꾪뙆??15-20??],
+  back: ['寃쎈웾 ?곕뱶由ы봽??10-15??, '諛대뱶 ??ㅼ슫 15-20??, '?덊띁留????3?명듃 x 10珥?],
+  shoulder: ['???щ씪?대뱶 10-15??, '?섏씠??? 15-20??, '諛대뱶 ?몄쟾 ?대룞 15-20??],
+  leg: ['留⑤じ ?ㅼ옘??15-20??, '移댄봽 ?덉씠利?20??, '??궧 ?곗? 10???묒そ)'],
+  biceps: ['媛踰쇱슫 ?ㅻ꺼 而?15-20??, '諛대뱶 而?15-20??, '?먮ぉ ?좎뿰???대룞 10??],
+  triceps: ['媛踰쇱슫 ?몄떆??10-15??, '媛踰쇱슫 ?ㅻ꺼 ?λ갚 15-20??, '諛대뱶 ?몄떆?ㅼ슫 15-20??]
+};
+
+// ?좏샇?섎뒗 ?명듃 援ъ꽦??'15x5' 異붽?
+type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
+
+const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
+  const { userProfile } = useAuth();
+  const [part, setPart] = useState<ExercisePart>('chest');
+  const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>('benchPress');
+  const [mainExercise, setMainExercise] = useState({
+    name: exercisePartOptions[0].mainExerciseName,
+    sets: [{ reps: 0, weight: 0, isSuccess: false }]
+  });
+  const [accessoryExercises, setAccessoryExercises] = useState<Array<{
+    name: string;
+    weight: number;
+    reps: number;
+    sets: Array<{ reps: number; weight: number; isSuccess: boolean }>;
+  }>>([]);
+  const [notes, setNotes] = useState('');
+  const [isFormValid, setIsFormValid] = useState(false);
+  
+  // ??대㉧ 愿???곹깭
+  const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
+  const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // ?쒖뾽 ???쒖떆 ?곹깭
+  const [showWarmupTips, setShowWarmupTips] = useState(true);
+  
+  // 異붽? ?곹깭 蹂???뺤쓽
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
+  const [preferredExercises, setPreferredExercises] = useState<Record<string, string>>({});
+  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<SetConfiguration>('5x5');
+  const [sets, setSets] = useState<number>(5);
+  const [reps, setReps] = useState<number>(5);
+  const [customSets, setCustomSets] = useState<number>(5);
+  const [customReps, setCustomReps] = useState<number>(5);
+
+  // 而댄룷?뚰듃 留덉슫?????ъ슜???꾨줈?꾩뿉???좏샇 ?대룞怨??명듃 ?ㅼ젙??媛?몄? 珥덇린??  useEffect(() => {
+    if (userProfile) {
+      console.log('?대룞 而댄룷?뚰듃: ?ъ슜???꾨줈??濡쒕뱶?? ?대룞 ?ㅼ젙 ?곸슜:', userProfile);
+      
+      if (userProfile.preferredExercises) {
+        console.log('?대룞 而댄룷?뚰듃: ?좏샇 ?대룞 ?ㅼ젙 ?곸슜:', userProfile.preferredExercises);
+        
+        // 珥덇린 遺?꾨뒗 媛?댁쑝濡??ㅼ젙?섍퀬 ?대떦 遺?꾩쓽 ?좏샇 ?대룞 ?곸슜
+        const prefExercises = userProfile.preferredExercises;
+        
+        // 遺?꾨퀎 ?좏샇 ?대룞 ?ㅼ젙
+        if (prefExercises.chest) {
+          setSelectedMainExercise(prefExercises.chest as MainExerciseType);
+        }
+        
+        // 遺??蹂寃????대떦 遺?꾩쓽 ?좏샇 ?대룞 ?곸슜???꾪빐 ???        setPreferredExercises(prefExercises);
+      }
+      
+      // ?명듃 援ъ꽦 ?ㅼ젙
+      if (userProfile.setConfiguration) {
+        console.log('?대룞 而댄룷?뚰듃: ?명듃 援ъ꽦 ?ㅼ젙 ?곸슜:', userProfile.setConfiguration);
+        const config = userProfile.setConfiguration;
+        
+        if (config.preferredSetup) {
+          setSelectedSetConfiguration(config.preferredSetup);
+          applySetConfiguration(config);
+        }
+      } else {
+        // 湲곕낯媛믪쑝濡?10x5 ?ㅼ젙
+        setSelectedSetConfiguration('10x5');
+        applySetConfiguration({ preferredSetup: '10x5' });
+      }
+    }
+  }, [userProfile]);
+
+  // ?명듃 援ъ꽦 蹂寃??몃뱾??  const handleSetConfigChange = (configType: SetConfiguration) => {
+    setSelectedSetConfiguration(configType);
+    
+    // ?명듃 援ъ꽦 媛앹껜 ?앹꽦
+    const config = {
+      preferredSetup: configType,
+      customSets: customSets || 5,
+      customReps: customReps || 5
+    };
+    
+    // ?명듃 援ъ꽦 ?곸슜
+    applySetConfiguration(config);
+  };
+
+  // 而ㅼ뒪? ?명듃/?잛닔 蹂寃????곸슜 ?⑥닔
+  const applyCustomConfiguration = () => {
+    if (selectedSetConfiguration === 'custom') {
+      const config = {
+        preferredSetup: 'custom',
+        customSets,
+        customReps
+      };
+      
+      applySetConfiguration(config);
+    }
+  };
+
+  // ???좏슚??寃??  useEffect(() => {
+    // 硫붿씤 ?대룞??理쒖냼 ??媛쒖쓽 ?명듃媛 ?덇퀬, 媛??명듃??臾닿쾶? 諛섎났 ?섍? ?낅젰?섏뼱 ?덈뒗吏 ?뺤씤
+    const isMainExerciseValid = mainExercise.sets.length > 0 && 
+      mainExercise.sets.every(set => set.weight > 0 && set.reps > 0);
+
+    // 蹂댁“ ?대룞???덈뒗 寃쎌슦, 媛??대룞???대쫫???덇퀬 理쒖냼 ??媛쒖쓽 ?명듃媛 ?덈뒗吏 ?뺤씤
+    const areAccessoryExercisesValid = accessoryExercises.length === 0 || 
+      accessoryExercises.every(exercise => 
+        exercise.name.trim() !== '' && 
+        exercise.sets.length > 0 && 
+        exercise.sets.every(set => set.weight > 0 && set.reps > 0)
+      );
+
+    setIsFormValid(isMainExerciseValid && areAccessoryExercisesValid);
+  }, [mainExercise, accessoryExercises]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const toggleTimer = (exerciseIndex: number = -1, setIndex: number) => {
+    const timerKey = exerciseIndex === -1 ? `main_${setIndex}` : `accessory_${exerciseIndex}_${setIndex}`;
+    
+    if (!activeTimers[timerKey]) {
+      // ??대㉧ ?쒖옉
+      const newTimers = { ...activeTimers };
+      newTimers[timerKey] = { timeLeft: 60, isPaused: false };
+      setActiveTimers(newTimers);
+      
+      timerRefs.current[timerKey] = setInterval(() => {
+        setActiveTimers(prev => {
+          const updated = { ...prev };
+          if (updated[timerKey] && !updated[timerKey].isPaused) {
+            updated[timerKey].timeLeft -= 1;
+            
+            if (updated[timerKey].timeLeft <= 0) {
+              clearInterval(timerRefs.current[timerKey]);
+              toast.success('?댁떇 ?쒓컙???앸궗?듬땲??', { position: 'top-center' });
+              delete updated[timerKey];
+              return updated;
+            }
+          }
+          return updated;
+        });
+      }, 1000);
+    } else if (activeTimers[timerKey].isPaused) {
+      // ??대㉧ ?ш컻
+      setActiveTimers(prev => ({
+        ...prev,
+        [timerKey]: { ...prev[timerKey], isPaused: false }
+      }));
+    } else {
+      // ??대㉧ ?쇱떆?뺤?
+      setActiveTimers(prev => ({
+        ...prev,
+        [timerKey]: { ...prev[timerKey], isPaused: true }
+      }));
+    }
+  };
+
+  const addSet = (exerciseIndex: number = -1) => {
+    if (exerciseIndex === -1) {
+      setMainExercise(prev => ({
+        ...prev,
+        sets: [...prev.sets, { reps: 0, weight: 0, isSuccess: false }]
+      }));
+    } else {
+      setAccessoryExercises(prev => {
+        const newExercises = [...prev];
+        newExercises[exerciseIndex].sets = [
+          ...newExercises[exerciseIndex].sets,
+          { reps: 0, weight: 0, isSuccess: false }
+        ];
+        return newExercises;
+      });
+    }
+  };
+
+  const removeSet = (exerciseIndex: number = -1, setIndex: number) => {
+    if (exerciseIndex === -1) {
+      // 硫붿씤 ?대룞???명듃媛 ?섎굹留??⑥븯?쇰㈃ ??젣?섏? ?딆쓬
+      if (mainExercise.sets.length <= 1) return;
+      
+      setMainExercise(prev => ({
+        ...prev,
+        sets: prev.sets.filter((_, i) => i !== setIndex)
+      }));
+    } else {
+      setAccessoryExercises(prev => {
+        const newExercises = [...prev];
+        // ?명듃媛 ?섎굹留??⑥븯?쇰㈃ ??젣?섏? ?딆쓬
+        if (newExercises[exerciseIndex].sets.length <= 1) return newExercises;
+        
+        newExercises[exerciseIndex].sets = newExercises[exerciseIndex].sets.filter((_, i) => i !== setIndex);
+        return newExercises;
+      });
+    }
+  };
+
+  const addAccessoryExercise = () => {
+    setAccessoryExercises(prev => [
+      ...prev,
+      { 
+        name: '', 
+        weight: 0,
+        reps: 0,
+        sets: [{ reps: 0, weight: 0, isSuccess: false }] 
+      }
+    ]);
+  };
+
+  const removeAccessoryExercise = (index: number) => {
+    setAccessoryExercises(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // ?잛닔 ?먮룞 ?깃났 泥섎━ ?⑥닔 ?섏젙
+  const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
+    // ?잛닔 ?쒗븳: 1-10 ?ъ씠留??덉슜
+    const limitedReps = Math.max(1, Math.min(10, newReps));
+    
+    if (isMainExercise) {
+      const newSets = [...mainExercise.sets];
+      newSets[setIndex].reps = limitedReps;
+      setMainExercise(prev => ({ ...prev, sets: newSets }));
+    } else if (accessoryIndex !== undefined) {
+      const newExercises = [...accessoryExercises];
+      newExercises[accessoryIndex].sets[setIndex].reps = limitedReps;
+      setAccessoryExercises(newExercises);
+    }
+  };
+
+  // ?덈젴 ?꾨즺 泥섎━ ?⑥닔 異붽?
+  const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
+    if (isMainExercise) {
+      const newSets = [...mainExercise.sets];
+      // 10?뚯씠硫??깃났, 洹몃젃吏 ?딆쑝硫??ㅽ뙣
+      newSets[setIndex].isSuccess = newSets[setIndex].reps >= 10;
+      setMainExercise(prev => ({ ...prev, sets: newSets }));
+    } else if (accessoryIndex !== undefined) {
+      const newExercises = [...accessoryExercises];
+      newExercises[accessoryIndex].sets[setIndex].isSuccess = newExercises[accessoryIndex].sets[setIndex].reps >= 10;
+      setAccessoryExercises(newExercises);
+    }
+  };
+  
+  // 而ㅼ뒪? ?대깽???몃뱾??- ?몄뀡 ????대깽??諛쒖깮 ???꾨줈???낅뜲?댄듃
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('而ㅼ뒪? ?대깽??諛쒖깮: profileUpdated', event.detail);
+      // ?꾩슂??寃쎌슦, ?ш린??異붽? 濡쒖쭅 泥섎━
+    };
+
+    // 而ㅼ뒪? ?대깽??由ъ뒪??異붽?
+    window.addEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
+
+    // 而댄룷?뚰듃 ?몃쭏?댄듃 ???대깽??由ъ뒪???쒓굅
+    return () => {
+      window.removeEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
+    };
+  }, []);
+
+  // ?명듃 援ъ꽦 ?곸슜 ?⑥닔
+  const applySetConfiguration = (config: any) => {
+    console.log('?명듃 援ъ꽦 ?곸슜:', config);
+    
+    // ?명듃 援ъ꽦???곕씪 珥덇린 ?명듃 ???ㅼ젙
+    let setsCount = 5; // 湲곕낯媛?    let repsCount = 10; // 湲곕낯媛?    
+    // ?ㅼ젙???명듃 援ъ꽦???곕씪 ?명듃 ?섏? 諛섎났 ??寃곗젙
+    if (config.preferredSetup === '10x5') {
+      setsCount = 5;
+      repsCount = 10;
+    } else if (config.preferredSetup === '15x5') {
+      setsCount = 5;
+      repsCount = 15;
+    } else if (config.preferredSetup === '6x3') {
+      setsCount = 3;
+      repsCount = 6;
+    } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
+      setsCount = config.customSets;
+      repsCount = config.customReps;
+    }
+    
+    // ?곹깭 ?낅뜲?댄듃
+    setSets(setsCount);
+    setReps(repsCount);
+    
+    // ?대떦 ?명듃 ?섎쭔??珥덇린 ?명듃 諛곗뿴 ?앹꽦
+    const initialSets = Array(setsCount).fill(0).map(() => ({
+      reps: repsCount,  // ?좏샇 諛섎났 ?섎줈 珥덇린??      weight: 0,        // 臾닿쾶???ъ슜?먭? ?낅젰
+      isSuccess: false
+    }));
+    
+    console.log(`?명듃 援ъ꽦 ?곸슜: ${setsCount} ?명듃 x ${repsCount} ??);
+    setMainExercise(prev => ({
+      ...prev,
+      sets: initialSets
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userProfile) {
+      toast.error('濡쒓렇?몄씠 ?꾩슂?⑸땲??');
+      return;
+    }
+
+    if (!isFormValid) {
+      toast.error('?꾩닔 ?꾨뱶瑜?紐⑤몢 ?낅젰?댁＜?몄슂.');
+      return;
+    }
+
+    try {
+      // ?쇱＜?????좎쭨 怨꾩궛
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      // 硫붿씤 ?대룞 ?곗씠???뺣━: 臾닿쾶? 諛섎났 ?섍? 0???명듃 ?쒖쇅
+      const cleanMainExercise = {
+        part,
+        name: mainExercise.name, // ?대쫫 ?꾨뱶 異붽?
+        weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0,
+        sets: mainExercise.sets.map(set => ({
+          reps: set.reps || 0,
+          weight: set.weight || 0,
+          isSuccess: set.isSuccess || false
+        }))
+      };
+
+      const cleanAccessoryExercises = accessoryExercises.map(exercise => ({
+        name: exercise.name || '',
+        weight: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].weight : 0,
+        reps: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].reps : 0,
+        sets: (exercise.sets || []).map(set => ({
+          reps: set.reps || 0,
+          weight: set.weight || 0,
+          isSuccess: set.isSuccess || false
+        }))
+      }));
+
+      const sessionData: Session = {
+        userId: userProfile.uid,
+        date: new Date(),
+        part,
+        mainExercise: cleanMainExercise,
+        accessoryExercises: cleanAccessoryExercises,
+        notes: notes || '',
+        isAllSuccess: mainExercise.sets.every(set => set.isSuccess),
+        successSets: mainExercise.sets.filter(set => set.isSuccess).length,
+        accessoryNames: cleanAccessoryExercises.map(ex => ex.name)
+      };
+
+      console.log('??ν븷 ?몄뀡 ?곗씠??', sessionData);
+
+      // 湲곗〈 湲곕줉 ?뺤씤
+      const q = query(
+        collection(db, 'sessions'),
+        where('userId', '==', userProfile.uid),
+        where('date', '>=', Timestamp.fromDate(sevenDaysAgo))
+      );
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.size >= 7) {
+        toast.error('理쒓렐 7???숈븞??湲곕줉留???ν븷 ???덉뒿?덈떎.');
+        return;
+      }
+
+      await addDoc(collection(db, 'sessions'), sessionData);
+      
+      // ????꾨즺 ?좎뒪??硫붿떆吏
+      toast.success('????꾨즺!', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '16px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          fontSize: '1.2rem',
+          minWidth: '250px',
+          textAlign: 'center',
+        },
+        icon: '??
+      });
+      
+      // 5???댁긽 10?명듃 ?깃났 ??利앸웾 異붿쿇 硫붿떆吏
+      const successSets = mainExercise.sets.filter(set => set.isSuccess).length;
+      if (successSets >= 5 && mainExercise.sets.length >= 10) {
+        toast.success('?덈젴???깃났?덉뒿?덈떎. 2.5kg 利앸웾??異붿쿇?쒕┰?덈떎!', {
+          duration: 5000,
+          icon: '?룍截?,
+          style: {
+            background: '#3B82F6',
+            color: '#fff',
+            fontWeight: 'bold'
+          }
+        });
+      }
+      
+      // ??珥덇린??      setPart('chest');
+      setMainExercise({
+        name: exercisePartOptions[0].mainExerciseName,
+        sets: [{ reps: 0, weight: 0, isSuccess: false }]
+      });
+      setAccessoryExercises([]);
+      setNotes('');
+      
+      // ?깃났 肄쒕갚 ?몄텧 - ?대룞 湲곕줉 ?섏씠吏濡??대룞
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error saving session:', error);
+      toast.error('?대룞 湲곕줉 ??μ뿉 ?ㅽ뙣?덉뒿?덈떎.');
+    }
+  };
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">???대룞 湲곕줉</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ?쒖뾽 ?덈궡 移대뱶 */}
+          {showWarmupTips && (
+            <Card className="border-2 border-yellow-400 mb-4">
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center text-yellow-600">
+                  <AlertTriangle size={20} className="mr-2" />
+                  ?쒖뾽 ?명듃 ?덈궡
+                </CardTitle>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowWarmupTips(false)}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                遺??諛⑹?? 理쒖쟻???대룞 ?④낵瑜??꾪빐 異⑸텇???쒖뾽 ?명듃? ?ㅽ듃?덉묶???꾨즺???꾩뿉 ?쒖옉?댁＜?몄슂.
+              </p>
+              <div className="bg-yellow-50 dark:bg-gray-700 p-3 rounded-lg">
+                <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
+                  {part.charAt(0).toUpperCase() + part.slice(1)} ?쒖뾽 ?명듃 異붿쿇
+                </h4>
+                <ul className="list-disc pl-5 space-y-1">
+                  {warmupExercises[part].map((exercise, index) => (
+                    <li key={index} className="text-gray-600 dark:text-gray-300">{exercise}</li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+          )}
+
+          {/* ?명듃 援ъ꽦 ?좏깮 ?뱀뀡 異붽? */}
+          <Card className="animate-slideUp">
+            <CardTitle>?명듃 援ъ꽦 ?ㅼ젙</CardTitle>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === '10x5' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('10x5')}
+              >
+                10??諛섎났 x 5set
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === ('15x5' as SetConfiguration) ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
+              >
+                15??諛섎났 x 5set
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === ('6x3' as SetConfiguration) ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
+              >
+                6??諛섎났 x 3set
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === 'custom' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('custom')}
+              >
+                而ㅼ뒪?
+              </Button>
+            </div>
+            
+            {selectedSetConfiguration === 'custom' && (
+              <>
+                <div className="flex gap-4 mb-4 items-end">
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">?명듃 ??/label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={customSets}
+                      onChange={(e) => setCustomSets(Number(e.target.value))}
+                      className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">諛섎났 ?잛닔</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={customReps}
+                      onChange={(e) => setCustomReps(Number(e.target.value))}
+                      className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={applyCustomConfiguration}
+                  >
+                    ?곸슜
+                  </Button>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    <Info size={14} className="inline-block mr-1" />
+                    而ㅼ뒪? ?ㅼ젙? ?대룞 湲곕줉?먮쭔 ?쒖떆?섍퀬 ?대룞 洹몃옒?꾨줈 ?몃옒?밸릺吏 ?딆뒿?덈떎.
+                  </p>
+                </div>
+              </>
+            )}
+          </Card>
+
+          <Card className="animate-slideUp">
+            <div className="flex items-center mb-6">
+              <div className="flex items-center space-x-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                {exercisePartOptions.map(option => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setPart(option.value as ExercisePart)}
+                    className={`
+                      py-2 px-4 rounded-lg flex items-center transition-all duration-300
+                      ${part === option.value 
+                        ? 'bg-primary-600 text-white shadow-lg transform scale-105' 
+                        : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }
+                    `}
+                  >
+                    <span className="mr-2">{option.icon}</span>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <CardSection>
+                <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+                  <CardTitle className="mb-2 md:mb-0">
+                    <span className="flex items-center">
+                      硫붿씤 ?대룞: <span className="font-bold ml-2">{mainExercise.name}</span>
+                      <Badge
+                        variant={mainExercise.sets.some(set => set.isSuccess) ? "success" : "gray"}
+                        className="ml-2"
+                        size="sm"
+                      >
+                        {mainExercise.sets.filter(set => set.isSuccess).length}/{mainExercise.sets.length} ?명듃
+                      </Badge>
+                    </span>
+                  </CardTitle>
+                  
+                  {/* 硫붿씤 ?대룞 ?좏깮 ?쒕∼?ㅼ슫 */}
+                  <div className="w-full md:w-auto">
+                    <select
+                      value={selectedMainExercise}
+                      onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
+                      className="w-full md:w-auto p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      style={{ paddingRight: '2.5rem', backgroundPosition: 'right 0.75rem center' }}
+                    >
+                      {mainExerciseOptions[part].map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {mainExercise.sets.map((set, index) => (
+                    <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-fadeIn transition-all duration-300 hover:shadow-md">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="primary" size="sm" rounded>{index + 1}</Badge>
+                          <span className="font-medium text-gray-800 dark:text-white">?명듃</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-xs text-gray-500 mb-1">臾닿쾶 (kg)</label>
+                          <input
+                            type="number"
+                            value={set.weight}
+                            onChange={(e) => {
+                              const newSets = [...mainExercise.sets];
+                              newSets[index].weight = Number(e.target.value);
+                              setMainExercise(prev => ({ ...prev, sets: newSets }));
+                            }}
+                            placeholder="kg"
+                            className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-xs text-gray-500 mb-1">?잛닔 (理쒕? 10)</label>
+                          <input
+                            type="number"
+                            value={set.reps}
+                            onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
+                            placeholder="?잛닔"
+                            min="1"
+                            max="10"
+                            className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          />
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            type="button"
+                            variant="success"
+                            size="sm"
+                            disabled={set.reps < 10}
+                            onClick={() => {
+                              const newSets = [...mainExercise.sets];
+                              newSets[index].isSuccess = true;
+                              setMainExercise(prev => ({ ...prev, sets: newSets }));
+                            }}
+                            icon={<CheckCircle size={16} />}
+                          >
+                            ?깃났
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              const newSets = [...mainExercise.sets];
+                              newSets[index].isSuccess = false;
+                              setMainExercise(prev => ({ ...prev, sets: newSets }));
+                            }}
+                            icon={<XCircle size={16} />}
+                          >
+                            ?ㅽ뙣
+                          </Button>
+                        </div>
+                        <Button
+                          type="button"
+                          variant={
+                            !activeTimers[`main_${index}`] 
+                              ? "secondary" 
+                              : activeTimers[`main_${index}`].isPaused 
+                                ? "warning" 
+                                : "danger"
+                          }
+                          size="sm"
+                          onClick={() => toggleTimer(-1, index)}
+                          icon={<Clock size={16} />}
+                        >
+                          {!activeTimers[`main_${index}`]
+                            ? '?댁떇 ??대㉧' 
+                            : activeTimers[`main_${index}`].isPaused
+                              ? `?띰툘 ${formatTime(activeTimers[`main_${index}`].timeLeft)}` 
+                              : `?몌툘 ${formatTime(activeTimers[`main_${index}`].timeLeft)}`
+                          }
+                        </Button>
+                        
+                        {selectedSetConfiguration === 'custom' && mainExercise.sets.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSet(-1, index)}
+                            icon={<X size={16} className="text-danger-500" />}
+                            className="ml-auto"
+                          >
+                            ??젣
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addSet()}
+                    icon={<Plus size={16} />}
+                    className="mt-2"
+                  >
+                    ?명듃 異붽?
+                  </Button>
+                </div>
+              </CardSection>
+
+              {accessoryExercises.map((exercise, index) => (
+                <CardSection key={index} className="animate-slideUp">
+                  <div className="flex justify-between items-center mb-4">
+                    <CardTitle className="mb-0 pb-0 border-b-0">
+                      蹂댁“ ?대룞 {index + 1}
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAccessoryExercise(index)}
+                      icon={<X size={16} className="text-danger-500" />}
+                    >
+                      ??젣
+                    </Button>
+                  </div>
+                  <input
+                    type="text"
+                    value={exercise.name}
+                    onChange={(e) => {
+                      const newExercises = [...accessoryExercises];
+                      newExercises[index].name = e.target.value;
+                      setAccessoryExercises(newExercises);
+                    }}
+                    placeholder="?대룞 ?대쫫"
+                    className="w-full p-2 border rounded-lg mb-4 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  <div className="space-y-4">
+                    {exercise.sets.map((set, setIndex) => (
+                      <div key={setIndex} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-fadeIn transition-all duration-300 hover:shadow-md">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="secondary" size="sm" rounded>{setIndex + 1}</Badge>
+                            <span className="font-medium text-gray-800 dark:text-white">?명듃</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <label className="text-xs text-gray-500 mb-1">臾닿쾶 (kg)</label>
+                            <input
+                              type="number"
+                              value={set.weight}
+                              onChange={(e) => {
+                                const newExercises = [...accessoryExercises];
+                                newExercises[index].sets[setIndex].weight = Number(e.target.value);
+                                setAccessoryExercises(newExercises);
+                              }}
+                              placeholder="kg"
+                              className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                          <div className="flex flex-col">
+                            <label className="text-xs text-gray-500 mb-1">?잛닔 (理쒕? 10)</label>
+                            <input
+                              type="number"
+                              value={set.reps}
+                              onChange={(e) => handleRepsChange(Number(e.target.value), setIndex, false, index)}
+                              placeholder="?잛닔"
+                              min="1"
+                              max="10"
+                              className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              type="button"
+                              variant="success"
+                              size="sm"
+                              disabled={set.reps < 10}
+                              onClick={() => {
+                                const newExercises = [...accessoryExercises];
+                                newExercises[index].sets[setIndex].isSuccess = true;
+                                setAccessoryExercises(newExercises);
+                              }}
+                              icon={<CheckCircle size={16} />}
+                            >
+                              ?깃났
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              size="sm"
+                              onClick={() => {
+                                const newExercises = [...accessoryExercises];
+                                newExercises[index].sets[setIndex].isSuccess = false;
+                                setAccessoryExercises(newExercises);
+                              }}
+                              icon={<XCircle size={16} />}
+                            >
+                              ?ㅽ뙣
+                            </Button>
+                          </div>
+                          <Button
+                            type="button"
+                            variant={
+                              !activeTimers[`accessory_${index}_${setIndex}`] 
+                                ? "secondary" 
+                                : activeTimers[`accessory_${index}_${setIndex}`].isPaused 
+                                  ? "warning" 
+                                  : "danger"
+                            }
+                            size="sm"
+                            onClick={() => toggleTimer(index, setIndex)}
+                            icon={<Clock size={16} />}
+                          >
+                            {!activeTimers[`accessory_${index}_${setIndex}`]
+                              ? '?댁떇 ??대㉧' 
+                              : activeTimers[`accessory_${index}_${setIndex}`].isPaused
+                                ? `?띰툘 ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}` 
+                                : `?몌툘 ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}`
+                            }
+                          </Button>
+                          
+                          {selectedSetConfiguration === 'custom' && exercise.sets.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeSet(index, setIndex)}
+                              icon={<X size={16} className="text-danger-500" />}
+                              className="ml-auto"
+                            >
+                              ??젣
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addSet(index)}
+                      icon={<Plus size={16} />}
+                      className="mt-2"
+                    >
+                      ?명듃 異붽?
+                    </Button>
+                  </div>
+                </CardSection>
+              ))}
+
+              <Button
+                type="button"
+                variant="primary"
+                onClick={addAccessoryExercise}
+                fullWidth
+                icon={<Plus size={16} />}
+                className="mt-4"
+              >
+                蹂댁“ ?대룞 異붽?
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="animate-slideUp">
+            <CardTitle>硫붾え</CardTitle>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="?ㅻ뒛???대룞?????硫붾え瑜??④꺼蹂댁꽭??
+              className="w-full p-3 border rounded-lg resize-none h-32 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </Card>
+
+          <Button
+            type="submit"
+            variant="success"
+            fullWidth
+            size="lg"
+            disabled={!isFormValid}
+            icon={<Save size={20} />}
+            className="transition-all duration-500"
+          >
+            ??ν븯湲?          </Button>
+        </form>
+      </div>
+    </Layout>
+  );
+};
+
+export default WorkoutForm;/ /   꽽堡  恍? 붝 ? 
+ 
