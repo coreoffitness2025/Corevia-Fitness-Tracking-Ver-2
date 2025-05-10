@@ -585,46 +585,38 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             </div>
             
             {selectedSetConfiguration === 'custom' && (
-              <>
-                <div className="flex gap-4 mb-4 items-end">
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">세트 수</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={customSets}
-                      onChange={(e) => setCustomSets(Number(e.target.value))}
-                      className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">반복 횟수</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={customReps}
-                      onChange={(e) => setCustomReps(Number(e.target.value))}
-                      className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={applyCustomConfiguration}
-                  >
-                    적용
-                  </Button>
+              <div className="flex gap-4 mb-4 items-end">
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-500 mb-1">세트 수</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={customSets}
+                    onChange={(e) => setCustomSets(Number(e.target.value))}
+                    className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
-                    <Info size={14} className="inline-block mr-1" />
-                    커스텀 설정은 운동 기록에만 표시되고 운동 그래프로 트래킹되지 않습니다.
-                  </p>
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-500 mb-1">반복 횟수</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={customReps}
+                    onChange={(e) => setCustomReps(Number(e.target.value))}
+                    className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
                 </div>
-              </>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={applyCustomConfiguration}
+                >
+                  적용
+                </Button>
+              </div>
             )}
           </Card>
 
@@ -717,35 +709,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           />
                         </div>
-                        <div className="flex space-x-2">
+                        {!set.isSuccess && typeof set.isSuccess !== 'boolean' ? (
                           <Button
                             type="button"
-                            variant="success"
+                            variant="outline"
                             size="sm"
-                            disabled={set.reps < 10}
-                            onClick={() => {
-                              const newSets = [...mainExercise.sets];
-                              newSets[index].isSuccess = true;
-                              setMainExercise(prev => ({ ...prev, sets: newSets }));
-                            }}
+                            onClick={() => handleTrainingComplete(index, true)}
                             icon={<CheckCircle size={16} />}
                           >
-                            성공
+                            훈련 완료
                           </Button>
+                        ) : (
                           <Button
                             type="button"
-                            variant="danger"
+                            variant={set.isSuccess ? "success" : "danger"}
                             size="sm"
                             onClick={() => {
                               const newSets = [...mainExercise.sets];
-                              newSets[index].isSuccess = false;
+                              newSets[index].isSuccess = !newSets[index].isSuccess;
                               setMainExercise(prev => ({ ...prev, sets: newSets }));
                             }}
-                            icon={<XCircle size={16} />}
+                            icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
                           >
-                            실패
+                            {set.isSuccess ? '성공' : '실패'}
                           </Button>
-                        </div>
+                        )}
                         <Button
                           type="button"
                           variant={
@@ -766,8 +754,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               : `⏸️ ${formatTime(activeTimers[`main_${index}`].timeLeft)}`
                           }
                         </Button>
-                        
-                        {selectedSetConfiguration === 'custom' && mainExercise.sets.length > 1 && (
+
+                        {mainExercise.sets.length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
@@ -856,35 +844,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                           </div>
-                          <div className="flex space-x-2">
+                          {!set.isSuccess && typeof set.isSuccess !== 'boolean' ? (
                             <Button
                               type="button"
-                              variant="success"
+                              variant="outline"
                               size="sm"
-                              disabled={set.reps < 10}
-                              onClick={() => {
-                                const newExercises = [...accessoryExercises];
-                                newExercises[index].sets[setIndex].isSuccess = true;
-                                setAccessoryExercises(newExercises);
-                              }}
+                              onClick={() => handleTrainingComplete(setIndex, false, index)}
                               icon={<CheckCircle size={16} />}
                             >
-                              성공
+                              훈련 완료
                             </Button>
+                          ) : (
                             <Button
                               type="button"
-                              variant="danger"
+                              variant={set.isSuccess ? "success" : "danger"}
                               size="sm"
                               onClick={() => {
                                 const newExercises = [...accessoryExercises];
-                                newExercises[index].sets[setIndex].isSuccess = false;
+                                newExercises[index].sets[setIndex].isSuccess = !newExercises[index].sets[setIndex].isSuccess;
                                 setAccessoryExercises(newExercises);
                               }}
-                              icon={<XCircle size={16} />}
+                              icon={set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
                             >
-                              실패
+                              {set.isSuccess ? '성공' : '실패'}
                             </Button>
-                          </div>
+                          )}
                           <Button
                             type="button"
                             variant={
@@ -905,8 +889,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                                 : `⏸️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}`
                             }
                           </Button>
-                          
-                          {selectedSetConfiguration === 'custom' && exercise.sets.length > 1 && (
+
+                          {exercise.sets.length > 1 && (
                             <Button
                               type="button"
                               variant="ghost"
@@ -975,5 +959,4 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   );
 };
 
-export default WorkoutForm;/ /   ����  ���  �� � 
- 
+export default WorkoutForm;
