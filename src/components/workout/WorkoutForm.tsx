@@ -213,7 +213,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             if (updated[timerKey].timeLeft <= 0) {
               clearInterval(timerRefs.current[timerKey]);
               toast.success('휴식 시간이 끝났습니다!', { position: 'top-center' });
-              return { ...prev, [timerKey]: undefined };
+              delete updated[timerKey];
+              return updated;
             }
           }
           return updated;
