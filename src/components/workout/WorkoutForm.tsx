@@ -341,6 +341,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     } else if (config.preferredSetup === '6x5') {
       setsCount = 6;
       repsCount = 5;
+    } else if (config.preferredSetup === '15x5') {
+      setsCount = 15;
+      repsCount = 5;
     } else if (config.preferredSetup === '3x10') {
       setsCount = 3;
       repsCount = 10;
@@ -539,7 +542,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('5x5')}
               >
-                5x5
+                5세트 x 5회
               </Button>
               <Button
                 type="button"
@@ -547,7 +550,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('10x5')}
               >
-                10x5
+                10세트 x 5회
               </Button>
               <Button
                 type="button"
@@ -555,7 +558,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('6x5')}
               >
-                6x5
+                6세트 x 5회
+              </Button>
+              <Button
+                type="button"
+                variant={selectedSetConfiguration === '15x5' ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleSetConfigChange('15x5')}
+              >
+                15세트 x 5회
               </Button>
               <Button
                 type="button"
@@ -563,7 +574,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 size="sm"
                 onClick={() => handleSetConfigChange('3x10')}
               >
-                3x10
+                3세트 x 10회
               </Button>
               <Button
                 type="button"
@@ -611,7 +622,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             )}
             
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              현재 구성: {sets}세트 x {reps}회
+              현재 구성: <span className="font-medium">{sets}세트</span> x <span className="font-medium">{reps}회</span> 
+              <span className="text-xs ml-2 text-gray-500">(세트 수 x 반복 횟수)</span>
             </div>
           </Card>
 
