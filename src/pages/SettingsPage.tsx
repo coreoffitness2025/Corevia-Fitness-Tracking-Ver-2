@@ -228,6 +228,23 @@ const SettingsPage = () => {
                 </div>
               </div>
               
+              {/* 추가: 운동 세트 및 무게 가이드 링크 */}
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md flex justify-between items-center">
+                <div>
+                  <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">메인 운동 세트 구성 및 적정 무게 가이드</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    개인 프로필에 맞는 운동 세트 구성과 무게를 설정하세요.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate('/workout/guide')}
+                  variant="secondary"
+                  size="md"
+                >
+                  가이드 보기
+                </Button>
+              </div>
+              
               {/* 메인 운동 설정 */}
               {userProfile.preferredExercises && (
                 <div className="mt-6">

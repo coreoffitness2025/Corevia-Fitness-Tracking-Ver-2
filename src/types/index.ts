@@ -117,6 +117,38 @@ export interface UserSettings {
   language: string;
 }
 
+export interface WorkoutGuideInfo {
+  gender: 'male' | 'female';
+  age: number;
+  weight: number;
+  experience: 'beginner' | 'intermediate' | 'advanced';
+  oneRepMaxes: {
+    squat?: number;
+    deadlift?: number;
+    bench?: number;
+    overheadPress?: number;
+  };
+  preferredSetConfig: '10x5' | '6x3' | '15x5';
+}
+
+export interface WorkoutGuideResult {
+  userLevel: 'beginner' | 'intermediate' | 'advanced';
+  ageGroup: '20-35' | '36-50' | '51+';
+  recommendedWeights: {
+    squat?: number;
+    deadlift?: number;
+    bench?: number;
+    overheadPress?: number;
+  };
+  recoveryTime: string;
+  setConfig: {
+    type: '10x5' | '6x3' | '15x5';
+    description: string;
+    advantages: string[];
+  };
+  percentageOfOneRM: number;
+}
+
 export interface Food {
   id: string;
   userId: string;

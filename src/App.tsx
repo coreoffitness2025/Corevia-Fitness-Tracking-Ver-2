@@ -17,6 +17,7 @@ import WorkoutPage from './pages/workout/WorkoutPage';
 import FoodPage from './pages/food/FoodPage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
+import WorkoutGuidePage from './pages/workout/WorkoutGuidePage';
 
 const App: React.FC = () => {
   return (
@@ -62,6 +63,11 @@ const App: React.FC = () => {
           <Route path="/settings" element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/workout/guide" element={
+            <ProtectedRoute>
+              <WorkoutGuidePage />
             </ProtectedRoute>
           } />
           
