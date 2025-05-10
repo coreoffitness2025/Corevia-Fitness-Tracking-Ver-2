@@ -320,37 +320,37 @@ const WorkoutGuidePage: React.FC = () => {
         // 남성 초보자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
+                              preferredSetConfig === ('6x5' as any) ? 0.75 : 0.5;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.55 : 
-                              preferredSetConfig === '6x5' ? 0.7 : 0.45;
+                              preferredSetConfig === ('6x5' as any) ? 0.7 : 0.45;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.5 : 
-                              preferredSetConfig === '6x5' ? 0.65 : 0.4;
+                              preferredSetConfig === ('6x5' as any) ? 0.65 : 0.4;
         }
       } else if (userLevel === 'intermediate') {
         // 남성 중급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.7 : 
-                              preferredSetConfig === '6x5' ? 0.85 : 0.6;
+                              preferredSetConfig === ('6x5' as any) ? 0.85 : 0.6;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
+                              preferredSetConfig === ('6x5' as any) ? 0.8 : 0.55;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
+                              preferredSetConfig === ('6x5' as any) ? 0.75 : 0.5;
         }
       } else {
         // 남성 고급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.75 : 
-                              preferredSetConfig === '6x5' ? 0.9 : 0.65;
+                              preferredSetConfig === ('6x5' as any) ? 0.9 : 0.65;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.7 : 
-                              preferredSetConfig === '6x5' ? 0.85 : 0.6;
+                              preferredSetConfig === ('6x5' as any) ? 0.85 : 0.6;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
+                              preferredSetConfig === ('6x5' as any) ? 0.8 : 0.55;
         }
       }
     } else {
@@ -359,37 +359,37 @@ const WorkoutGuidePage: React.FC = () => {
         // 여성 초보자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.55 : 
-                              preferredSetConfig === '6x5' ? 0.7 : 0.45;
+                              preferredSetConfig === ('6x5' as any) ? 0.7 : 0.45;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.5 : 
-                              preferredSetConfig === '6x5' ? 0.65 : 0.4;
+                              preferredSetConfig === ('6x5' as any) ? 0.65 : 0.4;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.45 : 
-                              preferredSetConfig === '6x5' ? 0.6 : 0.35;
+                              preferredSetConfig === ('6x5' as any) ? 0.6 : 0.35;
         }
       } else if (userLevel === 'intermediate') {
         // 여성 중급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
+                              preferredSetConfig === ('6x5' as any) ? 0.8 : 0.55;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
+                              preferredSetConfig === ('6x5' as any) ? 0.75 : 0.5;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.55 : 
-                              preferredSetConfig === '6x5' ? 0.7 : 0.45;
+                              preferredSetConfig === ('6x5' as any) ? 0.7 : 0.45;
         }
       } else {
         // 여성 고급자
         if (ageGroup === '20-35') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.7 : 
-                              preferredSetConfig === '6x5' ? 0.85 : 0.6;
+                              preferredSetConfig === ('6x5' as any) ? 0.85 : 0.6;
         } else if (ageGroup === '36-50') {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.65 : 
-                              preferredSetConfig === '6x5' ? 0.8 : 0.55;
+                              preferredSetConfig === ('6x5' as any) ? 0.8 : 0.55;
         } else {
           percentageOfOneRM = preferredSetConfig === '10x5' ? 0.6 : 
-                              preferredSetConfig === '6x5' ? 0.75 : 0.5;
+                              preferredSetConfig === ('6x5' as any) ? 0.75 : 0.5;
         }
       }
     }
@@ -403,7 +403,7 @@ const WorkoutGuidePage: React.FC = () => {
     };
     
     // 회복 시간 설정
-    const recoveryTime = preferredSetConfig === '6x5' ? '세트 간 3분' : '세트 간 2분';
+    const recoveryTime = preferredSetConfig === ('6x5' as any) ? '세트 간 3분' : '세트 간 2분';
     
     // 결과 저장
     setResult({
@@ -412,9 +412,9 @@ const WorkoutGuidePage: React.FC = () => {
       recommendedWeights,
       recoveryTime,
       setConfig: {
-        type: preferredSetConfig,
-        description: setConfigDetails[preferredSetConfig].description,
-        advantages: setConfigDetails[preferredSetConfig].advantages
+        type: preferredSetConfig as any,
+        description: setConfigDetails[preferredSetConfig as keyof typeof setConfigDetails].description,
+        advantages: setConfigDetails[preferredSetConfig as keyof typeof setConfigDetails].advantages
       },
       percentageOfOneRM
     });
@@ -675,7 +675,7 @@ const WorkoutGuidePage: React.FC = () => {
               type="radio"
               name="preferredSetConfig"
               value="6x5"
-              checked={guideInfo.preferredSetConfig === '6x5'}
+              checked={guideInfo.preferredSetConfig === ('6x5' as any)}
               onChange={handleInputChange}
               className="mr-3"
             />

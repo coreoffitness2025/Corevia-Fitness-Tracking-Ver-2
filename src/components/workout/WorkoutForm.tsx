@@ -344,7 +344,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     } else if (config.preferredSetup === '6x5') {
       setsCount = 6;
       repsCount = 5;
-    } else if (config.preferredSetup === '15x5') {
+    } else if (config.preferredSetup === ('15x5' as SetConfiguration)) {
       setsCount = 15;
       repsCount = 5;
     } else if (config.preferredSetup === '3x10') {
@@ -565,7 +565,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                variant={selectedSetConfiguration === '15x5' ? "primary" : "outline"}
+                variant={selectedSetConfiguration === ('15x5' as SetConfiguration) ? "primary" : "outline"}
                 size="sm"
                 onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
               >
