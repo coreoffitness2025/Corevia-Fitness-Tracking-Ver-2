@@ -1,29 +1,60 @@
 name: Deploy to GitHub Pages
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 permissions:
   contents: write
   pages: write
   id-token: write
+<<<<<<< HEAD
 concurrency:
   group: "pages"
   cancel-in-progress: false
+=======
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+>>>>>>> master
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+<<<<<<< HEAD
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup Node.js
+=======
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js 🔧
+>>>>>>> master
         uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: 'npm'
+<<<<<<< HEAD
       - name: Install dependencies
         run: npm ci
       - name: Build
+=======
+
+      - name: Install dependencies 📦
+        run: npm ci
+
+      - name: Build 🏗️
+>>>>>>> master
         run: npm run build
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
@@ -33,9 +64,19 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+<<<<<<< HEAD
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist
           branch: gh-pages
           clean: true
+=======
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist # 빌드 결과물이 저장된 폴더
+          branch: gh-pages # 배포할 브랜치
+          clean: true # 배포 전 gh-pages 브랜치를 비우기 
+>>>>>>> master

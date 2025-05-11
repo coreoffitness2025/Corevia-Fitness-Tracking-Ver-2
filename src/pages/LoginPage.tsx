@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
@@ -127,6 +128,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>(''); // 디버깅 정보
+=======
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+
+const LoginPage: React.FC = () => {
+  const { isAuthenticated, currentUser } = useAuth();
+  const [debugInfo, setDebugInfo] = useState('');
+>>>>>>> master
 
   // 인증 상태 변경 감지
   useEffect(() => {
@@ -134,6 +143,7 @@ export default function LoginPage() {
     setDebugInfo(prev => `${prev}\n인증 상태: ${isAuthenticated ? '로그인됨' : '로그인되지 않음'}\n사용자 ID: ${currentUser?.uid || 'none'}`);
     
     if (isAuthenticated && currentUser) {
+<<<<<<< HEAD
       // 로그인 상태 확인 후 즉시 개인화 필요 여부 확인
       setTimeout(() => {
         checkIfNeedsPersonalization();
@@ -399,3 +409,18 @@ export default function LoginPage() {
     </div>
   );
 }
+=======
+      // 개인화 필요 여부를 즉시 확인하고 모달 표시
+      checkIfNeedsPersonalization();
+    }
+  }, [isAuthenticated, currentUser]);
+
+  return (
+    <div>
+      {/* Render your component content here */}
+    </div>
+  );
+};
+
+export default LoginPage; 
+>>>>>>> master

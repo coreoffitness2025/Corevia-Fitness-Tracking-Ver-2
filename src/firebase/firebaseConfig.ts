@@ -1,5 +1,6 @@
 import { UserProfile, FAQ, ExercisePart, Session } from '../types';
 import { initializeApp } from 'firebase/app';
+<<<<<<< HEAD
 import { 
   getAuth, 
   signInWithPopup,
@@ -22,11 +23,34 @@ import {
   getDocs, 
   orderBy, 
   limit, 
+=======
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User
+} from 'firebase/auth';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+>>>>>>> master
   updateDoc
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 
+<<<<<<< HEAD
 // Firebase 환경 설정 - GitHub Secrets에서 관리되는 환경 변수 사용
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
@@ -48,10 +72,35 @@ if (typeof window !== 'undefined') {
   (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
+=======
+// Firebase 환경 설정
+// GitHub Pages 환경에서는 환경 변수에 접근할 수 없으므로 하드코딩된 값 사용
+// 실제 프로덕션에서는 이렇게 하드코딩하지 말고, 빌드 과정에서 주입해야 함
+const firebaseConfig = {
+  // 환경 변수가 없을 경우 기본값으로 대체
+  apiKey: "YOUR_API_KEY", // 실제 키로 교체하거나 빌드 시 주입
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
+};
+
+// Firebase 초기화 전에 콘솔에 설정 누락 메시지 표시
+if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
+  console.warn("Firebase 구성이 완전하지 않습니다. 환경 변수 또는 직접 설정이 필요합니다.");
+}
+
+// Firebase 초기화
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+>>>>>>> master
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
+<<<<<<< HEAD
 // Google 제공자 설정
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -106,6 +155,12 @@ export const getGoogleRedirectResult = async () => {
     }
   }
   return null;
+=======
+// 인증 관련 함수들
+export const signInWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(auth, provider);
+>>>>>>> master
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
@@ -131,6 +186,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     console.error('Error fetching user profile:', error);
     return null;
   }
+<<<<<<< HEAD
 };
 
 export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
@@ -215,3 +271,6 @@ export const getFAQs = async (part?: ExercisePart, type?: 'method' | 'sets'): Pr
     return [];
   }
 };
+=======
+}; 
+>>>>>>> master

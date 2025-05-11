@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
 import ExerciseFaq from '../components/exercise/ExerciseFaq';
 import NutritionScout from '../components/nutrition/NutritionScout';
@@ -35,6 +36,8 @@ interface CalorieCalculatorResults {
   fat: number;
 }
 
+=======
+>>>>>>> master
 // 운동 부위별 운동 목록 데이터
 const exercisesByPart: Record<ExercisePart, Exercise[]> = {
   chest: [
@@ -75,6 +78,7 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
       ]
     },
     {
+<<<<<<< HEAD
       id: 'dumbbell_press',
       name: '덤벨 프레스',
       description: '덤벨을 사용해 가슴 근육을 골고루 발달시키는 운동입니다.',
@@ -108,11 +112,23 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
         '팔꿈치를 구부려 가슴이 바닥에 거의 닿을 때까지 몸을 내립니다.',
         '팔을 펴서 시작 자세로 돌아옵니다.',
         '운동 중 몸이 일직선을 유지하도록 주의합니다.'
+=======
+      id: 'dumbbell_fly',
+      name: '덤벨 플라이',
+      description: '가슴 근육 바깥쪽을 타겟으로 하는 가슴 확장 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=eozdVDA78K0',
+      steps: [
+        '벤치에 누워 덤벨을 각 손에 들고 팔을 위로 뻗습니다.',
+        '팔꿈치를 약간 구부린 상태로 고정합니다.',
+        '가슴 근육을 사용하여 양팔을 옆으로 벌립니다.',
+        '가슴이 스트레칭되는 느낌이 들 때까지 벌린 후 시작 위치로 돌아옵니다.'
+>>>>>>> master
       ]
     },
     {
       id: 'cable_crossover',
       name: '케이블 크로스오버',
+<<<<<<< HEAD
       description: '가슴 중앙과 안쪽 부위를 집중적으로 발달시키는 운동입니다.',
       videoUrl: 'https://www.youtube.com/watch?v=taI4XduLpTk',
       steps: [
@@ -120,6 +136,15 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
         '한 발을 앞으로 내밀고 상체를 약간 앞으로 기울입니다.',
         '팔을 앞으로 당겨 가슴 앞에서 손이 교차되게 합니다.',
         '천천히 시작 자세로 돌아옵니다.'
+=======
+      description: '가슴 중앙부를 타겟으로 하는 케이블 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=taI4XduLpTk',
+      steps: [
+        '케이블 머신 양쪽에 서서 핸들을 각 손으로 잡습니다.',
+        '한 발을 앞으로 내딛고 약간 앞으로 기울입니다.',
+        '팔꿈치를 약간 구부린 채로 케이블을 몸 앞으로 당겨 교차시킵니다.',
+        '천천히 시작 위치로 돌아가며 가슴 근육의 스트레칭을 느낍니다.'
+>>>>>>> master
       ]
     }
   ],
@@ -147,6 +172,45 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
         '턱이 바 위로 올라오도록 몸을 끌어올립니다.',
         '천천히 원래 위치로 내려옵니다.'
       ]
+<<<<<<< HEAD
+=======
+    },
+    {
+      id: 'barbell_row',
+      name: '바벨 로우',
+      description: '등 중앙부와 광배근을 타겟으로 하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=kBWAon7ItDw',
+      steps: [
+        '바벨을 잡고 상체를 거의 지면과 평행하게 숙입니다.',
+        '무릎을 약간 굽히고 등을 곧게 유지합니다.',
+        '팔꿈치를 뒤로 당기며 바벨을 복부 아래쪽으로 당깁니다.',
+        '천천히 바벨을 내려 시작 위치로 돌아갑니다.'
+      ]
+    },
+    {
+      id: 'lat_pulldown',
+      name: '랫 풀다운',
+      description: '광배근과 상부 등을 강화하는 케이블 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+      steps: [
+        '랫 풀다운 머신에 앉아 바를 어깨보다 넓게 잡습니다.',
+        '가슴을 약간 내밀고 등을 곧게 유지합니다.',
+        '팔꿈치를 아래로 당기며 바를 가슴 상단까지 내립니다.',
+        '천천히 시작 위치로 돌아갑니다.'
+      ]
+    },
+    {
+      id: 'seated_cable_row',
+      name: '시티드 케이블 로우',
+      description: '등 중앙부와 하부를 타겟으로 하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=GZbfZ033f74',
+      steps: [
+        '케이블 로우 머신에 앉아 발을 플랫폼에 고정합니다.',
+        '핸들을 잡고 무릎을 약간 구부린 채 상체를 곧게 폅니다.',
+        '팔꿈치를 뒤로 당기며 핸들을 복부 쪽으로 당깁니다.',
+        '천천히 팔을 펴며 시작 위치로 돌아갑니다.'
+      ]
+>>>>>>> master
     }
   ],
   shoulder: [
@@ -173,6 +237,45 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
         '덤벨을 어깨 높이까지 들어올립니다.',
         '천천히 시작 위치로 내려옵니다.'
       ]
+<<<<<<< HEAD
+=======
+    },
+    {
+      id: 'front_raise',
+      name: '프론트 레이즈',
+      description: '전면 삼각근을 강화하는 어깨 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=sOcYlBI85oc',
+      steps: [
+        '덤벨을 양손에 들고 팔을 몸 앞에 위치시킵니다.',
+        '팔을 거의 곧게 펴고 덤벨을 앞으로 들어올립니다.',
+        '어깨 높이까지 올린 후 잠시 멈춥니다.',
+        '천천히 시작 위치로 내려옵니다.'
+      ]
+    },
+    {
+      id: 'reverse_fly',
+      name: '리버스 플라이',
+      description: '후면 삼각근을 타겟으로 하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=ttvfGg9d76c',
+      steps: [
+        '벤치에 가슴을 대고 엎드리거나 상체를 앞으로 굽힌 상태로 서서 진행합니다.',
+        '덤벨을 양손에 들고 팔꿈치를 약간 구부립니다.',
+        '어깨 근육을 사용하여 덤벨을 양옆으로 들어올립니다.',
+        '견갑골이 조여지는 느낌이 들 때까지 올린 후 천천히 내립니다.'
+      ]
+    },
+    {
+      id: 'face_pull',
+      name: '페이스 풀',
+      description: '후면 삼각근과 회전근개를 강화하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=rep-qVOkqgk',
+      steps: [
+        '케이블 머신 로프 어태치먼트를 얼굴 높이로 설정합니다.',
+        '로프의 양쪽 끝을 각 손으로 잡습니다.',
+        '팔꿈치를 바깥쪽으로 향하게 하며 로프를 얼굴 쪽으로 당깁니다.',
+        '견갑골을 조이며 로프의 끝이 귀 옆에 오도록 당긴 후 천천히 돌아갑니다.'
+      ]
+>>>>>>> master
     }
   ],
   leg: [
@@ -199,6 +302,7 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
         '발로 플랫폼을 밀어 다리를 펴지만, 무릎을 완전히 펴지는 않습니다.',
         '천천히 시작 위치로 돌아옵니다.'
       ]
+<<<<<<< HEAD
     }
   ],
   biceps: [
@@ -968,3 +1072,56 @@ const QnaPage: React.FC = () => {
 };
 
 export default QnaPage;
+=======
+    },
+    {
+      id: 'romanian_deadlift',
+      name: '루마니안 데드리프트',
+      description: '대둔근과 햄스트링을 강화하는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=JCXUYuzwNrM',
+      steps: [
+        '바벨을 어깨너비로 잡고 허리를 펴고 섭니다.',
+        '무릎을 약간 구부린 상태로 고정합니다.',
+        '엉덩이를 뒤로 빼며 상체를 앞으로 굽힙니다.',
+        '바벨을 정강이 중간까지 내린 후 엉덩이를 앞으로 밀며 시작 위치로 돌아옵니다.'
+      ]
+    },
+    {
+      id: 'lunges',
+      name: '런지',
+      description: '대퇴사두, 대둔근, 햄스트링을 고르게 발달시키는 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=QOVaHwm-Q6U',
+      steps: [
+        '양손에 덤벨을 들고 똑바로 섭니다.',
+        '한 발을 앞으로 크게 내딛고 무릎을 굽힙니다.',
+        '뒷발의 무릎이 바닥 가까이 내려가도록 합니다.',
+        '앞발로 밀며 시작 위치로 돌아온 후 반대쪽 다리로 반복합니다.'
+      ]
+    },
+    {
+      id: 'leg_extensions',
+      name: '레그 익스텐션',
+      description: '대퇴사두를 집중적으로 발달시키는 기계 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=YyvSfVjQeL0',
+      steps: [
+        '레그 익스텐션 머신에 앉고 발목 패드를 정강이 위에 고정합니다.',
+        '무릎을 구부린 상태에서 시작합니다.',
+        '대퇴사두를 수축하며 다리를 완전히 펴줍니다.',
+        '천천히 시작 위치로 돌아갑니다.'
+      ]
+    },
+    {
+      id: 'leg_curls',
+      name: '레그 컬',
+      description: '햄스트링을 타겟으로 하는 기계 운동입니다.',
+      videoUrl: 'https://www.youtube.com/watch?v=1Tq3QdYUuHs',
+      steps: [
+        '레그 컬 머신에 엎드리고 발목 패드를 발 뒤쪽에 고정합니다.',
+        '다리를 편 상태에서 시작합니다.',
+        '햄스트링을 수축하며 발을 엉덩이 쪽으로 구부립니다.',
+        '천천히 시작 위치로 돌아갑니다.'
+      ]
+    }
+  ]
+}; 
+>>>>>>> master
