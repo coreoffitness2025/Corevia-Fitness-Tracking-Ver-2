@@ -362,27 +362,49 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 훈련 완료 처리 함수 수정
   const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
-    // 세트 구성별 성공 기준 설정
-    let targetReps = 10; // 기본값
-    
-    if (selectedSetConfiguration === '10x5') {
-      targetReps = 10;
-    } else if (selectedSetConfiguration === '15x5') {
-      targetReps = 15;
-    } else if (selectedSetConfiguration === '6x3') {
-      targetReps = 6;
-    } else if (selectedSetConfiguration === 'custom') {
-      targetReps = customReps;
+    let currentReps: number;
+    let currentIsSuccess: boolean | null;
+
+    if (isMainExercise) {
+      currentReps = mainExercise.sets[setIndex].reps;
+      currentIsSuccess = mainExercise.sets[setIndex].isSuccess;
+    } else if (accessoryIndex !== undefined) {
+      currentReps = accessoryExercises[accessoryIndex].sets[setIndex].reps;
+      currentIsSuccess = accessoryExercises[accessoryIndex].sets[setIndex].isSuccess;
+    } else {
+      return;
     }
+
+    // 이미 성공 또는 실패 상태이면, 다시 누르면 null (미완료) 상태로 변경
+    if (currentIsSuccess === true || currentIsSuccess === false) {
+      if (isMainExercise) {
+        const newSets = [...mainExercise.sets];
+        newSets[setIndex].isSuccess = null;
+        setMainExercise(prev => ({ ...prev, sets: newSets }));
+      } else if (accessoryIndex !== undefined) {
+        const newExercises = [...accessoryExercises];
+        newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
+        setAccessoryExercises(newExercises);
+      }
+      return;
+    }
+
+    // 미완료 상태에서 눌렀을 때 성공/실패 판정 (기존 로직)
+    let targetReps = 10; 
+    if (selectedSetConfiguration === '10x5') targetReps = 10;
+    else if (selectedSetConfiguration === '15x5') targetReps = 15;
+    else if (selectedSetConfiguration === '6x3') targetReps = 6;
+    else if (selectedSetConfiguration === 'custom') targetReps = customReps;
     
+    const success = currentReps >= targetReps;
+
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
-      // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
-      newSets[setIndex].isSuccess = newSets[setIndex].reps >= targetReps;
+      newSets[setIndex].isSuccess = success;
       setMainExercise(prev => ({ ...prev, sets: newSets }));
     } else if (accessoryIndex !== undefined) {
       const newExercises = [...accessoryExercises];
-      newExercises[accessoryIndex].sets[setIndex].isSuccess = newExercises[accessoryIndex].sets[setIndex].reps >= targetReps;
+      newExercises[accessoryIndex].sets[setIndex].isSuccess = success;
       setAccessoryExercises(newExercises);
     }
   };
@@ -625,48 +647,44 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   selectedSetConfiguration === '10x5'
                     ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    : 'bg-white dark:bg-gray-800 text-[#4285F4] border border-[#4285F4] hover:bg-sky-50 dark:hover:bg-sky-700'
                 }`}
-                size="sm"
                 onClick={() => handleSetConfigChange('10x5')}
               >
                 10회 x 5세트
               </Button>
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   selectedSetConfiguration === ('15x5' as SetConfiguration)
                     ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    : 'bg-white dark:bg-gray-800 text-[#4285F4] border border-[#4285F4] hover:bg-sky-50 dark:hover:bg-sky-700'
                 }`}
-                size="sm"
                 onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
               >
                 15회 x 5세트
               </Button>
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   selectedSetConfiguration === ('6x3' as SetConfiguration)
                     ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    : 'bg-white dark:bg-gray-800 text-[#4285F4] border border-[#4285F4] hover:bg-sky-50 dark:hover:bg-sky-700'
                 }`}
-                size="sm"
                 onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
               >
                 6회 x 3세트
               </Button>
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   selectedSetConfiguration === 'custom'
                     ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    : 'bg-white dark:bg-gray-800 text-[#4285F4] border border-[#4285F4] hover:bg-sky-50 dark:hover:bg-sky-700'
                 }`}
-                size="sm"
                 onClick={() => handleSetConfigChange('custom')}
               >
                 커스텀
@@ -722,8 +740,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     className={`
                       py-2 px-4 rounded-lg flex items-center transition-all duration-300 text-sm font-medium
                       ${part === option.value 
-                        ? 'bg-[#4285F4] text-white shadow-lg transform scale-105'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-[#4285F4] text-white shadow-md'
+                        : 'bg-white dark:bg-gray-800 text-[#4285F4] border border-[#4285F4] hover:bg-sky-50 dark:hover:bg-sky-700'
                       }
                     `}
                   >

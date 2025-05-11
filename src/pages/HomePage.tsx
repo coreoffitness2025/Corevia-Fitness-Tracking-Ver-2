@@ -6,7 +6,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../firebase/firebaseConfig';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
-import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity } from 'lucide-react';
+import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Droplet, Wheat, Beef } from 'lucide-react';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -204,41 +204,51 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* 일일 목표 영양소 카드 */} 
+        {/* 일일 목표 영양소 카드 - FoodForm/NutritionGuide 스타일 적용 */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center mb-4">
-            <Target size={28} className="text-green-500 mr-3" />
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">일일 목표</h2>
+            <Target size={28} className="text-[#4285F4] mr-3" /> {/* Q&A 페이지 주 색상 적용 */}
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">일일 영양 목표</h2>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-3">
+          <div className="space-y-4">
+            {/* 칼로리 */} 
+            <div className="bg-sky-50 dark:bg-sky-900/30 p-4 rounded-lg flex items-center">
+              <Droplet size={24} className="text-sky-500 mr-3 flex-shrink-0" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">목표 칼로리</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <p className="text-xl font-bold text-sky-600 dark:text-sky-400">
                   {userProfile?.targetCalories && !isNaN(userProfile.targetCalories) ? `${userProfile.targetCalories} kcal` : '미설정'}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500 dark:text-gray-400">운동 목표: {userProfile?.fitnessGoal ? (userProfile.fitnessGoal === 'loss' ? '체중 감량' : userProfile.fitnessGoal === 'maintain' ? '체중 유지' : '근력 증가') : '-'}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">활동량: {userProfile?.activityLevel ? (userProfile.activityLevel === 'sedentary' ? '매우 적음' : userProfile.activityLevel === 'light' ? '적음' : userProfile.activityLevel === 'moderate' ? '보통' : userProfile.activityLevel === 'active' ? '많음' : '매우 많음') : '-'}</p>
-              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-center bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
-                <p className="text-sm text-green-700 dark:text-green-300 font-semibold">단백질</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-white">{nutrients.protein}g</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* 단백질 */} 
+              <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg text-center">
+                <Beef size={20} className="text-red-500 mx-auto mb-1" />
+                <p className="text-sm text-red-700 dark:text-red-300 font-semibold">단백질</p>
+                <p className="text-md font-bold text-gray-800 dark:text-white">{nutrients.protein}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.proteinPerMeal}g/끼니)</p>
               </div>
-              <div className="text-center bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-md">
+              {/* 탄수화물 */} 
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg text-center">
+                <Wheat size={20} className="text-yellow-500 mx-auto mb-1" />
                 <p className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold">탄수화물</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-white">{nutrients.carbs}g</p>
+                <p className="text-md font-bold text-gray-800 dark:text-white">{nutrients.carbs}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.carbsPerMeal}g/끼니)</p>
               </div>
-              <div className="text-center bg-red-50 dark:bg-red-900/30 p-3 rounded-md">
-                <p className="text-sm text-red-700 dark:text-red-300 font-semibold">지방</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-white">{nutrients.fat}g</p>
+              {/* 지방 */} 
+              <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg text-center">
+                {/* 지방 아이콘 예시 (다른 아이콘으로 변경 가능) */}
+                <img src="/icons/fat-icon.svg" alt="지방" className="w-5 h-5 mx-auto mb-1 filter dark:invert" />{/* 예시 아이콘 */}
+                <p className="text-sm text-green-700 dark:text-green-300 font-semibold">지방</p>
+                <p className="text-md font-bold text-gray-800 dark:text-white">{nutrients.fat}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.fatPerMeal}g/끼니)</p>
               </div>
+            </div>
+            <div className="text-right mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400">운동 목표: {userProfile?.fitnessGoal ? (userProfile.fitnessGoal === 'loss' ? '체중 감량' : userProfile.fitnessGoal === 'maintain' ? '체중 유지' : '근력 증가') : '-'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">활동량: {userProfile?.activityLevel ? (userProfile.activityLevel === 'sedentary' ? '매우 적음' : userProfile.activityLevel === 'light' ? '적음' : userProfile.activityLevel === 'moderate' ? '보통' : userProfile.activityLevel === 'active' ? '많음' : '매우 많음') : '-'}</p>
             </div>
           </div>
         </div>

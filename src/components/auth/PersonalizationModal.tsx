@@ -689,7 +689,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                   <button
                     type="button"
                     onClick={calculateBMRAndMacros}
-                    className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-4"
+                    className="w-full px-4 py-2 text-sm font-medium text-white bg-[#4285F4] border border-transparent rounded-md hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4] mb-4"
                   >
                     계산하기
                   </button>
@@ -706,25 +706,29 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                       </div>
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">계산된 목표 칼로리</h4>
-                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{calculatedCalories.target} kcal</p>
+                        <p className="text-xl font-bold text-[#4285F4] dark:text-sky-400">{calculatedCalories.target} kcal</p>
                       </div>
 
-                      {/* 계산된 매크로 영양소 표시 */} 
-                      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
-                        <div className="bg-white dark:bg-gray-800 p-2 rounded text-center">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">단백질</p>
-                          <p className="font-medium text-gray-700 dark:text-gray-200">{calculatedMacros.protein}g</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 p-2 rounded text-center">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">탄수화물</p>
-                          <p className="font-medium text-gray-700 dark:text-gray-200">{calculatedMacros.carbs}g</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 p-2 rounded text-center">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">지방</p>
-                          <p className="font-medium text-gray-700 dark:text-gray-200">{calculatedMacros.fat}g</p>
+                      {/* 계산된 매크로 영양소 표시 (HomePage/FoodForm과 유사한 스타일) */} 
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">계산된 일일 영양소 목표</h4>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-red-50 dark:bg-red-900/30 p-2 rounded-md">
+                            <p className="text-xs text-red-700 dark:text-red-300 font-semibold">단백질</p>
+                            <p className="font-medium text-gray-800 dark:text-white">{calculatedMacros.protein}g</p>
+                          </div>
+                          <div className="bg-yellow-50 dark:bg-yellow-900/30 p-2 rounded-md">
+                            <p className="text-xs text-yellow-700 dark:text-yellow-300 font-semibold">탄수화물</p>
+                            <p className="font-medium text-gray-800 dark:text-white">{calculatedMacros.carbs}g</p>
+                          </div>
+                          <div className="bg-green-50 dark:bg-green-900/30 p-2 rounded-md">
+                            <p className="text-xs text-green-700 dark:text-green-300 font-semibold">지방</p>
+                            <p className="font-medium text-gray-800 dark:text-white">{calculatedMacros.fat}g</p>
+                          </div>
                         </div>
                       </div>
 
+                      {/* 최종 목표 칼로리 직접 설정 input은 기존과 동일 */} 
                       <div className="pt-3">
                         <label htmlFor="targetCaloriesInputModal" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                           최종 목표 칼로리 직접 설정 (kcal)
@@ -734,7 +738,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                           id="targetCaloriesInputModal"
                           value={targetCalories} 
                           onChange={(e) => setTargetCalories(Number(e.target.value))}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4285F4] focus:ring-[#4285F4] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           placeholder="예: 2500"
                           min="1000"
                           max="5000"
