@@ -301,14 +301,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // undefined 값을 모두 제거 (Firestore는 undefined 값을 저장할 수 없음)
       const cleanProfile = removeUndefined(updatedProfile);
-      console.log('AuthContext: 정제된 프로필 데이터', cleanProfile);
+      console.log('AuthContext: 정제된 프로필 데이터 (Firestore 저장 직전)', JSON.stringify(cleanProfile, null, 2));
       
       // Firestore에 전체 업데이트된 프로필 저장 - merge 옵션 추가
       await setDoc(userDocRef, cleanProfile, { merge: true });
+      console.log('AuthContext: Firestore 저장 완료');
       
       // 로컬 상태 업데이트
+      console.log('AuthContext: setUserProfile 호출 직전, updatedProfile 내용:', JSON.stringify(updatedProfile, null, 2));
       setUserProfile(updatedProfile);
-      console.log('AuthContext: 프로필 업데이트 완료', updatedProfile);
+      // setUserProfile은 비동기적으로 작동하므로, 바로 다음 줄에서 userProfile을 찍어도 이전 값이 나올 수 있습니다.
+      // 실제 변경은 다음 렌더링 사이클에서 반영됩니다.
+      console.log('AuthContext: setUserProfile 호출 완료 (다음 렌더링 시 updatedProfile 반영 예정)');
       
       // 이벤트 발생 - 다른 컴포넌트에게 프로필 업데이트 알림
       window.dispatchEvent(new CustomEvent('userProfileUpdated', { 

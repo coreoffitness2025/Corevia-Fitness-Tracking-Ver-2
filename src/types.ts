@@ -12,29 +12,30 @@ export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 't
 export interface Set {
   reps: number;
   weight: number;
-  isSuccess: boolean;
+  isSuccess: boolean | null;
 }
 
 export interface MainExercise {
   part: ExercisePart;
-  weight: number;
+  name: string;
+  weight?: number;
   sets: Set[];
 }
 
 export interface AccessoryExercise {
   name: string;
-  weight: number;
-  reps: number;
+  weight?: number;
+  reps?: number;
   sets?: Set[];
 }
 
 // 메인 운동 타입
 export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress';
-export type BackMainExercise = 'deadlift' | 'pullUp' | 'bentOverRow';
+export type BackMainExercise = 'deadlift' | 'pullUp' | 'bentOverRow' | 'barbellRow' | 'tBarRow';
 export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull';
-export type LegMainExercise = 'squat' | 'legPress' | 'lungue';
-export type BicepsMainExercise = 'dumbbellCurl' | 'barbelCurl' | 'hammerCurl';
-export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingExtension';
+export type LegMainExercise = 'squat' | 'legPress' | 'lunge';
+export type BicepsMainExercise = 'dumbbellCurl' | 'barbellCurl' | 'hammerCurl';
+export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingTricepsExtension';
 
 export type MainExerciseType = 
   | ChestMainExercise 

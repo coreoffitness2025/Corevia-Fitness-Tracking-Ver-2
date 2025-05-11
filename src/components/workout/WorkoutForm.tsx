@@ -3,12 +3,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { 
   ExercisePart, 
   Session, 
-  ChestMainExercise, 
-  BackMainExercise, 
-  ShoulderMainExercise, 
-  LegMainExercise,
-  BicepsMainExercise,
-  TricepsMainExercise,
+  // ChestMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // BackMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // ShoulderMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // LegMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // BicepsMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // TricepsMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
   MainExerciseType,
   SetConfiguration
 } from '../../types';
@@ -35,36 +35,37 @@ const exercisePartOptions = [
 ];
 
 // 각 부위별 메인 운동 옵션
-const mainExerciseOptions = {
+const mainExerciseOptions: Record<ExercisePart, {value: MainExerciseType, label: string}[]> = {
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
-    { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
-    { value: 'declineBenchPress', label: '디클라인 벤치 프레스' }
+    // { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' }, // 주석 처리
+    // { value: 'declineBenchPress', label: '디클라인 벤치 프레스' } // 주석 처리
   ],
   back: [
+    { value: 'barbellRow', label: '바벨로우' }, // 'bentOverRow' 대신 또는 추가 (types.ts에 BackMainExercise 업데이트 필요할 수 있음)
     { value: 'deadlift', label: '데드리프트' },
-    { value: 'pullUp', label: '턱걸이' },
-    { value: 'bentOverRow', label: '벤트오버 로우' }
+    { value: 'tBarRow', label: '티바로우' }    // 신규 (types.ts에 BackMainExercise 업데이트 필요할 수 있음)
+    // { value: 'pullUp', label: '턱걸이' }, // 주석 처리
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
-    { value: 'lateralRaise', label: '레터럴 레이즈' },
-    { value: 'facePull', label: '페이스 풀' }
+    // { value: 'lateralRaise', label: '레터럴 레이즈' }, // 주석 처리
+    // { value: 'facePull', label: '페이스 풀' } // 주석 처리
   ],
   leg: [
     { value: 'squat', label: '스쿼트' },
     { value: 'legPress', label: '레그 프레스' },
-    { value: 'lungue', label: '런지' }
+    // { value: 'lungue', label: '런지' } // 'lungue' -> 'lunge' 오타 수정 및 주석 처리
   ],
-  biceps: [
+  biceps: [ // 이두는 기존 유지
     { value: 'dumbbellCurl', label: '덤벨 컬' },
-    { value: 'barbelCurl', label: '바벨 컬' },
+    { value: 'barbellCurl', label: '바벨 컬' },
     { value: 'hammerCurl', label: '해머 컬' }
   ],
-  triceps: [
+  triceps: [ // 삼두는 기존 유지
     { value: 'cablePushdown', label: '케이블 푸시다운' },
     { value: 'overheadExtension', label: '오버헤드 익스텐션' },
-    { value: 'lyingExtension', label: '라잉 익스텐션' }
+    { value: 'lyingTricepsExtension', label: '라잉 트라이셉스 익스텐션' } // 'lyingExtension' -> 'lyingTricepsExtension' (일관성 및 명확성)
   ]
 };
 
@@ -84,16 +85,16 @@ type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { userProfile } = useAuth();
   const [part, setPart] = useState<ExercisePart>('chest');
-  const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>('benchPress');
+  const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>(mainExerciseOptions.chest[0].value);
   const [mainExercise, setMainExercise] = useState({
-    name: exercisePartOptions[0].mainExerciseName,
-    sets: [{ reps: 0, weight: 0, isSuccess: false }]
+    name: mainExerciseOptions.chest[0].label,
+    sets: [{ reps: 0, weight: 0, isSuccess: null as boolean | null }]
   });
   const [accessoryExercises, setAccessoryExercises] = useState<Array<{
     name: string;
     weight: number;
     reps: number;
-    sets: Array<{ reps: number; weight: number; isSuccess: boolean }>;
+    sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
   }>>([]);
   const [notes, setNotes] = useState('');
   const [isFormValid, setIsFormValid] = useState(false);
@@ -151,6 +152,38 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   }, [userProfile]);
 
+  // 부위(part) 변경 시 해당 부위의 첫 번째 메인 운동으로 selectedMainExercise와 mainExercise.name 업데이트
+  useEffect(() => {
+    const newSelectedPart = part as ExercisePart; // 타입 단언
+    if (mainExerciseOptions[newSelectedPart] && mainExerciseOptions[newSelectedPart].length > 0) {
+      const firstExerciseForPart = mainExerciseOptions[newSelectedPart][0];
+      setSelectedMainExercise(firstExerciseForPart.value);
+      setMainExercise(prev => ({
+        ...prev,
+        name: firstExerciseForPart.label
+      }));
+    } else {
+      // 해당 부위에 운동이 없는 경우 (예: 잘못된 'part' 값), 기본값 또는 오류 처리
+      setSelectedMainExercise(mainExerciseOptions.chest[0].value); // 예시: 가슴 운동으로 기본 설정
+      setMainExercise(prev => ({
+          ...prev,
+          name: mainExerciseOptions.chest[0].label
+      }));
+    }
+  }, [part]);
+
+  // 선택된 메인 운동(selectedMainExercise) 변경 시 mainExercise.name 업데이트
+  useEffect(() => {
+    const currentPartExercises = mainExerciseOptions[part as ExercisePart];
+    const foundExercise = currentPartExercises.find(ex => ex.value === selectedMainExercise);
+    if (foundExercise) {
+      setMainExercise(prev => ({
+        ...prev,
+        name: foundExercise.label
+      }));
+    }
+  }, [selectedMainExercise, part]);
+
   // 세트 구성 변경 핸들러
   const handleSetConfigChange = (configType: SetConfiguration) => {
     setSelectedSetConfiguration(configType);
@@ -181,18 +214,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 폼 유효성 검사
   useEffect(() => {
-    // 메인 운동에 최소 한 개의 세트가 있고, 각 세트에 무게와 반복 수가 입력되어 있는지 확인
+    // 메인 운동에 최소 한 개의 세트가 있고, 각 세트에 무게와 반복 수가 0보다 큰지 확인
     const isMainExerciseValid = mainExercise.sets.length > 0 && 
       mainExercise.sets.every(set => set.weight > 0 && set.reps > 0);
 
-    // 보조 운동이 있는 경우, 각 운동에 이름이 있고 최소 한 개의 세트가 있는지 확인
+    // 보조 운동이 있는 경우, 각 운동에 이름이 있고 최소 한 개의 세트가 있으며, 각 세트에 무게와 반복 수가 0보다 큰지 확인
     const areAccessoryExercisesValid = accessoryExercises.length === 0 || 
       accessoryExercises.every(exercise => 
         exercise.name.trim() !== '' && 
         exercise.sets.length > 0 && 
         exercise.sets.every(set => set.weight > 0 && set.reps > 0)
       );
-
+    
+    console.log('Form Validity Check:', { isMainExerciseValid, areAccessoryExercisesValid });
     setIsFormValid(isMainExerciseValid && areAccessoryExercisesValid);
   }, [mainExercise, accessoryExercises]);
 
@@ -246,14 +280,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (exerciseIndex === -1) {
       setMainExercise(prev => ({
         ...prev,
-        sets: [...prev.sets, { reps: 0, weight: 0, isSuccess: false }]
+        sets: [...prev.sets, { reps: 0, weight: 0, isSuccess: null }]
       }));
     } else {
       setAccessoryExercises(prev => {
         const newExercises = [...prev];
         newExercises[exerciseIndex].sets = [
           ...newExercises[exerciseIndex].sets,
-          { reps: 0, weight: 0, isSuccess: false }
+          { reps: 0, weight: 0, isSuccess: null }
         ];
         return newExercises;
       });
@@ -288,7 +322,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         name: '', 
         weight: 0,
         reps: 0,
-        sets: [{ reps: 0, weight: 0, isSuccess: false }] 
+        sets: [{ reps: 0, weight: 0, isSuccess: null }] 
       }
     ]);
   };
@@ -400,69 +434,78 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     const initialSets = Array(setsCount).fill(0).map(() => ({
       reps: repsCount,  // 선호 반복 수로 초기화
       weight: 0,        // 무게는 사용자가 입력
-      isSuccess: false
+      isSuccess: null as boolean | null
     }));
     
     console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
     setMainExercise(prev => ({
       ...prev,
-      sets: initialSets
+      sets: initialSets.map(set => ({ ...set, isSuccess: null }))
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleSubmit triggered');
+
     if (!userProfile) {
       toast.error('로그인이 필요합니다.');
+      console.log('User not logged in');
       return;
     }
+    console.log('User profile available:', userProfile);
 
+    console.log('Current isFormValid state:', isFormValid);
     if (!isFormValid) {
-      toast.error('필수 필드를 모두 입력해주세요.');
+      toast.error('필수 필드를 모두 입력해주세요. (각 세트의 무게와 횟수는 0보다 커야 합니다)');
+      console.log('Form is not valid. Main exercise:', mainExercise, 'Accessory:', accessoryExercises);
       return;
     }
 
     try {
+      console.log('Preparing session data...');
       // 일주일 전 날짜 계산
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
-      // 메인 운동 데이터 정리: 무게와 반복 수가 0인 세트 제외
+      // 메인 운동 데이터 정리: 무게와 반복 수가 0인 세트 제외 (isFormValid에서 이미 체크하지만, 안전장치)
       const cleanMainExercise = {
         part,
-        name: mainExercise.name, // 이름 필드 추가
-        weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0,
+        name: mainExercise.name, 
+        // weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0, // 세트별 무게를 사용하므로 이 필드는 불필요할 수 있음
         sets: mainExercise.sets.map(set => ({
           reps: set.reps || 0,
           weight: set.weight || 0,
-          isSuccess: set.isSuccess || false
+          isSuccess: set.isSuccess === null ? false : set.isSuccess // null이면 false로 처리
         }))
       };
+      console.log('Cleaned main exercise:', cleanMainExercise);
 
       const cleanAccessoryExercises = accessoryExercises.map(exercise => ({
         name: exercise.name || '',
-        weight: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].weight : 0,
-        reps: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].reps : 0,
+        // weight: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].weight : 0, // 세트별 무게
+        // reps: exercise.sets && exercise.sets.length > 0 ? exercise.sets[0].reps : 0, // 세트별 횟수
         sets: (exercise.sets || []).map(set => ({
           reps: set.reps || 0,
           weight: set.weight || 0,
-          isSuccess: set.isSuccess || false
+          isSuccess: set.isSuccess === null ? false : set.isSuccess // null이면 false로 처리
         }))
       }));
+      console.log('Cleaned accessory exercises:', cleanAccessoryExercises);
 
       const sessionData: Session = {
         userId: userProfile.uid,
-        date: new Date(),
+        date: new Date(), // Timestamp로 변환은 Firestore가 자동으로 처리하거나, Timestamp.fromDate(new Date()) 사용
         part,
         mainExercise: cleanMainExercise,
         accessoryExercises: cleanAccessoryExercises,
         notes: notes || '',
-        isAllSuccess: mainExercise.sets.every(set => set.isSuccess),
-        successSets: mainExercise.sets.filter(set => set.isSuccess).length,
+        isAllSuccess: mainExercise.sets.every(set => set.isSuccess === true), // isSuccess가 true인 경우만 전체 성공
+        successSets: mainExercise.sets.filter(set => set.isSuccess === true).length, // isSuccess가 true인 세트 수
         accessoryNames: cleanAccessoryExercises.map(ex => ex.name)
       };
 
-      console.log('저장할 세션 데이터:', sessionData);
+      console.log('Attempting to save session data:', sessionData);
 
       // 기존 기록 확인
       const q = query(
@@ -471,13 +514,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         where('date', '>=', Timestamp.fromDate(sevenDaysAgo))
       );
       const querySnapshot = await getDocs(q);
+      console.log('Existing sessions in last 7 days:', querySnapshot.size);
       
-      if (querySnapshot.size >= 7) {
-        toast.error('최근 7일 동안의 기록만 저장할 수 있습니다.');
-        return;
-      }
+      // 주석 처리: 현재는 7일 제한 없이 저장 테스트
+      // if (querySnapshot.size >= 7) {
+      //   toast.error('최근 7일 동안의 기록만 저장할 수 있습니다.');
+      //   console.log('Save limit reached (7 days).');
+      //   return;
+      // }
 
       await addDoc(collection(db, 'sessions'), sessionData);
+      console.log('Session data saved successfully to Firestore.');
       
       // 저장 완료 토스트 메시지
       toast.success('저장 완료!', {
@@ -513,8 +560,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       // 폼 초기화
       setPart('chest');
       setMainExercise({
-        name: exercisePartOptions[0].mainExerciseName,
-        sets: [{ reps: 0, weight: 0, isSuccess: false }]
+        name: mainExerciseOptions.chest[0].label,
+        sets: [{ reps: 0, weight: 0, isSuccess: null }]
       });
       setAccessoryExercises([]);
       setNotes('');
@@ -613,9 +660,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             {selectedSetConfiguration === 'custom' && (
               <div className="flex gap-4 mb-4 items-end">
                 <div className="flex flex-col">
-                  <label className="text-xs text-gray-500 mb-1">세트 수</label>
+                  <label htmlFor={`customSetsInput`} className="text-xs text-gray-500 mb-1">세트 수</label>
                   <input
                     type="number"
+                    id={`customSetsInput`}
                     min="1"
                     max="20"
                     value={customSets}
@@ -624,9 +672,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-xs text-gray-500 mb-1">반복 횟수</label>
+                  <label htmlFor={`customRepsInput`} className="text-xs text-gray-500 mb-1">반복 횟수</label>
                   <input
                     type="number"
+                    id={`customRepsInput`}
                     min="1"
                     max="30"
                     value={customReps}
@@ -688,6 +737,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   {/* 메인 운동 선택 드롭다운 */}
                   <div className="w-full md:w-auto">
                     <select
+                      id={`mainExerciseSelect-${part}`}
                       value={selectedMainExercise}
                       onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
                       className="w-full md:w-auto p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -710,9 +760,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           <span className="font-medium text-gray-800 dark:text-white">세트</span>
                         </div>
                         <div className="flex flex-col">
-                          <label className="text-xs text-gray-500 mb-1">무게 (kg)</label>
+                          <label htmlFor={`mainExerciseWeight-${index}`} className="text-xs text-gray-500 mb-1">무게 (kg)</label>
                           <input
                             type="number"
+                            id={`mainExerciseWeight-${index}`}
                             value={set.weight}
                             onChange={(e) => {
                               const newSets = [...mainExercise.sets];
@@ -724,7 +775,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           />
                         </div>
                         <div className="flex flex-col">
-                          <label className="text-xs text-gray-500 mb-1">
+                          <label htmlFor={`mainExerciseReps-${index}`} className="text-xs text-gray-500 mb-1">
                             횟수 (최대 {selectedSetConfiguration === '10x5' ? 10 : 
                              selectedSetConfiguration === '15x5' ? 15 : 
                              selectedSetConfiguration === '6x3' ? 6 : 
@@ -732,6 +783,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           </label>
                           <input
                             type="number"
+                            id={`mainExerciseReps-${index}`}
                             value={set.reps}
                             onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
                             placeholder="횟수"
@@ -746,16 +798,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         <Button
                           type="button"
                           variant={
-                            typeof set.isSuccess === 'boolean'
-                              ? set.isSuccess ? "success" : "danger"
-                              : "outline"
+                            set.isSuccess === true ? "success" :
+                            set.isSuccess === false ? "danger" :
+                            "outline" // 초기 상태 (null) 또는 미결정시
                           }
                           size="sm"
                           onClick={() => handleTrainingComplete(index, true)}
                           icon={
-                            typeof set.isSuccess === 'boolean'
-                              ? set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />
-                              : <CheckCircle size={16} />
+                            set.isSuccess === true ? <CheckCircle size={16} /> :
+                            set.isSuccess === false ? <XCircle size={16} /> :
+                            <CheckCircle size={16} /> // 초기 아이콘
                           }
                         >
                           훈련 완료
@@ -827,6 +879,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   </div>
                   <input
                     type="text"
+                    id={`accessoryExerciseName-${index}`}
                     value={exercise.name}
                     onChange={(e) => {
                       const newExercises = [...accessoryExercises];
@@ -845,9 +898,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             <span className="font-medium text-gray-800 dark:text-white">세트</span>
                           </div>
                           <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">무게 (kg)</label>
+                            <label htmlFor={`accessoryExerciseWeight-${index}-${setIndex}`} className="text-xs text-gray-500 mb-1">무게 (kg)</label>
                             <input
                               type="number"
+                              id={`accessoryExerciseWeight-${index}-${setIndex}`}
                               value={set.weight}
                               onChange={(e) => {
                                 const newExercises = [...accessoryExercises];
@@ -859,14 +913,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             />
                           </div>
                           <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">
+                            <label htmlFor={`accessoryExerciseReps-${index}-${setIndex}`} className="text-xs text-gray-500 mb-1">
                               횟수 (최대 {selectedSetConfiguration === '10x5' ? 10 : 
                                selectedSetConfiguration === '15x5' ? 15 : 
                                selectedSetConfiguration === '6x3' ? 6 : 
-                               selectedSetConfiguration === 'custom' ? customReps : 10})
+                               selectedSetConfiguration === 'custom' ? customReps : 100})
                             </label>
                             <input
                               type="number"
+                              id={`accessoryExerciseReps-${index}-${setIndex}`}
                               value={set.reps}
                               onChange={(e) => handleRepsChange(Number(e.target.value), setIndex, false, index)}
                               placeholder="횟수"
@@ -874,23 +929,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               max={selectedSetConfiguration === '10x5' ? 10 : 
                                    selectedSetConfiguration === '15x5' ? 15 : 
                                    selectedSetConfiguration === '6x3' ? 6 : 
-                                   selectedSetConfiguration === 'custom' ? customReps : 10}
+                                   selectedSetConfiguration === 'custom' ? customReps : 100}
                               className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                           </div>
                           <Button
                             type="button"
                             variant={
-                              typeof set.isSuccess === 'boolean'
-                                ? set.isSuccess ? "success" : "danger"
-                                : "outline"
+                              set.isSuccess === true ? "success" :
+                              set.isSuccess === false ? "danger" :
+                              "outline" // 초기 상태 (null) 또는 미결정시
                             }
                             size="sm"
                             onClick={() => handleTrainingComplete(setIndex, false, index)}
                             icon={
-                              typeof set.isSuccess === 'boolean'
-                                ? set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />
-                                : <CheckCircle size={16} />
+                              set.isSuccess === true ? <CheckCircle size={16} /> :
+                              set.isSuccess === false ? <XCircle size={16} /> :
+                              <CheckCircle size={16} /> // 초기 아이콘
                             }
                           >
                             훈련 완료
@@ -961,6 +1016,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <Card className="animate-slideUp">
             <CardTitle>메모</CardTitle>
             <textarea
+              id="workoutNotes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="오늘의 운동에 대한 메모를 남겨보세요"

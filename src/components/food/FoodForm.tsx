@@ -55,41 +55,25 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const [carbsTarget, setCarbsTarget] = useState<number>(0);
   const [fatTarget, setFatTarget] = useState<number>(0);
 
-  // 전역 이벤트 리스너로 프로필 변경 감지
-  useEffect(() => {
-    const handleProfileUpdate = (event: CustomEvent) => {
-      const updatedProfile = event.detail.profile;
-      console.log('식단 컴포넌트: 프로필 업데이트 감지됨:', updatedProfile);
-      if (updatedProfile) {
-        updateNutritionTargets(updatedProfile);
-      }
-    };
-    
-    // 이벤트 리스너 등록
-    window.addEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
-    
-    return () => {
-      window.removeEventListener('userProfileUpdated', handleProfileUpdate as EventListener);
-    };
-  }, []);
-
   // 사용자 프로필에서 목표 칼로리 계산
   useEffect(() => {
     if (userProfile) {
-      console.log('식단 컴포넌트: 사용자 프로필 로드됨, 목표 칼로리 설정:', userProfile.targetCalories);
+      console.log('식단 컴포넌트: 사용자 프로필 로드됨, 목표 칼로리/영양소 설정 시작:', userProfile);
       updateNutritionTargets(userProfile);
     }
-  }, [userProfile]);
+  }, [userProfile]); // userProfile 직접 의존
 
-  const updateNutritionTargets = (profile: any) => {
+  const updateNutritionTargets = (profile: typeof userProfile) => { // profile 타입을 userProfile 타입으로 명시
+    if (!profile) return; // profile이 null/undefined일 경우 조기 반환
+
     // 이미 계산된 목표 칼로리가 있으면 사용
     if (profile.targetCalories && !isNaN(profile.targetCalories)) {
       console.log('계산된 목표 칼로리 사용:', profile.targetCalories);
       setTargetCalories(profile.targetCalories);
     } else {
       // 계산된 목표 칼로리가 없으면 직접 계산
-      console.log('목표 칼로리 직접 계산');
-      if (profile.height && profile.weight && profile.age && profile.gender) {
+      console.log('목표 칼로리 직접 계산. Profile data:', profile);
+      if (profile.height && profile.weight && profile.age && profile.gender && profile.activityLevel && profile.fitnessGoal) {
         const bmr = calculateBMR(
           profile.gender, 
           Number(profile.weight), 
@@ -123,7 +107,11 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     const proteinGrams = Math.round(weight * 1.6);
     const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
     
-    const remainingCalories = Math.max(0, targetCalories - proteinCalories);
+    // targetCalories가 업데이트 된 이후에 이 함수가 호출되도록 구조 변경 필요 가능성 있음
+    // 현재는 updateNutritionTargets 내부에서 호출되므로, targetCalories 최신값을 사용할 수 있음
+    const localTargetCalories = targetCalories > 0 ? targetCalories : (userProfile?.targetCalories || 2000); // profile.targetCalories 우선 사용
+
+    const remainingCalories = Math.max(0, localTargetCalories - proteinCalories);
     
     // 탄수화물 45-65%, 지방 20-35% (여기서는 중간값 사용)
     const carbsCalories = Math.max(0, remainingCalories * 0.55);
