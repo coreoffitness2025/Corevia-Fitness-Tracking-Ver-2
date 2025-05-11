@@ -170,7 +170,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
   
   // 세트 구성 초기화
   const [setConfig, setSetConfig] = useState<SetConfiguration>(
-    userProfile?.setConfiguration?.preferredSetup || '5x5'
+    userProfile?.setConfiguration?.preferredSetup || '10x5'
   );
   const [customSets, setCustomSets] = useState<number>(
     userProfile?.setConfiguration?.customSets || 5
@@ -550,18 +550,19 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
             {currentStep === 3 && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="setConfigurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     세트 구성
                   </label>
                   <div className="relative">
                     <select
+                      id="setConfigurationSelect"
                       value={setConfig}
                       onChange={(e) => setSetConfig(e.target.value as SetConfiguration)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4285F4] focus:ring-[#4285F4] dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
                     >
-                      <option value="5x5">5세트 5회 (강도: 중상)</option>
-                      <option value="10x5">10세트 5회 (강도: 상)</option>
-                      <option value="6x5">6세트 5회 (강도: 중)</option>
+                      <option value="10x5">10회 x 5세트 (근비대)</option>
+                      <option value="6x3">6회 x 3세트 (스트렝스)</option>
+                      <option value="20x5">20회 x 5세트 (근활성화)</option>
                       <option value="custom">직접 설정</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
