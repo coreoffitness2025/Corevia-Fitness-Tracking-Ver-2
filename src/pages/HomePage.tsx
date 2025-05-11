@@ -213,7 +213,6 @@ const HomePage = () => {
           <div className="space-y-4">
             {/* 칼로리 */} 
             <div className="bg-sky-50 dark:bg-sky-900/30 p-4 rounded-lg flex items-center">
-              <Droplet size={24} className="text-sky-500 mr-3 flex-shrink-0" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">목표 칼로리</p>
                 <p className="text-xl font-bold text-sky-600 dark:text-sky-400">
@@ -225,22 +224,18 @@ const HomePage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* 단백질 */} 
               <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg text-center">
-                <Beef size={20} className="text-red-500 mx-auto mb-1" />
                 <p className="text-sm text-red-700 dark:text-red-300 font-semibold">단백질</p>
                 <p className="text-md font-bold text-gray-800 dark:text-white">{nutrients.protein}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.proteinPerMeal}g/끼니)</p>
               </div>
               {/* 탄수화물 */} 
               <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg text-center">
-                <Wheat size={20} className="text-yellow-500 mx-auto mb-1" />
                 <p className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold">탄수화물</p>
                 <p className="text-md font-bold text-gray-800 dark:text-white">{nutrients.carbs}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.carbsPerMeal}g/끼니)</p>
               </div>
               {/* 지방 */} 
               <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg text-center">
-                {/* 지방 아이콘 예시 (다른 아이콘으로 변경 가능) */}
-                <img src="/icons/fat-icon.svg" alt="지방" className="w-5 h-5 mx-auto mb-1 filter dark:invert" />{/* 예시 아이콘 */}
                 <p className="text-sm text-green-700 dark:text-green-300 font-semibold">지방</p>
                 <p className="text-md font-bold text-gray-800 dark:text-white">{nutrients.fat}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.fatPerMeal}g/끼니)</p>
