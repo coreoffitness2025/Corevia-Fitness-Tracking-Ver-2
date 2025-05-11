@@ -446,24 +446,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('handleSubmit triggered');
+    console.log('WorkoutForm: handleSubmit triggered');
 
     if (!userProfile) {
       toast.error('로그인이 필요합니다.');
-      console.log('User not logged in');
+      console.log('WorkoutForm: User not logged in');
       return;
     }
-    console.log('User profile available:', userProfile);
+    console.log('WorkoutForm: User profile available:', userProfile);
 
-    console.log('Current isFormValid state:', isFormValid);
+    console.log('WorkoutForm: Final isFormValid state before submitting:', isFormValid);
     if (!isFormValid) {
       toast.error('필수 필드를 모두 입력해주세요. (각 세트의 무게와 횟수는 0보다 커야 합니다)');
-      console.log('Form is not valid. Main exercise:', mainExercise, 'Accessory:', accessoryExercises);
+      console.log('WorkoutForm: Form is not valid. Main exercise:', mainExercise, 'Accessory:', accessoryExercises);
       return;
     }
 
     try {
-      console.log('Preparing session data...');
+      console.log('WorkoutForm: Preparing session data...');
       // 일주일 전 날짜 계산
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -505,7 +505,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         accessoryNames: cleanAccessoryExercises.map(ex => ex.name)
       };
 
-      console.log('Attempting to save session data:', sessionData);
+      console.log('WorkoutForm: Attempting to save session data to Firestore. Data:', JSON.stringify(sessionData, null, 2));
 
       // 기존 기록 확인
       const q = query(
@@ -514,17 +514,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         where('date', '>=', Timestamp.fromDate(sevenDaysAgo))
       );
       const querySnapshot = await getDocs(q);
-      console.log('Existing sessions in last 7 days:', querySnapshot.size);
+      console.log('WorkoutForm: Existing sessions in last 7 days:', querySnapshot.size);
       
       // 주석 처리: 현재는 7일 제한 없이 저장 테스트
       // if (querySnapshot.size >= 7) {
       //   toast.error('최근 7일 동안의 기록만 저장할 수 있습니다.');
-      //   console.log('Save limit reached (7 days).');
+      //   console.log('WorkoutForm: Save limit reached (7 days).');
       //   return;
       // }
 
       await addDoc(collection(db, 'sessions'), sessionData);
-      console.log('Session data saved successfully to Firestore.');
+      console.log('WorkoutForm: Session data saved successfully to Firestore.');
       
       // 저장 완료 토스트 메시지
       toast.success('저장 완료!', {
@@ -573,8 +573,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         }, 1500);
       }
     } catch (error) {
-      console.error('Error saving session:', error);
-      toast.error('운동 기록 저장에 실패했습니다.');
+      console.error('WorkoutForm: Error saving session:', error); // 전체 에러 객체 로깅
+      toast.error('운동 기록 저장에 실패했습니다. 콘솔을 확인해주세요.'); // 사용자에게 콘솔 확인 안내
     }
   };
 
@@ -812,6 +812,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         >
                           훈련 완료
                         </Button>
+                        {/* 성공/실패 텍스트 표시 */} 
+                        {set.isSuccess === true && <span className="text-xs text-green-600 dark:text-green-400 ml-2">성공</span>}
+                        {set.isSuccess === false && <span className="text-xs text-red-600 dark:text-red-400 ml-2">실패</span>}
+
                         <Button
                           type="button"
                           variant={
@@ -950,6 +954,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           >
                             훈련 완료
                           </Button>
+                          {/* 성공/실패 텍스트 표시 */} 
+                          {set.isSuccess === true && <span className="text-xs text-green-600 dark:text-green-400 ml-2">성공</span>}
+                          {set.isSuccess === false && <span className="text-xs text-red-600 dark:text-red-400 ml-2">실패</span>}
+
                           <Button
                             type="button"
                             variant={

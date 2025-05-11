@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { UserProfile } from '../types';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -14,39 +15,39 @@ const getYesterdayDate = () => {
   return yesterday;
 };
 
+// NutritionGuide.tsx 또는 FoodForm.tsx의 매크로 계산 로직과 동일하게 정의
+const calculateMacrosForHome = (targetCalories: number, weight_kg: number | undefined) => {
+  if (!weight_kg || weight_kg <= 0) {
+    // 체중 정보가 없으면 매크로 계산 불가 (또는 기본값 사용)
+    return { protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 };
+  }
+  const proteinGrams = Math.round(weight_kg * 1.6);
+  const proteinCalories = proteinGrams * 4;
+  const remainingCalories = Math.max(0, targetCalories - proteinCalories);
+  const carbsCalories = Math.max(0, remainingCalories * 0.55);
+  const fatCalories = Math.max(0, remainingCalories * 0.30);
+  
+  const protein = proteinGrams;
+  const carbs = Math.round(carbsCalories / 4);
+  const fat = Math.round(fatCalories / 9);
+
+  return {
+    protein,
+    carbs,
+    fat,
+    proteinPerMeal: Math.round(protein / 3),
+    carbsPerMeal: Math.round(carbs / 3),
+    fatPerMeal: Math.round(fat / 3),
+  };
+};
+
 const HomePage = () => {
   const { userProfile, loading: authLoading } = useAuth();
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
   const [yesterdayMeals, setYesterdayMeals] = useState<Food[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  // 목표 영양소 계산 함수
-  const calculateNutrients = (targetCalories: number) => {
-    // 단백질: 칼로리의 30% (1g = 4kcal)
-    const proteinPercentage = 0.3;
-    const proteinCalories = targetCalories * proteinPercentage;
-    const proteinGrams = Math.round(proteinCalories / 4);
-    
-    // 탄수화물: 칼로리의 45% (1g = 4kcal)
-    const carbPercentage = 0.45;
-    const carbCalories = targetCalories * carbPercentage;
-    const carbGrams = Math.round(carbCalories / 4);
-    
-    // 지방: 칼로리의 25% (1g = 9kcal)
-    const fatPercentage = 0.25;
-    const fatCalories = targetCalories * fatPercentage;
-    const fatGrams = Math.round(fatCalories / 9);
-    
-    return {
-      protein: proteinGrams,
-      carbs: carbGrams,
-      fat: fatGrams,
-      proteinPerMeal: Math.round(proteinGrams / 3),
-      carbsPerMeal: Math.round(carbGrams / 3),
-      fatPerMeal: Math.round(fatGrams / 3)
-    };
-  };
+  const [nutrients, setNutrients] = useState({ protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -112,6 +113,16 @@ const HomePage = () => {
     fetchData();
   }, [userProfile, authLoading]);
 
+  useEffect(() => {
+    if (userProfile?.targetCalories) {
+      const calculatedNutrients = calculateMacrosForHome(userProfile.targetCalories, userProfile.weight);
+      setNutrients(calculatedNutrients);
+    } else {
+      // userProfile이 없거나 targetCalories가 없는 경우 기본값 또는 초기화
+      setNutrients({ protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 });
+    }
+  }, [userProfile]);
+
   if (authLoading || loading) {
     return (
       <Layout>
@@ -131,10 +142,6 @@ const HomePage = () => {
       </Layout>
     );
   }
-
-  const nutrients = userProfile.targetCalories 
-    ? calculateNutrients(userProfile.targetCalories)
-    : { protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 };
 
   return (
     <Layout>
@@ -192,20 +199,20 @@ const HomePage = () => {
             <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  {userProfile.targetCalories && !isNaN(userProfile.targetCalories) ? `${userProfile.targetCalories} kcal/일` : '목표 칼로리를 설정해주세요'}
+                  {userProfile?.targetCalories && !isNaN(userProfile.targetCalories) ? `${userProfile.targetCalories} kcal/일` : '목표 칼로리를 설정해주세요'}
                 </p>
                 <span className="text-xs text-gray-500">
-                  활동 수준: {
+                  활동 수준: {userProfile?.activityLevel ? (
                     userProfile.activityLevel === 'low' ? '낮음' : 
                     userProfile.activityLevel === 'moderate' ? '보통' : '높음'
-                  }
+                  ) : '미설정'}
                 </span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                목표: {
+                목표: {userProfile?.fitnessGoal ? (
                   userProfile.fitnessGoal === 'loss' ? '체중 감량' : 
                   userProfile.fitnessGoal === 'maintain' ? '체중 유지' : '근육 증가'
-                }
+                ) : '미설정'}
               </p>
               <div className="grid grid-cols-3 gap-4 mt-4">
                 <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
