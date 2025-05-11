@@ -110,7 +110,7 @@ export interface UserProfile {
   weight: number;
   age: number;
   gender: 'male' | 'female';
-  activityLevel: 'low' | 'moderate' | 'high';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
   fitnessGoal: 'loss' | 'maintain' | 'gain';
   targetCalories?: number;
   experience: {

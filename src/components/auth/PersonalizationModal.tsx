@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   UserProfile, 
   ChestMainExercise,
@@ -116,13 +116,31 @@ const OneRMCalculator = ({
   );
 };
 
+// HomePage.tsx 또는 NutritionGuide.tsx와 유사한 매크로 계산 함수
+const calculateMacrosForModal = (targetCalories: number, weight_kg: number | undefined) => {
+  if (!weight_kg || weight_kg <= 0 || !targetCalories || targetCalories <= 0) {
+    return { protein: 0, carbs: 0, fat: 0 };
+  }
+  const proteinGrams = Math.round(weight_kg * 1.6);
+  const proteinCalories = proteinGrams * 4;
+  const remainingCalories = Math.max(0, targetCalories - proteinCalories);
+  const carbsCalories = Math.max(0, remainingCalories * 0.55);
+  const fatCalories = Math.max(0, remainingCalories * 0.30);
+  
+  return {
+    protein: proteinGrams,
+    carbs: Math.round(carbsCalories / 4),
+    fat: Math.round(fatCalories / 9),
+  };
+};
+
 const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: PersonalizationModalProps) => {
   const [height, setHeight] = useState<number>(userProfile?.height || 170);
   const [weight, setWeight] = useState<number>(userProfile?.weight || 70);
   const [age, setAge] = useState<number>(userProfile?.age || 25);
   const [gender, setGender] = useState<'male' | 'female'>(userProfile?.gender || 'male');
-  const [activityLevel, setActivityLevel] = useState<'low' | 'moderate' | 'high'>(userProfile?.activityLevel || 'moderate');
-  const [fitnessGoal, setFitnessGoal] = useState<'loss' | 'maintain' | 'gain'>(userProfile?.fitnessGoal || 'maintain');
+  const [activityLevel, setActivityLevel] = useState<UserProfile['activityLevel']>(userProfile?.activityLevel || 'moderate');
+  const [fitnessGoal, setFitnessGoal] = useState<UserProfile['fitnessGoal']>(userProfile?.fitnessGoal || 'maintain');
   
   // 1RM 데이터 초기화
   const [benchPressMax, setBenchPressMax] = useState<number>(userProfile?.oneRepMax?.bench || 0);
@@ -171,6 +189,8 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
     target: number;
   } | null>(null);
   
+  const [calculatedMacros, setCalculatedMacros] = useState({ protein: 0, carbs: 0, fat: 0 });
+
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [showCalculator, setShowCalculator] = useState(false);
   const totalSteps = 4; // 4단계로 변경
@@ -183,56 +203,58 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  // BMR 계산 (해리스-베네딕트 공식)
-  const calculateBMR = () => {
+  // BMR 및 목표 칼로리 계산 함수 (calculateBMR)
+  const calculateBMRAndMacros = () => {
     let bmr = 0;
-    
     if (gender === 'male') {
-      // 남성: BMR = 66.5 + (13.75 × 체중kg) + (5.003 × 키cm) - (6.75 × 나이)
-      bmr = 66.5 + (13.75 * weight) + (5.003 * height) - (6.75 * age);
-    } else {
-      // 여성: BMR = 655.1 + (9.563 × 체중kg) + (1.850 × 키cm) - (4.676 × 나이)
-      bmr = 655.1 + (9.563 * weight) + (1.850 * height) - (4.676 * age);
+      bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+    } else { // female
+      bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
     }
-    
-    // 활동 수준에 따른 계수
-    let activityFactor = 1.2; // 기본값: 낮음
-    if (activityLevel === 'moderate') {
-      activityFactor = 1.55;
-    } else if (activityLevel === 'high') {
-      activityFactor = 1.9;
-    }
-    
-    // 유지 칼로리
+
+    const activityFactors: Record<UserProfile['activityLevel'], number> = { 
+        sedentary: 1.2,
+        light: 1.375,
+        moderate: 1.55,
+        active: 1.725, 
+        veryActive: 1.9
+    };
+    const activityFactor = activityFactors[activityLevel] || 1.55;
+
     const maintenance = Math.round(bmr * activityFactor);
-    
-    // 목표에 따른 조정
-    let target = maintenance;
-    if (fitnessGoal === 'loss') {
-      target = Math.round(maintenance * 0.8); // 체중 감량: 유지 칼로리의 80%
-    } else if (fitnessGoal === 'gain') {
-      target = Math.round(maintenance * 1.15); // 체중 증가: 유지 칼로리의 115%
-    }
-    
+
+    const goalFactors: Record<string, number> = { 
+        lose: 0.8,
+        maintain: 1.0,
+        gain: 1.15
+    };
+    const target = Math.round(maintenance * (goalFactors[fitnessGoal as string] || 1.0));
+
     setCalculatedCalories({
       bmr: Math.round(bmr),
       maintenance,
       target
     });
+    // 사용자가 직접 값을 입력하기 전까지는 계산된 target을 targetCalories 상태에 반영
+    // 사용자가 값을 직접 입력하면 targetCalories 상태는 그 값을 따르고, handleSubmit에서 최종 결정됨
+    if (targetCalories === 0 || !userProfile?.targetCalories) { // 초기 계산 시 또는 userProfile에 targetCalories가 없을때만 자동 설정
+        setTargetCalories(target);
+    }
     
-    setTargetCalories(target);
+    const currentTargetCalories = targetCalories > 0 && userProfile?.targetCalories ? targetCalories : target; // 사용자가 조정한 값이 있으면 그것을, 아니면 계산된 target 사용
+    const macros = calculateMacrosForModal(currentTargetCalories, weight);
+    setCalculatedMacros(macros);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 계산된 칼로리가 없으면 계산하기
-    if (!calculatedCalories) {
-      calculateBMR();
+    if (!calculatedCalories) { // 만약 BMR/목표칼로리 계산이 아직 안되었다면 수행
+        calculateBMRAndMacros(); 
     }
     
-    // 계산된 칼로리 또는 사용자 입력값 사용
-    const finalCalories = targetCalories || (calculatedCalories ? calculatedCalories.target : 0);
+    // 사용자가 직접 조정한 targetCalories가 있으면 그것을 사용, 아니면 계산된 값 사용
+    const finalCalories = targetCalories > 0 ? targetCalories : (calculatedCalories ? calculatedCalories.target : 0);
     
     // setConfiguration 객체 생성 - custom이 아닌 경우에도 값을 0으로 설정
     const setConfigObject = {
@@ -249,7 +271,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
       gender,
       activityLevel,
       fitnessGoal,
-      targetCalories: finalCalories,
+      targetCalories: finalCalories, // 최종 칼로리 전달
       preferredExercises: {
         chest: chestExercise,
         back: backExercise,
@@ -286,6 +308,14 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
         break;
     }
   };
+
+  // 사용자가 targetCalories를 직접 수정할 때 매크로도 다시 계산
+  useEffect(() => {
+    if (targetCalories > 0 && weight > 0) {
+      const macros = calculateMacrosForModal(targetCalories, weight);
+      setCalculatedMacros(macros);
+    }
+  }, [targetCalories, weight]); // weight도 의존성에 추가 (체중 변경 시 매크로 재계산)
 
   return (
     <div 
@@ -374,13 +404,15 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                   <div className="relative">
                     <select
                       value={activityLevel}
-                      onChange={(e) => setActivityLevel(e.target.value as 'low' | 'moderate' | 'high')}
+                      onChange={(e) => setActivityLevel(e.target.value as UserProfile['activityLevel'])}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
                       required
                     >
-                      <option value="low">낮음</option>
-                      <option value="moderate">보통</option>
-                      <option value="high">높음</option>
+                      <option value="sedentary">거의 안함 (좌식생활)</option>
+                      <option value="light">가벼운 활동 (주 1-3회 운동)</option>
+                      <option value="moderate">보통 활동 (주 3-5회 운동)</option>
+                      <option value="active">활동적 (주 6-7회 운동)</option>
+                      <option value="veryActive">매우 활동적 (하루 2회 이상 운동)</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
                       <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -396,7 +428,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                   <div className="relative">
                     <select
                       value={fitnessGoal}
-                      onChange={(e) => setFitnessGoal(e.target.value as 'loss' | 'maintain' | 'gain')}
+                      onChange={(e) => setFitnessGoal(e.target.value as UserProfile['fitnessGoal'])}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none pr-8"
                       required
                     >
@@ -649,17 +681,17 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
             {currentStep === 4 && (
               <>
                 <div className="pt-2">
-                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">목표 칼로리 계산</h3>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">목표 칼로리 및 영양소</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    입력하신 정보를 바탕으로 목표 칼로리를 계산해 드립니다.
+                    입력하신 정보를 바탕으로 목표 칼로리 및 주요 영양소 목표치를 계산해 드립니다.
                   </p>
 
                   <button
                     type="button"
-                    onClick={calculateBMR}
+                    onClick={calculateBMRAndMacros}
                     className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-4"
                   >
-                    칼로리 계산하기
+                    계산하기
                   </button>
 
                   {calculatedCalories && (
@@ -667,43 +699,48 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">기초 대사량 (BMR)</h4>
                         <p className="text-lg font-semibold">{calculatedCalories.bmr} kcal</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          아무 활동도 하지 않을 때 기본적으로 소모되는 칼로리
-                        </p>
                       </div>
-                      
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">유지 칼로리</h4>
                         <p className="text-lg font-semibold">{calculatedCalories.maintenance} kcal</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          현재 체중을 유지하는 데 필요한 칼로리
-                        </p>
                       </div>
-                      
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">목표 칼로리</h4>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">계산된 목표 칼로리</h4>
                         <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{calculatedCalories.target} kcal</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {fitnessGoal === 'loss' ? '체중 감량을 위한 권장 칼로리 (20% 감소)' : 
-                           fitnessGoal === 'gain' ? '근육 증가를 위한 권장 칼로리 (15% 증가)' : 
-                           '체중 유지를 위한 권장 칼로리'}
-                        </p>
+                      </div>
+
+                      {/* 계산된 매크로 영양소 표시 */} 
+                      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
+                        <div className="bg-white dark:bg-gray-800 p-2 rounded text-center">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">단백질</p>
+                          <p className="font-medium text-gray-700 dark:text-gray-200">{calculatedMacros.protein}g</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-2 rounded text-center">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">탄수화물</p>
+                          <p className="font-medium text-gray-700 dark:text-gray-200">{calculatedMacros.carbs}g</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-2 rounded text-center">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">지방</p>
+                          <p className="font-medium text-gray-700 dark:text-gray-200">{calculatedMacros.fat}g</p>
+                        </div>
                       </div>
 
                       <div className="pt-3">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                          목표 칼로리 조정 (kcal)
+                        <label htmlFor="targetCaloriesInputModal" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          최종 목표 칼로리 직접 설정 (kcal)
                         </label>
                         <input
                           type="number"
-                          value={targetCalories}
+                          id="targetCaloriesInputModal"
+                          value={targetCalories} 
                           onChange={(e) => setTargetCalories(Number(e.target.value))}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder="예: 2500"
                           min="1000"
                           max="5000"
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          제안된 목표 칼로리를 원하는 대로 조정할 수 있습니다.
+                          계산된 값을 참고하여 최종 목표 칼로리를 직접 설정할 수 있습니다. 변경 시 위 영양소 목표도 함께 업데이트됩니다.
                         </p>
                       </div>
                     </div>
@@ -717,7 +754,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 <button
                   type="button"
                   onClick={goToPrevStep}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4] dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"
                 >
                   이전
                 </button>
@@ -725,7 +762,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4] dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"
                 >
                   취소
                 </button>
@@ -735,14 +772,14 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 <button
                   type="button"
                   onClick={goToNextStep}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#4285F4] border border-transparent rounded-md hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]"
                 >
                   다음
                 </button>
               ) : (
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#4285F4] border border-transparent rounded-md hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]"
                 >
                   저장
                 </button>

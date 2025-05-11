@@ -216,15 +216,15 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   return (
     <div className="max-w-2xl mx-auto p-4">
       {/* 목표 칼로리 및 영양소 가이드 */}
-      <Card className="mb-6 border-l-4 border-blue-500">
+      <Card className="mb-6 border-l-4 border-[#4285F4]">
         <div className="flex items-start">
-          <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
+          <Info className="text-[#4285F4] mr-2 mt-1 flex-shrink-0" size={20} />
           <div>
-            <h3 className="text-lg font-semibold mb-2">영양소 목표</h3>
+            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">영양소 목표</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+              <div className="bg-blue-50 dark:bg-[#4285F4]/20 p-3 rounded-lg text-center">
                 <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
-                <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{targetCalories} kcal</span>
+                <span className="block text-lg font-bold text-[#4285F4] dark:text-sky-400">{targetCalories} kcal</span>
               </div>
               
               <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
@@ -338,7 +338,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             <button
               type="button"
               onClick={handleCameraCapture}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#4285F4] border border-transparent rounded-md shadow-sm hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
@@ -346,7 +346,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               카메라로 촬영
             </button>
             
-            <label className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer text-center">
+            <label className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#00C853] border border-transparent rounded-md shadow-sm hover:bg-[#00B04A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00C853] cursor-pointer text-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4V5h12v10z" clipRule="evenodd" />
               </svg>
@@ -392,10 +392,10 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           <button
             type="submit"
             disabled={!imageUrl}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-md shadow-sm ${
+            className={`px-6 py-2 text-sm font-medium text-white rounded-md shadow-sm transition-colors duration-200 ${
               imageUrl 
-                ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500' 
-                : 'bg-gray-400 cursor-not-allowed'
+                ? 'bg-[#4285F4] hover:bg-[#3b78db] focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]' 
+                : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
             }`}
           >
             저장

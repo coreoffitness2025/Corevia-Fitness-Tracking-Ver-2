@@ -625,7 +625,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
               <Button
                 type="button"
-                variant={selectedSetConfiguration === '10x5' ? "primary" : "outline"}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === '10x5'
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('10x5')}
               >
@@ -633,7 +637,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                variant={selectedSetConfiguration === ('15x5' as SetConfiguration) ? "primary" : "outline"}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === ('15x5' as SetConfiguration)
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
               >
@@ -641,7 +649,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                variant={selectedSetConfiguration === ('6x3' as SetConfiguration) ? "primary" : "outline"}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === ('6x3' as SetConfiguration)
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
               >
@@ -649,7 +661,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                variant={selectedSetConfiguration === 'custom' ? "primary" : "outline"}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === 'custom'
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('custom')}
               >
@@ -704,10 +720,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     type="button"
                     onClick={() => setPart(option.value as ExercisePart)}
                     className={`
-                      py-2 px-4 rounded-lg flex items-center transition-all duration-300
+                      py-2 px-4 rounded-lg flex items-center transition-all duration-300 text-sm font-medium
                       ${part === option.value 
-                        ? 'bg-primary-600 text-white shadow-lg transform scale-105' 
-                        : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-[#4285F4] text-white shadow-lg transform scale-105'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }
                     `}
                   >
@@ -1010,11 +1026,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
               <Button
                 type="button"
-                variant="primary"
+                className="w-full mt-4 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#4285F4] rounded-md shadow-sm hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]"
                 onClick={addAccessoryExercise}
-                fullWidth
                 icon={<Plus size={16} />}
-                className="mt-4"
               >
                 보조 운동 추가
               </Button>
@@ -1034,12 +1048,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
           <Button
             type="submit"
-            variant="success"
-            fullWidth
-            size="lg"
+            className={`w-full px-4 py-3 text-lg font-medium text-white rounded-md shadow-sm transition-all duration-500 ${
+              !isFormValid 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-[#4285F4] hover:bg-[#3b78db] focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]'
+            }`}
             disabled={!isFormValid}
             icon={<Save size={20} />}
-            className="transition-all duration-500"
           >
             저장하기
           </Button>
