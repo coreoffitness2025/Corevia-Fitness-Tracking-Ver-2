@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db } from '../services/firebaseService';
 import { User } from 'firebase/auth';
 
 interface Food {

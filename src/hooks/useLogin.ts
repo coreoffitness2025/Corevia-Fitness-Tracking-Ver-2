@@ -1,113 +1,147 @@
-import { User, UserCredential } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import { useCallback } from 'react';
-import { signInWithGoogle, signInWithEmail, getUserProfile, getGoogleRedirectResult } from '../firebase/firebaseConfig';
+import { signInWithGoogle, signInWithEmail, getUserProfile } from '../services/firebaseService';
 import { UserProfile } from '../types';
 import { toast } from 'react-hot-toast';
 import { DEFAULT_PROFILE } from '../constants/profile';
 import { FirebaseError } from 'firebase/app';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface UseLoginProps {
-  onSuccess?: (user: User | null, profile: UserProfile | null) => void;
-  onError?: (error: Error) => void;
+  setIsLoading: (loading: boolean) => void;
+  setUser: (user: UserProfile) => void;
+  setUserProfile: (profile: UserProfile | null) => void;
+  setShowPersonalization: (show: boolean) => void;
+  navigate: (path: string) => void;
 }
 
-const createUserProfile = (user: User | null): UserProfile | null => {
-  if (!user) return null;
-  
-  return {
-    uid: user.uid,
-    displayName: user.displayName || '',
-    email: user.email || null,
-    photoURL: user.photoURL || null,
-    height: DEFAULT_PROFILE.height,
-    weight: DEFAULT_PROFILE.weight,
-    age: DEFAULT_PROFILE.age,
-    gender: DEFAULT_PROFILE.gender,
-    activityLevel: DEFAULT_PROFILE.activityLevel,
-    fitnessGoal: DEFAULT_PROFILE.fitnessGoal,
-    experience: DEFAULT_PROFILE.experience,
-    settings: {
-      darkMode: false,
-      notifications: {
-        workoutReminder: true,
-        mealReminder: true,
-        progressUpdate: true
-      },
-      units: {
-        weight: 'kg',
-        height: 'cm'
-      },
-      language: 'ko'
-    }
-  };
-};
+const createUserProfile = (user: User): UserProfile => ({
+  uid: user.uid,
+  displayName: user.displayName || '',
+  email: user.email || null,
+  photoURL: user.photoURL || null,
+  height: DEFAULT_PROFILE.height,
+  weight: DEFAULT_PROFILE.weight,
+  age: DEFAULT_PROFILE.age,
+  gender: DEFAULT_PROFILE.gender,
+  activityLevel: DEFAULT_PROFILE.activityLevel,
+  fitnessGoal: DEFAULT_PROFILE.fitnessGoal,
+  experience: DEFAULT_PROFILE.experience
+});
 
-export const useLogin = ({ onSuccess, onError }: UseLoginProps = {}) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleGoogleLogin = useCallback(async () => {
+export const useLogin = ({
+  setIsLoading,
+  setUser,
+  setUserProfile,
+  setShowPersonalization,
+  navigate,
+}: UseLoginProps) => {
+  const handleLogin = useCallback(async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
-      const result = await getGoogleRedirectResult();
+      const userCredential = await signInWithGoogle();
       
-      if (!result || !result.user) {
+      if (!userCredential) {
         throw new Error('로그인에 실패했습니다.');
       }
+
+      const userProfile = createUserProfile(userCredential);
+      setUser(userProfile);
+
+      // 기존 프로필 확인
+      const existingProfile = await getUserProfile(userCredential.uid);
       
-      const user = result.user;
-      const existingProfile = await getUserProfile(user.uid);
-      const profile = existingProfile || createUserProfile(user);
-      
-      if (onSuccess) {
-        onSuccess(user, profile);
+      if (existingProfile) {
+        setUserProfile(existingProfile);
+        toast.success('로그인 성공!');
+        navigate('/dashboard');
+      } else {
+        setUserProfile(userProfile);
+        setShowPersonalization(true);
       }
-      navigate('/');
     } catch (error) {
-      const firebaseError = error as FirebaseError;
-      toast.error(firebaseError.message);
-      if (onError) {
-        onError(firebaseError);
+      let errorMessage = '로그인에 실패했습니다. 다시 시도해주세요.';
+      
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/popup-closed-by-user':
+            errorMessage = '로그인 창이 닫혔습니다. 다시 시도해주세요.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = '네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.';
+            break;
+          case 'auth/popup-blocked':
+            errorMessage = '팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.';
+            break;
+          default:
+            console.error('Firebase 에러:', error);
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+      
+      console.error('로그인 실패:', error);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [onSuccess, onError, navigate]);
+  }, [setIsLoading, setUser, setUserProfile, setShowPersonalization, navigate]);
 
   const handleEmailLogin = useCallback(async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const result = await signInWithEmail(email, password);
-      const user = result.user as User | null;
+      const userCredential = await signInWithEmail(email, password);
       
-      if (!user) {
+      if (!userCredential) {
         throw new Error('로그인에 실패했습니다.');
       }
+
+      const userProfile = createUserProfile(userCredential);
+      setUser(userProfile);
+
+      // 기존 프로필 확인
+      const existingProfile = await getUserProfile(userCredential.uid);
       
-      const existingProfile = await getUserProfile(user.uid);
-      const profile = existingProfile || createUserProfile(user);
-      
-      if (onSuccess) {
-        onSuccess(user, profile);
+      if (existingProfile) {
+        setUserProfile(existingProfile);
+        toast.success('로그인 성공!');
+        navigate('/dashboard');
+      } else {
+        setUserProfile(userProfile);
+        setShowPersonalization(true);
       }
-      navigate('/');
     } catch (error) {
-      const firebaseError = error as FirebaseError;
-      toast.error(firebaseError.message);
-      if (onError) {
-        onError(firebaseError);
+      let errorMessage = '로그인에 실패했습니다. 다시 시도해주세요.';
+      
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = '존재하지 않는 이메일입니다.';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = '잘못된 비밀번호입니다.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = '너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = '네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.';
+            break;
+          default:
+            console.error('Firebase 에러:', error);
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+      
+      console.error('로그인 실패:', error);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [onSuccess, onError, navigate]);
+  }, [setIsLoading, setUser, setUserProfile, setShowPersonalization, navigate]);
 
   return {
-    isLoading,
-    handleGoogleLogin,
+    handleLogin,
     handleEmailLogin
   };
 };

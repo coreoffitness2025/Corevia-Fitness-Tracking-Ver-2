@@ -7,59 +7,43 @@ export interface User {
 }
 
 /* ---------- 운동 타입 ---------- */
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
 
-export interface Set {
+export interface ExerciseSet {
   reps: number;
+  isSuccess: boolean;
   weight: number;
-  isSuccess: boolean | null;
 }
 
 export interface MainExercise {
   part: ExercisePart;
-  name: string;
-  weight?: number;
-  sets: Set[];
+  weight: number;
+  sets: ExerciseSet[];
 }
 
 export interface AccessoryExercise {
   name: string;
   weight?: number;
   reps?: number;
-  sets?: Set[];
+  sets?: Array<{
+    reps: number;
+    weight: number;
+    isSuccess: boolean;
+  }>;
 }
-
-// 메인 운동 타입
-export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress';
-export type BackMainExercise = 'deadlift' | 'pullUp' | 'bentOverRow' | 'barbellRow' | 'tBarRow';
-export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull';
-export type LegMainExercise = 'squat' | 'legPress' | 'lunge';
-export type BicepsMainExercise = 'dumbbellCurl' | 'barbellCurl' | 'hammerCurl';
-export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingTricepsExtension';
-
-export type MainExerciseType = 
-  | ChestMainExercise 
-  | BackMainExercise 
-  | ShoulderMainExercise 
-  | LegMainExercise
-  | BicepsMainExercise
-  | TricepsMainExercise;
-
-// 세트 설정 타입
-export type SetConfiguration = '10x5' | '6x3' | '20x5' | 'custom';
 
 /* ---------- 세션 ---------- */
 export interface Session {
   id?: string;
   userId: string;
-  date: Date;
+  date: Date | string;
   part: ExercisePart;
   mainExercise: MainExercise;
-  accessoryExercises: AccessoryExercise[];
-  notes: string;
-  isAllSuccess: boolean;
-  successSets: number;
-  accessoryNames: string[];
+  accessoryExercises?: AccessoryExercise[];
+  notes?: string;
+  isAllSuccess?: boolean;
+  successSets?: number;
+  accessoryNames?: string[];
 }
 
 /* ---------- 일일 운동 기록 ---------- */
@@ -73,6 +57,12 @@ export interface DailyWorkout {
 }
 
 /* ---------- 그래프용 진행 데이터 ---------- */
+export interface Set {
+  reps: number;
+  isSuccess: boolean;
+  weight: number;
+}
+
 export interface Progress {
   id: string;
   userId: string;
@@ -110,9 +100,8 @@ export interface UserProfile {
   weight: number;
   age: number;
   gender: 'male' | 'female';
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
+  activityLevel: 'low' | 'moderate' | 'high';
   fitnessGoal: 'loss' | 'maintain' | 'gain';
-  targetCalories?: number;
   experience: {
     years: number;
     level: 'beginner' | 'intermediate' | 'advanced';
@@ -120,25 +109,6 @@ export interface UserProfile {
       maxWeight: number;
       maxReps: number;
     };
-  };
-  preferredExercises?: {
-    chest: ChestMainExercise;
-    back: BackMainExercise;
-    shoulder: ShoulderMainExercise;
-    leg: LegMainExercise;
-    biceps: BicepsMainExercise;
-    triceps: TricepsMainExercise;
-  };
-  setConfiguration?: {
-    preferredSetup: SetConfiguration;
-    customSets?: number;
-    customReps?: number;
-  };
-  oneRepMax?: {
-    bench: number;
-    squat: number;
-    deadlift: number;
-    overheadPress: number;
   };
   settings?: UserSettings;
 }
@@ -186,18 +156,4 @@ export interface WorkoutSession {
 
 export interface LayoutProps {
   children: React.ReactNode;
-}
-
-export interface Food {
-  id: string;
-  userId: string;
-  date: Date;
-  name: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  type?: string;
-  imageUrl?: string;
-  notes?: string;
 }

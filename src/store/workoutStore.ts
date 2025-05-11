@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { WorkoutSession } from '../types/workout';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext';
 
 interface WorkoutState {

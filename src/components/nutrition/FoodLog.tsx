@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
+import { db } from '../../firebase';
 import CalorieCalculator from './CalorieCalculator';
 
 interface NutritionGoal {
@@ -193,8 +193,8 @@ const FoodLog = () => {
             </div>
             {userProfile && (
               <CalorieCalculator 
-                userProfile={userProfile}
-                onComplete={handleCalculatorComplete}
+                userProfile={userProfile} 
+                onComplete={handleCalculatorComplete} 
               />
             )}
           </div>

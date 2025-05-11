@@ -1,82 +1,59 @@
-// 1단계: App.tsx 라우트 수정
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-
-// 보호된 라우트 컴포넌트 import
-import ProtectedRoute from './components/auth/ProtectedRoute';
-
-// Pages
+import { ThemeProvider } from './contexts/ThemeContext';
+import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
-import ProfilePage from './pages/ProfilePage';
-import QnaPage from './pages/QnaPage';
-import SettingsPage from './pages/SettingsPage';
-import NotFoundPage from './pages/NotFoundPage';
-import WorkoutPage from './pages/workout/WorkoutPage';
-import FoodPage from './pages/food/FoodPage';
-import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
-import WorkoutGuidePage from './pages/workout/WorkoutGuidePage';
+import RegisterPage from './pages/RegisterPage';
+import ProfilePage from './pages/ProfilePage';
+import WorkoutPage from './pages/WorkoutPage';
+import WorkoutDetailPage from './pages/WorkoutDetailPage';
+import WorkoutNewPage from './pages/WorkoutNewPage';
+import WorkoutEditPage from './pages/WorkoutEditPage';
+import WorkoutStartPage from './pages/WorkoutStartPage';
+import WorkoutResultPage from './pages/WorkoutResultPage';
+import NotFoundPage from './pages/NotFoundPage';
 
-const App: React.FC = () => {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+    </div>
+  );
+};
+
+function App() {
   return (
     <Router>
       <AuthProvider>
-        <Toaster position="top-center" />
-        <Routes>
-          {/* 공개 라우트 */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          
-          {/* 보호된 라우트 */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile/*" element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/workout/*" element={
-            <ProtectedRoute>
-              <WorkoutPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/food/*" element={
-            <ProtectedRoute>
-              <FoodPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/qna" element={
-            <ProtectedRoute>
-              <QnaPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/workout/guide" element={
-            <ProtectedRoute>
-              <WorkoutGuidePage />
-            </ProtectedRoute>
-          } />
-          
-          {/* 404 페이지 */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <ThemeProvider>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/workout" element={<WorkoutPage />} />
+              <Route path="/workout/:id" element={<WorkoutDetailPage />} />
+              <Route path="/workout/new" element={<WorkoutNewPage />} />
+              <Route path="/workout/:id/edit" element={<WorkoutEditPage />} />
+              <Route path="/workout/:id/start" element={<WorkoutStartPage />} />
+              <Route path="/workout/:id/result" element={<WorkoutResultPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Layout>
+        </ThemeProvider>
       </AuthProvider>
     </Router>
   );
-};
+}
 
 export default App;
