@@ -220,9 +220,11 @@ const SettingsPage = () => {
                 <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                   <p className="text-sm text-gray-500 dark:text-gray-400">활동 수준</p>
                   <p className="font-medium">
-                    {userProfile.activityLevel === 'low' && '낮음'}
-                    {userProfile.activityLevel === 'moderate' && '보통'}
-                    {userProfile.activityLevel === 'high' && '높음'}
+                    {userProfile.activityLevel === 'sedentary' && '거의 안함 (좌식생활)'}
+                    {userProfile.activityLevel === 'light' && '가벼운 활동 (주 1-3회 운동)'}
+                    {userProfile.activityLevel === 'moderate' && '보통 활동 (주 3-5회 운동)'}
+                    {userProfile.activityLevel === 'active' && '활동적 (주 6-7회 운동)'}
+                    {userProfile.activityLevel === 'veryActive' && '매우 활동적 (하루 2회 이상 운동)'}
                     {!userProfile.activityLevel && '설정되지 않음'}
                   </p>
                 </div>
