@@ -6,6 +6,22 @@ interface FoodItemProps {
 }
 
 const FoodItem: React.FC<FoodItemProps> = ({ food }) => {
+  // date가 존재하고 Date 객체인지 확인
+  const formatDate = () => {
+    if (!food.date) return '';
+    
+    if (typeof food.date === 'object' && food.date instanceof Date) {
+      return food.date.toLocaleString();
+    } else if (typeof food.date === 'string') {
+      try {
+        return new Date(food.date).toLocaleString();
+      } catch (e) {
+        return food.date;
+      }
+    }
+    return '';
+  };
+
   return (
     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
@@ -13,7 +29,7 @@ const FoodItem: React.FC<FoodItemProps> = ({ food }) => {
           {food.name}
         </h3>
         <span className="text-sm text-gray-500 dark:text-gray-400">
-          {food.date.toLocaleTimeString()}
+          {formatDate()}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-300">

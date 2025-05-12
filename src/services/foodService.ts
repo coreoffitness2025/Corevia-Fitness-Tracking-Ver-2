@@ -42,6 +42,8 @@ export const fetchFoodsByDate = async (userId: string, date: Date): Promise<Food
       protein: data.protein,
       carbs: data.carbs,
       fat: data.fat,
+      servingSize: data.servingSize || 0,
+      servingUnit: data.servingUnit || 'g',
       imageUrl: data.imageUrl,
       notes: data.notes
     });

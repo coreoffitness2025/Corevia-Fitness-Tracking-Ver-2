@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../firebase/firebaseConfig';
 import CalorieCalculator from './CalorieCalculator';
 
 interface NutritionGoal {

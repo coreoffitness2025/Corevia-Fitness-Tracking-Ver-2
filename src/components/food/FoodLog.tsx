@@ -168,6 +168,16 @@ const FoodLog: React.FC = () => {
     const groups: Record<string, Food[]> = {};
     
     foods.forEach(food => {
+      // food.date가 없는 경우 현재 날짜 사용
+      if (!food.date) {
+        const today = new Date().toISOString().split('T')[0];
+        if (!groups[today]) {
+          groups[today] = [];
+        }
+        groups[today].push(food);
+        return;
+      }
+      
       const dateKey = food.date instanceof Date 
         ? food.date.toISOString().split('T')[0]
         : new Date(food.date).toISOString().split('T')[0];

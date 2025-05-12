@@ -228,6 +228,13 @@ export interface WorkoutGuideInfo {
     deadlift: number;
     overheadPress: number;
   };
+  oneRepMaxes?: {
+    squat: number;
+    deadlift: number;
+    bench: number;
+    overheadPress: number;
+  };
+  preferredSetConfig?: '10x5' | '6x3' | '15x5' | 'custom';
 }
 
 export interface WorkoutGuideResult {
@@ -250,6 +257,20 @@ export interface WorkoutGuideResult {
     strengthGain: string;
     muscleGain?: string;
     fatLoss?: string;
+  };
+  userLevel?: 'beginner' | 'intermediate' | 'advanced';
+  percentageOfOneRM?: number;
+  recommendedWeights?: {
+    squat?: number;
+    deadlift?: number;
+    bench?: number;
+    overheadPress?: number;
+  };
+  recoveryTime?: string;
+  setConfig?: {
+    type: string;
+    description: string;
+    advantages: string[];
   };
 }
 

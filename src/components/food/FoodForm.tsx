@@ -184,12 +184,16 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
         name: foodName || `${mealType} 식사`,
         imageUrl: imageUrl,
         notes: notes || undefined,
-        type: mealType,
+        mealType: mealType === '아침' ? 'breakfast' : 
+                 mealType === '점심' ? 'lunch' : 
+                 mealType === '저녁' ? 'dinner' : 'snack',
         // 영양소 정보는 제공하지 않음으로 기본값 설정
         calories: 0,
         protein: 0,
         carbs: 0,
-        fat: 0
+        fat: 0,
+        servingSize: 1,
+        servingUnit: 'g'
       };
 
       const newFood = await saveFoodRecord(foodData);
