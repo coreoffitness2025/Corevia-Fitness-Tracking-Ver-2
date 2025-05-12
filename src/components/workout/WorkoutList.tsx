@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, weekdays } from '../../utils/dateUtils';
 import { ExercisePart, Session, AccessoryExercise } from '../../types';
-import { Camera, Download, Share, Image, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Camera, Download, Share, Image, ChevronLeft, ChevronRight, X, Trash } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import Button from '../common/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, Timestamp, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { toast } from 'react-hot-toast';
 
 // WorkoutSet 인터페이스 로컬 정의
 interface WorkoutSet {
@@ -74,27 +75,55 @@ const getPartLabel = (part: ExercisePart): string => {
 
 const WorkoutList: React.FC = () => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
-  const workoutStampRef = useRef<HTMLDivElement>(null);
-  
-  // 년도와 월 상태 추가
-  const today = new Date();
-  const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
-  
-  // 스탬프 이미지 상태
-  const [stampImage, setStampImage] = useState<string | null>(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  
-  // 세션 데이터 상태
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { userProfile, currentUser } = useAuth();
+  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [calendarDays, setCalendarDays] = useState<Date[]>([]);
+  const [yearOptions, setYearOptions] = useState<number[]>([]);
+  const [monthOptions, setMonthOptions] = useState<{value: number; label: string}[]>([]);
+  const [workoutsByDate, setWorkoutsByDate] = useState<Record<string, Workout[]>>({});
+  const [selectedWorkouts, setSelectedWorkouts] = useState<Workout[]>([]);
+  const [stampImage, setStampImage] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const workoutStampRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // 선택된 년도와 월에 따라 달력 데이터 생성
-  const calendarDays = generateCalendarDays(currentYear, currentMonth);
+  // 운동 기록 삭제 함수
+  const deleteWorkout = async (workoutId: string) => {
+    if (!currentUser || !workoutId) return;
+
+    try {
+      // Firestore에서 해당 ID의 문서 삭제
+      const sessionRef = doc(db, 'sessions', workoutId);
+      await deleteDoc(sessionRef);
+      
+      // 상태 업데이트
+      setSessions((prev: WorkoutSession[]) => prev.filter(session => session.id !== workoutId));
+      setSelectedWorkouts((prev: Workout[]) => prev.filter(workout => workout.id !== workoutId));
+      setWorkoutsByDate((prev: Record<string, Workout[]>) => {
+        const updated = { ...prev };
+        
+        // 모든 날짜에서 해당 ID의 workout 제거
+        Object.keys(updated).forEach(date => {
+          updated[date] = updated[date].filter((workout: Workout) => workout.id !== workoutId);
+          if (updated[date].length === 0) {
+            delete updated[date];
+          }
+        });
+        
+        return updated;
+      });
+      
+      toast.success('운동 기록이 삭제되었습니다.');
+    } catch (err) {
+      console.error('운동 기록 삭제 실패:', err);
+      toast.error('운동 기록 삭제에 실패했습니다.');
+    }
+  };
   
   // Firebase에서 운동 세션 데이터 불러오기
   useEffect(() => {
@@ -166,7 +195,7 @@ const WorkoutList: React.FC = () => {
   };
   
   // 년도 옵션 생성 (현재 년도 기준 ±5년)
-  const yearOptions = Array.from({ length: 11 }, (_, i) => today.getFullYear() - 5 + i);
+  const yearOptions = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
   
   // 월 옵션 생성
   const monthOptions = [
@@ -185,7 +214,7 @@ const WorkoutList: React.FC = () => {
   ];
   
   // 날짜별 운동 기록 그룹화
-  const workoutsByDate = sessions.reduce<Record<string, Session[]>>((acc, session) => {
+  const workoutsByDate = sessions.reduce<Record<string, Workout[]>>((acc, session) => {
     // date가 Date 객체인 경우 문자열로 변환
     const dateStr = formatDate(session.date);
     if (!acc[dateStr]) {
@@ -423,7 +452,7 @@ const WorkoutList: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Button 
               onClick={goToPreviousMonth} 
-              variant="ghost"
+              variant="outline"
               size="sm"
               icon={<ChevronLeft size={16} />}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -461,7 +490,7 @@ const WorkoutList: React.FC = () => {
             
             <Button 
               onClick={goToNextMonth} 
-              variant="ghost"
+              variant="outline"
               size="sm"
               icon={<ChevronRight size={16} />}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -493,6 +522,27 @@ const WorkoutList: React.FC = () => {
             const dayWorkouts = workoutsByDate[dateStr] || [];
             const hasWorkout = dayWorkouts.length > 0;
             
+            // 메인 운동의 성공 무게 계산
+            let maxSuccessWeight = 0;
+            let isAllSuccess = false;
+            
+            if (hasWorkout) {
+              const workout = dayWorkouts[0]; // 첫 번째 운동 기록
+              isAllSuccess = workout.isAllSuccess;
+              
+              // 성공한 세트 중 가장 무거운 무게 찾기
+              if (workout.mainExercise && workout.mainExercise.sets) {
+                workout.mainExercise.sets.forEach(set => {
+                  if (set.isSuccess && set.weight > maxSuccessWeight) {
+                    maxSuccessWeight = set.weight;
+                  }
+                });
+              }
+            }
+            
+            const statusColor = isAllSuccess ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
+                               hasWorkout ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : '';
+            
             return (
               <div 
                 key={`day-${i}`} 
@@ -510,30 +560,15 @@ const WorkoutList: React.FC = () => {
                   {day.getDate()}
                 </span>
                 
-                {/* 운동 마커 - 메인 운동명 포함 */}
+                {/* 운동 마커 - 성공한 메인 운동 무게 표시 */}
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
-                    {dayWorkouts.map((workout, j) => {
-                      // 주요 정보 추출
-                      const mainExerciseWeight = workout.mainExercise.weight || 0;
-                      const partLabel = getPartLabel(workout.part);
-                      const statusLabel = workout.isAllSuccess ? '성공' : '실패';
-                      
-                      return (
-                        <div 
-                          key={`workout-${j}`} 
-                          className={`text-xs px-1 py-0.5 rounded-sm truncate ${getPartColor(workout.part, workout.isAllSuccess)}`}
-                          title={`${partLabel} - ${mainExerciseWeight}kg - ${statusLabel}`}
-                        >
-                          <span className="font-medium">{partLabel}</span>
-                          <span className="mx-1">-</span>
-                          <span>{mainExerciseWeight}kg</span>
-                          <span className="ml-1">
-                            {workout.isAllSuccess ? '✓' : '✗'}
-                          </span>
-                        </div>
-                      );
-                    })}
+                    <div 
+                      className={`text-xs px-1 py-0.5 rounded-sm truncate ${statusColor}`}
+                      title={`${maxSuccessWeight}kg - ${isAllSuccess ? '성공' : '실패'}`}
+                    >
+                      {maxSuccessWeight > 0 ? `${maxSuccessWeight}kg` : '기록 있음'}
+                    </div>
                   </div>
                 )}
               </div>
@@ -542,7 +577,7 @@ const WorkoutList: React.FC = () => {
         </div>
       </div>
       
-      {/* 선택된 날짜 표시 및 스탬프 기능 */}
+      {/* 선택된 날짜 표시 및 기록 삭제 버튼 */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           {new Date(selectedDate).toLocaleDateString('ko-KR', { 
@@ -556,31 +591,21 @@ const WorkoutList: React.FC = () => {
         {selectedWorkouts.length > 0 && (
           <div className="flex space-x-2">
             <Button
-              onClick={captureWorkoutStamp}
-              variant="secondary"
+              onClick={() => {
+                if (window.confirm('선택한 날짜의 모든 운동 기록을 삭제하시겠습니까?')) {
+                  selectedWorkouts.forEach(workout => {
+                    if (workout.id) {
+                      deleteWorkout(workout.id);
+                    }
+                  });
+                }
+              }}
+              variant="outline"
               size="sm"
-              icon={<Camera size={16} />}
-              className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
+              icon={<Trash size={16} />}
+              className="text-red-500 hover:text-red-700"
             >
-              스탬프 생성
-            </Button>
-            <Button
-              onClick={handleCameraCapture}
-              variant="secondary"
-              size="sm"
-              icon={<Camera size={16} />}
-              className="bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
-            >
-              카메라로 촬영
-            </Button>
-            <Button
-              onClick={handleFileSelect}
-              variant="secondary"
-              size="sm"
-              icon={<Image size={16} />}
-              className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-800 dark:text-purple-200"
-            >
-              앨범에서 선택
+              기록 삭제
             </Button>
           </div>
         )}
@@ -591,121 +616,6 @@ const WorkoutList: React.FC = () => {
           </span>
         )}
       </div>
-      
-      {/* 운동 스탬프 이미지 */}
-      {stampImage && (
-        <div className="mt-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              운동 스탬프
-            </h3>
-            <div className="flex space-x-2">
-              <Button
-                onClick={downloadStampImage}
-                variant="secondary"
-                size="sm"
-                icon={<Download size={16} />}
-                className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
-              >
-                저장
-              </Button>
-              <Button
-                onClick={shareWorkoutStamp}
-                variant="secondary"
-                size="sm"
-                icon={<Share size={16} />}
-                className="bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
-              >
-                공유
-              </Button>
-              <Button
-                onClick={() => setStampImage(null)}
-                variant="secondary"
-                size="sm"
-                icon={<X size={16} />}
-                className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200"
-              >
-                닫기
-              </Button>
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <img
-              src={stampImage}
-              alt="운동 스탬프"
-              className="max-w-full h-auto rounded-lg shadow-lg"
-              style={{ maxHeight: '500px' }}
-            />
-          </div>
-        </div>
-      )}
-      
-      {/* 기존 운동 스탬프 영역 - 캡처용으로만 사용 */}
-      {selectedWorkouts.length > 0 && (
-        <div 
-          ref={workoutStampRef}
-          className={`bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6 ${stampImage || uploadedImage ? 'hidden' : ''}`}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              {new Date(selectedDate).toLocaleDateString('ko-KR', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric'
-              })} 운동 스탬프
-            </h3>
-            <div className="flex items-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full">
-              <Camera size={16} className="mr-1" />
-              <span className="text-sm">Corevia Fitness</span>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {selectedWorkouts.map((workout, index) => (
-              <div 
-                key={index}
-                className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center">
-                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${workout.isAllSuccess ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    <span className={`py-1 px-2 rounded-md text-sm mr-2 ${getPartColor(workout.part, workout.isAllSuccess)}`}>
-                      {getPartLabel(workout.part)}
-                    </span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400 text-sm">
-                    {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </span>
-                </div>
-                
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {workout.mainExercise.sets.map((set, setIndex) => (
-                    <div 
-                      key={setIndex}
-                      className={`text-xs py-1 px-2 rounded ${set.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                    >
-                      {set.weight}kg x {set.reps}회
-                    </div>
-                  ))}
-                </div>
-                
-                {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    <span className="font-medium">보조 운동:</span> {workout.accessoryExercises.map(ex => ex.name || '보조운동').join(', ')}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-            Corevia Fitness Tracking App에서 생성됨
-          </div>
-        </div>
-      )}
       
       {/* 선택된 날짜의 운동 기록 목록 */}
       <div className="space-y-6">
@@ -733,12 +643,27 @@ const WorkoutList: React.FC = () => {
                     {getPartLabel(workout.part)}
                   </span>
                 </div>
-                <span className="text-gray-600 dark:text-gray-400 text-sm">
-                  {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
+                    {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
+                  <Button
+                    onClick={() => {
+                      if (window.confirm('이 운동 기록을 삭제하시겠습니까?')) {
+                        deleteWorkout(workout.id);
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    icon={<Trash size={16} />}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    삭제
+                  </Button>
+                </div>
               </div>
               
               {/* 성공/실패 뱃지 */}

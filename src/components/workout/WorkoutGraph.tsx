@@ -1,555 +1,489 @@
-import React, { useState } from 'react';
-import { 
-  ExercisePart, 
-  ChestMainExercise, 
-  BackMainExercise, 
-  ShoulderMainExercise, 
-  LegMainExercise,
-  BicepsMainExercise,
-  TricepsMainExercise,
-  MainExerciseType
-} from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartOptions,
+  ChartData
+} from 'chart.js';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '../../firebase/firebaseConfig';
+import { useAuth } from '../../contexts/AuthContext';
+import Button from '../common/Button';
+import Card from '../common/Card';
+import { ExercisePart } from '../../types';
+import LoadingSpinner from '../common/LoadingSpinner';
 
-interface WorkoutData {
-  date: string;
-  weight: number;
-  isSuccess: boolean;
-  sets?: Array<{ reps: number; weight: number; isSuccess: boolean }>;
-}
+// Chart.js 컴포넌트 등록
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
-interface ExercisePartOption {
-  value: ExercisePart;
-  label: string;
-}
-
-type TimeRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'all';
-
-const exercisePartOptions: ExercisePartOption[] = [
-  { value: 'chest',    label: '가슴' },
-  { value: 'back',     label: '등' },
+// 운동 부위 옵션
+const partOptions = [
+  { value: 'all', label: '전체' },
+  { value: 'chest', label: '가슴' },
+  { value: 'back', label: '등' },
   { value: 'shoulder', label: '어깨' },
-  { value: 'leg',      label: '하체' },
-  { value: 'biceps',   label: '이두' },
-  { value: 'triceps',  label: '삼두' }
+  { value: 'leg', label: '하체' }
 ];
 
-// 각 부위별 메인 운동 옵션
-const mainExerciseOptions = {
+// 운동 종류 옵션 (부위별로 그룹화)
+const exerciseOptions: Record<string, { value: string; label: string }[]> = {
+  all: [{ value: 'all', label: '전체' }],
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
     { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
-    { value: 'declineBenchPress', label: '디클라인 벤치 프레스' }
+    { value: 'declineBenchPress', label: '디클라인 벤치 프레스' },
+    { value: 'cableFly', label: '케이블 플라이' },
+    { value: 'dumbbellFly', label: '덤벨 플라이' }
   ],
   back: [
     { value: 'deadlift', label: '데드리프트' },
-    { value: 'pullUp', label: '턱걸이' },
-    { value: 'bentOverRow', label: '벤트오버 로우' }
+    { value: 'bentOverRow', label: '벤트오버 로우' },
+    { value: 'latPulldown', label: '랫 풀다운' },
+    { value: 'seatedRow', label: '시티드 로우' },
+    { value: 'pullUp', label: '풀업' }
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
     { value: 'lateralRaise', label: '레터럴 레이즈' },
-    { value: 'facePull', label: '페이스 풀' }
+    { value: 'frontRaise', label: '프론트 레이즈' },
+    { value: 'facePull', label: '페이스 풀' },
+    { value: 'reverseFly', label: '리버스 플라이' }
   ],
   leg: [
     { value: 'squat', label: '스쿼트' },
     { value: 'legPress', label: '레그 프레스' },
-    { value: 'lungue', label: '런지' }
-  ],
-  biceps: [
-    { value: 'dumbbellCurl', label: '덤벨 컬' },
-    { value: 'barbelCurl', label: '바벨 컬' },
-    { value: 'hammerCurl', label: '해머 컬' }
-  ],
-  triceps: [
-    { value: 'cablePushdown', label: '케이블 푸시다운' },
-    { value: 'overheadExtension', label: '오버헤드 익스텐션' },
-    { value: 'lyingExtension', label: '라잉 익스텐션' }
+    { value: 'lunges', label: '런지' },
+    { value: 'legExtension', label: '레그 익스텐션' },
+    { value: 'legCurl', label: '레그 컬' }
   ]
 };
 
+// 기간 옵션
+const periodOptions = [
+  { value: '1month', label: '1개월' },
+  { value: '3months', label: '3개월' },
+  { value: '6months', label: '6개월' },
+  { value: '1year', label: '1년' }
+];
+
+// 세트 구성 옵션
+const setConfigOptions = [
+  { value: 'all', label: '전체' },
+  { value: '10x5', label: '10회 x 5세트' },
+  { value: '15x5', label: '15회 x 5세트' },
+  { value: '6x3', label: '6회 x 3세트' },
+  { value: 'custom', label: '커스텀' }
+];
+
 const WorkoutGraph: React.FC = () => {
-  const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
-  const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>('benchPress');
-  const [selectedWorkout, setSelectedWorkout] = useState<WorkoutData | null>(null);
-  const [timeRange, setTimeRange] = useState<TimeRange>('all');
+  const { currentUser } = useAuth();
+  const [selectedPart, setSelectedPart] = useState<string>('all');
+  const [selectedExercise, setSelectedExercise] = useState<string>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('1month');
+  const [selectedSetConfig, setSelectedSetConfig] = useState<string>('all');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // 선택된 부위에 따른 데이터 필터링 (실제로는 API에서 데이터 가져와야 함)
-  const workoutData: Record<string, WorkoutData[]> = {
-    // 가슴 운동
-    benchPress: [
-      { 
-        date: '2024-03-01', 
-        weight: 80, 
-        isSuccess: true,
-        sets: [
-          { reps: 10, weight: 80, isSuccess: true },
-          { reps: 10, weight: 80, isSuccess: true },
-          { reps: 10, weight: 80, isSuccess: true }
-        ]
+  // 실제 데이터를 저장할 상태
+  const [workoutData, setWorkoutData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+  
+  // 차트 데이터
+  const [chartData, setChartData] = useState<ChartData<'line'>>({
+    labels: [],
+    datasets: []
+  });
+  
+  // 차트 옵션
+  const chartOptions: ChartOptions<'line'> = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
       },
-      { 
-        date: '2024-03-08', 
-        weight: 82.5, 
-        isSuccess: true,
-        sets: [
-          { reps: 10, weight: 82.5, isSuccess: true },
-          { reps: 10, weight: 82.5, isSuccess: true },
-          { reps: 8, weight: 82.5, isSuccess: true }
-        ]
+      tooltip: {
+        mode: 'index',
+        intersect: false,
       },
-      { 
-        date: '2024-03-15', 
-        weight: 85, 
-        isSuccess: false,
-        sets: [
-          { reps: 10, weight: 85, isSuccess: true },
-          { reps: 8, weight: 85, isSuccess: false },
-          { reps: 7, weight: 85, isSuccess: false }
-        ]
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        title: {
+          display: true,
+          text: '무게 (kg)'
+        }
       },
-      { 
-        date: '2024-03-22', 
-        weight: 85, 
-        isSuccess: true,
-        sets: [
-          { reps: 10, weight: 85, isSuccess: true },
-          { reps: 9, weight: 85, isSuccess: true },
-          { reps: 8, weight: 85, isSuccess: true }
-        ]
-      },
-      { 
-        date: '2024-03-29', 
-        weight: 87.5, 
-        isSuccess: true,
-        sets: [
-          { reps: 10, weight: 87.5, isSuccess: true },
-          { reps: 10, weight: 87.5, isSuccess: true },
-          { reps: 10, weight: 87.5, isSuccess: true }
-        ]
+      x: {
+        title: {
+          display: true,
+          text: '날짜'
+        }
       }
-    ],
-    inclineBenchPress: [
-      { date: '2024-03-02', weight: 70, isSuccess: true },
-      { date: '2024-03-09', weight: 72.5, isSuccess: true },
-      { date: '2024-03-16', weight: 75, isSuccess: true },
-      { date: '2024-03-23', weight: 77.5, isSuccess: false }
-    ],
-    // 등 운동
-    deadlift: [
-      { date: '2024-03-02', weight: 100, isSuccess: true },
-      { date: '2024-03-09', weight: 105, isSuccess: true },
-      { date: '2024-03-16', weight: 110, isSuccess: false },
-      { date: '2024-03-23', weight: 110, isSuccess: true }
-    ],
-    pullUp: [
-      { date: '2024-03-05', weight: 0, isSuccess: true },
-      { date: '2024-03-12', weight: 5, isSuccess: true }, // 가중치 추가
-      { date: '2024-03-19', weight: 7.5, isSuccess: true },
-      { date: '2024-03-26', weight: 10, isSuccess: false }
-    ],
-    // 어깨 운동
-    overheadPress: [
-      { date: '2024-03-03', weight: 60, isSuccess: true },
-      { date: '2024-03-10', weight: 62.5, isSuccess: true },
-      { date: '2024-03-17', weight: 65, isSuccess: true },
-      { date: '2024-03-24', weight: 67.5, isSuccess: false }
-    ],
-    // 하체 운동
-    squat: [
-      { date: '2024-03-04', weight: 120, isSuccess: true },
-      { date: '2024-03-11', weight: 125, isSuccess: true },
-      { date: '2024-03-18', weight: 130, isSuccess: false },
-      { date: '2024-03-25', weight: 130, isSuccess: true }
-    ],
-    // 이두 운동
-    dumbbellCurl: [
-      { date: '2024-03-05', weight: 15, isSuccess: true },
-      { date: '2024-03-12', weight: 17.5, isSuccess: true },
-      { date: '2024-03-19', weight: 20, isSuccess: false },
-      { date: '2024-03-26', weight: 20, isSuccess: true }
-    ],
-    // 삼두 운동
-    cablePushdown: [
-      { date: '2024-03-06', weight: 40, isSuccess: true },
-      { date: '2024-03-13', weight: 45, isSuccess: true },
-      { date: '2024-03-20', weight: 50, isSuccess: false },
-      { date: '2024-03-27', weight: 50, isSuccess: true }
-    ]
+    },
+    interaction: {
+      mode: 'nearest',
+      axis: 'x',
+      intersect: false
+    }
   };
-
-  // 부위 변경 시 해당 부위의 첫 번째 메인 운동으로 변경
-  const handlePartChange = (newPart: ExercisePart) => {
-    setSelectedPart(newPart);
-    setSelectedMainExercise(mainExerciseOptions[newPart][0].value as MainExerciseType);
-  };
-
-  // 필터링된 데이터를 반환하는 함수
-  const getFilteredWorkouts = () => {
-    const exerciseData = workoutData[selectedMainExercise] || [];
-    let filteredWorkouts = [...exerciseData];
-    
-    // 기간별 필터링
-    if (timeRange !== 'all') {
-      const now = new Date();
-      let startDate: Date;
-      
-      switch (timeRange) {
-        case '1week':
-          startDate = new Date(now);
-          startDate.setDate(now.getDate() - 7);
-          break;
-        case '1month':
-          startDate = new Date(now);
-          startDate.setMonth(now.getMonth() - 1);
-          break;
-        case '3months':
-          startDate = new Date(now);
-          startDate.setMonth(now.getMonth() - 3);
-          break;
-        case '6months':
-          startDate = new Date(now);
-          startDate.setMonth(now.getMonth() - 6);
-          break;
-        case '1year':
-          startDate = new Date(now);
-          startDate.setFullYear(now.getFullYear() - 1);
-          break;
-        default:
-          return filteredWorkouts;
+  
+  // Firestore에서 데이터 가져오기
+  useEffect(() => {
+    const fetchWorkoutData = async () => {
+      if (!currentUser) {
+        setError('로그인이 필요합니다');
+        setLoading(false);
+        return;
       }
       
-      filteredWorkouts = filteredWorkouts.filter(workout => 
-        new Date(workout.date) >= startDate
-      );
-    }
-    
-    return filteredWorkouts;
-  };
-
-  const currentWorkouts = getFilteredWorkouts();
-  
-  // 정렬된 데이터
-  const sortedWorkouts = [...currentWorkouts].sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-  
-  // y축 범위 계산
-  const maxWeight = Math.max(...currentWorkouts.map(d => d.weight), 0) + 5; // 상단 여백 추가
-  const minWeight = Math.max(0, Math.min(...currentWorkouts.map(d => d.weight)) - 10);
-  const range = maxWeight - minWeight > 0 ? maxWeight - minWeight : 10;
-  
-  // 선택된 메인 운동 이름
-  const selectedExerciseLabel = mainExerciseOptions[selectedPart].find(
-    option => option.value === selectedMainExercise
-  )?.label || '';
-
-  // 그래프 SVG 관련 설정
-  const graphHeight = 250;  
-  const graphWidth = 600;
-  const paddingLeft = 50;   // y축 레이블 공간
-  const paddingRight = 20;  // 오른쪽 여백
-  const paddingTop = 20;    // 상단 여백
-  const paddingBottom = 50; // x축 레이블 공간
-  
-  // 실제 그래프 영역 크기
-  const chartWidth = graphWidth - paddingLeft - paddingRight;
-  const chartHeight = graphHeight - paddingTop - paddingBottom;
-  
-  // x축, y축 데이터 포인트 계산
-  const getX = (index: number) => {
-    return paddingLeft + (index / (sortedWorkouts.length - 1 || 1)) * chartWidth;
-  };
-  
-  const getY = (weight: number) => {
-    return paddingTop + chartHeight - ((weight - minWeight) / range) * chartHeight;
-  };
-  
-  // 선 그래프 경로 생성
-  const createLinePath = () => {
-    if (sortedWorkouts.length === 0) return '';
-    
-    let path = `M${getX(0)},${getY(sortedWorkouts[0].weight)}`;
-    
-    for (let i = 1; i < sortedWorkouts.length; i++) {
-      path += ` L${getX(i)},${getY(sortedWorkouts[i].weight)}`;
-    }
-    
-    return path;
-  };
-
-  // 데이터 포인트 클릭 핸들러
-  const handlePointClick = (workout: WorkoutData) => {
-    setSelectedWorkout(workout);
-  };
-  
-  // 모달 닫기 핸들러
-  const closeModal = () => {
-    setSelectedWorkout(null);
-  };
-
-  return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-          {selectedExerciseLabel} 무게 추이
-        </h2>
+      try {
+        setLoading(true);
         
-        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
-          <div className="flex space-x-2 items-center">
-            <label className="text-sm text-gray-600 dark:text-gray-400">부위:</label>
-            <div className="relative inline-block">
-              <select
-                value={selectedPart}
-                onChange={(e) => handlePartChange(e.target.value as ExercisePart)}
-                className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
-              >
-                {exercisePartOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
-          </div>
+        // 기간에 따른 날짜 범위 계산
+        const endDate = new Date();
+        let startDate = new Date();
+        
+        switch (selectedPeriod) {
+          case '1month':
+            startDate.setMonth(startDate.getMonth() - 1);
+            break;
+          case '3months':
+            startDate.setMonth(startDate.getMonth() - 3);
+            break;
+          case '6months':
+            startDate.setMonth(startDate.getMonth() - 6);
+            break;
+          case '1year':
+            startDate.setFullYear(startDate.getFullYear() - 1);
+            break;
+          default:
+            startDate.setMonth(startDate.getMonth() - 1);
+        }
+        
+        // Firestore 쿼리 구성
+        const sessionsCollection = collection(db, 'sessions');
+        const q = query(
+          sessionsCollection,
+          where('userId', '==', currentUser.uid),
+          where('date', '>=', startDate),
+          where('date', '<=', endDate),
+          orderBy('date', 'asc')
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        // 쿼리 결과 파싱
+        const data = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          date: new Date(doc.data().date.toDate()),
+        }));
+        
+        setWorkoutData(data);
+        // 초기 필터 적용
+        applyFilters(data);
+        
+      } catch (error) {
+        console.error('운동 데이터 로드 오류:', error);
+        setError('운동 데이터를 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchWorkoutData();
+  }, [currentUser, selectedPeriod]);
+  
+  // 필터링 기능
+  const applyFilters = (data = workoutData) => {
+    try {
+      let filtered = [...data];
+      
+      // 부위 필터링
+      if (selectedPart !== 'all') {
+        filtered = filtered.filter(item => item.part === selectedPart);
+      }
+      
+      // 운동 종류 필터링
+      if (selectedExercise !== 'all') {
+        filtered = filtered.filter(item => 
+          item.mainExercise && item.mainExercise.name.includes(selectedExercise)
+        );
+      }
+      
+      // 세트 구성 필터링 (실제 세트 구성에 따라 필터링)
+      if (selectedSetConfig !== 'all') {
+        filtered = filtered.filter(item => {
+          if (!item.mainExercise || !item.mainExercise.sets || item.mainExercise.sets.length === 0) {
+            return false;
+          }
           
-          <div className="flex space-x-2 items-center">
-            <label className="text-sm text-gray-600 dark:text-gray-400">운동:</label>
-            <div className="relative inline-block">
-              <select
-                value={selectedMainExercise}
-                onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-                className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
-              >
-                {mainExerciseOptions[selectedPart].map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
-          </div>
+          // 세트 개수와 반복 횟수로 필터링
+          const sets = item.mainExercise.sets;
           
-          <div className="flex space-x-2 items-center">
-            <label className="text-sm text-gray-600 dark:text-gray-400">기간:</label>
-            <div className="relative inline-block">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-                className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
-              >
-                <option value="all">전체 기간</option>
-                <option value="1week">최근 1주</option>
-                <option value="1month">최근 1개월</option>
-                <option value="3months">최근 3개월</option>
-                <option value="6months">최근 6개월</option>
-                <option value="1year">최근 1년</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700 dark:text-gray-300">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
+          if (selectedSetConfig === '10x5') {
+            return sets.length === 5 && sets.every(set => set.reps === 10);
+          } else if (selectedSetConfig === '15x5') {
+            return sets.length === 5 && sets.every(set => set.reps === 15);
+          } else if (selectedSetConfig === '6x3') {
+            return sets.length === 3 && sets.every(set => set.reps === 6);
+          } else if (selectedSetConfig === 'custom') {
+            // 10x5, 15x5, 6x3 패턴이 아닌 경우 커스텀으로 간주
+            return !(
+              (sets.length === 5 && sets.every(set => set.reps === 10)) ||
+              (sets.length === 5 && sets.every(set => set.reps === 15)) ||
+              (sets.length === 3 && sets.every(set => set.reps === 6))
+            );
+          }
+          
+          return true;
+        });
+      }
+      
+      setFilteredData(filtered);
+      
+      // 차트 데이터 변환
+      prepareChartData(filtered);
+    } catch (error) {
+      console.error('필터 적용 오류:', error);
+    }
+  };
+  
+  // 필터 변경 시 데이터 재필터링
+  useEffect(() => {
+    applyFilters();
+  }, [selectedPart, selectedExercise, selectedSetConfig]);
+  
+  // 차트 데이터 준비
+  const prepareChartData = (data: any[]) => {
+    try {
+      if (!data || data.length === 0) {
+        setChartData({
+          labels: [],
+          datasets: []
+        });
+        return;
+      }
+      
+      // 날짜 형식 변환 함수
+      const formatDate = (date: Date) => {
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      };
+      
+      // 날짜별 성공한 세트 중 최대 무게 추출
+      const successWeightsByDate: Record<string, number> = {};
+      const allDates: string[] = [];
+      
+      data.forEach(workout => {
+        if (!workout.mainExercise || !workout.mainExercise.sets) return;
+        
+        const dateStr = formatDate(new Date(workout.date));
+        allDates.push(dateStr);
+        
+        // 성공한 세트 중 최대 무게 찾기
+        let maxWeight = 0;
+        workout.mainExercise.sets.forEach((set: any) => {
+          if (set.isSuccess && set.weight > maxWeight) {
+            maxWeight = set.weight;
+          }
+        });
+        
+        // 기존 값과 비교하여 더 큰 값 저장
+        if (maxWeight > 0) {
+          if (!successWeightsByDate[dateStr] || maxWeight > successWeightsByDate[dateStr]) {
+            successWeightsByDate[dateStr] = maxWeight;
+          }
+        }
+      });
+      
+      // 중복 제거 및 정렬된 날짜 배열
+      const uniqueDates = [...new Set(allDates)].sort((a, b) => {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      // 차트 데이터셋 구성
+      const weights = uniqueDates.map(date => successWeightsByDate[date] || null);
+      
+      setChartData({
+        labels: uniqueDates,
+        datasets: [
+          {
+            label: '성공 세트 최대 무게 (kg)',
+            data: weights,
+            borderColor: 'rgb(53, 162, 235)',
+            backgroundColor: 'rgba(53, 162, 235, 0.5)',
+            tension: 0.2,
+            pointRadius: 5,
+            pointBackgroundColor: weights.map(w => w ? 'rgba(0, 200, 0, 0.8)' : 'rgba(200, 0, 0, 0.8)'),
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: 'rgba(53, 162, 235, 0.9)',
+            pointHitRadius: 10,
+          }
+        ]
+      });
+    } catch (error) {
+      console.error('차트 데이터 변환 오류:', error);
+    }
+  };
+  
+  // 부위 변경 핸들러
+  const handlePartChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const part = e.target.value;
+    setSelectedPart(part);
+    // 부위 변경 시 운동 선택 초기화
+    setSelectedExercise('all');
+  };
+  
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner />
       </div>
-      
-      {currentWorkouts.length > 0 ? (
-        <div className="relative overflow-x-auto">
-          <svg width={graphWidth} height={graphHeight} className="mx-auto">
-            {/* Y축 */}
-            <line 
-              x1={paddingLeft} 
-              y1={paddingTop} 
-              x2={paddingLeft} 
-              y2={paddingTop + chartHeight} 
-              stroke="#CBD5E0" 
-              strokeWidth="1" 
-            />
-            
-            {/* X축 */}
-            <line 
-              x1={paddingLeft} 
-              y1={paddingTop + chartHeight} 
-              x2={paddingLeft + chartWidth} 
-              y2={paddingTop + chartHeight} 
-              stroke="#CBD5E0" 
-              strokeWidth="1" 
-            />
-            
-            {/* Y축 눈금 및 레이블 */}
-            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-              const yPos = paddingTop + chartHeight * (1 - ratio);
-              const weight = minWeight + range * ratio;
-              return (
-                <g key={`y-${ratio}`}>
-                  <line 
-                    x1={paddingLeft - 5} 
-                    y1={yPos} 
-                    x2={paddingLeft} 
-                    y2={yPos} 
-                    stroke="#718096" 
-                    strokeWidth="1" 
-                  />
-                  <text 
-                    x={paddingLeft - 10} 
-                    y={yPos} 
-                    textAnchor="end" 
-                    dominantBaseline="middle" 
-                    fontSize="12" 
-                    fill="#718096"
-                  >
-                    {Math.round(weight)}kg
-                  </text>
-                  <line 
-                    x1={paddingLeft} 
-                    y1={yPos} 
-                    x2={paddingLeft + chartWidth} 
-                    y2={yPos} 
-                    stroke="#CBD5E0" 
-                    strokeDasharray="3,3" 
-                    strokeWidth="1" 
-                  />
-                </g>
-              );
-            })}
-            
-            {/* X축 레이블 */}
-            {sortedWorkouts.map((workout, i) => (
-              <text 
-                key={`x-${i}`} 
-                x={getX(i)} 
-                y={paddingTop + chartHeight + 20} 
-                textAnchor="middle" 
-                fontSize="11" 
-                fill="#718096"
-              >
-                {new Date(workout.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-              </text>
-            ))}
-            
-            {/* 데이터 포인트를 연결하는 선 */}
-            <path 
-              d={createLinePath()} 
-              fill="none" 
-              stroke="#3B82F6" 
-              strokeWidth="3" 
-              strokeLinejoin="round" 
-            />
-            
-            {/* 데이터 포인트 */}
-            {sortedWorkouts.map((workout, i) => (
-              <g key={`point-${i}`} onClick={() => handlePointClick(workout)} style={{ cursor: 'pointer' }}>
-                {/* 성공/실패에 따른 데이터 포인트 색상 */}
-                <circle 
-                  cx={getX(i)} 
-                  cy={getY(workout.weight)} 
-                  r="6" 
-                  fill={workout.isSuccess ? "#10B981" : "#EF4444"} 
-                  stroke="white" 
-                  strokeWidth="2" 
-                />
-                
-                {/* 무게 레이블 */}
-                <text 
-                  x={getX(i)} 
-                  y={getY(workout.weight) - 12} 
-                  textAnchor="middle" 
-                  fontSize="12" 
-                  fontWeight="bold" 
-                  fill={workout.isSuccess ? "#10B981" : "#EF4444"}
-                >
-                  {workout.weight}kg
-                </text>
-              </g>
-            ))}
-          </svg>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <p>{error}</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-6">
+      <Card className="animate-slideUp">
+        <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
+          <div className="w-full md:w-auto">
+            <label htmlFor="part-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              부위
+            </label>
+            <select
+              id="part-select"
+              value={selectedPart}
+              onChange={handlePartChange}
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              {partOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
           
-          {/* 범례 */}
-          <div className="mt-6 flex justify-center gap-4">
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-green-500 rounded-full mr-2" />
-              <span className="text-sm">성공</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-red-500 rounded-full mr-2" />
-              <span className="text-sm">실패</span>
-            </div>
+          <div className="w-full md:w-auto">
+            <label htmlFor="exercise-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              운동
+            </label>
+            <select
+              id="exercise-select"
+              value={selectedExercise}
+              onChange={(e) => setSelectedExercise(e.target.value)}
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              {exerciseOptions[selectedPart === 'all' ? 'all' : selectedPart].map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="w-full md:w-auto">
+            <label htmlFor="set-config-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              세트 구성
+            </label>
+            <select
+              id="set-config-select"
+              value={selectedSetConfig}
+              onChange={(e) => setSelectedSetConfig(e.target.value)}
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              {setConfigOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="w-full md:w-auto">
+            <label htmlFor="period-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              기간
+            </label>
+            <select
+              id="period-select"
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              {periodOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
           </div>
         </div>
-      ) : (
-        <div className="h-64 flex items-center justify-center">
-          <p className="text-gray-500 dark:text-gray-400">
-            기록된 운동 데이터가 없습니다.
-          </p>
-        </div>
-      )}
+        
+        {filteredData.length > 0 ? (
+          <div className="h-80">
+            <Line options={chartOptions} data={chartData} />
+          </div>
+        ) : (
+          <div className="h-64 flex items-center justify-center">
+            <p className="text-gray-500 dark:text-gray-400">
+              기록된 운동 데이터가 없습니다.
+            </p>
+          </div>
+        )}
+      </Card>
       
-      {/* 세트 정보 모달 */}
-      {selectedWorkout && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={closeModal}>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {selectedExerciseLabel} - {new Date(selectedWorkout.date).toLocaleDateString('ko-KR')}
-              </h3>
-              <button 
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                onClick={closeModal}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
+      {/* 데이터 요약 표시 */}
+      {filteredData.length > 0 && (
+        <Card className="animate-slideUp">
+          <h3 className="text-lg font-semibold mb-4">운동 데이터 요약</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">총 운동 횟수</p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-300">{filteredData.length}회</p>
             </div>
-            <div className="mb-4">
-              <div className="flex justify-between items-center">
-                <p className="text-gray-700 dark:text-gray-300">무게: <span className="font-bold">{selectedWorkout.weight}kg</span></p>
-                <span className={`px-2 py-1 text-sm rounded-full ${selectedWorkout.isSuccess 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}
-                >
-                  {selectedWorkout.isSuccess ? '성공' : '실패'}
-                </span>
-              </div>
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">최대 무게</p>
+              <p className="text-xl font-bold text-green-600 dark:text-green-300">
+                {Math.max(...filteredData.flatMap(w => 
+                  w.mainExercise?.sets?.map((s: any) => s.isSuccess ? s.weight : 0) || [0]
+                ))}kg
+              </p>
             </div>
-            <div className="border-t dark:border-gray-700 pt-4">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">세트 정보</h4>
-              {selectedWorkout.sets && selectedWorkout.sets.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedWorkout.sets.map((set, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700">
-                      <div>
-                        <span className="font-medium">세트 {index + 1}:</span> {set.weight}kg x {set.reps}회
-                      </div>
-                      <span className={`text-sm px-2 py-1 rounded-full ${
-                        set.isSuccess 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200' 
-                          : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200'
-                      }`}>
-                        {set.isSuccess ? '성공' : '실패'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                  세트 정보가 없습니다.
-                </p>
-              )}
+            <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">평균 성공률</p>
+              <p className="text-xl font-bold text-purple-600 dark:text-purple-300">
+                {Math.round(filteredData.reduce((acc, curr) => 
+                  acc + (curr.successSets / (curr.mainExercise?.sets?.length || 1)) * 100, 0
+                ) / filteredData.length)}%
+              </p>
+            </div>
+            <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">마지막 운동일</p>
+              <p className="text-xl font-bold text-orange-600 dark:text-orange-300">
+                {new Date(Math.max(...filteredData.map(d => new Date(d.date).getTime())))
+                  .toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+              </p>
             </div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

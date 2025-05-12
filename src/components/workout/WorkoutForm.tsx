@@ -362,27 +362,54 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 훈련 완료 처리 함수 수정
   const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
-    // 세트 구성별 성공 기준 설정
-    let targetReps = 10; // 기본값
-    
-    if (selectedSetConfiguration === '10x5') {
-      targetReps = 10;
-    } else if (selectedSetConfiguration === '15x5') {
-      targetReps = 15;
-    } else if (selectedSetConfiguration === '6x3') {
-      targetReps = 6;
-    } else if (selectedSetConfiguration === 'custom') {
-      targetReps = customReps;
-    }
-    
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
-      // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
-      newSets[setIndex].isSuccess = newSets[setIndex].reps >= targetReps;
+      
+      // 이미 상태가 있으면 초기 상태로 되돌리기 (토글 기능)
+      if (newSets[setIndex].isSuccess !== null) {
+        newSets[setIndex].isSuccess = null;
+      } else {
+        // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
+        let targetReps = 10; // 기본값
+        
+        if (selectedSetConfiguration === '10x5') {
+          targetReps = 10;
+        } else if (selectedSetConfiguration === '15x5') {
+          targetReps = 15;
+        } else if (selectedSetConfiguration === '6x3') {
+          targetReps = 6;
+        } else if (selectedSetConfiguration === 'custom') {
+          targetReps = customReps;
+        }
+        
+        newSets[setIndex].isSuccess = newSets[setIndex].reps >= targetReps;
+      }
+      
       setMainExercise(prev => ({ ...prev, sets: newSets }));
     } else if (accessoryIndex !== undefined) {
       const newExercises = [...accessoryExercises];
-      newExercises[accessoryIndex].sets[setIndex].isSuccess = newExercises[accessoryIndex].sets[setIndex].reps >= targetReps;
+      
+      // 이미 상태가 있으면 초기 상태로 되돌리기 (토글 기능)
+      if (newExercises[accessoryIndex].sets[setIndex].isSuccess !== null) {
+        newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
+      } else {
+        // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
+        let targetReps = 10; // 기본값
+        
+        if (selectedSetConfiguration === '10x5') {
+          targetReps = 10;
+        } else if (selectedSetConfiguration === '15x5') {
+          targetReps = 15;
+        } else if (selectedSetConfiguration === '6x3') {
+          targetReps = 6;
+        } else if (selectedSetConfiguration === 'custom') {
+          targetReps = customReps;
+        }
+        
+        newExercises[accessoryIndex].sets[setIndex].isSuccess = 
+          newExercises[accessoryIndex].sets[setIndex].reps >= targetReps;
+      }
+      
       setAccessoryExercises(newExercises);
     }
   };
@@ -619,7 +646,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             </Card>
           )}
 
-          {/* 세트 구성 선택 섹션 추가 */}
+          {/* 세트 구성 선택 섹션 수정 */}
           <Card className="animate-slideUp">
             <CardTitle>세트 구성 설정</CardTitle>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
@@ -627,8 +654,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 type="button"
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === '10x5'
-                    ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('10x5')}
@@ -639,8 +666,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 type="button"
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === ('15x5' as SetConfiguration)
-                    ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
@@ -651,8 +678,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 type="button"
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === ('6x3' as SetConfiguration)
-                    ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
@@ -663,8 +690,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 type="button"
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === 'custom'
-                    ? 'bg-[#4285F4] text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('custom')}
@@ -826,7 +853,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             <CheckCircle size={16} /> // 초기 아이콘
                           }
                         >
-                          훈련 완료
+                          {set.isSuccess === null ? '훈련 완료' : '다시 하기'}
                         </Button>
                         {/* 성공/실패 텍스트 표시 */} 
                         {set.isSuccess === true && <span className="text-xs text-green-600 dark:text-green-400 ml-2">성공</span>}
@@ -853,7 +880,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           }
                         </Button>
 
-                        {mainExercise.sets.length > 1 && (
+                        {/* 커스텀 세트의 경우만 삭제 버튼 표시 */}
+                        {(selectedSetConfiguration === 'custom' && mainExercise.sets.length > 1) && (
                           <Button
                             type="button"
                             variant="ghost"
@@ -968,7 +996,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               <CheckCircle size={16} /> // 초기 아이콘
                             }
                           >
-                            훈련 완료
+                            {set.isSuccess === null ? '훈련 완료' : '다시 하기'}
                           </Button>
                           {/* 성공/실패 텍스트 표시 */} 
                           {set.isSuccess === true && <span className="text-xs text-green-600 dark:text-green-400 ml-2">성공</span>}
@@ -995,7 +1023,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             }
                           </Button>
 
-                          {exercise.sets.length > 1 && (
+                          {/* 커스텀 세트의 경우만 삭제 버튼 표시 */}
+                          {(selectedSetConfiguration === 'custom' && exercise.sets.length > 1) && (
                             <Button
                               type="button"
                               variant="ghost"
