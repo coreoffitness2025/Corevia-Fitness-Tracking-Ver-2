@@ -2,9 +2,23 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/src/assets/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Corevia Fitness</title>
+    <script>
+      // 배포 환경 감지 및 base 경로 설정
+      (function() {
+        const isVercel = window.location.hostname.includes('vercel.app');
+        const base = isVercel ? '/' : '/Corevia-Fitness-Tracking-Ver-2/';
+        
+        // <base> 태그 생성 및 추가
+        const baseElement = document.createElement('base');
+        baseElement.href = base;
+        document.head.prepend(baseElement);
+        
+        console.log('Base path set to:', base);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
