@@ -8,6 +8,8 @@ const partNames: Record<ExercisePart, string> = {
   back: '등',
   shoulder: '어깨',
   leg: '하체',
+  biceps: '이두',
+  triceps: '삼두'
 };
 
 type FAQType = 'method' | 'sets';

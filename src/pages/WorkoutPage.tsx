@@ -116,6 +116,7 @@ const WorkoutPage = () => {
       part: selectedPart,
       mainExercise: {
         part: selectedPart,
+        name: `${selectedPart} 운동`,
         weight: weight,
         sets: sets.map(set => ({
           reps: set.reps,

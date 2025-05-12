@@ -205,6 +205,11 @@ export interface Food {
   isFavorite?: boolean;
   userId?: string;
   createdAt?: Date | string;
+  date?: Date | string;
+  notes?: string;
+  imageUrl?: string;
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  quantity?: number;
 }
 
 /* ---------- 운동 가이드 타입 ---------- */
@@ -246,4 +251,20 @@ export interface WorkoutGuideResult {
     muscleGain?: string;
     fatLoss?: string;
   };
+}
+
+export interface AuthContextType {
+  currentUser: User | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<User>;
+  signUp: (email: string, password: string, displayName: string) => Promise<User>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updateEmail: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
+  error: string | null;
+  isAuthenticated: boolean;
 }
