@@ -1,14 +1,63 @@
 import { WorkoutGuideInfo, WorkoutGuideResult } from '../types';
 
-/**
- * 사용자 정보와 선호도에 따라 운동 가이드를 생성합니다.
- */
-export const getWorkoutGuide = async (
-  guideInfo: WorkoutGuideInfo
-): Promise<WorkoutGuideResult> => {
-  // 이 함수는 실제로는 Firebase 함수를 호출하거나 API에 요청을 보낼 수 있습니다.
-  // 여기서는 간단한 예시 구현만 제공합니다.
-  
+// 1. API 통신 레이어 - 네트워크 요청을 담당
+export const workoutAPI = {
+  /**
+   * 서버에서 운동 가이드 데이터를 가져옵니다.
+   * React Native로 마이그레이션 시에도 동일한 인터페이스 유지 가능
+   */
+  fetchWorkoutGuide: async (guideInfo: WorkoutGuideInfo): Promise<WorkoutGuideResult> => {
+    // API 호출 코드 - 실제 환경에서는 fetch 또는 axios 등으로 구현
+    // 여기서는 목업 데이터를 사용
+    return mockGenerateWorkoutGuide(guideInfo);
+  },
+
+  // 운동 히스토리 저장
+  saveWorkoutHistory: async (userId: string, data: any): Promise<boolean> => {
+    // API 호출 코드
+    return true;
+  },
+};
+
+// 2. 비즈니스 로직 레이어 - 데이터 처리 및 변환
+export const workoutService = {
+  /**
+   * 사용자 정보와 선호도에 따라 운동 가이드를 생성합니다.
+   */
+  getWorkoutGuide: async (guideInfo: WorkoutGuideInfo): Promise<WorkoutGuideResult> => {
+    try {
+      // API 레이어를 통해 데이터 요청
+      const result = await workoutAPI.fetchWorkoutGuide(guideInfo);
+      return result;
+    } catch (error) {
+      console.error('운동 가이드 가져오기 실패:', error);
+      throw error;
+    }
+  },
+
+  // 사용자 경험 레벨에 따른 권장 세트/반복 횟수 계산
+  calculateRecommendedVolume: (experience: string, exercise: string): { sets: number; reps: string } => {
+    switch (experience) {
+      case 'beginner':
+        return { sets: 3, reps: '8-12' };
+      case 'intermediate':
+        return { sets: 4, reps: '6-10' };
+      case 'advanced':
+        return { sets: 5, reps: '4-8' };
+      default:
+        return { sets: 3, reps: '10-12' };
+    }
+  },
+
+  // 1RM 기반 무게 계산 - 플랫폼 독립적 순수 함수
+  calculateWeight: (oneRM: number, percentage: number): number => {
+    return Math.round(oneRM * percentage);
+  },
+};
+
+// 3. 헬퍼 함수 및 유틸리티 - 순수 함수로 구현
+// 목업 데이터 생성 함수 - 실제 API 연동 전까지 사용
+const mockGenerateWorkoutGuide = (guideInfo: WorkoutGuideInfo): WorkoutGuideResult => {
   // 사용자 레벨 결정 (경험과 1RM 기준으로)
   const userLevel = guideInfo.experience;
   
@@ -45,10 +94,10 @@ export const getWorkoutGuide = async (
   
   // 권장 무게 계산
   const recommendedWeights = {
-    squat: guideInfo.oneRepMaxes?.squat ? Math.round(guideInfo.oneRepMaxes.squat * percentageOfOneRM) : 0,
-    deadlift: guideInfo.oneRepMaxes?.deadlift ? Math.round(guideInfo.oneRepMaxes.deadlift * percentageOfOneRM) : 0,
-    bench: guideInfo.oneRepMaxes?.bench ? Math.round(guideInfo.oneRepMaxes.bench * percentageOfOneRM) : 0,
-    overheadPress: guideInfo.oneRepMaxes?.overheadPress ? Math.round(guideInfo.oneRepMaxes.overheadPress * percentageOfOneRM) : 0,
+    squat: guideInfo.oneRepMaxes?.squat ? workoutService.calculateWeight(guideInfo.oneRepMaxes.squat, percentageOfOneRM) : 0,
+    deadlift: guideInfo.oneRepMaxes?.deadlift ? workoutService.calculateWeight(guideInfo.oneRepMaxes.deadlift, percentageOfOneRM) : 0,
+    bench: guideInfo.oneRepMaxes?.bench ? workoutService.calculateWeight(guideInfo.oneRepMaxes.bench, percentageOfOneRM) : 0,
+    overheadPress: guideInfo.oneRepMaxes?.overheadPress ? workoutService.calculateWeight(guideInfo.oneRepMaxes.overheadPress, percentageOfOneRM) : 0,
   };
   
   // 회복 시간 설정

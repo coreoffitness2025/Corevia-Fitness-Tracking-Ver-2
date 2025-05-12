@@ -19,62 +19,81 @@ import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import WorkoutGuidePage from './pages/workout/WorkoutGuidePage';
 
+// 플랫폼 독립적인 라우트 설정 (Web/Native 모두 사용 가능한 구조)
+export interface AppRoute {
+  path: string;
+  component: React.ComponentType<any>;
+  protected: boolean;
+  children?: AppRoute[];
+}
+
+// 앱 라우트 설정을 비즈니스 로직으로부터 분리
+export const appRoutes: AppRoute[] = [
+  // 공개 라우트
+  { path: '/login', component: LoginPage, protected: false },
+  { path: '/register', component: RegisterPage, protected: false },
+  
+  // 보호된 라우트
+  { path: '/', component: HomePage, protected: true },
+  { path: '/profile', component: ProfilePage, protected: true },
+  { path: '/profile/*', component: ProfilePage, protected: true },
+  { path: '/workout/*', component: WorkoutPage, protected: true },
+  { path: '/food/*', component: FoodPage, protected: true },
+  { path: '/qna', component: QnaPage, protected: true },
+  { path: '/settings', component: SettingsPage, protected: true },
+  { path: '/workout/guide', component: WorkoutGuidePage, protected: true },
+  
+  // 404 페이지
+  { path: '*', component: NotFoundPage, protected: false }
+];
+
+// 웹 환경에서의 라우트 렌더링 (React Router DOM 사용)
+const renderRoutes = (routes: AppRoute[]) => {
+  return routes.map((route) => {
+    const Component = route.component;
+
+    if (route.protected) {
+      return (
+        <Route
+          key={route.path}
+          path={route.path}
+          element={
+            <ProtectedRoute>
+              <Component />
+            </ProtectedRoute>
+          }
+        />
+      );
+    }
+
+    return (
+      <Route
+        key={route.path}
+        path={route.path}
+        element={<Component />}
+      />
+    );
+  });
+};
+
+// 앱 환경 설정 및 프로바이더
+const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <AuthProvider>
+      <Toaster position="top-center" />
+      {children}
+    </AuthProvider>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <Router>
-      <AuthProvider>
-        <Toaster position="top-center" />
+      <AppProviders>
         <Routes>
-          {/* 공개 라우트 */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          
-          {/* 보호된 라우트 */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile/*" element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/workout/*" element={
-            <ProtectedRoute>
-              <WorkoutPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/food/*" element={
-            <ProtectedRoute>
-              <FoodPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/qna" element={
-            <ProtectedRoute>
-              <QnaPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/workout/guide" element={
-            <ProtectedRoute>
-              <WorkoutGuidePage />
-            </ProtectedRoute>
-          } />
-          
-          {/* 404 페이지 */}
-          <Route path="*" element={<NotFoundPage />} />
+          {renderRoutes(appRoutes)}
         </Routes>
-      </AuthProvider>
+      </AppProviders>
     </Router>
   );
 };
