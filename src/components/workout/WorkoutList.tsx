@@ -20,7 +20,7 @@ interface WorkoutSet {
 
 interface Workout {
   id: string;
-  date: string;
+  date: string | Date;
   part: ExercisePart;
   mainExercise: {
     name: string;
@@ -76,7 +76,7 @@ const getPartLabel = (part: ExercisePart): string => {
 const WorkoutList: React.FC = () => {
   const navigate = useNavigate();
   const { userProfile, currentUser } = useAuth();
-  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
@@ -89,6 +89,7 @@ const WorkoutList: React.FC = () => {
   const [selectedWorkouts, setSelectedWorkouts] = useState<Workout[]>([]);
   const [stampImage, setStampImage] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState<boolean>(false);
   const workoutStampRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -102,7 +103,7 @@ const WorkoutList: React.FC = () => {
       await deleteDoc(sessionRef);
       
       // 상태 업데이트
-      setSessions((prev: WorkoutSession[]) => prev.filter(session => session.id !== workoutId));
+      setSessions((prev: Session[]) => prev.filter(session => session.id !== workoutId));
       setSelectedWorkouts((prev: Workout[]) => prev.filter(workout => workout.id !== workoutId));
       setWorkoutsByDate((prev: Record<string, Workout[]>) => {
         const updated = { ...prev };
@@ -194,35 +195,44 @@ const WorkoutList: React.FC = () => {
     setCurrentMonth(month);
   };
   
-  // 년도 옵션 생성 (현재 년도 기준 ±5년)
-  const yearOptions = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
-  
-  // 월 옵션 생성
-  const monthOptions = [
-    { value: 0, label: '1월' },
-    { value: 1, label: '2월' },
-    { value: 2, label: '3월' },
-    { value: 3, label: '4월' },
-    { value: 4, label: '5월' },
-    { value: 5, label: '6월' },
-    { value: 6, label: '7월' },
-    { value: 7, label: '8월' },
-    { value: 8, label: '9월' },
-    { value: 9, label: '10월' },
-    { value: 10, label: '11월' },
-    { value: 11, label: '12월' }
-  ];
+  // 년도 및 월 옵션 생성
+  useEffect(() => {
+    // 년도 옵션 생성 (현재 년도 기준 ±5년)
+    const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
+    setYearOptions(years);
+    
+    // 월 옵션 생성
+    const months = [
+      { value: 0, label: '1월' },
+      { value: 1, label: '2월' },
+      { value: 2, label: '3월' },
+      { value: 3, label: '4월' },
+      { value: 4, label: '5월' },
+      { value: 5, label: '6월' },
+      { value: 6, label: '7월' },
+      { value: 7, label: '8월' },
+      { value: 8, label: '9월' },
+      { value: 9, label: '10월' },
+      { value: 10, label: '11월' },
+      { value: 11, label: '12월' }
+    ];
+    setMonthOptions(months);
+  }, []);
   
   // 날짜별 운동 기록 그룹화
-  const workoutsByDate = sessions.reduce<Record<string, Workout[]>>((acc, session) => {
-    // date가 Date 객체인 경우 문자열로 변환
-    const dateStr = formatDate(session.date);
-    if (!acc[dateStr]) {
-      acc[dateStr] = [];
-    }
-    acc[dateStr].push(session);
-    return acc;
-  }, {});
+  useEffect(() => {
+    const groupedWorkouts = sessions.reduce<Record<string, Workout[]>>((acc, session) => {
+      // date가 Date 객체인 경우 문자열로 변환
+      const dateStr = formatDate(session.date);
+      if (!acc[dateStr]) {
+        acc[dateStr] = [];
+      }
+      acc[dateStr].push(session as unknown as Workout);
+      return acc;
+    }, {});
+    
+    setWorkoutsByDate(groupedWorkouts);
+  }, [sessions]);
   
   // 운동 부위에 따른 색상 지정 - 성공/실패 색상 더 명확하게 구분
   const getPartColor = (part: ExercisePart, isSuccess: boolean = true) => {
@@ -237,8 +247,10 @@ const WorkoutList: React.FC = () => {
     return baseColors[part];
   };
 
-  // 선택된 날짜의 운동 기록
-  const selectedWorkouts = workoutsByDate[selectedDate] || [];
+  // 선택된 날짜의 운동 기록 가져오기
+  useEffect(() => {
+    setSelectedWorkouts(workoutsByDate[selectedDate] || []);
+  }, [workoutsByDate, selectedDate]);
 
   // 카메라로 촬영 (모바일 웹앱에서 작동)
   const handleCameraCapture = () => {
@@ -645,7 +657,7 @@ const WorkoutList: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-600 dark:text-gray-400 text-sm">
-                    {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
+                    {new Date(workout.date).toLocaleTimeString('ko-KR', { 
                       hour: '2-digit', 
                       minute: '2-digit' 
                     })}
