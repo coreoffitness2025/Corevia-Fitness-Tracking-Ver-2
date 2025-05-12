@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -31,32 +31,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 };
 
 function App() {
-  // 배포 환경에 따라 Router의 basename 설정
-  const isVercel = import.meta.env.VITE_IS_VERCEL === '1' || 
-                   import.meta.env.VERCEL === '1' || 
-                   process.env.VERCEL === '1';
-  
-  const basename = isVercel ? '/' : '/Corevia-Fitness-Tracking-Ver-2';
-  
-  console.log('Environment:', import.meta.env.MODE);
-  console.log('Base path:', basename);
-  console.log('Is Vercel:', isVercel);
-  
-  // 페이지 로드 시 스타일 강제 새로고침
-  useEffect(() => {
-    // CSS 캐시 문제 해결을 위한 강제 새로고침
-    const links = document.querySelectorAll('link[rel="stylesheet"]');
-    links.forEach(link => {
-      const url = link.getAttribute('href');
-      if (url) {
-        const newUrl = url.includes('?') ? `${url}&refresh=${Date.now()}` : `${url}?refresh=${Date.now()}`;
-        link.setAttribute('href', newUrl);
-      }
-    });
-
-    // 콘솔에 기본 정보 출력
-    console.log('App rendered successfully');
-  }, []);
+  // 배포 환경에 따른 basename 설정
+  // import.meta.env.BASE_URL 값은 vite.config.ts에서 설정됨
+  const basename = import.meta.env.BASE_URL || '/';
   
   return (
     <Router basename={basename}>
