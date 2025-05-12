@@ -187,7 +187,7 @@ const WorkoutList: React.FC = () => {
   // 날짜별 운동 기록 그룹화
   const workoutsByDate = sessions.reduce<Record<string, Session[]>>((acc, session) => {
     // date가 Date 객체인 경우 문자열로 변환
-    const dateStr = formatDate(session.date);
+    const dateStr = formatDate(session.date instanceof Date ? session.date : new Date(session.date as string));
     if (!acc[dateStr]) {
       acc[dateStr] = [];
     }
@@ -641,7 +641,7 @@ const WorkoutList: React.FC = () => {
                         <div key={exIndex} className="ml-4 mt-1 mb-2">
                           <h5 className="text-sm font-medium">{exercise.name}</h5>
                           <div className="ml-2">
-                            {exercise.sets.map((set, setIndex) => (
+                            {exercise.sets && exercise.sets.map((set, setIndex) => (
                               <div key={setIndex} className="flex items-center text-sm">
                                 <span className="w-6 mr-1">#{setIndex + 1}</span>
                                 <span className="mr-2">{set.weight}kg</span>

@@ -76,6 +76,18 @@ const warmupExercises = {
 // type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5' | '20x5'; // 15x5 제거
 type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '20x5'; // SetConfiguration과 일치시키거나, 이 타입 자체를 SetConfiguration으로 대체 가능
 
+// 세트 구성에 따른 최대 횟수 계산 함수 추가
+const getMaxRepsForConfig = (configType: SetConfiguration): number => {
+  switch(configType) {
+    case '10x5': return 10;
+    case '15x5': return 15;
+    case '6x3': return 6;
+    case '20x5': return 20;
+    case 'custom': return 0; // 커스텀은 제한 없음
+    default: return 10;
+  }
+};
+
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { userProfile } = useAuth();
   const [part, setPart] = useState<ExercisePart>('chest');
@@ -96,6 +108,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 타이머 관련 상태
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // 훈련 완료 상태 추가
+  const [trainingComplete, setTrainingComplete] = useState<Record<string, boolean>>({});
 
   // 웜업 팁 표시 상태
   const [showWarmupTips, setShowWarmupTips] = useState(true);
@@ -519,8 +534,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       // 메인 운동 데이터 정리: 무게와 반복 수가 0인 세트 제외 (isFormValid에서 이미 체크하지만, 안전장치)
       const cleanMainExercise = {
         part,
-        name: mainExercise.name, 
-        // weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0, // 세트별 무게를 사용하므로 이 필드는 불필요할 수 있음
+        name: mainExercise.name,
+        weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0, // 필수 필드 추가
         sets: mainExercise.sets.map(set => ({
           reps: set.reps || 0,
           weight: set.weight || 0,

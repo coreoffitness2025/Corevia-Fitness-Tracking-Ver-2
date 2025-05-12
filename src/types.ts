@@ -7,7 +7,26 @@ export interface User {
 }
 
 /* ---------- 운동 타입 ---------- */
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg';
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
+
+// 메인 운동 타입
+export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress';
+export type BackMainExercise = 'deadlift' | 'barbellRow' | 'tBarRow' | 'pullUp';
+export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull';
+export type LegMainExercise = 'squat' | 'legPress' | 'lunge';
+export type BicepsMainExercise = 'dumbbellCurl' | 'barbellCurl' | 'hammerCurl';
+export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingTricepsExtension';
+
+export type MainExerciseType = 
+  | ChestMainExercise 
+  | BackMainExercise 
+  | ShoulderMainExercise 
+  | LegMainExercise
+  | BicepsMainExercise
+  | TricepsMainExercise;
+
+// 세트 구성 타입
+export type SetConfiguration = '10x5' | '6x3' | '15x5' | '20x5' | 'custom';
 
 export interface ExerciseSet {
   reps: number;
@@ -17,6 +36,7 @@ export interface ExerciseSet {
 
 export interface MainExercise {
   part: ExercisePart;
+  name: string;
   weight: number;
   sets: ExerciseSet[];
 }
@@ -100,8 +120,8 @@ export interface UserProfile {
   weight: number;
   age: number;
   gender: 'male' | 'female';
-  activityLevel: 'low' | 'moderate' | 'high';
-  fitnessGoal: 'loss' | 'maintain' | 'gain';
+  activityLevel: 'low' | 'moderate' | 'high' | 'sedentary' | 'light' | 'veryActive';
+  fitnessGoal: 'loss' | 'maintain' | 'gain' | 'lose';
   experience: {
     years: number;
     level: 'beginner' | 'intermediate' | 'advanced';
@@ -111,6 +131,19 @@ export interface UserProfile {
     };
   };
   settings?: UserSettings;
+  targetCalories?: number;
+  preferredExercises?: Record<string, string>;
+  setConfiguration?: {
+    preferredSetup: SetConfiguration;
+    customSets?: number;
+    customReps?: number;
+  };
+  oneRepMax?: {
+    squat: number;
+    bench: number;
+    deadlift: number;
+    overheadPress: number;
+  };
 }
 
 export interface UserSettings {
@@ -156,4 +189,61 @@ export interface WorkoutSession {
 
 export interface LayoutProps {
   children: React.ReactNode;
+}
+
+/* ---------- 식단 및 영양 타입 ---------- */
+export interface Food {
+  id?: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  servingSize: number;
+  servingUnit: string;
+  category?: string;
+  isFavorite?: boolean;
+  userId?: string;
+  createdAt?: Date | string;
+}
+
+/* ---------- 운동 가이드 타입 ---------- */
+export interface WorkoutGuideInfo {
+  height: number;
+  weight: number;
+  age: number;
+  gender: 'male' | 'female';
+  experience: 'beginner' | 'intermediate' | 'advanced';
+  goal: 'strength' | 'hypertrophy' | 'endurance' | 'weight-loss';
+  daysPerWeek: number;
+  timePerSession: number;
+  maxLifts?: {
+    squat: number;
+    bench: number;
+    deadlift: number;
+    overheadPress: number;
+  };
+}
+
+export interface WorkoutGuideResult {
+  programName: string;
+  description: string;
+  schedule: {
+    day: string;
+    focus: string;
+    exercises: {
+      name: string;
+      sets: number;
+      reps: string;
+      rest: string;
+      percentOfMax?: number;
+    }[];
+  }[];
+  tips: string[];
+  estimatedProgress: {
+    weeks: number;
+    strengthGain: string;
+    muscleGain?: string;
+    fatLoss?: string;
+  };
 }
