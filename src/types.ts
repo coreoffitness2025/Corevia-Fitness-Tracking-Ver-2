@@ -201,3 +201,43 @@ export interface Food {
   imageUrl?: string;
   notes?: string;
 }
+
+export interface WorkoutGuideInfo {
+  experience: 'beginner' | 'intermediate' | 'advanced';
+  preferredSetConfig: string;
+  oneRepMaxes?: {
+    squat: number;
+    deadlift: number;
+    bench: number;
+    overheadPress: number;
+  };
+}
+
+export interface WorkoutGuideResult {
+  programName: string;
+  description: string;
+  schedule: Array<{
+    day: string;
+    focus: string;
+    exercises: Array<{
+      name: string;
+      sets: number;
+      reps: string;
+      rest: string;
+    }>;
+  }>;
+  tips: string[];
+  estimatedProgress: {
+    weeks: number;
+    strengthGain: string;
+  };
+  userLevel: string;
+  recommendedWeights: Record<string, number>;
+  recoveryTime: string;
+  percentageOfOneRM: number;
+  setConfig: {
+    type: string;
+    description: string;
+    advantages: string[];
+  };
+}

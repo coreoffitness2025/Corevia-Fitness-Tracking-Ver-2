@@ -2,6 +2,8 @@ import { collection, query, where, orderBy, limit, getDocs } from 'firebase/fire
 import { db } from '../firebase/firebaseConfig';
 import { Session } from '../types';
 
+export { db };
+
 export const getLastSession = async (userId: string, part: string): Promise<Session | null> => {
   try {
     const q = query(
