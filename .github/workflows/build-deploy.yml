@@ -26,13 +26,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Build
+      - name: Build for GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only build for GH Pages on push to main
         run: npm run build
         env:
           NODE_ENV: production
+          VITE_BASE_URL: /Corevia-Fitness-Tracking-Ver-2/
+
+      - name: Build for Other (e.g. Vercel preview)
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        run: npm run build
+        env:
+          NODE_ENV: production
+          # VITE_BASE_URL will default to '/' in vite.config.js
           
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only deploy to GH Pages on push to main
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist
