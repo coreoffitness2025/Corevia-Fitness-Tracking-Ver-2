@@ -13,13 +13,18 @@ ls -la
 echo "Node.js version: $(node -v)"
 echo "npm version: $(npm -v)"
 
+# 필요한 빌드 도구 설치
+echo "Installing build tools..."
+npm install -g vite@4.2.1
+npm install -g terser@5.16.6
+
 # 의존성 설치
 echo "Installing dependencies..."
-npm ci
+npm ci --legacy-peer-deps
 
 # 빌드 실행
 echo "Building project..."
-npx vite build
+vite build
 
 # 빌드 결과 확인
 echo "Build output:"

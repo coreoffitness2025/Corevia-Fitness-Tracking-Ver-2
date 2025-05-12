@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import * as path from 'path';
 
-// Config updated to fix build issues
+// Config updated to support older Node.js versions
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -25,14 +25,14 @@ export default defineConfig({
         }
       }
     },
-    // Skip typecheck during build for CI environments
-    minify: true,
+    // Use more compatible build settings
+    minify: 'terser',
     target: 'es2015'
   },
   base: '/Corevia-Fitness-Tracking-Ver-2/',
   assetsInclude: ['**/*.csv'],
-  // Adds an environment flag to handle different environments
+  // Use a simpler environment setup
   define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+    'process.env.NODE_ENV': '"production"'
   }
 });
