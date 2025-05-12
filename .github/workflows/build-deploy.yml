@@ -28,7 +28,7 @@ jobs:
         
       - name: Build for GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only build for GH Pages on push to main
-        run: npm run build
+        run: npm run build:github
         env:
           NODE_ENV: production
           VITE_BASE_URL: /Corevia-Fitness-Tracking-Ver-2/
@@ -46,4 +46,5 @@ jobs:
         with:
           folder: dist
           branch: gh-pages
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          token: ${{ secrets.GITHUB_TOKEN }}
+          force: true # 강제 푸시 옵션 추가 

@@ -1,8 +1,6 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages - Legacy (Disabled)
 on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+  workflow_dispatch: # 수동 실행만 가능하도록 변경
 permissions:
   contents: write
   pages: write
@@ -24,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build
-        run: npm run build
+        run: npm run build:github
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
@@ -39,3 +37,4 @@ jobs:
           folder: dist
           branch: gh-pages
           clean: true
+          force: true # 강제 푸시 옵션 추가
