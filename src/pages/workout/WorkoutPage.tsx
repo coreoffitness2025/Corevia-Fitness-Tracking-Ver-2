@@ -9,7 +9,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 type WorkoutTab = 'input' | 'records' | 'graph';
 
 const WorkoutPage: React.FC = () => {
-  const { userProfile, loading } = useAuth();
+  const { userProfile, loading, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<WorkoutTab>('input');
 
   const today = new Date().toLocaleDateString('ko-KR', {
@@ -31,7 +31,7 @@ const WorkoutPage: React.FC = () => {
   }
 
   // 인증되지 않았으면 로그인 필요 메시지 표시
-  if (!userProfile) {
+  if (!isAuthenticated || !userProfile) {
     return (
       <Layout>
         <div className="text-center py-10">

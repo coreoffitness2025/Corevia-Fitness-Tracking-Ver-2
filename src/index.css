@@ -2,8 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Google 색상 팔레트 */
 :root {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
+  --google-blue: #4285F4;
+  --google-blue-light: #7baaf7;
+  --google-blue-dark: #1a73e8;
+  --google-red: #ea4335;
+  --google-yellow: #fbbc04;
+  --google-green: #34a853;
+}
+
+/* Pretendard 폰트 가중치 정의 */
+@layer base {
+  /* 폰트 일관성 */
+  html {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 600;
+  }
+  
+  button, .btn {
+    font-weight: 500;
+  }
+  
+  /* 링크 스타일 일관성 */
+  a {
+    color: var(--google-blue);
+    transition: color 0.2s;
+  }
+  
+  a:hover {
+    color: var(--google-blue-dark);
+  }
+  
+  /* 입력 필드 포커스 스타일 통일 */
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--google-blue-light);
+    outline-offset: 1px;
+  }
+}
+
+/* react-hot-toast 스타일 */
+.toast {
+  border-radius: 8px;
+  padding: 16px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.toast-success {
+  background-color: var(--google-green);
+}
+
+.toast-error {
+  background-color: var(--google-red);
+}
+
+.toast-loading {
+  background-color: #6b7280;
+}
+
+.toast-custom {
+  background-color: var(--google-blue);
+}
+
+:root {
   line-height: 1.5;
   font-weight: 400;
   
@@ -22,7 +90,7 @@
   height: 40px;
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
-  border-left-color: #09f;
+  border-left-color: var(--google-blue);
   animation: spin 1s linear infinite;
 }
 
@@ -43,7 +111,7 @@
   
   .spinner {
     border-color: rgba(255, 255, 255, 0.1);
-    border-left-color: #09f;
+    border-left-color: var(--google-blue);
   }
 }
 
@@ -52,4 +120,27 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* 일관된 버튼 스타일 */
+@layer components {
+  .btn-primary {
+    @apply bg-[#4285F4] hover:bg-[#1a73e8] text-white rounded-md px-4 py-2 transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md px-4 py-2 transition-colors duration-200;
+  }
+  
+  /* 카드 스타일 통일 */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow p-4;
+  }
+  
+  /* 입력 필드 스타일 통일 */
+  .input-standard {
+    @apply px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+           dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 
+           focus:ring-[#4285F4] w-full;
+  }
 }

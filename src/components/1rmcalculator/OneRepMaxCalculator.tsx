@@ -41,7 +41,7 @@ const OneRepMaxCalculator = () => {
             type="number"
             value={weight}
             onChange={(e) => setWeight(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4285F4]"
             min="0"
             step="0.1"
           />
@@ -55,14 +55,14 @@ const OneRepMaxCalculator = () => {
             type="number"
             value={reps}
             onChange={(e) => setReps(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4285F4]"
             min="1"
           />
         </div>
 
         <button
           onClick={calculateOneRepMax}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="w-full bg-[#4285F4] text-white py-2 px-4 rounded-md hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-[#4285F4] focus:ring-offset-2"
         >
           계산하기
         </button>
@@ -77,19 +77,19 @@ const OneRepMaxCalculator = () => {
             <div className="space-y-2">
               <h3 className="font-medium">훈련 강도표</h3>
               <div className="grid grid-cols-1 gap-2">
-                <div className="bg-blue-50 dark:bg-blue-900 p-3 rounded">
+                <div className="bg-[#E8F0FE] dark:bg-blue-900 p-3 rounded">
                   <p className="font-medium">근력 증가</p>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {getTrainingIntensity(oneRepMax).strength.min.toFixed(1)}kg - {getTrainingIntensity(oneRepMax).strength.max.toFixed(1)}kg
                   </p>
                 </div>
-                <div className="bg-green-50 dark:bg-green-900 p-3 rounded">
+                <div className="bg-[#E8F0FE] dark:bg-green-900 p-3 rounded">
                   <p className="font-medium">근비대</p>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {getTrainingIntensity(oneRepMax).hypertrophy.min.toFixed(1)}kg - {getTrainingIntensity(oneRepMax).hypertrophy.max.toFixed(1)}kg
                   </p>
                 </div>
-                <div className="bg-yellow-50 dark:bg-yellow-900 p-3 rounded">
+                <div className="bg-[#E8F0FE] dark:bg-yellow-900 p-3 rounded">
                   <p className="font-medium">근지구력</p>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {getTrainingIntensity(oneRepMax).endurance.min.toFixed(1)}kg - {getTrainingIntensity(oneRepMax).endurance.max.toFixed(1)}kg

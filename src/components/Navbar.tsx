@@ -1,8 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
-  const { currentUser } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -49,11 +47,6 @@ export default function Navbar() {
             >
               프로필
             </Link>
-            {currentUser && (
-              <span className="text-gray-700 dark:text-gray-300">
-                {currentUser.email}
-              </span>
-            )}
           </div>
         </div>
       </div>

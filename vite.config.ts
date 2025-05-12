@@ -2,17 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// 환경에 따른 base 경로 설정
-const getBaseUrl = () => {
-  // Vercel 환경인 경우 확인
-  if (process.env.VERCEL || process.env.VERCEL_ENV) {
-    return '/';
-  }
-  // GitHub Pages인 경우
-  return '/Corevia-Fitness-Tracking-Ver-2/';
-};
+// GitHub Pages와 Vercel 배포를 모두 지원하기 위한 설정
+const isGitHubPages = process.env.GITHUB_PAGES === 'true';
 
-// Config updated to fix build issues
+// Updated to trigger redeploy
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -34,16 +27,9 @@ export default defineConfig({
           'chart-vendor': ['chart.js', 'react-chartjs-2']
         }
       }
-    },
-    // Skip typecheck during build for CI environments
-    minify: true,
-    target: 'es2015'
+    }
   },
-  base: getBaseUrl(),
-  assetsInclude: ['**/*.csv'],
-  // Adds an environment flag to handle different environments
-  define: {
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-    'process.env.BASE_URL': JSON.stringify(getBaseUrl())
-  }
+  // Vercel에서는 루트 경로, GitHub Pages에서는 기존 경로 사용
+  base: '/',
+  assetsInclude: ['**/*.csv']
 });

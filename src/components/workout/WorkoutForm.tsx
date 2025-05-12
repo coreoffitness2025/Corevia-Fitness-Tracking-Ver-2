@@ -3,6 +3,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { 
   ExercisePart, 
   Session, 
+  // ChestMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // BackMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // ShoulderMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // LegMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // BicepsMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
+  // TricepsMainExercise, // 사용되지 않으므로 주석 처리 또는 삭제 가능
   MainExerciseType,
   SetConfiguration
 } from '../../types';
@@ -73,20 +79,8 @@ const warmupExercises = {
   triceps: ['가벼운 푸시업 10-15회', '가벼운 덤벨 킥백 15-20회', '밴드 푸시다운 15-20회']
 };
 
-// type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5' | '20x5'; // 15x5 제거
-type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '20x5'; // SetConfiguration과 일치시키거나, 이 타입 자체를 SetConfiguration으로 대체 가능
-
-// 세트 구성에 따른 최대 횟수 계산 함수 추가
-const getMaxRepsForConfig = (configType: SetConfiguration): number => {
-  switch(configType) {
-    case '10x5': return 10;
-    case '15x5': return 15;
-    case '6x3': return 6;
-    case '20x5': return 20;
-    case 'custom': return 0; // 커스텀은 제한 없음
-    default: return 10;
-  }
-};
+// 선호하는 세트 구성에 '15x5' 추가
+type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { userProfile } = useAuth();
@@ -109,18 +103,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // 훈련 완료 상태 추가
-  const [trainingComplete, setTrainingComplete] = useState<Record<string, boolean>>({});
-
   // 웜업 팁 표시 상태
   const [showWarmupTips, setShowWarmupTips] = useState(true);
   
   // 추가 상태 변수 정의
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
   const [preferredExercises, setPreferredExercises] = useState<Record<string, string>>({});
-  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<SetConfiguration>(
-    userProfile?.setConfiguration?.preferredSetup || '10x5' // 개인화 설정 또는 기본 '10x5'
-  );
+  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<SetConfiguration>('5x5');
   const [sets, setSets] = useState<number>(5);
   const [reps, setReps] = useState<number>(5);
   const [customSets, setCustomSets] = useState<number>(5);
@@ -195,67 +184,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   }, [selectedMainExercise, part]);
 
-  // userProfile 또는 selectedSetConfiguration이 변경될 때 세트/반복 횟수 업데이트
-  useEffect(() => {
-    const configToApply = userProfile?.setConfiguration?.preferredSetup || selectedSetConfiguration;
-    let newSets = 5;
-    let newReps = 10;
-
-    switch (configToApply) {
-      case '10x5':
-        newSets = 5;
-        newReps = 10;
-        break;
-      case '6x3':
-        newSets = 3;
-        newReps = 6;
-        break;
-      case '20x5':
-        newSets = 5;
-        newReps = 20;
-        break;
-      case 'custom':
-        newSets = customSets > 0 ? customSets : 1; // 최소 1세트
-        newReps = customReps > 0 ? customReps : 1; // 최소 1회
-        break;
-      default:
-        // 기본값 (예: 10x5)
-        newSets = 5;
-        newReps = 10;
-    }
-    
-    setSets(newSets);
-    setReps(newReps);
-
-    // 메인 운동의 세트 배열도 새 구성에 맞게 초기화 (무게는 유지 또는 0으로)
-    const initialMainSets = Array(newSets).fill(null).map((_, i) => ({
-      reps: newReps,
-      weight: mainExercise.sets[i]?.weight || 0, // 기존 무게 유지 시도, 없으면 0
-      isSuccess: null,
-    }));
-    setMainExercise(prev => ({
-      ...prev,
-      sets: initialMainSets,
-    }));
-
-    // 보조 운동 세트도 동일하게 초기화 (만약 보조운동에도 이 구성을 적용한다면)
-    // setAccessoryExercises(prevExercises => 
-    //   prevExercises.map(ex => ({
-    //     ...ex,
-    //     sets: Array(newSets).fill(null).map((_, i) => ({
-    //       reps: newReps,
-    //       weight: ex.sets[i]?.weight || 0,
-    //       isSuccess: null,
-    //     }))
-    //   }))
-    // );
-
-  }, [userProfile, selectedSetConfiguration, customSets, customReps]); // customSets, customReps도 의존성에 추가
-
-  // 세트 구성 변경 핸들러 - selectedSetConfiguration 상태만 변경
+  // 세트 구성 변경 핸들러
   const handleSetConfigChange = (configType: SetConfiguration) => {
     setSelectedSetConfiguration(configType);
-    // useEffect가 selectedSetConfiguration 변경을 감지하여 세트/횟수 등을 업데이트함
+    
+    // 세트 구성 객체 생성
+    const config = {
+      preferredSetup: configType,
+      customSets: customSets || 5,
+      customReps: customReps || 5
+    };
+    
+    // 세트 구성 적용
+    applySetConfiguration(config);
   };
 
   // 커스텀 세트/횟수 변경 시 적용 함수
@@ -336,18 +277,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   };
 
   const addSet = (exerciseIndex: number = -1) => {
-    // 이 함수는 selectedSetConfiguration === 'custom' 일 때만 호출될 것임
     if (exerciseIndex === -1) {
       setMainExercise(prev => ({
         ...prev,
-        sets: [...prev.sets, { reps: customReps || 1, weight: 0, isSuccess: null }]
+        sets: [...prev.sets, { reps: 0, weight: 0, isSuccess: null }]
       }));
     } else {
       setAccessoryExercises(prev => {
         const newExercises = [...prev];
         newExercises[exerciseIndex].sets = [
           ...newExercises[exerciseIndex].sets,
-          { reps: customReps || 1, weight: 0, isSuccess: null }
+          { reps: 0, weight: 0, isSuccess: null }
         ];
         return newExercises;
       });
@@ -355,12 +295,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   };
 
   const removeSet = (exerciseIndex: number = -1, setIndex: number) => {
-    // 이 함수는 selectedSetConfiguration === 'custom' 일 때만 호출될 것임
     if (exerciseIndex === -1) {
-      if (mainExercise.sets.length <= 1 && selectedSetConfiguration !== 'custom') return; // 커스텀이 아닐때 최소 1세트 유지
-      if (mainExercise.sets.length <= 0 && selectedSetConfiguration === 'custom') return; // 커스텀일때 0개면 삭제 불가
-      if (mainExercise.sets.length === 1 && selectedSetConfiguration === 'custom' && mainExercise.sets[0].weight === 0 && mainExercise.sets[0].reps === 0) return; // 커스텀에서 빈 세트 하나 남으면 삭제 불가
-
+      // 메인 운동의 세트가 하나만 남았으면 삭제하지 않음
+      if (mainExercise.sets.length <= 1) return;
+      
       setMainExercise(prev => ({
         ...prev,
         sets: prev.sets.filter((_, i) => i !== setIndex)
@@ -368,9 +306,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     } else {
       setAccessoryExercises(prev => {
         const newExercises = [...prev];
-        if (newExercises[exerciseIndex].sets.length <= 1 && selectedSetConfiguration !== 'custom') return newExercises;
-        if (newExercises[exerciseIndex].sets.length <= 0 && selectedSetConfiguration === 'custom') return newExercises;
-        if (newExercises[exerciseIndex].sets.length === 1 && selectedSetConfiguration === 'custom' && newExercises[exerciseIndex].sets[0].weight ===0 && newExercises[exerciseIndex].sets[0].reps === 0) return newExercises;
+        // 세트가 하나만 남았으면 삭제하지 않음
+        if (newExercises[exerciseIndex].sets.length <= 1) return newExercises;
         
         newExercises[exerciseIndex].sets = newExercises[exerciseIndex].sets.filter((_, i) => i !== setIndex);
         return newExercises;
@@ -396,12 +333,21 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 횟수 자동 성공 처리 함수 수정
   const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
-    // 횟수 제한: 세트 구성에 맞는 최대값으로 제한
-    const maxReps = getMaxRepsForConfig(selectedSetConfiguration);
-    // 커스텀인 경우는 제한 없음, 아닌 경우 maxReps로 제한
-    const limitedReps = selectedSetConfiguration === 'custom' 
-      ? Math.max(1, newReps) 
-      : Math.max(1, Math.min(maxReps, newReps));
+    // 횟수 제한: 선택된 세트 구성에 따라 다른 최대값 적용
+    let maxReps = 10; // 기본값
+
+    // 세트 구성에 따라 최대 반복 횟수 설정
+    if (selectedSetConfiguration === '10x5') {
+      maxReps = 10;
+    } else if (selectedSetConfiguration === '15x5') {
+      maxReps = 15;
+    } else if (selectedSetConfiguration === '6x3') {
+      maxReps = 6;
+    } else if (selectedSetConfiguration === 'custom') {
+      maxReps = customReps;
+    }
+    
+    const limitedReps = Math.max(1, Math.min(maxReps, newReps));
     
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
@@ -414,44 +360,50 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
 
-  // 훈련 완료 처리 함수 - 완전히 새로 작성
+  // 훈련 완료 처리 함수 수정
   const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
-    // 각 세트 구성에 맞는 최대 횟수
-    const maxReps = getMaxRepsForConfig(selectedSetConfiguration);
+    // 세트 구성별 성공 기준 설정
+    let targetReps = 10; // 기본값
+    
+    if (selectedSetConfiguration === '10x5') {
+      targetReps = 10;
+    } else if (selectedSetConfiguration === '15x5') {
+      targetReps = 15;
+    } else if (selectedSetConfiguration === '6x3') {
+      targetReps = 6;
+    } else if (selectedSetConfiguration === 'custom') {
+      targetReps = customReps;
+    }
     
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
-      // 성공/실패 자동 판정 - 횟수가 최대치면 성공, 그렇지 않으면 실패
-      // 커스텀의 경우 입력한 값이 있으면 무조건 성공으로 처리
-      newSets[setIndex].isSuccess = selectedSetConfiguration === 'custom' 
-        ? true 
-        : newSets[setIndex].reps >= maxReps;
-      
+      // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
+      newSets[setIndex].isSuccess = newSets[setIndex].reps >= targetReps;
       setMainExercise(prev => ({ ...prev, sets: newSets }));
-      
-      // 훈련 완료 상태로 변경
-      setTrainingComplete(prev => ({
-        ...prev,
-        [`main_${setIndex}`]: true
-      }));
     } else if (accessoryIndex !== undefined) {
       const newExercises = [...accessoryExercises];
-      // 성공/실패 자동 판정
-      newExercises[accessoryIndex].sets[setIndex].isSuccess = selectedSetConfiguration === 'custom'
-        ? true
-        : newExercises[accessoryIndex].sets[setIndex].reps >= maxReps;
-      
+      newExercises[accessoryIndex].sets[setIndex].isSuccess = newExercises[accessoryIndex].sets[setIndex].reps >= targetReps;
       setAccessoryExercises(newExercises);
-      
-      // 훈련 완료 상태로 변경
-      setTrainingComplete(prev => ({
-        ...prev,
-        [`accessory_${accessoryIndex}_${setIndex}`]: true
-      }));
     }
   };
+  
+  // 커스텀 이벤트 핸들러 - 세션 저장 이벤트 발생 시 프로필 업데이트
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('커스텀 이벤트 발생: profileUpdated', event.detail);
+      // 필요한 경우, 여기서 추가 로직 처리
+    };
 
-  // 세트 구성 적용 함수 수정
+    // 커스텀 이벤트 리스너 추가
+    window.addEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
+    };
+  }, []);
+
+  // 세트 구성 적용 함수
   const applySetConfiguration = (config: any) => {
     console.log('세트 구성 적용:', config);
     
@@ -463,12 +415,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (config.preferredSetup === '10x5') {
       setsCount = 5;
       repsCount = 10;
+    } else if (config.preferredSetup === '15x5') {
+      setsCount = 5;
+      repsCount = 15;
     } else if (config.preferredSetup === '6x3') {
       setsCount = 3;
       repsCount = 6;
-    } else if (config.preferredSetup === '20x5') {
-      setsCount = 5;
-      repsCount = 20;
     } else if (config.preferredSetup === 'custom' && config.customSets && config.customReps) {
       setsCount = config.customSets;
       repsCount = config.customReps;
@@ -482,29 +434,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     const initialSets = Array(setsCount).fill(0).map(() => ({
       reps: repsCount,  // 선호 반복 수로 초기화
       weight: 0,        // 무게는 사용자가 입력
-      isSuccess: false
+      isSuccess: null as boolean | null
     }));
     
     console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
     setMainExercise(prev => ({
       ...prev,
-      sets: initialSets
+      sets: initialSets.map(set => ({ ...set, isSuccess: null }))
     }));
-    
-    // 훈련 완료 상태 초기화
-    setTrainingComplete({});
-    
-    // 보조 운동도 초기화 (이전 보조 운동 구성 유지)
-    const updatedAccessoryExercises = accessoryExercises.map(exercise => {
-      const sets = Array(setsCount).fill(0).map(() => ({
-        reps: repsCount,
-        weight: 0,
-        isSuccess: false
-      }));
-      return { ...exercise, sets };
-    });
-    
-    setAccessoryExercises(updatedAccessoryExercises);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -534,8 +471,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       // 메인 운동 데이터 정리: 무게와 반복 수가 0인 세트 제외 (isFormValid에서 이미 체크하지만, 안전장치)
       const cleanMainExercise = {
         part,
-        name: mainExercise.name,
-        weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0, // 필수 필드 추가
+        name: mainExercise.name, 
+        // weight: mainExercise.sets && mainExercise.sets.length > 0 ? mainExercise.sets[0].weight : 0, // 세트별 무게를 사용하므로 이 필드는 불필요할 수 있음
         sets: mainExercise.sets.map(set => ({
           reps: set.reps || 0,
           weight: set.weight || 0,
@@ -685,28 +622,56 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           {/* 세트 구성 선택 섹션 추가 */}
           <Card className="animate-slideUp">
             <CardTitle>세트 구성 설정</CardTitle>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-              {(['10x5', '6x3', '20x5', 'custom'] as SetConfiguration[]).map(configValue => (
-                <Button
-                  key={configValue}
-                  type="button"
-                  onClick={() => handleSetConfigChange(configValue)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 w-full ${
-                    selectedSetConfiguration === configValue
-                      ? 'bg-[#4285F4] text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {configValue === '10x5' && '10회 x 5세트'}
-                  {configValue === '6x3' && '6회 x 3세트'}
-                  {configValue === '20x5' && '20회 x 5세트'}
-                  {configValue === 'custom' && '커스텀'}
-                </Button>
-              ))}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+              <Button
+                type="button"
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === '10x5'
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                size="sm"
+                onClick={() => handleSetConfigChange('10x5')}
+              >
+                10회 x 5세트
+              </Button>
+              <Button
+                type="button"
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === ('15x5' as SetConfiguration)
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                size="sm"
+                onClick={() => handleSetConfigChange('15x5' as SetConfiguration)}
+              >
+                15회 x 5세트
+              </Button>
+              <Button
+                type="button"
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === ('6x3' as SetConfiguration)
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                size="sm"
+                onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
+              >
+                6회 x 3세트
+              </Button>
+              <Button
+                type="button"
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedSetConfiguration === 'custom'
+                    ? 'bg-[#4285F4] text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                size="sm"
+                onClick={() => handleSetConfigChange('custom')}
+              >
+                커스텀
+              </Button>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              * 커스텀 설정의 경우에만 세트 추가/삭제가 가능하며, 일부 트래킹 기능이 제한될 수 있습니다.
-            </p>
             
             {selectedSetConfiguration === 'custom' && (
               <div className="flex gap-4 mb-4 items-end">
@@ -757,8 +722,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     className={`
                       py-2 px-4 rounded-lg flex items-center transition-all duration-300 text-sm font-medium
                       ${part === option.value 
-                        ? 'bg-[#4285F4] text-white shadow-md'
-                        : 'bg-white dark:bg-gray-800 text-[#4285F4] border border-[#4285F4] hover:bg-sky-50 dark:hover:bg-sky-700'
+                        ? 'bg-[#4285F4] text-white shadow-lg transform scale-105'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }
                     `}
                   >
@@ -828,9 +793,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         <div className="flex flex-col">
                           <label htmlFor={`mainExerciseReps-${index}`} className="text-xs text-gray-500 mb-1">
                             횟수 (최대 {selectedSetConfiguration === '10x5' ? 10 : 
-                                      selectedSetConfiguration === '6x3' ? 6 : 
-                                      selectedSetConfiguration === '20x5' ? 20 : 
-                                      customReps})
+                             selectedSetConfiguration === '15x5' ? 15 : 
+                             selectedSetConfiguration === '6x3' ? 6 : 
+                             selectedSetConfiguration === 'custom' ? customReps : 10})
                           </label>
                           <input
                             type="number"
@@ -840,11 +805,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             placeholder="횟수"
                             min="1"
                             max={selectedSetConfiguration === '10x5' ? 10 : 
+                                 selectedSetConfiguration === '15x5' ? 15 : 
                                  selectedSetConfiguration === '6x3' ? 6 : 
-                                 selectedSetConfiguration === '20x5' ? 20 : 
-                                 customReps}
-                            className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:border-[#4285F4] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            readOnly={selectedSetConfiguration !== 'custom'}
+                                 selectedSetConfiguration === 'custom' ? customReps : 10}
+                            className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           />
                         </div>
                         <Button
@@ -889,7 +853,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           }
                         </Button>
 
-                        {selectedSetConfiguration === 'custom' && mainExercise.sets.length > 0 && (
+                        {mainExercise.sets.length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
@@ -904,32 +868,30 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       </div>
                     </div>
                   ))}
-                  {selectedSetConfiguration === 'custom' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addSet()}
-                      icon={<Plus size={16} />}
-                      className="mt-2"
-                    >
-                      메인 세트 추가
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addSet()}
+                    icon={<Plus size={16} />}
+                    className="mt-2"
+                  >
+                    세트 추가
+                  </Button>
                 </div>
               </CardSection>
 
-              {accessoryExercises.map((exercise, accIndex) => (
-                <CardSection key={accIndex} className="animate-slideUp">
+              {accessoryExercises.map((exercise, index) => (
+                <CardSection key={index} className="animate-slideUp">
                   <div className="flex justify-between items-center mb-4">
                     <CardTitle className="mb-0 pb-0 border-b-0">
-                      보조 운동 {accIndex + 1}
+                      보조 운동 {index + 1}
                     </CardTitle>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeAccessoryExercise(accIndex)}
+                      onClick={() => removeAccessoryExercise(index)}
                       icon={<X size={16} className="text-danger-500" />}
                     >
                       삭제
@@ -937,11 +899,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   </div>
                   <input
                     type="text"
-                    id={`accessoryExerciseName-${accIndex}`}
+                    id={`accessoryExerciseName-${index}`}
                     value={exercise.name}
                     onChange={(e) => {
                       const newExercises = [...accessoryExercises];
-                      newExercises[accIndex].name = e.target.value;
+                      newExercises[index].name = e.target.value;
                       setAccessoryExercises(newExercises);
                     }}
                     placeholder="운동 이름"
@@ -956,14 +918,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             <span className="font-medium text-gray-800 dark:text-white">세트</span>
                           </div>
                           <div className="flex flex-col">
-                            <label htmlFor={`accessoryExerciseWeight-${accIndex}-${setIndex}`} className="text-xs text-gray-500 mb-1">무게 (kg)</label>
+                            <label htmlFor={`accessoryExerciseWeight-${index}-${setIndex}`} className="text-xs text-gray-500 mb-1">무게 (kg)</label>
                             <input
                               type="number"
-                              id={`accessoryExerciseWeight-${accIndex}-${setIndex}`}
+                              id={`accessoryExerciseWeight-${index}-${setIndex}`}
                               value={set.weight}
                               onChange={(e) => {
                                 const newExercises = [...accessoryExercises];
-                                newExercises[accIndex].sets[setIndex].weight = Number(e.target.value);
+                                newExercises[index].sets[setIndex].weight = Number(e.target.value);
                                 setAccessoryExercises(newExercises);
                               }}
                               placeholder="kg"
@@ -971,25 +933,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             />
                           </div>
                           <div className="flex flex-col">
-                            <label htmlFor={`accessoryExerciseReps-${accIndex}-${setIndex}`} className="text-xs text-gray-500 mb-1">
+                            <label htmlFor={`accessoryExerciseReps-${index}-${setIndex}`} className="text-xs text-gray-500 mb-1">
                               횟수 (최대 {selectedSetConfiguration === '10x5' ? 10 : 
-                                      selectedSetConfiguration === '6x3' ? 6 : 
-                                      selectedSetConfiguration === '20x5' ? 20 : 
-                                      customReps})
+                               selectedSetConfiguration === '15x5' ? 15 : 
+                               selectedSetConfiguration === '6x3' ? 6 : 
+                               selectedSetConfiguration === 'custom' ? customReps : 100})
                             </label>
                             <input
                               type="number"
-                              id={`accessoryExerciseReps-${accIndex}-${setIndex}`}
+                              id={`accessoryExerciseReps-${index}-${setIndex}`}
                               value={set.reps}
-                              onChange={(e) => handleRepsChange(Number(e.target.value), setIndex, false, accIndex)}
+                              onChange={(e) => handleRepsChange(Number(e.target.value), setIndex, false, index)}
                               placeholder="횟수"
                               min="1"
                               max={selectedSetConfiguration === '10x5' ? 10 : 
+                                   selectedSetConfiguration === '15x5' ? 15 : 
                                    selectedSetConfiguration === '6x3' ? 6 : 
-                                   selectedSetConfiguration === '20x5' ? 20 : 
-                                   customReps}
-                              className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-[#4285F4] focus:border-[#4285F4] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                              readOnly={selectedSetConfiguration !== 'custom'}
+                                   selectedSetConfiguration === 'custom' ? customReps : 100}
+                              className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                           </div>
                           <Button
@@ -1000,7 +961,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               "outline" // 초기 상태 (null) 또는 미결정시
                             }
                             size="sm"
-                            onClick={() => handleTrainingComplete(setIndex, false, accIndex)}
+                            onClick={() => handleTrainingComplete(setIndex, false, index)}
                             icon={
                               set.isSuccess === true ? <CheckCircle size={16} /> :
                               set.isSuccess === false ? <XCircle size={16} /> :
@@ -1016,30 +977,30 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           <Button
                             type="button"
                             variant={
-                              !activeTimers[`accessory_${accIndex}_${setIndex}`] 
+                              !activeTimers[`accessory_${index}_${setIndex}`] 
                                 ? "secondary" 
-                                : activeTimers[`accessory_${accIndex}_${setIndex}`].isPaused 
+                                : activeTimers[`accessory_${index}_${setIndex}`].isPaused 
                                   ? "warning" 
                                   : "danger"
                             }
                             size="sm"
-                            onClick={() => toggleTimer(accIndex, setIndex)}
+                            onClick={() => toggleTimer(index, setIndex)}
                             icon={<Clock size={16} />}
                           >
-                            {!activeTimers[`accessory_${accIndex}_${setIndex}`]
+                            {!activeTimers[`accessory_${index}_${setIndex}`]
                               ? '휴식 타이머' 
-                              : activeTimers[`accessory_${accIndex}_${setIndex}`].isPaused
-                                ? `▶️ ${formatTime(activeTimers[`accessory_${accIndex}_${setIndex}`].timeLeft)}` 
-                                : `⏸️ ${formatTime(activeTimers[`accessory_${accIndex}_${setIndex}`].timeLeft)}`
+                              : activeTimers[`accessory_${index}_${setIndex}`].isPaused
+                                ? `▶️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}` 
+                                : `⏸️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}`
                             }
                           </Button>
 
-                          {selectedSetConfiguration === 'custom' && exercise.sets.length > 0 && (
+                          {exercise.sets.length > 1 && (
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeSet(accIndex, setIndex)}
+                              onClick={() => removeSet(index, setIndex)}
                               icon={<X size={16} className="text-danger-500" />}
                               className="ml-auto"
                             >
@@ -1049,18 +1010,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         </div>
                       </div>
                     ))}
-                    {selectedSetConfiguration === 'custom' && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addSet(accIndex)}
-                        icon={<Plus size={16} />}
-                        className="mt-2"
-                      >
-                        보조 세트 추가
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addSet(index)}
+                      icon={<Plus size={16} />}
+                      className="mt-2"
+                    >
+                      세트 추가
+                    </Button>
                   </div>
                 </CardSection>
               ))}

@@ -193,8 +193,8 @@ const FoodLog = () => {
             </div>
             {userProfile && (
               <CalorieCalculator 
-                userProfile={userProfile} 
-                onComplete={handleCalculatorComplete} 
+                userProfile={userProfile}
+                onComplete={handleCalculatorComplete}
               />
             )}
           </div>

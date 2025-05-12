@@ -1,17 +1,14 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/common/Layout';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import { useAuth } from '../../contexts/AuthContext';
-import { WorkoutGuideInfo, WorkoutGuideResult } from '../../types';
+import { WorkoutGuideInfo, WorkoutGuideResult } from '../../types/index';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 import { ArrowRight, Calculator } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
-import { getWorkoutGuide } from '../../services/workoutService';
 
 // 1RM 계산기 컴포넌트
 const OneRMCalculator = ({
@@ -117,10 +114,6 @@ const WorkoutGuidePage: React.FC = () => {
     gender: userProfile?.gender || 'male',
     age: userProfile?.age || 30,
     weight: userProfile?.weight || 70,
-    height: userProfile?.height || 175,
-    goal: 'strength',
-    daysPerWeek: 3,
-    timePerSession: 60,
     experience: userProfile?.experience?.level || 'beginner',
     oneRepMaxes: {
       squat: userProfile?.oneRepMax?.squat || 0,
@@ -184,13 +177,7 @@ const WorkoutGuidePage: React.FC = () => {
   };
 
   const handleCalculatorResult = (exercise: string, result: number) => {
-    const newOneRepMaxes = { ...(guideInfo.oneRepMaxes || {
-      squat: 0,
-      deadlift: 0,
-      bench: 0,
-      overheadPress: 0
-    }) };
-    
+    const newOneRepMaxes = { ...guideInfo.oneRepMaxes };
     if (exercise === 'squat') {
       newOneRepMaxes.squat = result;
     } else if (exercise === 'deadlift') {
@@ -215,15 +202,15 @@ const WorkoutGuidePage: React.FC = () => {
     try {
       // 1. 1RM 업데이트
       const oneRepMax = {
-        bench: guideInfo.oneRepMaxes?.bench || 0,
-        squat: guideInfo.oneRepMaxes?.squat || 0,
-        deadlift: guideInfo.oneRepMaxes?.deadlift || 0,
-        overheadPress: guideInfo.oneRepMaxes?.overheadPress || 0,
+        bench: guideInfo.oneRepMaxes.bench || 0,
+        squat: guideInfo.oneRepMaxes.squat || 0,
+        deadlift: guideInfo.oneRepMaxes.deadlift || 0,
+        overheadPress: guideInfo.oneRepMaxes.overheadPress || 0,
       };
       
       // 2. 세트 구성 업데이트
       const setConfiguration = {
-        preferredSetup: result.setConfig?.type as any || '10x5', // 타입 캐스팅으로 오류 해결
+        preferredSetup: result.setConfig.type as any, // 타입 캐스팅으로 오류 해결
         customSets: 0,
         customReps: 0
       };

@@ -1,29 +1,32 @@
 import { create } from 'zustand';
+import { User } from 'firebase/auth';
 
-interface User {
-  uid: string;
-  displayName: string;
-  email: string;
-  photoURL?: string;          // ← 다시 둡니다(더미라도 OK)
-}
+// 개발용 더미 사용자 데이터
+const dummyUser = {
+  uid: 'dummy-user-id-123',
+  email: 'user@example.com',
+  displayName: '테스트 사용자',
+  photoURL: null,
+  emailVerified: true
+} as User;
 
 interface AuthState {
-  user: User;
-  isAuthenticated: boolean;   // ← 추가
-  setUser: (u: User) => void; // ← 추가
+  user: User | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
   logout: () => void;
 }
 
+// 개발 환경에서는 더미 데이터 사용, 프로덕션에서는 null 사용
+const initialUser = process.env.NODE_ENV === 'production' ? null : dummyUser;
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: {
-    uid: 'dev-user',
-    displayName: '개발자',
-    email: 'dev@corevia.app',
-    photoURL: undefined,
-  },
-  isAuthenticated: true,        // 항상 로그인된 상태
-  setUser: (u) => set({ user: u, isAuthenticated: true }),
-  logout: () => {
-    /* 혼자 쓰니까 noop */
-  },
+  user: initialUser,
+  loading: false, // 초기 로딩 상태를 false로 설정
+  isAuthenticated: !!initialUser, // 더미 유저가 있으면 인증된 상태로 설정
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setLoading: (loading) => set({ loading }),
+  logout: () => set({ user: null, isAuthenticated: false })
 }));

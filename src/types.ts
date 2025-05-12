@@ -9,9 +9,29 @@ export interface User {
 /* ---------- 운동 타입 ---------- */
 export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
 
+export interface Set {
+  reps: number;
+  weight: number;
+  isSuccess: boolean | null;
+}
+
+export interface MainExercise {
+  part: ExercisePart;
+  name: string;
+  weight?: number;
+  sets: Set[];
+}
+
+export interface AccessoryExercise {
+  name: string;
+  weight?: number;
+  reps?: number;
+  sets?: Set[];
+}
+
 // 메인 운동 타입
 export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress';
-export type BackMainExercise = 'deadlift' | 'barbellRow' | 'tBarRow' | 'pullUp';
+export type BackMainExercise = 'deadlift' | 'pullUp' | 'bentOverRow' | 'barbellRow' | 'tBarRow';
 export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull';
 export type LegMainExercise = 'squat' | 'legPress' | 'lunge';
 export type BicepsMainExercise = 'dumbbellCurl' | 'barbellCurl' | 'hammerCurl';
@@ -25,45 +45,21 @@ export type MainExerciseType =
   | BicepsMainExercise
   | TricepsMainExercise;
 
-// 세트 구성 타입
-export type SetConfiguration = '10x5' | '6x3' | '15x5' | '20x5' | 'custom';
-
-export interface ExerciseSet {
-  reps: number;
-  isSuccess: boolean;
-  weight: number;
-}
-
-export interface MainExercise {
-  part: ExercisePart;
-  name: string;
-  weight: number;
-  sets: ExerciseSet[];
-}
-
-export interface AccessoryExercise {
-  name: string;
-  weight?: number;
-  reps?: number;
-  sets?: Array<{
-    reps: number;
-    weight: number;
-    isSuccess: boolean;
-  }>;
-}
+// 세트 설정 타입
+export type SetConfiguration = '5x5' | '10x5' | '15x5' | '6x3' | '6x5' | '3x10' | 'custom';
 
 /* ---------- 세션 ---------- */
 export interface Session {
   id?: string;
   userId: string;
-  date: Date | string;
+  date: Date;
   part: ExercisePart;
   mainExercise: MainExercise;
-  accessoryExercises?: AccessoryExercise[];
-  notes?: string;
-  isAllSuccess?: boolean;
-  successSets?: number;
-  accessoryNames?: string[];
+  accessoryExercises: AccessoryExercise[];
+  notes: string;
+  isAllSuccess: boolean;
+  successSets: number;
+  accessoryNames: string[];
 }
 
 /* ---------- 일일 운동 기록 ---------- */
@@ -77,12 +73,6 @@ export interface DailyWorkout {
 }
 
 /* ---------- 그래프용 진행 데이터 ---------- */
-export interface Set {
-  reps: number;
-  isSuccess: boolean;
-  weight: number;
-}
-
 export interface Progress {
   id: string;
   userId: string;
@@ -120,8 +110,9 @@ export interface UserProfile {
   weight: number;
   age: number;
   gender: 'male' | 'female';
-  activityLevel: 'low' | 'moderate' | 'high' | 'sedentary' | 'light' | 'veryActive';
-  fitnessGoal: 'loss' | 'maintain' | 'gain' | 'lose';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
+  fitnessGoal: 'loss' | 'maintain' | 'gain';
+  targetCalories?: number;
   experience: {
     years: number;
     level: 'beginner' | 'intermediate' | 'advanced';
@@ -130,20 +121,26 @@ export interface UserProfile {
       maxReps: number;
     };
   };
-  settings?: UserSettings;
-  targetCalories?: number;
-  preferredExercises?: Record<string, string>;
+  preferredExercises?: {
+    chest: ChestMainExercise;
+    back: BackMainExercise;
+    shoulder: ShoulderMainExercise;
+    leg: LegMainExercise;
+    biceps: BicepsMainExercise;
+    triceps: TricepsMainExercise;
+  };
   setConfiguration?: {
     preferredSetup: SetConfiguration;
     customSets?: number;
     customReps?: number;
   };
   oneRepMax?: {
-    squat: number;
     bench: number;
+    squat: number;
     deadlift: number;
     overheadPress: number;
   };
+  settings?: UserSettings;
 }
 
 export interface UserSettings {
@@ -191,101 +188,16 @@ export interface LayoutProps {
   children: React.ReactNode;
 }
 
-/* ---------- 식단 및 영양 타입 ---------- */
 export interface Food {
-  id?: string;
+  id: string;
+  userId: string;
+  date: Date;
   name: string;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  servingSize: number;
-  servingUnit: string;
-  category?: string;
-  isFavorite?: boolean;
-  userId?: string;
-  createdAt?: Date | string;
-  date?: Date | string;
-  notes?: string;
+  type?: string;
   imageUrl?: string;
-  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  quantity?: number;
-}
-
-/* ---------- 운동 가이드 타입 ---------- */
-export interface WorkoutGuideInfo {
-  height: number;
-  weight: number;
-  age: number;
-  gender: 'male' | 'female';
-  experience: 'beginner' | 'intermediate' | 'advanced';
-  goal: 'strength' | 'hypertrophy' | 'endurance' | 'weight-loss';
-  daysPerWeek: number;
-  timePerSession: number;
-  maxLifts?: {
-    squat: number;
-    bench: number;
-    deadlift: number;
-    overheadPress: number;
-  };
-  oneRepMaxes?: {
-    squat: number;
-    deadlift: number;
-    bench: number;
-    overheadPress: number;
-  };
-  preferredSetConfig?: '10x5' | '6x3' | '15x5' | 'custom';
-}
-
-export interface WorkoutGuideResult {
-  programName: string;
-  description: string;
-  schedule: {
-    day: string;
-    focus: string;
-    exercises: {
-      name: string;
-      sets: number;
-      reps: string;
-      rest: string;
-      percentOfMax?: number;
-    }[];
-  }[];
-  tips: string[];
-  estimatedProgress: {
-    weeks: number;
-    strengthGain: string;
-    muscleGain?: string;
-    fatLoss?: string;
-  };
-  userLevel?: 'beginner' | 'intermediate' | 'advanced';
-  percentageOfOneRM?: number;
-  recommendedWeights?: {
-    squat?: number;
-    deadlift?: number;
-    bench?: number;
-    overheadPress?: number;
-  };
-  recoveryTime?: string;
-  setConfig?: {
-    type: string;
-    description: string;
-    advantages: string[];
-  };
-}
-
-export interface AuthContextType {
-  currentUser: User | null;
-  userProfile: UserProfile | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<User>;
-  signUp: (email: string, password: string, displayName: string) => Promise<User>;
-  signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  updateEmail: (email: string) => Promise<void>;
-  updatePassword: (password: string) => Promise<void>;
-  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
-  deleteAccount: () => Promise<void>;
-  error: string | null;
-  isAuthenticated: boolean;
+  notes?: string;
 }

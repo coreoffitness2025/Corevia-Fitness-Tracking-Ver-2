@@ -187,7 +187,7 @@ const WorkoutList: React.FC = () => {
   // 날짜별 운동 기록 그룹화
   const workoutsByDate = sessions.reduce<Record<string, Session[]>>((acc, session) => {
     // date가 Date 객체인 경우 문자열로 변환
-    const dateStr = formatDate(session.date instanceof Date ? session.date : new Date(session.date as string));
+    const dateStr = formatDate(session.date);
     if (!acc[dateStr]) {
       acc[dateStr] = [];
     }
@@ -414,263 +414,401 @@ const WorkoutList: React.FC = () => {
     );
   }
 
-  // 달력 연도/월 표시 수정
-  const monthYearText = new Date(currentYear, currentMonth).toLocaleDateString('ko-KR', { 
-    year: 'numeric', 
-    month: 'long' 
-  });
-  
-  // ... 여기에 달력 UI와 기타 구성 요소 렌더링 코드 ...
-
   return (
-    <div className="p-4">
-      {/* 달력 헤더 */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">{monthYearText}</h2>
-        <div className="flex items-center space-x-2">
-          <button onClick={goToPreviousMonth} className="p-1 rounded hover:bg-gray-200">
-            <ChevronLeft size={20} />
-          </button>
-          <select 
-            value={currentYear}
-            onChange={(e) => goToSelectedMonth(parseInt(e.target.value), currentMonth)}
-            className="px-2 py-1 rounded border"
-          >
-            {yearOptions.map(year => (
-              <option key={year} value={year}>{year}년</option>
-            ))}
-          </select>
-          <select 
-            value={currentMonth}
-            onChange={(e) => goToSelectedMonth(currentYear, parseInt(e.target.value))}
-            className="px-2 py-1 rounded border"
-          >
-            {monthOptions.map(month => (
-              <option key={month.value} value={month.value}>{month.label}</option>
-            ))}
-          </select>
-          <button onClick={goToNextMonth} className="p-1 rounded hover:bg-gray-200">
-            <ChevronRight size={20} />
-          </button>
-        </div>
-      </div>
-
-      {/* 달력 그리드 */}
-      <div className="grid grid-cols-7 gap-1 mb-6">
-        {/* 요일 헤더 */}
-        {weekdays.map(day => (
-          <div key={day} className="text-center font-semibold p-2">
-            {day}
-          </div>
-        ))}
-        
-        {/* 날짜 그리드 */}
-        {calendarDays.map((date, i) => {
-          const dateStr = formatDate(date);
-          const isToday = dateStr === formatDate(new Date());
-          const isCurrentMonth = date.getMonth() === currentMonth;
-          const isSelected = dateStr === selectedDate;
-          const hasWorkout = workoutsByDate[dateStr]?.length > 0;
-          
-          return (
-            <button
-              key={i}
-              onClick={() => setSelectedDate(dateStr)}
-              className={`
-                p-2 rounded-lg transition-colors relative
-                ${isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}
-                ${isToday ? 'ring-2 ring-blue-500' : ''}
-                ${isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'}
-              `}
-            >
-              <div className="text-center">
-                {date.getDate()}
-              </div>
-              {hasWorkout && (
-                <div className="flex justify-center mt-1 space-x-1">
-                  {workoutsByDate[dateStr].map((session, idx) => (
-                    <span 
-                      key={idx} 
-                      className={`
-                        w-2 h-2 rounded-full 
-                        ${getPartColor(session.part, session.isAllSuccess).split(' ')[0]}
-                      `}
-                    ></span>
-                  ))}
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 선택된 날짜의 운동 목록 */}
-      <div className="mt-8">
+    <div className="space-y-6">
+      {/* 달력 */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">{selectedDate} 운동 기록</h3>
-          <div className="flex space-x-2">
-            {selectedWorkouts.length > 0 && (
-              <>
-                <Button 
-                  onClick={captureWorkoutStamp}
-                  variant="outline"
-                  icon={<Download size={16} />}
-                >
-                  이미지 생성
-                </Button>
-                <Button 
-                  onClick={handleCameraCapture} 
-                  variant="outline"
-                  icon={<Camera size={16} />}
-                >
-                  사진 촬영
-                </Button>
-                <Button 
-                  onClick={handleFileSelect}
-                  variant="outline"
-                  icon={<Image size={16} />}
-                >
-                  앨범에서 선택
-                </Button>
-                {stampImage && (
-                  <>
-                    <Button 
-                      onClick={downloadStampImage}
-                      variant="outline"
-                      icon={<Download size={16} />}
-                    >
-                      다운로드
-                    </Button>
-                    <Button 
-                      onClick={shareWorkoutStamp}
-                      variant="outline"
-                      icon={<Share size={16} />}
-                    >
-                      공유하기
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">운동 달력</h3>
+          <div className="flex items-center space-x-4">
             <Button 
-              onClick={() => navigate('/workout')}
-              variant="primary"
+              onClick={goToPreviousMonth} 
+              variant="ghost"
+              size="sm"
+              icon={<ChevronLeft size={16} />}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              운동 등록
+              이전
+            </Button>
+            
+            <div className="flex items-center space-x-2">
+              <select
+                value={currentYear}
+                onChange={(e) => goToSelectedMonth(parseInt(e.target.value), currentMonth)}
+                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
+              >
+                {yearOptions.map(year => (
+                  <option key={year} value={year}>{year}년</option>
+                ))}
+              </select>
+              <div className="relative inline-block">
+                <select
+                  value={currentMonth}
+                  onChange={(e) => goToSelectedMonth(currentYear, parseInt(e.target.value))}
+                  className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
+                >
+                  {monthOptions.map(month => (
+                    <option key={month.value} value={month.value}>{month.label}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700 dark:text-gray-300">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={goToNextMonth} 
+              variant="ghost"
+              size="sm"
+              icon={<ChevronRight size={16} />}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              다음
             </Button>
           </div>
         </div>
-
-        {/* 운동 내용 렌더링 */}
-        {selectedWorkouts.length === 0 ? (
-          <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
-            선택한 날짜에 기록된 운동이 없습니다.
-          </div>
-        ) : (
-          <>
-            {/* 스탬프 이미지 표시 영역 */}
-            {stampImage && (
-              <div className="mb-4 relative">
-                <button 
-                  onClick={() => setStampImage(null)} 
-                  className="absolute top-2 right-2 bg-white rounded-full p-1 shadow"
-                >
-                  <X size={16} />
-                </button>
-                <img 
-                  src={stampImage} 
-                  alt="운동 스탬프" 
-                  className="max-w-full rounded-lg shadow-lg" 
-                />
-              </div>
-            )}
-            
-            {/* 실제 운동 목록 (스탬프 캡처용 ref 포함) */}
+        
+        <div className="mb-4 grid grid-cols-7 gap-1">
+          {/* 요일 헤더 */}
+          {weekdays.map((weekday, i) => (
             <div 
-              ref={workoutStampRef}
-              className="space-y-4 bg-white p-4 rounded-lg shadow"
+              key={`weekday-${i}`} 
+              className={`text-center py-2 text-sm font-medium ${
+                i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
+              }`}
             >
-              {selectedWorkouts.map((workout, index) => (
-                <div 
-                  key={workout.id} 
-                  className="border rounded-lg p-4"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-lg font-semibold flex items-center">
-                      <span 
-                        className={`inline-block w-4 h-4 rounded-full mr-2 
-                          ${getPartColor(workout.part, workout.isAllSuccess).split(' ')[0]}`}
-                      ></span>
-                      {getPartLabel(workout.part)} 운동
-                    </h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                      ${workout.isAllSuccess 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'}`}
-                    >
-                      {workout.isAllSuccess ? '완료' : '미완료'}
+              {weekday}
+            </div>
+          ))}
+          
+          {/* 날짜 */}
+          {calendarDays.map((day, i) => {
+            const dateStr = formatDate(day);
+            const isCurrentMonth = day.getMonth() === currentMonth;
+            const isToday = dateStr === formatDate(new Date());
+            const isSelected = dateStr === selectedDate;
+            const dayWorkouts = workoutsByDate[dateStr] || [];
+            const hasWorkout = dayWorkouts.length > 0;
+            
+            return (
+              <div 
+                key={`day-${i}`} 
+                onClick={() => setSelectedDate(dateStr)}
+                className={`relative p-2 min-h-[80px] text-center cursor-pointer border rounded-lg
+                  ${isCurrentMonth ? 'hover:bg-gray-100 dark:hover:bg-gray-700' : 'opacity-40'}
+                  ${isToday ? 'border-blue-500' : 'border-transparent'}
+                  ${isSelected ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+              >
+                <span className={`text-sm ${
+                  day.getDay() === 0 ? 'text-red-500' : 
+                  day.getDay() === 6 ? 'text-blue-500' : 
+                  'text-gray-700 dark:text-gray-300'
+                }`}>
+                  {day.getDate()}
+                </span>
+                
+                {/* 운동 마커 - 메인 운동명 포함 */}
+                {hasWorkout && (
+                  <div className="mt-1 flex flex-col gap-1">
+                    {dayWorkouts.map((workout, j) => {
+                      // 주요 정보 추출
+                      const mainExerciseWeight = workout.mainExercise.weight || 0;
+                      const partLabel = getPartLabel(workout.part);
+                      const statusLabel = workout.isAllSuccess ? '성공' : '실패';
+                      
+                      return (
+                        <div 
+                          key={`workout-${j}`} 
+                          className={`text-xs px-1 py-0.5 rounded-sm truncate ${getPartColor(workout.part, workout.isAllSuccess)}`}
+                          title={`${partLabel} - ${mainExerciseWeight}kg - ${statusLabel}`}
+                        >
+                          <span className="font-medium">{partLabel}</span>
+                          <span className="mx-1">-</span>
+                          <span>{mainExerciseWeight}kg</span>
+                          <span className="ml-1">
+                            {workout.isAllSuccess ? '✓' : '✗'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* 선택된 날짜 표시 및 스탬프 기능 */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {new Date(selectedDate).toLocaleDateString('ko-KR', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            weekday: 'long' 
+          })}
+        </h3>
+        
+        {selectedWorkouts.length > 0 && (
+          <div className="flex space-x-2">
+            <Button
+              onClick={captureWorkoutStamp}
+              variant="secondary"
+              size="sm"
+              icon={<Camera size={16} />}
+              className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
+            >
+              스탬프 생성
+            </Button>
+            <Button
+              onClick={handleCameraCapture}
+              variant="secondary"
+              size="sm"
+              icon={<Camera size={16} />}
+              className="bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
+            >
+              카메라로 촬영
+            </Button>
+            <Button
+              onClick={handleFileSelect}
+              variant="secondary"
+              size="sm"
+              icon={<Image size={16} />}
+              className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-800 dark:text-purple-200"
+            >
+              앨범에서 선택
+            </Button>
+          </div>
+        )}
+        
+        {selectedWorkouts.length === 0 && (
+          <span className="text-sm text-gray-500">
+            운동 기록이 없습니다
+          </span>
+        )}
+      </div>
+      
+      {/* 운동 스탬프 이미지 */}
+      {stampImage && (
+        <div className="mt-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              운동 스탬프
+            </h3>
+            <div className="flex space-x-2">
+              <Button
+                onClick={downloadStampImage}
+                variant="secondary"
+                size="sm"
+                icon={<Download size={16} />}
+                className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200"
+              >
+                저장
+              </Button>
+              <Button
+                onClick={shareWorkoutStamp}
+                variant="secondary"
+                size="sm"
+                icon={<Share size={16} />}
+                className="bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200"
+              >
+                공유
+              </Button>
+              <Button
+                onClick={() => setStampImage(null)}
+                variant="secondary"
+                size="sm"
+                icon={<X size={16} />}
+                className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200"
+              >
+                닫기
+              </Button>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <img
+              src={stampImage}
+              alt="운동 스탬프"
+              className="max-w-full h-auto rounded-lg shadow-lg"
+              style={{ maxHeight: '500px' }}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* 기존 운동 스탬프 영역 - 캡처용으로만 사용 */}
+      {selectedWorkouts.length > 0 && (
+        <div 
+          ref={workoutStampRef}
+          className={`bg-white p-6 rounded-lg shadow-lg border-2 border-blue-500 dark:bg-gray-800 mb-6 ${stampImage || uploadedImage ? 'hidden' : ''}`}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              {new Date(selectedDate).toLocaleDateString('ko-KR', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+              })} 운동 스탬프
+            </h3>
+            <div className="flex items-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full">
+              <Camera size={16} className="mr-1" />
+              <span className="text-sm">Corevia Fitness</span>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {selectedWorkouts.map((workout, index) => (
+              <div 
+                key={index}
+                className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center">
+                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${workout.isAllSuccess ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    <span className={`py-1 px-2 rounded-md text-sm mr-2 ${getPartColor(workout.part, workout.isAllSuccess)}`}>
+                      {getPartLabel(workout.part)}
                     </span>
                   </div>
-                  
-                  {/* 메인 운동 */}
-                  <div className="mb-3">
-                    <h4 className="font-medium">{workout.mainExercise.name}</h4>
-                    <div className="ml-4 mt-1">
-                      {workout.mainExercise.sets.map((set, setIndex) => (
-                        <div key={setIndex} className="flex items-center text-sm">
-                          <span className="w-6 mr-1">#{setIndex + 1}</span>
-                          <span className="mr-2">{set.weight}kg</span>
-                          <span className="mr-1">{set.reps}회</span>
-                          {set.isSuccess !== undefined && (
-                            <span className="ml-2">
-                              {set.isSuccess 
-                                ? <span className="text-green-500">✓</span> 
-                                : <span className="text-red-500">✗</span>}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* 보조 운동 */}
-                  {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
-                    <div>
-                      <h4 className="font-medium">보조 운동</h4>
-                      {workout.accessoryExercises.map((exercise, exIndex) => (
-                        <div key={exIndex} className="ml-4 mt-1 mb-2">
-                          <h5 className="text-sm font-medium">{exercise.name}</h5>
-                          <div className="ml-2">
-                            {exercise.sets && exercise.sets.map((set, setIndex) => (
-                              <div key={setIndex} className="flex items-center text-sm">
-                                <span className="w-6 mr-1">#{setIndex + 1}</span>
-                                <span className="mr-2">{set.weight}kg</span>
-                                <span className="mr-1">{set.reps}회</span>
-                                {set.isSuccess !== undefined && (
-                                  <span className="ml-2">
-                                    {set.isSuccess 
-                                      ? <span className="text-green-500">✓</span> 
-                                      : <span className="text-red-500">✗</span>}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* 메모 */}
-                  {workout.notes && (
-                    <div className="mt-2 text-sm text-gray-600 italic">
-                      <span className="font-medium">메모:</span> {workout.notes}
-                    </div>
-                  )}
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
+                    {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
                 </div>
-              ))}
+                
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {workout.mainExercise.sets.map((set, setIndex) => (
+                    <div 
+                      key={setIndex}
+                      className={`text-xs py-1 px-2 rounded ${set.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                    >
+                      {set.weight}kg x {set.reps}회
+                    </div>
+                  ))}
+                </div>
+                
+                {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="font-medium">보조 운동:</span> {workout.accessoryExercises.map(ex => ex.name || '보조운동').join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            Corevia Fitness Tracking App에서 생성됨
+          </div>
+        </div>
+      )}
+      
+      {/* 선택된 날짜의 운동 기록 목록 */}
+      <div className="space-y-6">
+        {selectedWorkouts.length === 0 ? (
+          <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <p className="text-gray-500 dark:text-gray-400 mb-2">
+              이 날짜에 기록된 운동이 없습니다.
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              운동 입력 탭에서 운동을 기록해보세요.
+            </p>
+          </div>
+        ) : (
+          selectedWorkouts.map((workout) => (
+            <div
+              key={workout.id}
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center">
+                  <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full text-sm mr-2">
+                    {getPartLabel(workout.part)}
+                  </span>
+                </div>
+                <span className="text-gray-600 dark:text-gray-400 text-sm">
+                  {new Date(workout.date instanceof Date ? workout.date : new Date()).toLocaleTimeString('ko-KR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              </div>
+              
+              {/* 성공/실패 뱃지 */}
+              <div className="mb-4">
+                <span className={`inline-block px-3 py-1 rounded-full text-sm ${
+                  workout.isAllSuccess ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                }`}>
+                  {workout.isAllSuccess ? '성공' : '실패'} ({workout.successSets || 0}/{workout.mainExercise.sets.length} 세트)
+                </span>
+              </div>
+              
+              {/* 메인 운동 세트 정보 */}
+              <div className="mb-6">
+                <h4 className="text-md font-medium mb-2">메인 운동 세트</h4>
+                <div className="flex flex-wrap gap-2">
+                  {workout.mainExercise.sets.map((set, index) => (
+                    <div 
+                      key={index} 
+                      className={`px-3 py-1 rounded text-sm ${
+                        set.isSuccess 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      }`}
+                    >
+                      {set.weight}kg {set.reps}/10
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* 보조 운동 정보 */}
+              {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-md font-medium mb-2">보조 운동</h4>
+                  <div className="space-y-3">
+                    {workout.accessoryExercises.map((exercise, exIndex) => {
+                      const exerciseSets = exercise.sets;
+                      return (
+                        <div key={exIndex} className="ml-2">
+                          <p className="text-gray-700 dark:text-gray-300 mb-1">{exercise.name || '보조운동'}</p>
+                          {typeof exerciseSets === 'number' ? (
+                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-sm">
+                              {exercise.weight}kg x {exercise.reps}회 x {exerciseSets}세트
+                            </div>
+                          ) : Array.isArray(exerciseSets) && exerciseSets.map((set, setIndex) => (
+                            <div 
+                              key={setIndex} 
+                              className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-sm"
+                            >
+                              {set.weight}kg x {set.reps}회
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* 메모 */}
+              {workout.notes && (
+                <div className="mt-4">
+                  <h4 className="text-md font-medium mb-2">메모</h4>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                    {workout.notes}
+                  </p>
+                </div>
+              )}
             </div>
-          </>
+          ))
         )}
       </div>
     </div>
