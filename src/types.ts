@@ -241,3 +241,35 @@ export interface WorkoutGuideResult {
     advantages: string[];
   };
 }
+
+/* ---------- 운동 기록용 타입 정의 (WorkoutList, WorkoutGraph에서 사용) ---------- */
+export interface WorkoutSet {
+  reps: number;
+  weight: number;
+  isSuccess: boolean | null;
+}
+
+export interface Workout {
+  id: string;
+  date: string | Date;
+  part: ExercisePart;
+  mainExercise: {
+    name: string;
+    sets: WorkoutSet[];
+    weight?: number;
+  };
+  accessoryExercises?: AccessoryExercise[];
+  notes?: string;
+  isAllSuccess: boolean;
+  successSets?: number;
+}
+
+export interface DateWorkoutMap {
+  [dateStr: string]: Workout[];
+}
+
+export interface ChartDataPoint {
+  date: string;
+  weight: number;
+  isSuccess: boolean;
+}

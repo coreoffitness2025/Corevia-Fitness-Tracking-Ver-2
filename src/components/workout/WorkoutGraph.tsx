@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -17,8 +17,12 @@ import { db } from '../../firebase/firebaseConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import Card from '../common/Card';
-import { ExercisePart } from '../../types';
+import { ExercisePart, Workout } from '../../types';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { X } from 'lucide-react';
+import Badge from '../common/Badge';
+// 유틸리티 함수 import
+import { getPartLabel, getPartColor, formatShortDate } from '../../utils/workoutUtils';
 
 // Chart.js 컴포넌트 등록
 ChartJS.register(
@@ -90,107 +94,6 @@ const setConfigOptions = [
   { value: 'custom', label: '커스텀' }
 ];
 
-// 운동 기록 표시 컴포넌트
-interface WorkoutRecordProps {
-  workout: any;
-  onClose: () => void;
-}
-
-const WorkoutRecord: React.FC<WorkoutRecordProps> = ({ workout, onClose }) => {
-  if (!workout) return null;
-  
-  const date = new Date(workout.date);
-  const formattedDate = date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  
-  // 부위에 따른 색상 지정
-  const getPartColor = (part: ExercisePart) => {
-    const colors = {
-      chest: 'bg-blue-100 text-blue-800',
-      back: 'bg-green-100 text-green-800',
-      shoulder: 'bg-purple-100 text-purple-800',
-      leg: 'bg-orange-100 text-orange-800',
-      biceps: 'bg-pink-100 text-pink-800',
-      triceps: 'bg-indigo-100 text-indigo-800'
-    };
-    return colors[part] || 'bg-gray-100 text-gray-800';
-  };
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-auto">
-        <div className="p-4 border-b flex justify-between items-center">
-          <h3 className="text-lg font-semibold">{formattedDate} 운동 기록</h3>
-          <button 
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-          >
-            ✕
-          </button>
-        </div>
-        
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <span className={`px-3 py-1 rounded-full text-sm ${getPartColor(workout.part)}`}>
-              {workout.part === 'chest' ? '가슴' : 
-               workout.part === 'back' ? '등' : 
-               workout.part === 'shoulder' ? '어깨' : 
-               workout.part === 'leg' ? '하체' :
-               workout.part === 'biceps' ? '이두' :
-               workout.part === 'triceps' ? '삼두' : workout.part}
-            </span>
-            <span className={`px-3 py-1 rounded-full text-sm ${workout.isAllSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-              {workout.isAllSuccess ? '성공' : '실패'} ({workout.successSets || 0}/{workout.mainExercise?.sets?.length || 0} 세트)
-            </span>
-          </div>
-          
-          <div className="mb-4">
-            <h4 className="font-medium mb-2">메인 운동</h4>
-            <p className="mb-2">{workout.mainExercise?.name}</p>
-            <div className="flex flex-wrap gap-2">
-              {workout.mainExercise?.sets?.map((set: any, index: number) => (
-                <div key={index} className={`px-3 py-1 rounded text-sm ${set.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {set.weight}kg x {set.reps}회
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
-            <div className="mb-4">
-              <h4 className="font-medium mb-2">보조 운동</h4>
-              <div className="space-y-2">
-                {workout.accessoryExercises.map((exercise: any, index: number) => (
-                  <div key={index} className="p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                    <p className="font-medium">{exercise.name}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {Array.isArray(exercise.sets) && exercise.sets.map((set: any, setIndex: number) => (
-                        <span key={setIndex} className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded">
-                          {set.weight}kg x {set.reps}회
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {workout.notes && (
-            <div>
-              <h4 className="font-medium mb-2">메모</h4>
-              <p className="text-sm bg-gray-50 dark:bg-gray-700 p-3 rounded">{workout.notes}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const WorkoutGraph: React.FC = () => {
   const { currentUser } = useAuth();
   const [selectedPart, setSelectedPart] = useState<string>('all');
@@ -201,12 +104,12 @@ const WorkoutGraph: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // 실제 데이터를 저장할 상태
-  const [workoutData, setWorkoutData] = useState<any[]>([]);
-  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [workoutData, setWorkoutData] = useState<Workout[]>([]);
+  const [filteredData, setFilteredData] = useState<Workout[]>([]);
   
   // 클릭한 운동 데이터 관리 상태
-  const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
-  const [dateWorkoutMap, setDateWorkoutMap] = useState<Record<string, any>>({});
+  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const [dateWorkoutMap, setDateWorkoutMap] = useState<Record<string, Workout>>({});
   
   // 차트 데이터
   const [chartData, setChartData] = useState<ChartData<'line'>>({
@@ -256,6 +159,85 @@ const WorkoutGraph: React.FC = () => {
       if (label && dateWorkoutMap[label]) {
         setSelectedWorkout(dateWorkoutMap[label]);
       }
+    }
+  };
+  
+  // 차트 데이터 준비
+  const prepareChartData = (data: Workout[]) => {
+    try {
+      if (!data || data.length === 0) {
+        setChartData({
+          labels: [],
+          datasets: []
+        });
+        setDateWorkoutMap({});
+        return;
+      }
+      
+      // 날짜별 성공한 세트 중 최대 무게 추출
+      const successWeightsByDate: Record<string, number> = {};
+      const allDates: string[] = [];
+      const newDateWorkoutMap: Record<string, Workout> = {};
+      
+      data.forEach(workout => {
+        if (!workout.mainExercise || !workout.mainExercise.sets) return;
+        
+        const dateStr = formatShortDate(new Date(workout.date));
+        allDates.push(dateStr);
+        
+        // 날짜별 운동 기록 저장 (클릭 이벤트용)
+        if (!newDateWorkoutMap[dateStr] || new Date(workout.date) > new Date(newDateWorkoutMap[dateStr].date)) {
+          newDateWorkoutMap[dateStr] = workout;
+        }
+        
+        // 성공한 세트 중 최대 무게 찾기
+        let maxWeight = 0;
+        workout.mainExercise.sets.forEach((set: any) => {
+          if (set.isSuccess && set.weight > maxWeight) {
+            maxWeight = set.weight;
+          }
+        });
+        
+        // 기존 값과 비교하여 더 큰 값 저장
+        if (maxWeight > 0) {
+          if (!successWeightsByDate[dateStr] || maxWeight > successWeightsByDate[dateStr]) {
+            successWeightsByDate[dateStr] = maxWeight;
+          }
+        }
+      });
+      
+      // 날짜별 운동 데이터 맵 업데이트
+      setDateWorkoutMap(newDateWorkoutMap);
+      
+      // 중복 제거 및 정렬된 날짜 배열
+      const uniqueDates = [...new Set(allDates)].sort((a, b) => {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      // 차트 데이터셋 구성
+      const weights = uniqueDates.map(date => successWeightsByDate[date] || null);
+      
+      setChartData({
+        labels: uniqueDates,
+        datasets: [
+          {
+            label: '성공 세트 최대 무게 (kg)',
+            data: weights,
+            borderColor: 'rgb(53, 162, 235)',
+            backgroundColor: 'rgba(53, 162, 235, 0.5)',
+            tension: 0.2,
+            pointRadius: 5,
+            pointBackgroundColor: weights.map(w => w ? 'rgba(0, 200, 0, 0.8)' : 'rgba(200, 0, 0, 0.8)'),
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: 'rgba(53, 162, 235, 0.9)',
+            pointHitRadius: 10,
+          }
+        ]
+      });
+    } catch (error) {
+      console.error('차트 데이터 변환 오류:', error);
     }
   };
   
@@ -309,7 +291,7 @@ const WorkoutGraph: React.FC = () => {
           id: doc.id,
           ...doc.data(),
           date: new Date(doc.data().date.toDate()),
-        }));
+        })) as Workout[];
         
         setWorkoutData(data);
         // 초기 필터 적용
@@ -386,90 +368,6 @@ const WorkoutGraph: React.FC = () => {
     applyFilters();
   }, [selectedPart, selectedExercise, selectedSetConfig]);
   
-  // 차트 데이터 준비
-  const prepareChartData = (data: any[]) => {
-    try {
-      if (!data || data.length === 0) {
-        setChartData({
-          labels: [],
-          datasets: []
-        });
-        setDateWorkoutMap({});
-        return;
-      }
-      
-      // 날짜 형식 변환 함수
-      const formatDate = (date: Date) => {
-        return `${date.getMonth() + 1}/${date.getDate()}`;
-      };
-      
-      // 날짜별 성공한 세트 중 최대 무게 추출
-      const successWeightsByDate: Record<string, number> = {};
-      const allDates: string[] = [];
-      const newDateWorkoutMap: Record<string, any> = {};
-      
-      data.forEach(workout => {
-        if (!workout.mainExercise || !workout.mainExercise.sets) return;
-        
-        const dateStr = formatDate(new Date(workout.date));
-        allDates.push(dateStr);
-        
-        // 날짜별 운동 기록 저장 (클릭 이벤트용)
-        if (!newDateWorkoutMap[dateStr] || new Date(workout.date) > new Date(newDateWorkoutMap[dateStr].date)) {
-          newDateWorkoutMap[dateStr] = workout;
-        }
-        
-        // 성공한 세트 중 최대 무게 찾기
-        let maxWeight = 0;
-        workout.mainExercise.sets.forEach((set: any) => {
-          if (set.isSuccess && set.weight > maxWeight) {
-            maxWeight = set.weight;
-          }
-        });
-        
-        // 기존 값과 비교하여 더 큰 값 저장
-        if (maxWeight > 0) {
-          if (!successWeightsByDate[dateStr] || maxWeight > successWeightsByDate[dateStr]) {
-            successWeightsByDate[dateStr] = maxWeight;
-          }
-        }
-      });
-      
-      // 날짜별 운동 데이터 맵 업데이트
-      setDateWorkoutMap(newDateWorkoutMap);
-      
-      // 중복 제거 및 정렬된 날짜 배열
-      const uniqueDates = [...new Set(allDates)].sort((a, b) => {
-        const dateA = new Date(a);
-        const dateB = new Date(b);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      // 차트 데이터셋 구성
-      const weights = uniqueDates.map(date => successWeightsByDate[date] || null);
-      
-      setChartData({
-        labels: uniqueDates,
-        datasets: [
-          {
-            label: '성공 세트 최대 무게 (kg)',
-            data: weights,
-            borderColor: 'rgb(53, 162, 235)',
-            backgroundColor: 'rgba(53, 162, 235, 0.5)',
-            tension: 0.2,
-            pointRadius: 5,
-            pointBackgroundColor: weights.map(w => w ? 'rgba(0, 200, 0, 0.8)' : 'rgba(200, 0, 0, 0.8)'),
-            pointHoverRadius: 8,
-            pointHoverBackgroundColor: 'rgba(53, 162, 235, 0.9)',
-            pointHitRadius: 10,
-          }
-        ]
-      });
-    } catch (error) {
-      console.error('차트 데이터 변환 오류:', error);
-    }
-  };
-  
   // 부위 변경 핸들러
   const handlePartChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const part = e.target.value;
@@ -496,6 +394,7 @@ const WorkoutGraph: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* 필터 섹션 */}
       <Card className="animate-slideUp">
         <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
           <div className="w-full md:w-auto">
@@ -566,63 +465,144 @@ const WorkoutGraph: React.FC = () => {
         <div className="flex items-center justify-center mb-2 text-sm text-gray-500 dark:text-gray-400">
           <p>데이터 포인트를 클릭하면 해당 일자의 운동 기록을 확인할 수 있습니다</p>
         </div>
-        
-        {filteredData.length > 0 ? (
-          <div className="h-80">
-            <Line options={chartOptions} data={chartData} />
-          </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center">
-            <p className="text-gray-500 dark:text-gray-400">
-              기록된 운동 데이터가 없습니다.
-            </p>
-          </div>
-        )}
       </Card>
       
-      {/* 데이터 요약 표시 */}
-      {filteredData.length > 0 && (
-        <Card className="animate-slideUp">
-          <h3 className="text-lg font-semibold mb-4">운동 데이터 요약</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">총 운동 횟수</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-300">{filteredData.length}회</p>
-            </div>
-            <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">최대 무게</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-300">
-                {Math.max(...filteredData.flatMap(w => 
-                  w.mainExercise?.sets?.map((s: any) => s.isSuccess ? s.weight : 0) || [0]
-                ))}kg
-              </p>
-            </div>
-            <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">평균 성공률</p>
-              <p className="text-xl font-bold text-purple-600 dark:text-purple-300">
-                {Math.round(filteredData.reduce((acc, curr) => 
-                  acc + (curr.successSets / (curr.mainExercise?.sets?.length || 1)) * 100, 0
-                ) / filteredData.length)}%
-              </p>
-            </div>
-            <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">마지막 운동일</p>
-              <p className="text-xl font-bold text-orange-600 dark:text-orange-300">
-                {new Date(Math.max(...filteredData.map(d => new Date(d.date).getTime())))
-                  .toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-              </p>
-            </div>
+      {/* 그래프와 운동 기록을 함께 표시하는 섹션 */}
+      <Card className="animate-slideUp">
+        <h3 className="text-lg font-semibold mb-4">운동 성과 그래프</h3>
+        
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* 왼쪽: 그래프 */}
+          <div className="flex-1">
+            {filteredData.length > 0 ? (
+              <div className="h-80">
+                <Line options={chartOptions} data={chartData} />
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center">
+                <p className="text-gray-500 dark:text-gray-400">
+                  기록된 운동 데이터가 없습니다.
+                </p>
+              </div>
+            )}
+            
+            {/* 데이터 요약 표시 */}
+            {filteredData.length > 0 && (
+              <div className="mt-6">
+                <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300 mb-3">운동 데이터 요약</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">총 운동 횟수</p>
+                    <p className="text-lg font-bold text-blue-600 dark:text-blue-300">{filteredData.length}회</p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">최대 무게</p>
+                    <p className="text-lg font-bold text-green-600 dark:text-green-300">
+                      {Math.max(...filteredData.flatMap(w => 
+                        w.mainExercise?.sets?.map((s: any) => s.isSuccess ? s.weight : 0) || [0]
+                      ))}kg
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">평균 성공률</p>
+                    <p className="text-lg font-bold text-purple-600 dark:text-purple-300">
+                      {Math.round(filteredData.reduce((acc, curr) => 
+                        acc + ((curr.successSets || 0) / (curr.mainExercise?.sets?.length || 1)) * 100, 0
+                      ) / filteredData.length)}%
+                    </p>
+                  </div>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">평균 세트 수</p>
+                    <p className="text-lg font-bold text-yellow-600 dark:text-yellow-300">
+                      {Math.round(filteredData.reduce((acc, curr) => 
+                        acc + (curr.mainExercise?.sets?.length || 0), 0
+                      ) / filteredData.length)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </Card>
-      )}
-      
-      {/* 선택한 운동 기록 모달 */}
-      {selectedWorkout && (
-        <WorkoutRecord 
-          workout={selectedWorkout} 
-          onClose={() => setSelectedWorkout(null)} 
-        />
-      )}
+          
+          {/* 오른쪽: 선택된 운동 상세 정보 */}
+          <div className="lg:w-2/5 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 pt-4 lg:pt-0 lg:pl-4">
+            {selectedWorkout ? (
+              <div className="animate-fadeIn">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="font-medium">선택된 운동 상세 정보</h4>
+                  <Button 
+                    size="sm" 
+                    className="bg-transparent text-gray-500 hover:text-gray-700 p-1"
+                    onClick={() => setSelectedWorkout(null)}
+                    icon={<X size={18} />}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="primary">
+                      {typeof selectedWorkout.date === 'string' 
+                        ? new Date(selectedWorkout.date).toLocaleDateString() 
+                        : selectedWorkout.date.toLocaleDateString()}
+                    </Badge>
+                    <Badge variant="secondary">{getPartLabel(selectedWorkout.part)}</Badge>
+                    <Badge variant={selectedWorkout.isAllSuccess ? 'success' : 'danger'}>
+                      {selectedWorkout.isAllSuccess ? '성공' : '일부 실패'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">{selectedWorkout.mainExercise?.name}</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                      {selectedWorkout.mainExercise?.sets?.map((set, index) => (
+                        <div 
+                          key={index}
+                          className={`p-2 rounded-lg text-sm ${
+                            set.isSuccess 
+                              ? 'bg-green-50 dark:bg-green-900/30 border-l-2 border-green-500' 
+                              : 'bg-red-50 dark:bg-red-900/30 border-l-2 border-red-500'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">세트 {index + 1}</span>
+                            <Badge 
+                              variant={set.isSuccess ? 'success' : 'danger'} 
+                              size="sm"
+                            >
+                              {set.isSuccess ? '성공' : '실패'}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 grid grid-cols-2 gap-1">
+                            <div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">무게</span>
+                              <p className="font-bold">{set.weight} kg</p>
+                            </div>
+                            <div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">횟수</span>
+                              <p className="font-bold">{set.reps} 회</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {selectedWorkout.notes && (
+                    <div>
+                      <h4 className="font-medium text-sm">메모</h4>
+                      <p className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg mt-1 text-sm">{selectedWorkout.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-center p-6">
+                <div className="text-gray-500 dark:text-gray-400">
+                  <p className="mb-2">그래프의 데이터 포인트를 클릭하면</p>
+                  <p>해당 일자의 운동 상세 기록이 여기에 표시됩니다.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, weekdays } from '../../utils/dateUtils';
-import { ExercisePart, Session, AccessoryExercise } from '../../types';
+import { ExercisePart, Workout, WorkoutSet, DateWorkoutMap } from '../../types';
 import { Camera, Download, Share, Image, ChevronLeft, ChevronRight, X, Trash } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import Button from '../common/Button';
@@ -10,73 +10,13 @@ import { collection, query, where, getDocs, orderBy, Timestamp, doc, deleteDoc }
 import { db } from '../../firebase/firebaseConfig';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
-
-// WorkoutSet 인터페이스 로컬 정의
-interface WorkoutSet {
-  reps: number;
-  weight: number;
-  isSuccess: boolean;
-}
-
-interface Workout {
-  id: string;
-  date: string | Date;
-  part: ExercisePart;
-  mainExercise: {
-    name: string;
-    weight: number;
-    sets: WorkoutSet[];
-  };
-  accessoryExercises?: AccessoryExercise[];
-  notes?: string;
-  isAllSuccess: boolean;
-  successSets?: number;
-}
-
-// 현재 달의 날짜 배열 생성
-const generateCalendarDays = (year: number, month: number) => {
-  // 선택된 달의 첫째 날
-  const firstDay = new Date(year, month, 1);
-  // 선택된 달의 마지막 날
-  const lastDay = new Date(year, month + 1, 0);
-  
-  // 달력 시작일 (이전 달의 일부 포함)
-  const startDate = new Date(firstDay);
-  startDate.setDate(firstDay.getDate() - firstDay.getDay());
-  
-  // 달력 종료일 (다음 달의 일부 포함)
-  const endDate = new Date(lastDay);
-  const daysToAdd = 6 - lastDay.getDay();
-  endDate.setDate(lastDay.getDate() + daysToAdd);
-  
-  const days: Date[] = [];
-  let currentDate = new Date(startDate);
-  
-  while (currentDate <= endDate) {
-    days.push(new Date(currentDate));
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  
-  return days;
-};
-
-// 운동 부위에 따른 레이블 반환
-const getPartLabel = (part: ExercisePart): string => {
-  const labels: { [key in ExercisePart]: string } = {
-    chest: '가슴',
-    back: '등',
-    shoulder: '어깨',
-    leg: '하체',
-    biceps: '이두',
-    triceps: '삼두'
-  };
-  return labels[part];
-};
+// 유틸리티 함수 import
+import { getPartLabel, getPartColor, generateCalendarDays } from '../../utils/workoutUtils';
 
 const WorkoutList: React.FC = () => {
   const navigate = useNavigate();
   const { userProfile, currentUser } = useAuth();
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
@@ -85,7 +25,7 @@ const WorkoutList: React.FC = () => {
   const [calendarDays, setCalendarDays] = useState<Date[]>([]);
   const [yearOptions, setYearOptions] = useState<number[]>([]);
   const [monthOptions, setMonthOptions] = useState<{value: number; label: string}[]>([]);
-  const [workoutsByDate, setWorkoutsByDate] = useState<Record<string, Workout[]>>({});
+  const [workoutsByDate, setWorkoutsByDate] = useState<DateWorkoutMap>({});
   const [selectedWorkouts, setSelectedWorkouts] = useState<Workout[]>([]);
   const [stampImage, setStampImage] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -109,9 +49,9 @@ const WorkoutList: React.FC = () => {
       await deleteDoc(sessionRef);
       
       // 상태 업데이트
-      setSessions((prev: Session[]) => prev.filter(session => session.id !== workoutId));
+      setSessions((prev: Workout[]) => prev.filter(session => session.id !== workoutId));
       setSelectedWorkouts((prev: Workout[]) => prev.filter(workout => workout.id !== workoutId));
-      setWorkoutsByDate((prev: Record<string, Workout[]>) => {
+      setWorkoutsByDate((prev: DateWorkoutMap) => {
         const updated = { ...prev };
         
         // 모든 날짜에서 해당 ID의 workout 제거
@@ -161,7 +101,7 @@ const WorkoutList: React.FC = () => {
             ...data,
             id: doc.id,
             date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date)
-          } as Session;
+          } as Workout;
         });
         
         setSessions(sessionData);
@@ -227,31 +167,18 @@ const WorkoutList: React.FC = () => {
   
   // 날짜별 운동 기록 그룹화
   useEffect(() => {
-    const groupedWorkouts = sessions.reduce<Record<string, Workout[]>>((acc, session) => {
+    const groupedWorkouts = sessions.reduce<DateWorkoutMap>((acc, session) => {
       // date가 Date 객체인 경우 문자열로 변환
-      const dateStr = formatDate(session.date);
+      const dateStr = formatDate(typeof session.date === 'string' ? new Date(session.date) : session.date);
       if (!acc[dateStr]) {
         acc[dateStr] = [];
       }
-      acc[dateStr].push(session as unknown as Workout);
+      acc[dateStr].push(session);
       return acc;
     }, {});
     
     setWorkoutsByDate(groupedWorkouts);
   }, [sessions]);
-  
-  // 운동 부위에 따른 색상 지정 - 성공/실패 색상 더 명확하게 구분
-  const getPartColor = (part: ExercisePart, isSuccess: boolean = true) => {
-    const baseColors = {
-      chest: isSuccess ? 'bg-blue-200 text-blue-800 border-blue-400' : 'bg-red-200 text-red-800 border-red-400',
-      back: isSuccess ? 'bg-green-200 text-green-800 border-green-400' : 'bg-red-200 text-red-800 border-red-400',
-      shoulder: isSuccess ? 'bg-purple-200 text-purple-800 border-purple-400' : 'bg-red-200 text-red-800 border-red-400',
-      leg: isSuccess ? 'bg-orange-200 text-orange-800 border-orange-400' : 'bg-red-200 text-red-800 border-red-400',
-      biceps: isSuccess ? 'bg-pink-200 text-pink-800 border-pink-400' : 'bg-red-200 text-red-800 border-red-400',
-      triceps: isSuccess ? 'bg-indigo-200 text-indigo-800 border-indigo-400' : 'bg-red-200 text-red-800 border-red-400'
-    };
-    return baseColors[part];
-  };
 
   // 선택된 날짜의 운동 기록 가져오기
   useEffect(() => {
@@ -543,10 +470,14 @@ const WorkoutList: React.FC = () => {
             // 메인 운동의 성공 무게 계산
             let maxSuccessWeight = 0;
             let isAllSuccess = false;
+            let exercisePart = '';
+            let mainExerciseName = '';
             
             if (hasWorkout) {
               const workout = dayWorkouts[0]; // 첫 번째 운동 기록
               isAllSuccess = workout.isAllSuccess;
+              exercisePart = workout.part || ''; // 운동 부위
+              mainExerciseName = workout.mainExercise?.name || '';
               
               // 성공한 세트 중 가장 무거운 무게 찾기
               if (workout.mainExercise && workout.mainExercise.sets) {
@@ -558,8 +489,9 @@ const WorkoutList: React.FC = () => {
               }
             }
             
-            const statusColor = isAllSuccess ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
-                               hasWorkout ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : '';
+            // 부위별 색상 설정
+            const statusColor = exercisePart ? getPartColor(exercisePart as ExercisePart, isAllSuccess) : '';
+            const successIcon = isAllSuccess ? '✅' : '❌';
             
             return (
               <div 
@@ -578,14 +510,19 @@ const WorkoutList: React.FC = () => {
                   {day.getDate()}
                 </span>
                 
-                {/* 운동 마커 - 성공한 메인 운동 무게 표시 */}
+                {/* 운동 마커 - 운동 부위와 성공/실패 여부 표시 */}
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
                     <div 
                       className={`text-xs px-1 py-0.5 rounded-sm truncate ${statusColor}`}
-                      title={`${maxSuccessWeight}kg - ${isAllSuccess ? '성공' : '실패'}`}
+                      title={`${mainExerciseName} - ${maxSuccessWeight}kg - ${isAllSuccess ? '성공' : '실패'}`}
                     >
-                      {maxSuccessWeight > 0 ? `${maxSuccessWeight}kg` : '기록 있음'}
+                      {exercisePart && 
+                        <span className="uppercase font-bold mr-1">
+                          {exercisePart.slice(0,3)}{successIcon}
+                        </span>
+                      }
+                      {maxSuccessWeight > 0 ? `${maxSuccessWeight}kg` : '기록'}
                     </div>
                   </div>
                 )}
