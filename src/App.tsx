@@ -31,8 +31,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 };
 
 function App() {
+  // 배포 환경에 따라 Router의 basename 설정
+  const isVercel = import.meta.env.VITE_IS_VERCEL === '1' || 
+                   import.meta.env.VERCEL === '1' || 
+                   process.env.VERCEL === '1';
+  
+  const basename = isVercel ? '/' : '/Corevia-Fitness-Tracking-Ver-2';
+  
+  console.log('Environment:', import.meta.env.MODE);
+  console.log('Base path:', basename);
+  console.log('Is Vercel:', isVercel);
+  
   return (
-    <Router>
+    <Router basename={basename}>
       <AuthProvider>
         <ThemeProvider>
           <Layout>
