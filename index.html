@@ -6,9 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Corevia Fitness</title>
     <script>
-      // 배포 환경 감지 및 base 경로 설정
+      // 배포 환경 감지 및 경로 설정
       (function() {
+        // 배포 환경 또는 개발 환경 감지
         const isVercel = window.location.hostname.includes('vercel.app');
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const isProduction = isVercel || isGitHubPages;
+        
+        // 개발 환경에서는 아무것도 하지 않음
+        if (!isProduction) return;
+        
         const base = isVercel ? '/' : '/Corevia-Fitness-Tracking-Ver-2/';
         
         // <base> 태그 생성 및 추가
