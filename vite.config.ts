@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { writeFileSync } from 'fs';
 
 // Config updated for Node 18+ and latest dependencies
 export default defineConfig(({ mode }) => {
@@ -18,7 +19,25 @@ export default defineConfig(({ mode }) => {
   console.log(`Is Vercel: ${isVercel}`);
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: 'postbuild-fix-asset-paths',
+        closeBundle: async () => {
+          try {
+            console.log('Running post-build asset path fix...');
+            // 이 부분은 GitHub Actions에서 페이지 배포 시 실행됩니다
+            if (mode === 'production' && !isVercel) {
+              console.log('Applying GitHub Pages specific fixes...');
+              // GitHub Pages를 위한 CNAME 파일 생성 (필요한 경우)
+              // writeFileSync('dist/CNAME', 'your-domain.com');
+            }
+          } catch (error) {
+            console.error('Error in post-build hook:', error);
+          }
+        }
+      }
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -37,7 +56,10 @@ export default defineConfig(({ mode }) => {
             'react-vendor': ['react', 'react-dom'],
             'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
             'chart-vendor': ['chart.js', 'react-chartjs-2']
-          }
+          },
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js'
         }
       },
       minify: true,
