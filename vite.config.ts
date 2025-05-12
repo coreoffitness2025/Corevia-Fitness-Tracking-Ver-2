@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync } from 'fs';
 
 // Config updated for Node 18+ and latest dependencies
 export default defineConfig(({ mode }) => {
@@ -18,19 +18,46 @@ export default defineConfig(({ mode }) => {
   console.log(`Base path: ${base}`);
   console.log(`Is Vercel: ${isVercel}`);
 
+  // HTML 변환 플러그인 생성
+  const htmlPlugin = () => {
+    return {
+      name: 'html-transform',
+      transformIndexHtml(html) {
+        return html.replace(
+          /<script type="module" src="\.\/src\/main\.tsx"><\/script>/,
+          `<script type="module" src="${base}src/main.tsx"></script>`
+        );
+      }
+    };
+  };
+
   return {
     plugins: [
       react(),
+      htmlPlugin(),
       {
         name: 'postbuild-fix-asset-paths',
         closeBundle: async () => {
           try {
             console.log('Running post-build asset path fix...');
             // 이 부분은 GitHub Actions에서 페이지 배포 시 실행됩니다
-            if (mode === 'production' && !isVercel) {
-              console.log('Applying GitHub Pages specific fixes...');
-              // GitHub Pages를 위한 CNAME 파일 생성 (필요한 경우)
-              // writeFileSync('dist/CNAME', 'your-domain.com');
+            if (mode === 'production') {
+              console.log('Applying production specific fixes...');
+              
+              // dist/index.html 파일 읽기
+              try {
+                let indexHtml = readFileSync('dist/index.html', 'utf-8');
+                
+                // 스크립트와 스타일시트 경로를 상대 경로로 수정
+                indexHtml = indexHtml.replace(/src="\/assets\//g, `src="./assets/`);
+                indexHtml = indexHtml.replace(/href="\/assets\//g, `href="./assets/`);
+                
+                // 수정된 내용 저장
+                writeFileSync('dist/index.html', indexHtml);
+                console.log('Successfully updated asset paths in dist/index.html');
+              } catch (error) {
+                console.error('Error updating dist/index.html:', error);
+              }
             }
           } catch (error) {
             console.error('Error in post-build hook:', error);
