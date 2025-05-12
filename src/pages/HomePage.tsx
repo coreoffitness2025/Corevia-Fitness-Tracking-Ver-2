@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useWorkoutStore } from '../store/workoutStore';
-import { useFoodLogStore } from '../store/foodStore';
+import { useWorkoutStore } from '../stores/workoutStore';
+import { useFoodLogStore } from '../stores/foodLogStore';
 import { WorkoutSession } from '../types/workout';
 import Layout from '../components/common/Layout';
 
