@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// Updated to trigger redeploy
+// Config updated to fix build issues
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -24,8 +24,15 @@ export default defineConfig({
           'chart-vendor': ['chart.js', 'react-chartjs-2']
         }
       }
-    }
+    },
+    // Skip typecheck during build for CI environments
+    minify: true,
+    target: 'es2015'
   },
   base: '/Corevia-Fitness-Tracking-Ver-2/',
-  assetsInclude: ['**/*.csv']
+  assetsInclude: ['**/*.csv'],
+  // Adds an environment flag to handle different environments
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+  }
 });
