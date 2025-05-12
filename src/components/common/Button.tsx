@@ -5,6 +5,10 @@ import { Link } from 'react-router-dom';
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'text' | 'danger';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
+// IconButton용 별도 타입 정의
+export type IconButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'outline' | 'ghost';
+export type IconButtonSize = 'sm' | 'md' | 'lg';
+
 export interface ButtonProps {
   children?: React.ReactNode;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -54,7 +58,7 @@ export const getButtonStyles = (
   const variantClasses = {
     primary: 'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800',
     secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 active:bg-secondary-700',
-    outline: 'border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800',
+    outline: 'border-2 border-blue-500 bg-white text-black hover:bg-gray-50 dark:bg-gray-800 dark:border-blue-400 dark:text-white dark:hover:bg-gray-700',
     text: 'text-primary-600 hover:bg-gray-100 dark:text-primary-400 dark:hover:bg-gray-800',
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
   };
@@ -144,13 +148,19 @@ const Button: React.FC<ButtonProps> = ({
 
 export default Button;
 
+export interface IconButtonProps extends Omit<ButtonProps, 'children' | 'variant' | 'size'> {
+  icon: React.ReactNode;
+  variant?: IconButtonVariant;
+  size?: IconButtonSize;
+}
+
 export function IconButton({
   icon,
   variant = 'primary',
   size = 'md',
   className = '',
   ...props
-}: Omit<ButtonProps, 'children'> & { icon: React.ReactNode }) {
+}: IconButtonProps) {
   const sizeClasses = {
     sm: 'p-1.5 text-sm',
     md: 'p-2',
@@ -163,7 +173,7 @@ export function IconButton({
     success: 'bg-success-600 hover:bg-success-700 text-white',
     danger: 'bg-danger-600 hover:bg-danger-700 text-white',
     warning: 'bg-warning-600 hover:bg-warning-700 text-white',
-    outline: 'bg-transparent border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-white',
+    outline: 'bg-white border-2 border-blue-500 dark:border-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-black dark:text-white',
     ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-white',
   };
 

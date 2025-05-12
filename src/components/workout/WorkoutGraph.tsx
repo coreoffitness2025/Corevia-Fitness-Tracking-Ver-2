@@ -90,6 +90,107 @@ const setConfigOptions = [
   { value: 'custom', label: '커스텀' }
 ];
 
+// 운동 기록 표시 컴포넌트
+interface WorkoutRecordProps {
+  workout: any;
+  onClose: () => void;
+}
+
+const WorkoutRecord: React.FC<WorkoutRecordProps> = ({ workout, onClose }) => {
+  if (!workout) return null;
+  
+  const date = new Date(workout.date);
+  const formattedDate = date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  // 부위에 따른 색상 지정
+  const getPartColor = (part: ExercisePart) => {
+    const colors = {
+      chest: 'bg-blue-100 text-blue-800',
+      back: 'bg-green-100 text-green-800',
+      shoulder: 'bg-purple-100 text-purple-800',
+      leg: 'bg-orange-100 text-orange-800',
+      biceps: 'bg-pink-100 text-pink-800',
+      triceps: 'bg-indigo-100 text-indigo-800'
+    };
+    return colors[part] || 'bg-gray-100 text-gray-800';
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-auto">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h3 className="text-lg font-semibold">{formattedDate} 운동 기록</h3>
+          <button 
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+          >
+            ✕
+          </button>
+        </div>
+        
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <span className={`px-3 py-1 rounded-full text-sm ${getPartColor(workout.part)}`}>
+              {workout.part === 'chest' ? '가슴' : 
+               workout.part === 'back' ? '등' : 
+               workout.part === 'shoulder' ? '어깨' : 
+               workout.part === 'leg' ? '하체' :
+               workout.part === 'biceps' ? '이두' :
+               workout.part === 'triceps' ? '삼두' : workout.part}
+            </span>
+            <span className={`px-3 py-1 rounded-full text-sm ${workout.isAllSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {workout.isAllSuccess ? '성공' : '실패'} ({workout.successSets || 0}/{workout.mainExercise?.sets?.length || 0} 세트)
+            </span>
+          </div>
+          
+          <div className="mb-4">
+            <h4 className="font-medium mb-2">메인 운동</h4>
+            <p className="mb-2">{workout.mainExercise?.name}</p>
+            <div className="flex flex-wrap gap-2">
+              {workout.mainExercise?.sets?.map((set: any, index: number) => (
+                <div key={index} className={`px-3 py-1 rounded text-sm ${set.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {set.weight}kg x {set.reps}회
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
+            <div className="mb-4">
+              <h4 className="font-medium mb-2">보조 운동</h4>
+              <div className="space-y-2">
+                {workout.accessoryExercises.map((exercise: any, index: number) => (
+                  <div key={index} className="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                    <p className="font-medium">{exercise.name}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Array.isArray(exercise.sets) && exercise.sets.map((set: any, setIndex: number) => (
+                        <span key={setIndex} className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded">
+                          {set.weight}kg x {set.reps}회
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {workout.notes && (
+            <div>
+              <h4 className="font-medium mb-2">메모</h4>
+              <p className="text-sm bg-gray-50 dark:bg-gray-700 p-3 rounded">{workout.notes}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const WorkoutGraph: React.FC = () => {
   const { currentUser } = useAuth();
   const [selectedPart, setSelectedPart] = useState<string>('all');
@@ -102,6 +203,10 @@ const WorkoutGraph: React.FC = () => {
   // 실제 데이터를 저장할 상태
   const [workoutData, setWorkoutData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
+  
+  // 클릭한 운동 데이터 관리 상태
+  const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
+  const [dateWorkoutMap, setDateWorkoutMap] = useState<Record<string, any>>({});
   
   // 차트 데이터
   const [chartData, setChartData] = useState<ChartData<'line'>>({
@@ -140,6 +245,17 @@ const WorkoutGraph: React.FC = () => {
       mode: 'nearest',
       axis: 'x',
       intersect: false
+    },
+    onClick: (event, elements, chart) => {
+      if (elements.length === 0) return;
+      
+      const clickedElement = elements[0];
+      const dataIndex = clickedElement.index;
+      const label = chart.data.labels?.[dataIndex] as string;
+      
+      if (label && dateWorkoutMap[label]) {
+        setSelectedWorkout(dateWorkoutMap[label]);
+      }
     }
   };
   
@@ -278,6 +394,7 @@ const WorkoutGraph: React.FC = () => {
           labels: [],
           datasets: []
         });
+        setDateWorkoutMap({});
         return;
       }
       
@@ -289,12 +406,18 @@ const WorkoutGraph: React.FC = () => {
       // 날짜별 성공한 세트 중 최대 무게 추출
       const successWeightsByDate: Record<string, number> = {};
       const allDates: string[] = [];
+      const newDateWorkoutMap: Record<string, any> = {};
       
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets) return;
         
         const dateStr = formatDate(new Date(workout.date));
         allDates.push(dateStr);
+        
+        // 날짜별 운동 기록 저장 (클릭 이벤트용)
+        if (!newDateWorkoutMap[dateStr] || new Date(workout.date) > new Date(newDateWorkoutMap[dateStr].date)) {
+          newDateWorkoutMap[dateStr] = workout;
+        }
         
         // 성공한 세트 중 최대 무게 찾기
         let maxWeight = 0;
@@ -311,6 +434,9 @@ const WorkoutGraph: React.FC = () => {
           }
         }
       });
+      
+      // 날짜별 운동 데이터 맵 업데이트
+      setDateWorkoutMap(newDateWorkoutMap);
       
       // 중복 제거 및 정렬된 날짜 배열
       const uniqueDates = [...new Set(allDates)].sort((a, b) => {
@@ -367,7 +493,7 @@ const WorkoutGraph: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
       <Card className="animate-slideUp">
@@ -437,6 +563,10 @@ const WorkoutGraph: React.FC = () => {
           </div>
         </div>
         
+        <div className="flex items-center justify-center mb-2 text-sm text-gray-500 dark:text-gray-400">
+          <p>데이터 포인트를 클릭하면 해당 일자의 운동 기록을 확인할 수 있습니다</p>
+        </div>
+        
         {filteredData.length > 0 ? (
           <div className="h-80">
             <Line options={chartOptions} data={chartData} />
@@ -484,6 +614,14 @@ const WorkoutGraph: React.FC = () => {
             </div>
           </div>
         </Card>
+      )}
+      
+      {/* 선택한 운동 기록 모달 */}
+      {selectedWorkout && (
+        <WorkoutRecord 
+          workout={selectedWorkout} 
+          onClose={() => setSelectedWorkout(null)} 
+        />
       )}
     </div>
   );

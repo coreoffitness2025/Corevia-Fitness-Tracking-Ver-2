@@ -93,6 +93,12 @@ const WorkoutList: React.FC = () => {
   const workoutStampRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // 현재 년월이 변경될 때 달력 일자 업데이트
+  useEffect(() => {
+    const days = generateCalendarDays(currentYear, currentMonth);
+    setCalendarDays(days);
+  }, [currentYear, currentMonth]);
+  
   // 운동 기록 삭제 함수
   const deleteWorkout = async (workoutId: string) => {
     if (!currentUser || !workoutId) return;
