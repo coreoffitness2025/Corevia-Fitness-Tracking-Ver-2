@@ -163,26 +163,65 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // 외부 CSV 로드 시도
-      const response = await fetch('/data/nutrition_db.csv');
-      if (!response.ok) {
-        // 첫 번째 경로에서 실패했다면 다른 경로로 시도
-        const altResponse = await fetch('/nutrition_db.csv');
-        if (!altResponse.ok) {
-          throw new Error(`CSV 로드 실패: ${response.status} ${response.statusText}`);
+      // 파일을 ArrayBuffer로 로드하여 인코딩 문제 해결
+      const fetchCSV = async (url: string): Promise<ArrayBuffer | null> => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            console.log(`${url} 로드 실패: ${response.status}`);
+            return null;
+          }
+          return await response.arrayBuffer();
+        } catch (error) {
+          console.error(`${url} 로드 중 오류:`, error);
+          return null;
         }
-        const text = await altResponse.text();
-        const data = parseCSV(text);
-        
-        if (data.length > 0) {
-          console.log('대체 경로에서 CSV 로드 성공:', data.length);
-          setFoodData(data);
-          return;
+      };
+      
+      // 여러 경로 시도
+      const paths = ['/data/nutrition_db.csv', '/nutrition_db.csv', './nutrition_db.csv', '../nutrition_db.csv', 'nutrition_db.csv'];
+      let buffer: ArrayBuffer | null = null;
+      
+      for (const path of paths) {
+        buffer = await fetchCSV(path);
+        if (buffer) {
+          console.log(`${path}에서 CSV 파일을 성공적으로 로드했습니다.`);
+          break;
         }
       }
       
-      const text = await response.text();
-      const data = parseCSV(text);
+      if (!buffer) {
+        throw new Error('모든 경로에서 CSV 파일 로드에 실패했습니다.');
+      }
+      
+      // 다양한 인코딩 시도 (EUC-KR/CP949가 한국어 CSV에 일반적)
+      const encodings = ['UTF-8', 'EUC-KR', 'CP949'];
+      let csvText = '';
+      let success = false;
+      
+      for (const encoding of encodings) {
+        try {
+          const decoder = new TextDecoder(encoding);
+          const text = decoder.decode(buffer);
+          
+          // 간단한 검증 (최소한 데이터 몇 줄이 있는지)
+          const lines = text.split('\n');
+          if (lines.length > 5) {
+            csvText = text;
+            console.log(`${encoding} 인코딩으로 성공적으로 디코딩했습니다.`);
+            success = true;
+            break;
+          }
+        } catch (error) {
+          console.warn(`${encoding} 인코딩 시도 실패:`, error);
+        }
+      }
+      
+      if (!success) {
+        throw new Error('지원되는 인코딩으로 CSV를 읽을 수 없습니다.');
+      }
+      
+      const data = parseCSV(csvText);
       
       if (data.length > 0) {
         console.log('CSV 로드 성공:', data.length);
