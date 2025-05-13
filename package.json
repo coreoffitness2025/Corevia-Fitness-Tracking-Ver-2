@@ -8,9 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
-    "build:ts": "tsc && npx vite build",
-    "build:github": "cross-env GITHUB_PAGES=true npx vite build",
+    "build": "node ./node_modules/vite/bin/vite.js build",
+    "build:ts": "tsc && node ./node_modules/vite/bin/vite.js build",
+    "build:github": "cross-env GITHUB_PAGES=true node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview",
     "predeploy": "npm run build:github",
     "deploy": "gh-pages -d dist",

@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm install && npm run build",
+  "installCommand": "npm install --no-audit --quiet",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
