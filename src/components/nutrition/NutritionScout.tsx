@@ -136,7 +136,7 @@ const NutritionScout = () => {
   const [suggestions, setSuggestions] = useState<NutritionData[]>([]);
   const [showAutoComplete, setShowAutoComplete] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showComments, setShowComments] = useState(true);
+  const [showComments, setShowComments] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const autoCompleteRef = useRef<HTMLDivElement>(null);
@@ -259,22 +259,30 @@ const NutritionScout = () => {
     setSearchQuery(value);
     
     if (value.trim()) {
-      // 음식 이름으로만 필터링 (코멘트 제외)
-      const exactMatches = foodData.filter(item => 
-        item.요리명 && item.요리명.toLowerCase().startsWith(value.toLowerCase())
+      // 검색어와 일치하는 항목 찾기
+      const matchingFoods = foodData.filter(item => 
+        item.요리명 && item.요리명.toLowerCase().includes(value.toLowerCase())
       );
       
-      const partialMatches = foodData.filter(item => 
-        item.요리명 && 
-        item.요리명.toLowerCase().includes(value.toLowerCase()) && 
-        !item.요리명.toLowerCase().startsWith(value.toLowerCase())
-      );
+      // 자동완성 항목을 위한 정제된 데이터 생성 (코멘트 제거)
+      const cleanedSuggestions = matchingFoods.map(item => {
+        // 코멘트 필드 명시적으로 제거
+        const { 코멘트, ...rest } = item;
+        return rest as NutritionData;
+      });
       
-      // 정확한 일치 항목을 먼저 보여주고, 그 다음 부분 일치 항목
-      const filtered = [...exactMatches, ...partialMatches].slice(0, 5);
+      // 정확한 일치 항목을 우선 정렬
+      const sortedSuggestions = cleanedSuggestions.sort((a, b) => {
+        const aStarts = a.요리명.toLowerCase().startsWith(value.toLowerCase());
+        const bStarts = b.요리명.toLowerCase().startsWith(value.toLowerCase());
+        
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return 0;
+      }).slice(0, 5);
       
-      setSuggestions(filtered);
-      setShowAutoComplete(filtered.length > 0);
+      setSuggestions(sortedSuggestions);
+      setShowAutoComplete(sortedSuggestions.length > 0);
     } else {
       setSuggestions([]);
       setShowAutoComplete(false);
@@ -289,7 +297,29 @@ const NutritionScout = () => {
 
   const selectSuggestion = (suggestion: NutritionData) => {
     setSearchQuery(suggestion.요리명);
-    setSearchResult(suggestion);
+    
+    // 전체 foodData에서 선택된 요리명과 일치하는 완전한 데이터를 찾음
+    const originalData = foodData.find(item => item.요리명 === suggestion.요리명);
+    
+    if (originalData) {
+      // 원본 데이터 복사
+      const result = {...originalData};
+      
+      // showComments가 false면 코멘트 필드 제거
+      if (!showComments && result.코멘트) {
+        delete result['코멘트'];
+      }
+      
+      setSearchResult(result);
+    } else {
+      // 전체 데이터에서 찾을 수 없는 경우 (드문 케이스)
+      const result = {...suggestion};
+      if (result.코멘트 && !showComments) {
+        delete result['코멘트'];
+      }
+      setSearchResult(result);
+    }
+    
     setShowAutoComplete(false);
   };
 
@@ -409,12 +439,21 @@ const NutritionScout = () => {
       }
     });
     
-    // 코멘트 필드 표준화
+    // 코멘트 필드 표준화 - 명확한 코멘트 필드만 인식
+    let commentFound = false;
     for (const key of Object.keys(item)) {
-      if (key.includes('코멘트') || key.includes('comment') || key.includes('설명') || key.includes('메모')) {
+      const lowerKey = key.toLowerCase();
+      if (lowerKey === '코멘트' || lowerKey === 'comment' || 
+          lowerKey === '설명' || lowerKey === '메모') {
         standardizedItem['코멘트'] = item[key];
+        commentFound = true;
         break;
       }
+    }
+    
+    // 명확한 코멘트 필드가 없을 경우, 다른 필드에서 코멘트로 오인될 수 있는 내용 제거
+    if (!commentFound) {
+      delete standardizedItem['코멘트'];
     }
     
     return standardizedItem;
@@ -485,12 +524,18 @@ const NutritionScout = () => {
                 highlightedName = itemName;
               }
               
+              // 코멘트 필드가 없음을 확인
+              if (suggestion.코멘트) {
+                console.warn('자동완성 항목에 코멘트가 포함되어 있습니다:', suggestion.요리명);
+              }
+              
               return (
                 <div
                   key={index}
                   onClick={() => selectSuggestion(suggestion)}
                   className="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-white border-b border-gray-100 dark:border-gray-600 last:border-b-0"
                 >
+                  {/* 요리명만 표시, 코멘트 제외 */}
                   {highlightedName}
                 </div>
               );
@@ -586,7 +631,7 @@ const NutritionScout = () => {
           </div>
           
           {/* 코멘트 */}
-          {searchResult?.코멘트 && typeof searchResult.코멘트 === 'string' && searchResult.코멘트.trim() !== '' && (
+          {searchResult?.코멘트 && typeof searchResult.코멘트 === 'string' && searchResult.코멘트.trim() !== '' && showComments && (
             <div className="p-5 bg-[#f0f0f0] dark:bg-[#1E2235] border-t border-gray-200 dark:border-gray-600">
               <div className="bg-[#E8F0FE] dark:bg-[#1A3A6B] border-l-4 border-[#4285F4] p-4 rounded-r">
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
@@ -615,9 +660,20 @@ const NutritionScout = () => {
       {/* 데이터베이스 정보 표시 */}
       <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex justify-between items-center">
         <span>데이터베이스: {foodData.length}개 항목</span>
-        {loadError && (
-          <span className="text-red-500">{loadError}</span>
-        )}
+        <div className="flex items-center">
+          <label className="flex items-center mr-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showComments}
+              onChange={toggleComments}
+              className="mr-1.5 h-3.5 w-3.5"
+            />
+            <span>코멘트 표시</span>
+          </label>
+          {loadError && (
+            <span className="text-red-500">{loadError}</span>
+          )}
+        </div>
       </div>
     </div>
   );
