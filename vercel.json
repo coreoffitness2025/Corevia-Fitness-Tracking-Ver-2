@@ -1,13 +1,12 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "github": {
-    "enabled": true,
-    "silent": false
+    "enabled": true
   },
-  "alias": "corevia-fitness",
-  "cleanUrls": true,
-  "trailingSlash": false
+  "alias": "corevia-fitness-tracking"
 } 
