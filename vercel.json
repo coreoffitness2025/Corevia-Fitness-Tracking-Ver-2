@@ -1,8 +1,20 @@
 {
-  "installCommand": "npm install --no-audit --quiet",
+  "version": 2,
+  "public": true,
+  "installCommand": "npm ci --no-audit --quiet",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "env": {
+    "NODE_ENV": "production",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "master": true
+    }
+  },
   "rewrites": [
     { "source": "/(assets|.+\\..+)", "destination": "/index.html", "has": [
       { "type": "header", "key": "Accept", "value": "text/html" }
@@ -13,19 +25,22 @@
     {
       "source": "/assets/(.*)\\.js",
       "headers": [
-        { "key": "Content-Type", "value": "application/javascript" }
+        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
       "source": "/(.*)\\.js",
       "headers": [
-        { "key": "Content-Type", "value": "application/javascript" }
+        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
       "source": "/(.*)\\.css",
       "headers": [
-        { "key": "Content-Type", "value": "text/css" }
+        { "key": "Content-Type", "value": "text/css" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
   ]
