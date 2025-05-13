@@ -27,6 +27,15 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 
+// 환경 변수 디버깅 - 개발 환경과 GitHub Pages에서 환경 변수가 로드되는지 확인
+if (typeof window !== 'undefined' && (import.meta.env.DEV || (window as any).__IS_GITHUB_PAGES__)) {
+  console.log('Firebase 환경 변수 확인:', {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY ? '설정됨' : '설정안됨',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ? '설정됨' : '설정안됨',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ? '설정됨' : '설정안됨'
+  });
+}
+
 // Firebase 환경 설정 - GitHub Secrets에서 관리되는 환경 변수 사용
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
@@ -37,6 +46,11 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID,
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || process.env.FIREBASE_MEASUREMENT_ID
 };
+
+// Firebase 초기화 전 config 확인
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+  console.error('Firebase 필수 환경 변수가 누락되었습니다. 인증이 작동하지 않을 수 있습니다.');
+}
 
 // Firebase 초기화
 const app = initializeApp(firebaseConfig);
