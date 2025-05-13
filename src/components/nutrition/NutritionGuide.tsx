@@ -6,6 +6,13 @@ import FoodLog from './FoodLog';
 import Card from '../common/Card';
 import { Info } from 'lucide-react';
 
+// 식단 추천 타입 정의
+interface FoodRecommendation {
+  name: string;
+  amount: string;
+  nutrition: string;
+}
+
 // FoodForm.tsx와 유사한 목표 칼로리 및 매크로 계산 로직 (필요시 AuthContext에서 가져오거나 공통 함수로 분리)
 const calculateMacroNutrientTargetsForGuide = (targetCalories: number, weight_kg: number) => {
   const proteinGrams = Math.round(weight_kg * 1.6); // 체중 1kg당 단백질 1.6g
@@ -31,6 +38,10 @@ const NutritionGuide = () => {
     carbsTarget: 0,
     fatTarget: 0,
   });
+  
+  // 식단 추천 관련 상태
+  const [recommendedFoods, setRecommendedFoods] = useState<FoodRecommendation[]>([]);
+  const [recommendationTitle, setRecommendationTitle] = useState<string>('');
 
   useEffect(() => {
     if (userProfile?.targetCalories && userProfile?.weight) {
@@ -45,6 +56,41 @@ const NutritionGuide = () => {
         setNutritionTargets(prev => ({ ...prev, targetCalories: userProfile.targetCalories || 2000 }));
     }
   }, [userProfile]);
+  
+  // 식단 추천 핸들러
+  const handleFoodRecommendation = (type: 'carbs' | 'protein' | 'fat') => {
+    let foods: FoodRecommendation[] = [];
+    let title = '';
+    
+    if (type === 'carbs') {
+      title = '탄수화물 식단 추천';
+      foods = [
+        { name: '흰쌀밥', amount: '210g', nutrition: '탄수화물 70g' },
+        { name: '고구마', amount: '150g', nutrition: '탄수화물 45g' },
+        { name: '통밀빵', amount: '100g', nutrition: '탄수화물 50g' },
+        { name: '오트밀', amount: '100g', nutrition: '탄수화물 66g' }
+      ];
+    } else if (type === 'protein') {
+      title = '단백질 식단 추천';
+      foods = [
+        { name: '닭가슴살', amount: '100g', nutrition: '단백질 23g' },
+        { name: '계란', amount: '2개', nutrition: '단백질 12g' },
+        { name: '그릭요거트', amount: '200g', nutrition: '단백질 20g' },
+        { name: '연어', amount: '100g', nutrition: '단백질 22g' }
+      ];
+    } else if (type === 'fat') {
+      title = '지방 식단 추천';
+      foods = [
+        { name: '아보카도', amount: '100g', nutrition: '지방 15g' },
+        { name: '아몬드', amount: '30g', nutrition: '지방 14g' },
+        { name: '올리브 오일', amount: '15ml', nutrition: '지방 14g' },
+        { name: '연어', amount: '100g', nutrition: '지방 13g' }
+      ];
+    }
+    
+    setRecommendationTitle(title);
+    setRecommendedFoods(foods);
+  };
 
   if (!userProfile) {
     return (
@@ -81,9 +127,52 @@ const NutritionGuide = () => {
               </div>
             </div>
             {userProfile.targetCalories && (
-                 <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                    <p>식사별 목표: 아침 <strong>{Math.round(nutritionTargets.targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(nutritionTargets.targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(nutritionTargets.targetCalories * 0.3)}kcal</strong></p>
-                    <p className="mt-1">💡 개인의 필요에 따라 이 목표를 조정할 수 있습니다. 이 가이드라인은 일반적인 권장 사항입니다.</p>
+                 <div className="mt-4 space-y-4">
+                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                     <h4 className="font-semibold mb-2">끼니당 권장 영양소</h4>
+                     <p className="mb-2 text-gray-700 dark:text-gray-300">3끼 기준, 하루 균등 배분:</p>
+                     <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                       <p>탄수화물: <strong>{Math.round(nutritionTargets.carbsTarget / 3)}g</strong>/끼니</p>
+                       <p>단백질: <strong>{Math.round(nutritionTargets.proteinTarget / 3)}g</strong>/끼니</p>
+                       <p>지방: <strong>{Math.round(nutritionTargets.fatTarget / 3)}g</strong>/끼니</p>
+                     </div>
+                   </div>
+                   
+                   <div className="flex flex-wrap gap-2">
+                     <button 
+                       className="px-3 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200"
+                       onClick={() => handleFoodRecommendation('carbs')}
+                     >
+                       탄수화물 식단 추천
+                     </button>
+                     <button 
+                       className="px-3 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200"
+                       onClick={() => handleFoodRecommendation('protein')}
+                     >
+                       단백질 식단 추천
+                     </button>
+                     <button 
+                       className="px-3 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200"
+                       onClick={() => handleFoodRecommendation('fat')}
+                     >
+                       지방 식단 추천
+                     </button>
+                   </div>
+                   
+                   {/* 식단 추천 결과 표시 */}
+                   {recommendedFoods.length > 0 && (
+                     <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg mt-4">
+                       <h4 className="font-semibold mb-2">{recommendationTitle}</h4>
+                       <ul className="space-y-2">
+                         {recommendedFoods.map((food, index) => (
+                           <li key={index} className="flex justify-between pb-2 border-b border-gray-100 dark:border-gray-700">
+                             <span>{food.name} {food.amount}</span>
+                             <span>{food.nutrition}</span>
+                           </li>
+                         ))}
+                       </ul>
+                     </div>
+                   )}
                  </div>
             )}
           </div>

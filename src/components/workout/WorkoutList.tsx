@@ -467,31 +467,15 @@ const WorkoutList: React.FC = () => {
             const dayWorkouts = workoutsByDate[dateStr] || [];
             const hasWorkout = dayWorkouts.length > 0;
             
-            // 메인 운동의 성공 무게 계산
-            let maxSuccessWeight = 0;
+            // 부위 운동 확인 및 성공 여부 체크
             let isAllSuccess = false;
             let exercisePart = '';
-            let mainExerciseName = '';
             
             if (hasWorkout) {
               const workout = dayWorkouts[0]; // 첫 번째 운동 기록
               isAllSuccess = workout.isAllSuccess;
               exercisePart = workout.part || ''; // 운동 부위
-              mainExerciseName = workout.mainExercise?.name || '';
-              
-              // 성공한 세트 중 가장 무거운 무게 찾기
-              if (workout.mainExercise && workout.mainExercise.sets) {
-                workout.mainExercise.sets.forEach(set => {
-                  if (set.isSuccess && set.weight > maxSuccessWeight) {
-                    maxSuccessWeight = set.weight;
-                  }
-                });
-              }
             }
-            
-            // 부위별 색상 설정
-            const statusColor = exercisePart ? getPartColor(exercisePart as ExercisePart, isAllSuccess) : '';
-            const successIcon = isAllSuccess ? '✅' : '❌';
             
             return (
               <div 
@@ -510,19 +494,18 @@ const WorkoutList: React.FC = () => {
                   {day.getDate()}
                 </span>
                 
-                {/* 운동 마커 - 운동 부위와 성공/실패 여부 표시 */}
+                {/* 운동 마커 - 부위와 성공/실패 여부 표시 */}
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
                     <div 
-                      className={`text-xs px-1 py-0.5 rounded-sm truncate ${statusColor}`}
-                      title={`${mainExerciseName} - ${maxSuccessWeight}kg - ${isAllSuccess ? '성공' : '실패'}`}
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        isAllSuccess 
+                          ? 'bg-white text-gray-700 border border-gray-300' 
+                          : 'bg-red-500 text-white'
+                      }`}
+                      title={`${exercisePart} 운동 - ${isAllSuccess ? '성공' : '실패'}`}
                     >
-                      {exercisePart && 
-                        <span className="uppercase font-bold mr-1">
-                          {exercisePart.slice(0,3)}{successIcon}
-                        </span>
-                      }
-                      {maxSuccessWeight > 0 ? `${maxSuccessWeight}kg` : '기록'}
+                      {getPartLabel(exercisePart as ExercisePart)}
                     </div>
                   </div>
                 )}

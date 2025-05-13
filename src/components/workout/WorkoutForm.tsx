@@ -100,6 +100,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [notes, setNotes] = useState('');
   const [isFormValid, setIsFormValid] = useState(false);
   
+  // 웜업 및 스트레칭 완료 상태 관리
+  const [stretchingCompleted, setStretchingCompleted] = useState(false);
+  const [warmupCompleted, setWarmupCompleted] = useState(false);
+
   // 타이머 관련 상태
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
@@ -643,6 +647,30 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     <li key={index} className="text-gray-600 dark:text-gray-300">{exercise}</li>
                   ))}
                 </ul>
+                <div className="flex space-x-3 mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`flex items-center ${
+                      stretchingCompleted ? 'bg-green-100 text-green-700 border-green-500' : 'bg-white'
+                    }`}
+                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
+                  >
+                    {stretchingCompleted ? <CheckCircle className="mr-2" size={16} /> : null}
+                    스트레칭 완료
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`flex items-center ${
+                      warmupCompleted ? 'bg-green-100 text-green-700 border-green-500' : 'bg-white'
+                    }`}
+                    onClick={() => setWarmupCompleted(!warmupCompleted)}
+                  >
+                    {warmupCompleted ? <CheckCircle className="mr-2" size={16} /> : null}
+                    웜업 세트 완료
+                  </Button>
+                </div>
               </div>
             </Card>
           )}
@@ -653,10 +681,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === '10x5'
-                    ? 'border-blue-500 bg-white text-blue-700 dark:bg-gray-800 dark:text-blue-400'
-                    : 'border-gray-300 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('10x5')}
@@ -677,10 +705,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === ('6x3' as SetConfiguration)
-                    ? 'border-blue-500 bg-white text-blue-700 dark:bg-gray-800 dark:text-blue-400'
-                    : 'border-gray-300 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
                 onClick={() => handleSetConfigChange('6x3' as SetConfiguration)}
@@ -860,6 +888,28 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           }
                         </Button>
 
+                        {/* 훈련 완료 버튼 */}
+                        <Button
+                          type="button"
+                          className={
+                            set.isSuccess === null
+                              ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+                              : set.isSuccess
+                                ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                                : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                          }
+                          size="sm"
+                          onClick={() => handleTrainingComplete(index, true)}
+                          icon={set.isSuccess === null ? undefined : set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                        >
+                          {set.isSuccess === null
+                            ? '훈련 완료'
+                            : set.isSuccess
+                              ? '성공'
+                              : '실패'
+                          }
+                        </Button>
+
                         {/* 커스텀 세트의 경우만 삭제 버튼 표시 */}
                         {(selectedSetConfiguration === 'custom' && mainExercise.sets.length > 1) && (
                           <Button
@@ -978,6 +1028,28 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               : activeTimers[`accessory_${index}_${setIndex}`].isPaused
                                 ? `▶️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}` 
                                 : `⏸️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}`
+                            }
+                          </Button>
+
+                          {/* 훈련 완료 버튼 */}
+                          <Button
+                            type="button"
+                            className={
+                              set.isSuccess === null
+                                ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+                                : set.isSuccess
+                                  ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                                  : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                            }
+                            size="sm"
+                            onClick={() => handleTrainingComplete(setIndex, false, index)}
+                            icon={set.isSuccess === null ? undefined : set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                          >
+                            {set.isSuccess === null
+                              ? '훈련 완료'
+                              : set.isSuccess
+                                ? '성공'
+                                : '실패'
                             }
                           </Button>
 
