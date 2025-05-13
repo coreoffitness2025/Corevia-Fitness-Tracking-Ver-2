@@ -4,13 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": "16.x || 18.x || 20.x"
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:ts": "tsc && vite build",
-    "build:github": "cross-env GITHUB_PAGES=true vite build",
+    "build": "npx vite build",
+    "build:ts": "tsc && npx vite build",
+    "build:github": "cross-env GITHUB_PAGES=true npx vite build",
     "preview": "vite preview",
     "predeploy": "npm run build:github",
     "deploy": "gh-pages -d dist",
