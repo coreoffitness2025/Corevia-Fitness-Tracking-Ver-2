@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "name": "corevia-fitness-tracking-ver-2",
+  "alias": "corevia-fitness-tracking-ver-2",
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
@@ -9,6 +11,5 @@
     "enabled": true,
     "silent": true
   },
-  "alias": "corevia-fitness-tracking",
   "public": true
 } 
