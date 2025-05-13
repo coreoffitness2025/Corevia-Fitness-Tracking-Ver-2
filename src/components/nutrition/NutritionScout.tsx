@@ -136,7 +136,6 @@ const NutritionScout = () => {
   const [suggestions, setSuggestions] = useState<NutritionData[]>([]);
   const [showAutoComplete, setShowAutoComplete] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showComments, setShowComments] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const autoCompleteRef = useRef<HTMLDivElement>(null);
@@ -305,8 +304,8 @@ const NutritionScout = () => {
       // 원본 데이터 복사
       const result = {...originalData};
       
-      // showComments가 false면 코멘트 필드 제거
-      if (!showComments && result.코멘트) {
+      // 코멘트 필드 항상 제거
+      if (result.코멘트) {
         delete result['코멘트'];
       }
       
@@ -314,7 +313,7 @@ const NutritionScout = () => {
     } else {
       // 전체 데이터에서 찾을 수 없는 경우 (드문 케이스)
       const result = {...suggestion};
-      if (result.코멘트 && !showComments) {
+      if (result.코멘트) {
         delete result['코멘트'];
       }
       setSearchResult(result);
@@ -326,10 +325,6 @@ const NutritionScout = () => {
   const formatNumber = (value: number | string) => {
     if (value === null || value === undefined) return '0';
     return typeof value === 'number' ? value.toFixed(1) : value;
-  };
-
-  const toggleComments = () => {
-    setShowComments(!showComments);
   };
 
   // 칼로리 계산
@@ -629,17 +624,6 @@ const NutritionScout = () => {
               </span>
             </div>
           </div>
-          
-          {/* 코멘트 */}
-          {searchResult?.코멘트 && typeof searchResult.코멘트 === 'string' && searchResult.코멘트.trim() !== '' && showComments && (
-            <div className="p-5 bg-[#f0f0f0] dark:bg-[#1E2235] border-t border-gray-200 dark:border-gray-600">
-              <div className="bg-[#E8F0FE] dark:bg-[#1A3A6B] border-l-4 border-[#4285F4] p-4 rounded-r">
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
-                  {searchResult.코멘트.replace(/\\n/g, '\n')}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -660,20 +644,9 @@ const NutritionScout = () => {
       {/* 데이터베이스 정보 표시 */}
       <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex justify-between items-center">
         <span>데이터베이스: {foodData.length}개 항목</span>
-        <div className="flex items-center">
-          <label className="flex items-center mr-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showComments}
-              onChange={toggleComments}
-              className="mr-1.5 h-3.5 w-3.5"
-            />
-            <span>코멘트 표시</span>
-          </label>
-          {loadError && (
-            <span className="text-red-500">{loadError}</span>
-          )}
-        </div>
+        {loadError && (
+          <span className="text-red-500">{loadError}</span>
+        )}
       </div>
     </div>
   );
