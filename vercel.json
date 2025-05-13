@@ -6,7 +6,28 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "github": {
-    "enabled": true
+    "enabled": true,
+    "silent": true,
+    "autoJobCancelation": true
   },
-  "alias": "corevia-fitness-tracking"
+  "alias": "corevia-fitness-tracking",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./",
+  "public": true,
+  "redirects": [
+    { 
+      "source": "/", 
+      "destination": "/", 
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    }
+  ]
 } 
