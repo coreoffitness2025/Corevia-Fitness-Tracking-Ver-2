@@ -1,5 +1,13 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "github": {
+    "silent": true,
+    "autoAlias": true
+  },
+  "alias": ["corevia-fitness-tracking"],
+  "trailingSlash": false,
+  "cleanUrls": true,
+  "public": true
 } 
