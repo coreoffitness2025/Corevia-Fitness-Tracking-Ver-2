@@ -163,51 +163,32 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // 파일을 ArrayBuffer로 로드하여 인코딩 문제 해결
-      const fetchCSV = async (url: string): Promise<ArrayBuffer | null> => {
-        try {
-          const response = await fetch(url);
-          if (!response.ok) {
-            console.log(`${url} 로드 실패: ${response.status}`);
-            return null;
-          }
-          return await response.arrayBuffer();
-        } catch (error) {
-          console.error(`${url} 로드 중 오류:`, error);
-          return null;
-        }
-      };
+      // CSV 파일 URL 설정
+      const csvUrl = '/nutrition_db.csv';
       
-      // 여러 경로 시도
-      const paths = ['/data/nutrition_db.csv', '/nutrition_db.csv', './nutrition_db.csv', '../nutrition_db.csv', 'nutrition_db.csv'];
-      let buffer: ArrayBuffer | null = null;
+      // 외부 CSV 로드 시도
+      const response = await fetch(csvUrl);
       
-      for (const path of paths) {
-        buffer = await fetchCSV(path);
-        if (buffer) {
-          console.log(`${path}에서 CSV 파일을 성공적으로 로드했습니다.`);
-          break;
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP 오류: ${response.status}`);
       }
       
-      if (!buffer) {
-        throw new Error('모든 경로에서 CSV 파일 로드에 실패했습니다.');
-      }
+      // ArrayBuffer로 응답 받기
+      const buffer = await response.arrayBuffer();
       
-      // 다양한 인코딩 시도 (EUC-KR/CP949가 한국어 CSV에 일반적)
+      // 다양한 인코딩 시도
       const encodings = ['UTF-8', 'EUC-KR', 'CP949'];
       let csvText = '';
       let success = false;
       
       for (const encoding of encodings) {
         try {
+          // TextDecoder로 다양한 인코딩 시도
           const decoder = new TextDecoder(encoding);
-          const text = decoder.decode(buffer);
+          csvText = decoder.decode(buffer);
           
-          // 간단한 검증 (최소한 데이터 몇 줄이 있는지)
-          const lines = text.split('\n');
-          if (lines.length > 5) {
-            csvText = text;
+          // 첫 줄에 '요리명' 또는 '음식명'이 포함되어 있는지 확인
+          if (csvText.includes('요리명') || csvText.includes('음식명')) {
             console.log(`${encoding} 인코딩으로 성공적으로 디코딩했습니다.`);
             success = true;
             break;
@@ -221,7 +202,9 @@ const NutritionScout = () => {
         throw new Error('지원되는 인코딩으로 CSV를 읽을 수 없습니다.');
       }
       
-      const data = parseCSV(csvText);
+      console.log(`CSV 데이터 수신 (첫 100자): ${csvText.substring(0, 100)}...`);
+      
+      const data = parseCSVImproved(csvText);
       
       if (data.length > 0) {
         console.log('CSV 로드 성공:', data.length);
@@ -231,7 +214,6 @@ const NutritionScout = () => {
       }
     } catch (error) {
       console.error('CSV 로드 오류:', error);
-      // 로드 실패 시 기본 데이터 사용
       setFoodData(DEFAULT_FOOD_DATA);
       setLoadError(error instanceof Error ? error.message : '알 수 없는 오류');
       showToast.warning('영양 데이터베이스 로드에 실패하여 기본 데이터를 사용합니다.');
@@ -332,8 +314,8 @@ const NutritionScout = () => {
     return Math.round((carbs * 4) + (protein * 4) + (fat * 9));
   };
 
-  // CSV 데이터 파싱 함수
-  const parseCSV = (text: string): NutritionData[] => {
+  // 개선된 CSV 파싱 함수
+  const parseCSVImproved = (text: string): NutritionData[] => {
     const rows = text.split('\n');
     if (rows.length <= 1) {
       throw new Error('CSV 데이터 형식이 올바르지 않습니다.');
@@ -341,7 +323,18 @@ const NutritionScout = () => {
     
     const headers = rows[0].split(',');
     
-    return rows.slice(1)
+    // 헤더에 필수 필드가 있는지 확인
+    const hasRequiredFields = headers.some(header => 
+      header === '요리명' || header === '음식명' || 
+      header.includes('요리') || header.includes('음식')
+    );
+    
+    if (!hasRequiredFields) {
+      console.warn(`발견된 열: ${headers.join(', ')}`);
+      throw new Error('CSV 형식이 올바르지 않습니다: 요리명 또는 음식명 필드를 찾을 수 없습니다');
+    }
+    
+    const result = rows.slice(1)
       .filter(row => row.trim()) // 빈 줄 제거
       .map(row => {
         // 따옴표로 묶인 내용 처리를 위한 로직 추가
@@ -377,9 +370,54 @@ const NutritionScout = () => {
           }
         });
         
-        return item as NutritionData;
+        return standardizeFields(item);
       })
       .filter(item => item['요리명']); // 요리명이 있는 항목만 필터링
+      
+    return result as NutritionData[];
+  };
+  
+  // 필드명 표준화 함수
+  const standardizeFields = (item: Record<string, any>): Record<string, any> => {
+    const standardizedItem = {...item};
+    
+    // 요리명 필드 표준화
+    for (const key of Object.keys(item)) {
+      if (key.includes('음식') || key.includes('요리') || key.includes('이름')) {
+        standardizedItem['요리명'] = item[key];
+        break;
+      }
+    }
+    
+    // 영양소 필드 표준화
+    const nutritionFields: [string, string[]][] = [
+      ['탄수화물(g/100g)', ['탄수화물', 'carbs', '탄수', '탄수화물(g)']],
+      ['단백질(g/100g)', ['단백질', 'protein', '단백', '단백질(g)']],
+      ['지방(g/100g)', ['지방', 'fat', '지방(g)']]
+    ];
+    
+    nutritionFields.forEach(([standard, alternates]) => {
+      if (!item.hasOwnProperty(standard)) {
+        for (const alt of alternates) {
+          for (const key of Object.keys(item)) {
+            if (key.includes(alt)) {
+              standardizedItem[standard] = item[key];
+              break;
+            }
+          }
+        }
+      }
+    });
+    
+    // 코멘트 필드 표준화
+    for (const key of Object.keys(item)) {
+      if (key.includes('코멘트') || key.includes('comment') || key.includes('설명') || key.includes('메모')) {
+        standardizedItem['코멘트'] = item[key];
+        break;
+      }
+    }
+    
+    return standardizedItem;
   };
 
   return (
