@@ -29,7 +29,7 @@ export default defineConfig({
       }
     }
   },
-  // Vercel에서는 루트 경로, GitHub Pages에서는 기존 경로 사용
-  base: '/',
+  // Vercel에서는 루트 경로, GitHub Pages에서는 저장소 이름 경로 사용
+  base: isGitHubPages ? '/Corevia-Fitness-Tracking-Ver-2/' : '/',
   assetsInclude: ['**/*.csv']
 });
