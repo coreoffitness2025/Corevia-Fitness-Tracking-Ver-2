@@ -1,14 +1,5 @@
 {
-  "version": 2,
-  "scope": "coreoffitness-projects",
-  "name": "corevia-fitness-tracking-ver-2",
-  "alias": ["corevia-fitness-tracking-ver-2.vercel.app"],
-  "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "github": {
-    "enabled": true
-  }
+  ]
 } 
