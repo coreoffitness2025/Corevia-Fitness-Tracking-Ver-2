@@ -229,6 +229,9 @@ const WorkoutGuidePage: React.FC = () => {
         duration: 3000,
         position: 'top-center'
       });
+
+      // 설정 페이지로 리디렉션
+      navigate('/settings');
     } catch (error) {
       console.error('프로필 업데이트 중 오류 발생:', error);
       toast.error('설정 적용 중 오류가 발생했습니다');
