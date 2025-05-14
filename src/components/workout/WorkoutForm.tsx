@@ -867,27 +867,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           />
                         </div>
-                        <Button
-                          type="button"
-                          className={
-                            !activeTimers[`main_${index}`] 
-                              ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg" 
-                              : activeTimers[`main_${index}`].isPaused 
-                                ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
-                                : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
-                          }
-                          size="sm"
-                          onClick={() => toggleTimer(-1, index)}
-                          icon={<Clock size={16} />}
-                        >
-                          {!activeTimers[`main_${index}`]
-                            ? '휴식 타이머' 
-                            : activeTimers[`main_${index}`].isPaused
-                              ? `▶️ ${formatTime(activeTimers[`main_${index}`].timeLeft)}` 
-                              : `⏸️ ${formatTime(activeTimers[`main_${index}`].timeLeft)}`
-                          }
-                        </Button>
-
+                        
                         {/* 훈련 완료 버튼 */}
                         <Button
                           type="button"
@@ -907,6 +887,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             : set.isSuccess
                               ? '성공'
                               : '실패'
+                          }
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          className={
+                            !activeTimers[`main_${index}`] 
+                              ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg" 
+                              : activeTimers[`main_${index}`].isPaused 
+                                ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
+                                : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                          }
+                          size="sm"
+                          onClick={() => toggleTimer(-1, index)}
+                          icon={<Clock size={16} />}
+                        >
+                          {!activeTimers[`main_${index}`]
+                            ? '휴식 타이머' 
+                            : activeTimers[`main_${index}`].isPaused
+                              ? `▶️ ${formatTime(activeTimers[`main_${index}`].timeLeft)}` 
+                              : `⏸️ ${formatTime(activeTimers[`main_${index}`].timeLeft)}`
                           }
                         </Button>
 
@@ -1010,27 +1011,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             />
                           </div>
-                          <Button
-                            type="button"
-                            className={
-                              !activeTimers[`accessory_${index}_${setIndex}`] 
-                                ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg" 
-                                : activeTimers[`accessory_${index}_${setIndex}`].isPaused 
-                                  ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
-                                  : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
-                            }
-                            size="sm"
-                            onClick={() => toggleTimer(index, setIndex)}
-                            icon={<Clock size={16} />}
-                          >
-                            {!activeTimers[`accessory_${index}_${setIndex}`]
-                              ? '휴식 타이머' 
-                              : activeTimers[`accessory_${index}_${setIndex}`].isPaused
-                                ? `▶️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}` 
-                                : `⏸️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}`
-                            }
-                          </Button>
-
+                          
                           {/* 훈련 완료 버튼 */}
                           <Button
                             type="button"
@@ -1050,6 +1031,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               : set.isSuccess
                                 ? '성공'
                                 : '실패'
+                            }
+                          </Button>
+                          
+                          <Button
+                            type="button"
+                            className={
+                              !activeTimers[`accessory_${index}_${setIndex}`] 
+                                ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg" 
+                                : activeTimers[`accessory_${index}_${setIndex}`].isPaused 
+                                  ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
+                                  : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                            }
+                            size="sm"
+                            onClick={() => toggleTimer(index, setIndex)}
+                            icon={<Clock size={16} />}
+                          >
+                            {!activeTimers[`accessory_${index}_${setIndex}`]
+                              ? '휴식 타이머' 
+                              : activeTimers[`accessory_${index}_${setIndex}`].isPaused
+                                ? `▶️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}` 
+                                : `⏸️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}`
                             }
                           </Button>
 

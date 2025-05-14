@@ -247,7 +247,7 @@ const WorkoutGraph: React.FC = () => {
         labels: uniqueDates,
         datasets: [
           {
-            label: '성공 세트 최대 무게 (kg)',
+            label: '',
             data: weights,
             borderColor: 'rgb(53, 162, 235)',
             backgroundColor: 'rgba(53, 162, 235, 0.5)',
