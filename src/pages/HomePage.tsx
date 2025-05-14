@@ -247,43 +247,33 @@ const HomePage = () => {
       </div>
 
       {/* 예상 1RM 표시 섹션 */}
-      <div className="mb-6">
+      <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
         <div className="flex items-center mb-4">
           <Weight size={28} className="text-indigo-500 mr-3" />
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">현재 예상 1RM</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <button 
-            onClick={() => navigate('/workout/guide')}
-            className="flex flex-col items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-          >
-            <span className="text-xs font-medium mb-1">스쿼트</span>
-            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.squat || 0} kg</span>
-          </button>
-          
-          <button
-            onClick={() => navigate('/workout/guide')}
-            className="flex flex-col items-center p-4 bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-          >
-            <span className="text-xs font-medium mb-1">데드리프트</span>
-            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.deadlift || 0} kg</span>
-          </button>
-          
-          <button
-            onClick={() => navigate('/workout/guide')}
-            className="flex flex-col items-center p-4 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-          >
-            <span className="text-xs font-medium mb-1">벤치프레스</span>
-            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.bench || 0} kg</span>
-          </button>
-          
-          <button
-            onClick={() => navigate('/workout/guide')}
-            className="flex flex-col items-center p-4 bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-          >
-            <span className="text-xs font-medium mb-1">오버헤드프레스</span>
-            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.overheadPress || 0} kg</span>
-          </button>
+        <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">스쿼트</p>
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.squat || 0} kg</p>
+            </div>
+            
+            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">데드리프트</p>
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.deadlift || 0} kg</p>
+            </div>
+            
+            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">벤치프레스</p>
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.bench || 0} kg</p>
+            </div>
+            
+            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">오버헤드프레스</p>
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.overheadPress || 0} kg</p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -976,12 +976,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         {/* 훈련 완료 버튼 */}
                         <Button
                           type="button"
-                          className={
+                          variant={
                             set.isSuccess === null
-                              ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+                              ? "default"
                               : set.isSuccess
-                                ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
-                                : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                                ? "success"
+                                : "danger"
                           }
                           size="sm"
                           onClick={() => handleTrainingComplete(index, true)}
@@ -1120,12 +1120,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           {/* 훈련 완료 버튼 */}
                           <Button
                             type="button"
-                            className={
+                            variant={
                               set.isSuccess === null
-                                ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+                                ? "default"
                                 : set.isSuccess
-                                  ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
-                                  : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                                  ? "success"
+                                  : "danger"
                             }
                             size="sm"
                             onClick={() => handleTrainingComplete(setIndex, false, index)}

@@ -262,13 +262,13 @@ const WorkoutGraph: React.FC = () => {
           {
             label: '',
             data: weights,
-            borderColor: 'rgb(53, 162, 235)',
-            backgroundColor: 'rgba(53, 162, 235, 0.5)',
+            borderColor: 'rgb(16, 185, 129)',
+            backgroundColor: 'rgba(16, 185, 129, 0.5)',
             tension: 0.2,
             pointRadius: 5,
             pointBackgroundColor: weights.map(w => w ? 'rgba(0, 200, 0, 0.8)' : 'rgba(200, 0, 0, 0.8)'),
             pointHoverRadius: 8,
-            pointHoverBackgroundColor: 'rgba(53, 162, 235, 0.9)',
+            pointHoverBackgroundColor: 'rgba(16, 185, 129, 0.9)',
             pointHitRadius: 10,
           }
         ]
@@ -446,7 +446,7 @@ const WorkoutGraph: React.FC = () => {
                 className={`
                   py-2 px-4 rounded-lg flex items-center transition-all duration-300 text-sm font-medium
                   ${selectedPart === option.value 
-                    ? 'bg-[#4285F4] text-white shadow-lg transform scale-105'
+                    ? 'bg-emerald-500 text-white shadow-lg transform scale-105'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }
                 `}

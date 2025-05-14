@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 // 플랫폼 독립적인 타입 정의
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'text' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'text' | 'danger' | 'success' | 'default';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 // IconButton용 별도 타입 정의
@@ -61,6 +61,8 @@ export const getButtonStyles = (
     outline: 'border-2 border-blue-500 bg-white text-black hover:bg-gray-50 dark:bg-gray-800 dark:border-blue-400 dark:text-white dark:hover:bg-gray-700',
     text: 'text-primary-600 hover:bg-gray-100 dark:text-primary-400 dark:hover:bg-gray-800',
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
+    success: 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800',
+    default: 'bg-gray-500 text-white hover:bg-gray-600 active:bg-gray-700',
   };
   classes += ` ${variantClasses[variant]}`;
 
