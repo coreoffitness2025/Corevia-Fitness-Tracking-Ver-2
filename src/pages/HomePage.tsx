@@ -6,7 +6,8 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../firebase/firebaseConfig';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
-import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity } from 'lucide-react';
+import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -49,6 +50,7 @@ const HomePage = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nutrients, setNutrients] = useState({ protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -241,6 +243,47 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 예상 1RM 표시 섹션 */}
+      <div className="mb-6">
+        <div className="flex items-center mb-4">
+          <Weight size={28} className="text-indigo-500 mr-3" />
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">현재 예상 1RM</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button 
+            onClick={() => navigate('/workout/guide')}
+            className="flex flex-col items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+          >
+            <span className="text-xs font-medium mb-1">스쿼트</span>
+            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.squat || 0} kg</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/workout/guide')}
+            className="flex flex-col items-center p-4 bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+          >
+            <span className="text-xs font-medium mb-1">데드리프트</span>
+            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.deadlift || 0} kg</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/workout/guide')}
+            className="flex flex-col items-center p-4 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+          >
+            <span className="text-xs font-medium mb-1">벤치프레스</span>
+            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.bench || 0} kg</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/workout/guide')}
+            className="flex flex-col items-center p-4 bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white rounded-xl shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+          >
+            <span className="text-xs font-medium mb-1">오버헤드프레스</span>
+            <span className="text-2xl font-bold">{userProfile?.oneRepMax?.overheadPress || 0} kg</span>
+          </button>
         </div>
       </div>
 
