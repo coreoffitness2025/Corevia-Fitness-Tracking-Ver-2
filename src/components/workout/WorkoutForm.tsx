@@ -564,29 +564,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       }
       // 실패 세트가 절반 이상인 경우 격려 메시지
       else if (failedSets > Math.floor(totalSets * 0.5)) {
-        toast.info('오늘 운동이 어려웠나요? 다음에는 더 잘할 수 있어요! 무게를 조금 낮추거나 충분한 휴식을 취해보세요. 🙂', {
-          duration: 5000,
-          icon: '💪',
-          style: {
-            background: '#8B5CF6',
-            color: '#fff',
-            fontWeight: 'bold',
-            padding: '16px'
-          }
-        });
+        toast.custom(
+          <div className="bg-purple-600 text-white px-4 py-3 rounded shadow-md font-medium">
+            <div className="flex items-center">
+              <span className="mr-2">💪</span>
+              <span>오늘 운동이 어려웠나요? 다음에는 더 잘할 수 있어요! 무게를 조금 낮추거나 충분한 휴식을 취해보세요.</span>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
       }
       // 그 외의 경우 기본 메시지
       else {
-        toast.info('꾸준한 훈련이 좋은 결과를 가져옵니다. 다음 세션도 화이팅! 💯', {
-          duration: 5000,
-          icon: '🔥',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-            fontWeight: 'bold',
-            padding: '16px'
-          }
-        });
+        toast.custom(
+          <div className="bg-red-600 text-white px-4 py-3 rounded shadow-md font-medium">
+            <div className="flex items-center">
+              <span className="mr-2">🔥</span>
+              <span>꾸준한 훈련이 좋은 결과를 가져옵니다. 다음 세션도 화이팅!</span>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
       }
       
       // 폼 초기화
