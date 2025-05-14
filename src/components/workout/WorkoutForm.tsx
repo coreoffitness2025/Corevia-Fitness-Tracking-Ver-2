@@ -12,7 +12,7 @@ import {
   MainExerciseType,
   SetConfiguration
 } from '../../types';
-import { addDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, query, where, getDocs, Timestamp, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 import Layout from '../common/Layout';
@@ -175,6 +175,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           name: mainExerciseOptions.chest[0].label
       }));
     }
+
+    // 부위 변경 시 최근 운동 기록 가져오기
+    fetchLatestWorkout(newSelectedPart);
   }, [part]);
 
   // 선택된 메인 운동(selectedMainExercise) 변경 시 mainExercise.name 업데이트
@@ -186,6 +189,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         ...prev,
         name: foundExercise.label
       }));
+
+      // 메인 운동 변경 시 해당 운동의 최근 기록 가져오기
+      fetchLatestWorkout(part, selectedMainExercise);
     }
   }, [selectedMainExercise, part]);
 
@@ -526,6 +532,89 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       ...prev,
       sets: initialSets.map(set => ({ ...set, isSuccess: null }))
     }));
+  };
+
+  // 최근 운동 기록 가져오기
+  const fetchLatestWorkout = async (exercisePart: ExercisePart, mainExerciseType?: MainExerciseType) => {
+    if (!userProfile) return;
+
+    try {
+      // 1. 특정 부위와 운동 타입에 대한 최근 기록 쿼리
+      const sessionsCollection = collection(db, 'sessions');
+      let q;
+
+      if (mainExerciseType) {
+        // 특정 운동에 대한 쿼리
+        q = query(
+          sessionsCollection,
+          where('userId', '==', userProfile.uid),
+          where('part', '==', exercisePart),
+          where('mainExercise.name', '==', mainExerciseOptions[exercisePart].find(ex => ex.value === mainExerciseType)?.label),
+          orderBy('date', 'desc'),
+          limit(1)
+        );
+      } else {
+        // 부위만으로 쿼리
+        q = query(
+          sessionsCollection,
+          where('userId', '==', userProfile.uid),
+          where('part', '==', exercisePart),
+          orderBy('date', 'desc'),
+          limit(1)
+        );
+      }
+
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const latestSession = snapshot.docs[0].data() as Session;
+        console.log('최근 운동 기록:', latestSession);
+        
+        if (latestSession.mainExercise && latestSession.mainExercise.sets && latestSession.mainExercise.sets.length > 0) {
+          // 모든 세트가 성공인지 확인
+          const allSuccess = latestSession.mainExercise.sets.every(set => set.isSuccess === true);
+          
+          // 마지막 세트의 무게 가져오기 (보통 마지막 세트가 최대 무게)
+          const lastWeight = latestSession.mainExercise.sets[0].weight;
+          
+          // 새 무게 계산: 모든 세트 성공 시 2.5kg 증량, 실패 시 동일 무게
+          const newWeight = allSuccess ? lastWeight + 2.5 : lastWeight;
+          
+          console.log(`최근 운동 성공 여부: ${allSuccess}, 이전 무게: ${lastWeight}kg, 새 무게: ${newWeight}kg`);
+          
+          // 세트 수 가져오기
+          const setsCount = latestSession.mainExercise.sets.length;
+          
+          // 메인 운동 세트 설정: 새 무게 적용
+          const newSets = Array(setsCount).fill(0).map((_, index) => {
+            // 첫 세트는 기존 세트보다 약간 가벼운 무게로 시작 (워밍업)
+            const weightAdjustment = index === 0 ? -2.5 : 0;
+            return {
+              reps: latestSession.mainExercise.sets[index]?.reps || 0,
+              weight: Math.max(0, newWeight + weightAdjustment), // 음수 무게 방지
+              isSuccess: null
+            };
+          });
+          
+          // 메인 운동 업데이트
+          setMainExercise(prev => ({
+            ...prev,
+            sets: newSets
+          }));
+          
+          toast.success(
+            allSuccess 
+              ? `이전 훈련 성공! 무게 2.5kg 증량 (${lastWeight}kg → ${newWeight}kg)` 
+              : `이전 훈련 목표 미달성. 동일 무게 유지 (${newWeight}kg)`,
+            { duration: 3000 }
+          );
+        }
+      } else {
+        console.log('해당 운동의 이전 기록이 없습니다.');
+      }
+    } catch (error) {
+      console.error('최근 운동 기록 가져오기 실패:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
