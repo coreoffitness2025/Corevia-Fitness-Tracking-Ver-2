@@ -127,6 +127,30 @@ const WorkoutGraph: React.FC = () => {
       tooltip: {
         mode: 'index',
         intersect: false,
+        callbacks: {
+          title: (tooltipItems) => {
+            return tooltipItems[0].label || '';
+          },
+          label: (context) => {
+            const label = context.dataset.label || '';
+            const value = context.raw as number;
+            let tooltipText = `${label}: ${value} kg`;
+            
+            // 추가: 해당 날짜의 데이터가 있을 경우 보조 운동 정보 추가
+            const dateLabel = context.chart.data.labels?.[context.dataIndex] as string;
+            if (dateLabel && dateWorkoutMap[dateLabel]) {
+              const workout = dateWorkoutMap[dateLabel];
+              if (workout.accessoryExercises && workout.accessoryExercises.length > 0) {
+                tooltipText += '\n보조 운동:';
+                workout.accessoryExercises.forEach(exercise => {
+                  tooltipText += `\n- ${exercise.name}`;
+                });
+              }
+            }
+            
+            return tooltipText;
+          }
+        }
       },
     },
     scales: {
@@ -174,7 +198,7 @@ const WorkoutGraph: React.FC = () => {
         return;
       }
       
-      // 날짜별 성공한 세트 중 최대 무게 추출
+      // 날짜별 성공한 세트 중 최대 무게 추출 및 보조 운동 정보 포함
       const successWeightsByDate: Record<string, number> = {};
       const allDates: string[] = [];
       const newDateWorkoutMap: Record<string, Workout> = {};
@@ -479,7 +503,7 @@ const WorkoutGraph: React.FC = () => {
           {/* 왼쪽: 그래프 */}
           <div className="flex-1">
             {filteredData.length > 0 ? (
-              <div className="h-80">
+              <div className="h-96">
                 <Line options={chartOptions} data={chartData} />
               </div>
             ) : (
@@ -487,43 +511,6 @@ const WorkoutGraph: React.FC = () => {
                 <p className="text-gray-500 dark:text-gray-400">
                   기록된 운동 데이터가 없습니다.
                 </p>
-              </div>
-            )}
-            
-            {/* 데이터 요약 표시 */}
-            {filteredData.length > 0 && (
-              <div className="mt-6">
-                <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300 mb-3">운동 데이터 요약</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">총 운동 횟수</p>
-                    <p className="text-lg font-bold text-blue-600 dark:text-blue-300">{filteredData.length}회</p>
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">최대 무게</p>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-300">
-                      {Math.max(...filteredData.flatMap(w => 
-                        w.mainExercise?.sets?.map((s: any) => s.isSuccess ? s.weight : 0) || [0]
-                      ))}kg
-                    </p>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">평균 성공률</p>
-                    <p className="text-lg font-bold text-purple-600 dark:text-purple-300">
-                      {Math.round(filteredData.reduce((acc, curr) => 
-                        acc + ((curr.successSets || 0) / (curr.mainExercise?.sets?.length || 1)) * 100, 0
-                      ) / filteredData.length)}%
-                    </p>
-                  </div>
-                  <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">평균 세트 수</p>
-                    <p className="text-lg font-bold text-yellow-600 dark:text-yellow-300">
-                      {Math.round(filteredData.reduce((acc, curr) => 
-                        acc + (curr.mainExercise?.sets?.length || 0), 0
-                      ) / filteredData.length)}
-                    </p>
-                  </div>
-                </div>
               </div>
             )}
           </div>
@@ -588,6 +575,39 @@ const WorkoutGraph: React.FC = () => {
                       ))}
                     </div>
                   </div>
+                  
+                  {/* 보조 운동 정보 표시 */}
+                  {selectedWorkout.accessoryExercises && selectedWorkout.accessoryExercises.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm mt-3">보조 운동</h4>
+                      <div className="grid grid-cols-1 gap-2 mt-2">
+                        {selectedWorkout.accessoryExercises.map((exercise, index) => (
+                          <div 
+                            key={index}
+                            className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
+                          >
+                            <p className="font-medium">{exercise.name}</p>
+                            {exercise.sets && exercise.sets.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-2 mt-1">
+                                {exercise.sets.map((set, setIndex) => (
+                                  <div key={setIndex} className="text-xs flex justify-between">
+                                    <span>세트 {setIndex + 1}:</span>
+                                    <span>{set.weight}kg × {set.reps}회</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="mt-1 text-xs flex justify-between">
+                                {exercise.weight && <span>무게: {exercise.weight}kg</span>}
+                                {exercise.reps && <span>반복: {exercise.reps}회</span>}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   {selectedWorkout.notes && (
                     <div>
                       <h4 className="font-medium text-sm">메모</h4>
