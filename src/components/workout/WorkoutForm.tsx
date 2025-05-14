@@ -543,15 +543,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       
       // 1. 특정 부위와 운동 타입에 대한 최근 기록 쿼리
       const sessionsCollection = collection(db, 'sessions');
-      let q;
-
-      // 쿼리 단순화: 먼저 userID와 부위만으로 필터링
-      q = query(
+      
+      // 복합 인덱스 오류 해결: orderBy 제거하고 기본 쿼리만 사용
+      const q = query(
         sessionsCollection,
         where('userId', '==', userProfile.uid),
-        where('part', '==', exercisePart),
-        orderBy('date', 'desc'),
-        limit(1)
+        where('part', '==', exercisePart)
+        // orderBy 제거 - Firestore 복합 인덱스 오류 해결
       );
 
       console.log('Firestore 쿼리 실행 중...');
@@ -559,7 +557,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       console.log(`쿼리 결과: ${snapshot.size}개 문서 발견`);
       
       if (!snapshot.empty) {
-        const latestSession = snapshot.docs[0].data() as Session;
+        // 클라이언트에서 날짜 기준으로 정렬
+        const sortedDocs = snapshot.docs.sort((a, b) => {
+          const dateA = a.data().date.toDate();
+          const dateB = b.data().date.toDate();
+          return dateB.getTime() - dateA.getTime(); // 최신 날짜순 정렬
+        });
+        
+        // 가장 최근 데이터 사용
+        const latestSession = sortedDocs[0].data() as Session;
         console.log('최근 운동 기록 데이터:', JSON.stringify(latestSession, null, 2));
         
         // 메인 운동 타입이 지정된 경우, 해당 운동과 일치하는지 확인
