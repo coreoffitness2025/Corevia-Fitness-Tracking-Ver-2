@@ -41,7 +41,9 @@ const partOptions = [
   { value: 'chest', label: '가슴' },
   { value: 'back', label: '등' },
   { value: 'shoulder', label: '어깨' },
-  { value: 'leg', label: '하체' }
+  { value: 'leg', label: '하체' },
+  { value: 'biceps', label: '이두' },
+  { value: 'triceps', label: '삼두' }
 ];
 
 // 운동 종류 옵션 (부위별로 그룹화)
@@ -56,7 +58,8 @@ const exerciseOptions: Record<string, { value: string; label: string }[]> = {
   ],
   back: [
     { value: 'deadlift', label: '데드리프트' },
-    { value: 'bentOverRow', label: '벤트오버 로우' },
+    { value: 'barbellRow', label: '바벨로우' },
+    { value: 'tBarRow', label: '티바로우' },
     { value: 'latPulldown', label: '랫 풀다운' },
     { value: 'seatedRow', label: '시티드 로우' },
     { value: 'pullUp', label: '풀업' }
@@ -74,6 +77,16 @@ const exerciseOptions: Record<string, { value: string; label: string }[]> = {
     { value: 'lunges', label: '런지' },
     { value: 'legExtension', label: '레그 익스텐션' },
     { value: 'legCurl', label: '레그 컬' }
+  ],
+  biceps: [
+    { value: 'dumbbellCurl', label: '덤벨 컬' },
+    { value: 'barbellCurl', label: '바벨 컬' },
+    { value: 'hammerCurl', label: '해머 컬' }
+  ],
+  triceps: [
+    { value: 'cablePushdown', label: '케이블 푸시다운' },
+    { value: 'overheadExtension', label: '오버헤드 익스텐션' },
+    { value: 'lyingTricepsExtension', label: '라잉 트라이셉스 익스텐션' }
   ]
 };
 
@@ -422,6 +435,28 @@ const WorkoutGraph: React.FC = () => {
       <Card className="animate-slideUp">
         <h3 className="text-lg font-semibold mb-4">운동 성과 그래프</h3>
         
+        {/* 부위 선택 필터 추가 */}
+        <div className="mb-6">
+          <div className="flex items-center flex-wrap gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            {partOptions.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedPart(option.value)}
+                className={`
+                  py-2 px-4 rounded-lg flex items-center transition-all duration-300 text-sm font-medium
+                  ${selectedPart === option.value 
+                    ? 'bg-[#4285F4] text-white shadow-lg transform scale-105'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }
+                `}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
         <div className="flex flex-col lg:flex-row gap-4">
           {/* 왼쪽: 그래프 */}
           <div className="flex-1">
@@ -432,7 +467,9 @@ const WorkoutGraph: React.FC = () => {
             ) : (
               <div className="h-64 flex items-center justify-center">
                 <p className="text-gray-500 dark:text-gray-400">
-                  기록된 운동 데이터가 없습니다.
+                  {selectedPart === 'all' 
+                    ? '기록된 운동 데이터가 없습니다.' 
+                    : `${partOptions.find(p => p.value === selectedPart)?.label || ''} 부위의 운동 데이터가 없습니다.`}
                 </p>
               </div>
             )}
