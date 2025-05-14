@@ -109,7 +109,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
   // 웜업 팁 표시 상태
-  const [showWarmupTips, setShowWarmupTips] = useState(true);
+  const [showWarmupTips, setShowWarmupTips] = useState(false);
   
   // 추가 상태 변수 정의
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
@@ -625,16 +625,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             console.log('업데이트된 상태:', updated);
             return updated;
           });
-          
-          // 성공 메시지 표시
-          setTimeout(() => {
-            toast.success(
-              allSuccess 
-                ? `이전 훈련 성공! 무게 2.5kg 증량 (${lastWeight}kg → ${newWeight}kg)` 
-                : `이전 훈련 목표 미달성. 동일 무게 유지 (${newWeight}kg)`,
-              { duration: 3000 }
-            );
-          }, 500);
         }
       } else {
         console.log('해당 운동의 이전 기록이 없습니다.');
@@ -743,49 +733,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         icon: '✅'
       });
       
-      // 성공/실패에 따른 다른 메시지 표시
-      const successSets = mainExercise.sets.filter(set => set.isSuccess).length;
-      const failedSets = mainExercise.sets.filter(set => set.isSuccess === false).length;
-      const totalSets = mainExercise.sets.length;
-      
-      // 전체 세트의 70% 이상 성공 시 증량 권장 메시지
-      if (successSets >= Math.ceil(totalSets * 0.7)) {
-        toast.success(`훈련에 성공했습니다! 다음 세션에서 ${mainExercise.name}의 무게를 2.5kg 증량해보세요. 💪`, {
-          duration: 5000,
-          icon: '🏋️',
-          style: {
-            background: '#3B82F6',
-            color: '#fff',
-            fontWeight: 'bold',
-            padding: '16px'
-          }
-        });
-      }
-      // 실패 세트가 절반 이상인 경우 격려 메시지
-      else if (failedSets > Math.floor(totalSets * 0.5)) {
-        toast.custom(
-          <div className="bg-purple-600 text-white px-4 py-3 rounded shadow-md font-medium">
-            <div className="flex items-center">
-              <span className="mr-2">💪</span>
-              <span>오늘 운동이 어려웠나요? 다음에는 더 잘할 수 있어요! 무게를 조금 낮추거나 충분한 휴식을 취해보세요.</span>
-            </div>
-          </div>,
-          { duration: 5000 }
-        );
-      }
-      // 그 외의 경우 기본 메시지
-      else {
-        toast.custom(
-          <div className="bg-red-600 text-white px-4 py-3 rounded shadow-md font-medium">
-            <div className="flex items-center">
-              <span className="mr-2">🔥</span>
-              <span>꾸준한 훈련이 좋은 결과를 가져옵니다. 다음 세션도 화이팅!</span>
-            </div>
-          </div>,
-          { duration: 5000 }
-        );
-      }
-      
       // 폼 초기화
       setPart('chest');
       setMainExercise({
@@ -883,7 +830,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     className={`
                       py-2 px-4 rounded-lg flex items-center transition-all duration-300 text-sm font-medium
                       ${part === option.value 
-                        ? 'bg-[#4285F4] text-white shadow-lg transform scale-105'
+                        ? 'bg-emerald-500 text-white shadow-lg transform scale-105'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }
                     `}
@@ -917,8 +864,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       id={`mainExerciseSelect-${part}`}
                       value={selectedMainExercise}
                       onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-                      className="w-full md:w-auto p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      style={{ paddingRight: '2.5rem', backgroundPosition: 'right 0.75rem center' }}
+                      className="w-full md:w-60 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      aria-label="메인 운동 선택"
                     >
                       {mainExerciseOptions[part].map(option => (
                         <option key={option.value} value={option.value}>

@@ -254,22 +254,22 @@ const HomePage = () => {
         </div>
         <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">스쿼트</p>
               <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.squat || 0} kg</p>
             </div>
             
-            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">데드리프트</p>
               <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.deadlift || 0} kg</p>
             </div>
             
-            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">벤치프레스</p>
               <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.bench || 0} kg</p>
             </div>
             
-            <div onClick={() => navigate('/workout/guide')} className="cursor-pointer text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 hover:shadow-md transition-all duration-300">
+            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">오버헤드프레스</p>
               <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.overheadPress || 0} kg</p>
             </div>
