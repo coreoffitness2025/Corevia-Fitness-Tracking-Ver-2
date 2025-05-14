@@ -539,36 +539,45 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (!userProfile) return;
 
     try {
+      console.log(`fetchLatestWorkout 실행: 부위=${exercisePart}, 운동타입=${mainExerciseType || '없음'}`);
+      
       // 1. 특정 부위와 운동 타입에 대한 최근 기록 쿼리
       const sessionsCollection = collection(db, 'sessions');
       let q;
 
-      if (mainExerciseType) {
-        // 특정 운동에 대한 쿼리
-        q = query(
-          sessionsCollection,
-          where('userId', '==', userProfile.uid),
-          where('part', '==', exercisePart),
-          where('mainExercise.name', '==', mainExerciseOptions[exercisePart].find(ex => ex.value === mainExerciseType)?.label),
-          orderBy('date', 'desc'),
-          limit(1)
-        );
-      } else {
-        // 부위만으로 쿼리
-        q = query(
-          sessionsCollection,
-          where('userId', '==', userProfile.uid),
-          where('part', '==', exercisePart),
-          orderBy('date', 'desc'),
-          limit(1)
-        );
-      }
+      // 쿼리 단순화: 먼저 userID와 부위만으로 필터링
+      q = query(
+        sessionsCollection,
+        where('userId', '==', userProfile.uid),
+        where('part', '==', exercisePart),
+        orderBy('date', 'desc'),
+        limit(1)
+      );
 
+      console.log('Firestore 쿼리 실행 중...');
       const snapshot = await getDocs(q);
+      console.log(`쿼리 결과: ${snapshot.size}개 문서 발견`);
       
       if (!snapshot.empty) {
         const latestSession = snapshot.docs[0].data() as Session;
-        console.log('최근 운동 기록:', latestSession);
+        console.log('최근 운동 기록 데이터:', JSON.stringify(latestSession, null, 2));
+        
+        // 메인 운동 타입이 지정된 경우, 해당 운동과 일치하는지 확인
+        if (mainExerciseType && latestSession.mainExercise) {
+          // 현재 선택된 운동의 레이블 가져오기
+          const currentExerciseLabel = mainExerciseOptions[exercisePart].find(
+            ex => ex.value === mainExerciseType
+          )?.label;
+          
+          console.log(`현재 선택된 운동 이름: ${currentExerciseLabel}`);
+          console.log(`저장된 운동 이름: ${latestSession.mainExercise.name}`);
+          
+          // 운동 이름이 다르면 처리 중단
+          if (currentExerciseLabel && latestSession.mainExercise.name !== currentExerciseLabel) {
+            console.log('선택된 운동이 최근 기록과 일치하지 않습니다. 무게를 로드하지 않습니다.');
+            return;
+          }
+        }
         
         if (latestSession.mainExercise && latestSession.mainExercise.sets && latestSession.mainExercise.sets.length > 0) {
           // 모든 세트가 성공인지 확인
@@ -596,18 +605,28 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             };
           });
           
-          // 메인 운동 업데이트
-          setMainExercise(prev => ({
-            ...prev,
-            sets: newSets
-          }));
+          console.log('새로운 세트 구성:', newSets);
           
-          toast.success(
-            allSuccess 
-              ? `이전 훈련 성공! 무게 2.5kg 증량 (${lastWeight}kg → ${newWeight}kg)` 
-              : `이전 훈련 목표 미달성. 동일 무게 유지 (${newWeight}kg)`,
-            { duration: 3000 }
-          );
+          // 메인 운동 업데이트
+          setMainExercise(prev => {
+            console.log('메인 운동 업데이트. 이전 상태:', prev);
+            const updated = {
+              ...prev,
+              sets: newSets
+            };
+            console.log('업데이트된 상태:', updated);
+            return updated;
+          });
+          
+          // 성공 메시지 표시
+          setTimeout(() => {
+            toast.success(
+              allSuccess 
+                ? `이전 훈련 성공! 무게 2.5kg 증량 (${lastWeight}kg → ${newWeight}kg)` 
+                : `이전 훈련 목표 미달성. 동일 무게 유지 (${newWeight}kg)`,
+              { duration: 3000 }
+            );
+          }, 500);
         }
       } else {
         console.log('해당 운동의 이전 기록이 없습니다.');
