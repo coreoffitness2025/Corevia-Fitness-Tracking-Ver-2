@@ -84,7 +84,7 @@ const warmupExercises = {
 type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
-  const { userProfile } = useAuth();
+  const { userProfile, updateProfile } = useAuth();
   const [part, setPart] = useState<ExercisePart>('chest');
   const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>(mainExerciseOptions.chest[0].value);
   const [mainExercise, setMainExercise] = useState({
@@ -374,7 +374,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           customReps
         );
         
-        newSets[setIndex].isSuccess = newSets[setIndex].reps >= targetReps;
+        const isSuccess = newSets[setIndex].reps >= targetReps;
+        newSets[setIndex].isSuccess = isSuccess;
+        
+        // 성공한 세트인 경우 1RM 예상 계산 및 프로필 업데이트
+        if (isSuccess) {
+          const weight = newSets[setIndex].weight;
+          const reps = newSets[setIndex].reps;
+          
+          // 브레찌키 공식으로 1RM 계산
+          if (weight > 0 && reps > 0 && reps < 37) {
+            const estimatedOneRM = Math.round(weight * (36 / (37 - reps)));
+            console.log(`세트 성공: ${weight}kg x ${reps}회, 예상 1RM: ${estimatedOneRM}kg`);
+            
+            // 메인 운동 종류에 따라 1RM 업데이트
+            updateOneRMIfHigher(selectedMainExercise, estimatedOneRM);
+          }
+        }
       }
       
       setMainExercise(prev => ({ ...prev, sets: newSets }));
@@ -400,6 +416,73 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
   
+  // 새로운 1RM이 기존보다 높은 경우 프로필 업데이트
+  const updateOneRMIfHigher = async (exerciseType: MainExerciseType, newOneRM: number) => {
+    if (!userProfile) return;
+    
+    // 현재 프로필의 1RM 정보
+    const currentOneRM = userProfile.oneRepMax || {};
+    let shouldUpdate = false;
+    let exerciseKey = '';
+    
+    // 운동 종류에 따라 해당하는 1RM 키 결정
+    // 벤치프레스 계열
+    if (
+      exerciseType === 'benchPress' || 
+      exerciseType === 'inclineBenchPress' || 
+      exerciseType === 'declineBenchPress'
+    ) {
+      exerciseKey = 'bench';
+      if (!currentOneRM.bench || newOneRM > currentOneRM.bench) {
+        shouldUpdate = true;
+      }
+    }
+    // 스쿼트 계열
+    else if (exerciseType === 'squat') {
+      exerciseKey = 'squat';
+      if (!currentOneRM.squat || newOneRM > currentOneRM.squat) {
+        shouldUpdate = true;
+      }
+    }
+    // 데드리프트 계열
+    else if (exerciseType === 'deadlift') {
+      exerciseKey = 'deadlift';
+      if (!currentOneRM.deadlift || newOneRM > currentOneRM.deadlift) {
+        shouldUpdate = true;
+      }
+    }
+    // 오버헤드프레스 계열
+    else if (exerciseType === 'overheadPress') {
+      exerciseKey = 'overheadPress';
+      if (!currentOneRM.overheadPress || newOneRM > currentOneRM.overheadPress) {
+        shouldUpdate = true;
+      }
+    }
+    
+    // 업데이트가 필요한 경우
+    if (shouldUpdate && exerciseKey) {
+      try {
+        const updatedOneRM = { ...currentOneRM, [exerciseKey]: newOneRM };
+        
+        // AuthContext의 updateProfile 함수를 사용하여 프로필 업데이트
+        await updateProfile({ oneRepMax: updatedOneRM });
+        
+        // 성공 토스트 메시지
+        toast.success(
+          `새로운 ${exerciseKey === 'bench' ? '벤치프레스' : 
+            exerciseKey === 'squat' ? '스쿼트' : 
+            exerciseKey === 'deadlift' ? '데드리프트' : '오버헤드프레스'
+          } 1RM: ${newOneRM}kg!`, 
+          { duration: 3000 }
+        );
+        
+        console.log(`1RM 업데이트 성공: ${exerciseKey} = ${newOneRM}kg`);
+      } catch (error) {
+        console.error('1RM 업데이트 실패:', error);
+      }
+    }
+  };
+
   // 커스텀 이벤트 핸들러 - 세션 저장 이벤트 발생 시 프로필 업데이트
   useEffect(() => {
     const handleProfileUpdate = (event: CustomEvent) => {
