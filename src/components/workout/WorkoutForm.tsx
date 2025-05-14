@@ -873,7 +873,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           type="button"
                           className={
                             set.isSuccess === null
-                              ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+                              ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
                               : set.isSuccess
                                 ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
                                 : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
@@ -894,7 +894,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           type="button"
                           className={
                             !activeTimers[`main_${index}`] 
-                              ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg" 
+                              ? "px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg" 
                               : activeTimers[`main_${index}`].isPaused 
                                 ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
                                 : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
@@ -932,7 +932,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     size="sm"
                     onClick={() => addSet()}
                     icon={<Plus size={16} />}
-                    className="mt-2"
+                    className="mt-2 text-green-500 border-green-500 hover:bg-green-50"
                   >
                     세트 추가
                   </Button>
@@ -1017,7 +1017,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             type="button"
                             className={
                               set.isSuccess === null
-                                ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+                                ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
                                 : set.isSuccess
                                   ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
                                   : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
@@ -1038,7 +1038,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             type="button"
                             className={
                               !activeTimers[`accessory_${index}_${setIndex}`] 
-                                ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg" 
+                                ? "px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg" 
                                 : activeTimers[`accessory_${index}_${setIndex}`].isPaused 
                                   ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
                                   : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
@@ -1076,7 +1076,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       size="sm"
                       onClick={() => addSet(index)}
                       icon={<Plus size={16} />}
-                      className="mt-2"
+                      className="mt-2 text-green-500 border-green-500 hover:bg-green-50"
                     >
                       세트 추가
                     </Button>
@@ -1086,7 +1086,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
               <Button
                 type="button"
-                className="w-full mt-4 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#4285F4] rounded-md shadow-sm hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]"
+                className="w-full mt-4 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                 onClick={addAccessoryExercise}
                 icon={<Plus size={16} />}
               >
@@ -1111,7 +1111,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             className={`w-full px-4 py-3 text-lg font-medium text-white rounded-md shadow-sm transition-all duration-500 ${
               !isFormValid 
                 ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-[#4285F4] hover:bg-[#3b78db] focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]'
+                : 'bg-green-500 hover:bg-green-600 focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
             }`}
             disabled={!isFormValid}
             icon={<Save size={20} />}
