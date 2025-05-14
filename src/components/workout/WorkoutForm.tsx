@@ -600,13 +600,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           // 세트 수 가져오기
           const setsCount = latestSession.mainExercise.sets.length;
           
-          // 메인 운동 세트 설정: 새 무게 적용
+          // 메인 운동 세트 설정: 새 무게 적용 (모든 세트에 동일한 무게 적용)
           const newSets = Array(setsCount).fill(0).map((_, index) => {
-            // 첫 세트는 기존 세트보다 약간 가벼운 무게로 시작 (워밍업)
-            const weightAdjustment = index === 0 ? -2.5 : 0;
+            // 이전 코드: 첫 세트는 워밍업으로 약간 가벼운 무게 적용
+            // const weightAdjustment = index === 0 ? -2.5 : 0;
+            
+            // 수정된 코드: 모든 세트에 동일한 무게 적용
             return {
               reps: latestSession.mainExercise.sets[index]?.reps || 0,
-              weight: Math.max(0, newWeight + weightAdjustment), // 음수 무게 방지
+              weight: newWeight, // 모든 세트에 동일한 무게 적용
               isSuccess: null
             };
           });
@@ -976,7 +978,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           type="button"
                           className={
                             set.isSuccess === null
-                              ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                              ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
                               : set.isSuccess
                                 ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
                                 : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
@@ -1120,7 +1122,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             type="button"
                             className={
                               set.isSuccess === null
-                                ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                                ? "px-3 py-1.5 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
                                 : set.isSuccess
                                   ? "px-3 py-1.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg"
                                   : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
