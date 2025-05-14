@@ -678,12 +678,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           {/* 세트 구성 선택 섹션 수정 */}
           <Card className="animate-slideUp">
             <CardTitle>세트 구성 설정</CardTitle>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === '10x5'
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-green-500 text-white'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
@@ -693,9 +693,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === ('15x5' as SetConfiguration)
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-green-500 text-white'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
@@ -705,9 +705,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === ('6x3' as SetConfiguration)
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-green-500 text-white'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
@@ -717,9 +717,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </Button>
               <Button
                 type="button"
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
                   selectedSetConfiguration === 'custom'
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-green-500 text-white'
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}
                 size="sm"
