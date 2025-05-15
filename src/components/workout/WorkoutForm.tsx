@@ -994,6 +994,85 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     </select>
                   </div>
                 </div>
+                
+                {/* 세트 설정 디버그 섹션 추가 */}
+                <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSetConfigChange('10x5')}
+                      className={`px-3 py-1 text-sm rounded-full ${
+                        selectedSetConfiguration === '10x5' 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      10회 5세트
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetConfigChange('15x5')}
+                      className={`px-3 py-1 text-sm rounded-full ${
+                        selectedSetConfiguration === '15x5' 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      15회 5세트
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetConfigChange('6x3')}
+                      className={`px-3 py-1 text-sm rounded-full ${
+                        selectedSetConfiguration === '6x3' 
+                          ? 'bg-purple-500 text-white' 
+                          : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      6회 3세트
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    현재 세트 설정: {
+                      selectedSetConfiguration === '10x5' ? '10회 5세트' : 
+                      selectedSetConfiguration === '15x5' ? '15회 5세트' : 
+                      selectedSetConfiguration === '6x3' ? '6회 3세트' : '커스텀'
+                    } / 현재 세트 수: {mainExercise.sets.length}개
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => addSet()}
+                      className="px-3 py-1 text-xs bg-green-500 text-white rounded"
+                    >
+                      세트 추가
+                    </button>
+                    {mainExercise.sets.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSet(-1, mainExercise.sets.length - 1)}
+                        className="px-3 py-1 text-xs bg-red-500 text-white rounded"
+                      >
+                        마지막 세트 삭제
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // 강제로 세트 재생성
+                        if (userProfile?.setConfiguration) {
+                          applySetConfiguration(userProfile.setConfiguration);
+                        } else {
+                          applySetConfiguration({ preferredSetup: '15x5', customSets: 5, customReps: 15 });
+                        }
+                      }}
+                      className="px-3 py-1 text-xs bg-blue-500 text-white rounded"
+                    >
+                      세트 재설정
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="space-y-4">
                   {mainExercise.sets.map((set, index) => (
                     <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-fadeIn transition-all duration-300 hover:shadow-md">
@@ -1097,16 +1176,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       </div>
                     </div>
                   ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addSet()}
-                    icon={<Plus size={16} />}
-                    className="mt-2 text-green-500 border-green-500 hover:bg-green-50"
-                  >
-                    세트 추가
-                  </Button>
                 </div>
               </CardSection>
 
