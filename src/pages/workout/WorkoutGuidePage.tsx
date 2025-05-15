@@ -59,6 +59,8 @@ const WorkoutGuidePage: React.FC = () => {
     if (!currentUser) return;
     
     try {
+      console.log('세트 설정 적용 시작:', guideInfo.preferredSetConfig);
+      
       // 1. 세트 구성 업데이트
       const setConfiguration = {
         preferredSetup: guideInfo.preferredSetConfig,
@@ -89,6 +91,8 @@ const WorkoutGuidePage: React.FC = () => {
           setConfiguration.customReps = 10;
       }
       
+      console.log('설정할 세트 구성:', setConfiguration);
+      
       // 2. 업데이트할 프로필 정보
       const profileUpdate: Partial<UserProfile> = {
         setConfiguration
@@ -103,7 +107,9 @@ const WorkoutGuidePage: React.FC = () => {
       }
       
       // Firebase와 컨텍스트 상태 모두 업데이트
+      console.log('프로필 업데이트 직전:', profileUpdate);
       await updateProfile(profileUpdate);
+      console.log('프로필 업데이트 완료');
       
       // 성공 메시지
       toast.success('세트 설정이 프로필에 적용되었습니다', {
@@ -111,8 +117,17 @@ const WorkoutGuidePage: React.FC = () => {
         position: 'top-center'
       });
 
-      // 설정 페이지로 리디렉션
-      navigate('/settings');
+      // 이벤트 발생 - 세트 설정 변경을 알리기 위한 커스텀 이벤트
+      const event = new CustomEvent('setConfigUpdated', {
+        detail: { setConfiguration }
+      });
+      window.dispatchEvent(event);
+      console.log('세트 설정 변경 이벤트 발생');
+      
+      // 잠시 기다렸다가 설정 페이지로 리디렉션
+      setTimeout(() => {
+        navigate('/settings');
+      }, 200);
     } catch (error) {
       console.error('프로필 업데이트 중 오류 발생:', error);
       toast.error('설정 적용 중 오류가 발생했습니다');
