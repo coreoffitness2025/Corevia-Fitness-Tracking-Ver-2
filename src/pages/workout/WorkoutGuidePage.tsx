@@ -115,6 +115,7 @@ const WorkoutGuidePage: React.FC = () => {
     age: userProfile?.age || 30,
     weight: userProfile?.weight || 70,
     experience: userProfile?.experience?.level || 'beginner',
+    trainingYears: userProfile?.experience?.years || 0,
     oneRepMaxes: {
       squat: userProfile?.oneRepMax?.squat || 0,
       deadlift: userProfile?.oneRepMax?.deadlift || 0,
@@ -148,13 +149,13 @@ const WorkoutGuidePage: React.FC = () => {
     } else {
       setGuideInfo((prev: WorkoutGuideInfo) => ({
         ...prev,
-        [name]: name === 'age' || name === 'weight' ? Number(value) : value
+        [name]: name === 'age' || name === 'weight' || name === 'trainingYears' ? Number(value) : value
       }));
     }
   };
 
   const handleNextStep = () => {
-    if (currentStep < 3) {
+    if (currentStep < 2) {
       setCurrentStep(prev => prev + 1);
     } else {
       calculateResults();
@@ -215,10 +216,17 @@ const WorkoutGuidePage: React.FC = () => {
         customReps: 0
       };
       
-      // 3. 프로필 업데이트
+      // 3. 운동 경력 업데이트
+      const experience = {
+        level: guideInfo.experience,
+        years: guideInfo.trainingYears || 0
+      };
+      
+      // 4. 프로필 업데이트
       const profileUpdate = {
         oneRepMax,
         setConfiguration,
+        experience
       };
       
       // Firebase와 컨텍스트 상태 모두 업데이트
@@ -423,14 +431,23 @@ const WorkoutGuidePage: React.FC = () => {
     });
     
     // 결과 페이지로 이동
-    setCurrentStep(4);
+    setCurrentStep(3);
   };
 
-  const renderBasicInfoStep = () => (
-    <Card className="p-6">
-      <h2 className="text-xl font-bold mb-6">기본 정보 입력</h2>
+  const renderWorkoutExperienceStep = () => (
+    <Card className="p-6 relative">
+      {showCalculator && (
+        <OneRMCalculator 
+          onCalculate={handleCalculatorResult} 
+          onClose={handleCalculatorClose} 
+        />
+      )}
       
-      <div className="mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">운동 구력 및 1RM 입력</h2>
+      </div>
+
+      <div className="mb-6">
         <label className="block text-gray-700 dark:text-gray-300 mb-2">성별</label>
         <div className="flex space-x-4">
           <label className="flex items-center">
@@ -504,25 +521,20 @@ const WorkoutGuidePage: React.FC = () => {
         </select>
       </div>
       
-      <div className="flex justify-end">
-        <Button variant="primary" onClick={handleNextStep}>
-          다음
-        </Button>
-      </div>
-    </Card>
-  );
-  
-  const renderOneRMInputStep = () => (
-    <Card className="p-6 relative">
-      {showCalculator && (
-        <OneRMCalculator 
-          onCalculate={handleCalculatorResult} 
-          onClose={handleCalculatorClose} 
+      <div className="mb-6">
+        <label className="block text-gray-700 dark:text-gray-300 mb-2">
+          운동 경력 (연수)
+        </label>
+        <input
+          type="number"
+          name="trainingYears"
+          value={guideInfo.trainingYears || 0}
+          onChange={handleInputChange}
+          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+          min="0"
+          max="50"
+          step="0.5"
         />
-      )}
-      
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">부위별 1RM 무게 입력</h2>
       </div>
       
       <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
@@ -630,10 +642,7 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex justify-between mt-4">
-        <Button variant="ghost" onClick={handlePrevStep}>
-          이전
-        </Button>
+      <div className="flex justify-end mt-4">
         <Button variant="primary" onClick={handleNextStep}>
           다음
         </Button>
@@ -829,16 +838,13 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <Button variant="ghost" onClick={() => setCurrentStep(3)}>
+          <Button variant="ghost" onClick={() => setCurrentStep(2)}>
             설정 변경
           </Button>
           
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="primary" onClick={applyToProfile} icon={<ArrowRight size={16} />}>
               프로필에 적용하기
-            </Button>
-            <Button variant="secondary" onClick={() => navigate('/workout')}>
-              운동 입력으로 이동
             </Button>
           </div>
         </div>
@@ -859,11 +865,11 @@ const WorkoutGuidePage: React.FC = () => {
       
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          {[1, 2, 3, 4].map((step) => (
+          {[1, 2, 3].map((step) => (
             <div 
               key={step}
               className={`flex items-center ${
-                step < 4 ? 'flex-1' : ''
+                step < 3 ? 'flex-1' : ''
               }`}
             >
               <div 
@@ -876,7 +882,7 @@ const WorkoutGuidePage: React.FC = () => {
                 {step}
               </div>
               
-              {step < 4 && (
+              {step < 3 && (
                 <div 
                   className={`h-1 flex-1 ${
                     currentStep > step 
@@ -890,17 +896,15 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>기본 정보</span>
-          <span>1RM 입력</span>
+          <span>운동 구력 입력</span>
           <span>세트 설정</span>
           <span>결과</span>
         </div>
       </div>
       
-      {currentStep === 1 && renderBasicInfoStep()}
-      {currentStep === 2 && renderOneRMInputStep()}
-      {currentStep === 3 && renderSetConfigStep()}
-      {currentStep === 4 && renderResultStep()}
+      {currentStep === 1 && renderWorkoutExperienceStep()}
+      {currentStep === 2 && renderSetConfigStep()}
+      {currentStep === 3 && renderResultStep()}
     </Layout>
   );
 };

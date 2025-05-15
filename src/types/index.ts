@@ -64,43 +64,41 @@ export interface User {
 
 export interface UserProfile {
   uid: string;
-  displayName: string | null;
-  email: string | null;
-  photoURL: string | null;
-  height?: number;
-  weight?: number;
-  age?: number;
-  gender?: 'male' | 'female';
-  activityLevel?: 'low' | 'moderate' | 'high';
-  fitnessGoal?: 'loss' | 'maintain' | 'gain';
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  height: number;
+  weight: number;
+  age: number;
+  gender: 'male' | 'female';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
+  fitnessGoal: 'loss' | 'maintain' | 'gain';
   experience?: {
-    years: number;
     level: 'beginner' | 'intermediate' | 'advanced';
-    squat: {
-      maxWeight: number;
-      maxReps: number;
-    };
+    years: number;
   };
+  targetCalories: number;
   preferredExercises?: {
-    chest?: string;
-    back?: string;
-    shoulder?: string;
-    leg?: string;
-    biceps?: string;
-    triceps?: string;
-  };
-  setConfiguration?: {
-    preferredSetup?: SetConfiguration;
-    customSets?: number;
-    customReps?: number;
+    chest: ChestMainExercise;
+    back: BackMainExercise;
+    shoulder: ShoulderMainExercise;
+    leg: LegMainExercise;
+    biceps: BicepsMainExercise;
+    triceps: TricepsMainExercise;
   };
   oneRepMax?: {
-    bench?: number;
-    squat?: number;
-    deadlift?: number;
-    overheadPress?: number;
+    bench: number;
+    squat: number;
+    deadlift: number;
+    overheadPress: number;
   };
-  targetCalories?: number;
+  setConfiguration?: {
+    preferredSetup: SetConfiguration;
+    customSets: number;
+    customReps: number;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type SetConfiguration = '10x5' | '15x5' | '6x3' | 'custom';
@@ -124,11 +122,12 @@ export interface WorkoutGuideInfo {
   age: number;
   weight: number;
   experience: 'beginner' | 'intermediate' | 'advanced';
+  trainingYears?: number;
   oneRepMaxes: {
-    squat?: number;
-    deadlift?: number;
-    bench?: number;
-    overheadPress?: number;
+    squat: number;
+    deadlift: number;
+    bench: number;
+    overheadPress: number;
   };
   preferredSetConfig: '10x5' | '6x3' | '15x5';
 }
