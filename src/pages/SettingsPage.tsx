@@ -231,19 +231,19 @@ const SettingsPage = () => {
               </div>
               
               {/* 추가: 운동 세트 및 무게 가이드 링크 */}
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md flex justify-between items-center">
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">메인 운동 세트 구성 및 적정 무게 가이드</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    개인 프로필에 맞는 운동 세트 구성과 무게를 설정하세요.
+                    개인 프로필에 맞는 운동 세트 구성과 무게를 설정하세요. 세트 구성 설정도 이곳에서 함께 할 수 있습니다.
                   </p>
                 </div>
                 <Button
                   onClick={() => navigate('/workout/guide')}
-                  variant="secondary"
+                  variant="primary"
                   size="md"
                 >
-                  가이드 보기
+                  가이드 설정하기
                 </Button>
               </div>
               
@@ -276,28 +276,6 @@ const SettingsPage = () => {
                       <p className="text-sm text-gray-500 dark:text-gray-400">삼두</p>
                       <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.triceps)}</p>
                     </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* 세트 구성 */}
-              {userProfile.setConfiguration && (
-                <div className="mt-6">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">세트 구성</h4>
-                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                    <div className="flex justify-between">
-                      <p className="text-gray-500 dark:text-gray-400">선호하는 세트 구성</p>
-                      <p className="font-medium">{getSetConfigDescription(userProfile.setConfiguration.preferredSetup)}</p>
-                    </div>
-                    
-                    {userProfile.setConfiguration.preferredSetup === 'custom' && (
-                      <div className="mt-2 flex justify-between">
-                        <p className="text-gray-500 dark:text-gray-400">커스텀 설정</p>
-                        <p className="font-medium">
-                          {userProfile.setConfiguration.customSets || 0}세트 x {userProfile.setConfiguration.customReps || 0}회
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
