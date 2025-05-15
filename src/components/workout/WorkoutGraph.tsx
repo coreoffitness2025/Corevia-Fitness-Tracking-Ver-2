@@ -37,7 +37,6 @@ ChartJS.register(
 
 // 운동 부위 옵션
 const partOptions = [
-  { value: 'all', label: '전체' },
   { value: 'chest', label: '가슴' },
   { value: 'back', label: '등' },
   { value: 'shoulder', label: '어깨' },
@@ -48,7 +47,6 @@ const partOptions = [
 
 // 운동 종류 옵션 (부위별로 그룹화)
 const exerciseOptions: Record<string, { value: string; label: string }[]> = {
-  all: [{ value: 'all', label: '전체' }],
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
     { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
@@ -109,8 +107,8 @@ const setConfigOptions = [
 
 const WorkoutGraph: React.FC = () => {
   const { currentUser } = useAuth();
-  const [selectedPart, setSelectedPart] = useState<string>('all');
-  const [selectedExercise, setSelectedExercise] = useState<string>('all');
+  const [selectedPart, setSelectedPart] = useState<string>('chest');
+  const [selectedExercise, setSelectedExercise] = useState<string>('benchPress');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('1month');
   const [selectedSetConfig, setSelectedSetConfig] = useState<string>('all');
   const [loading, setLoading] = useState<boolean>(true);
@@ -135,7 +133,7 @@ const WorkoutGraph: React.FC = () => {
     responsive: true,
     plugins: {
       legend: {
-        position: 'top',
+        display: false,
       },
       tooltip: {
         mode: 'index',
@@ -351,14 +349,14 @@ const WorkoutGraph: React.FC = () => {
       let filtered = [...data];
       
       // 부위 필터링
-      if (selectedPart !== 'all') {
-        filtered = filtered.filter(item => item.part === selectedPart);
-      }
+      filtered = filtered.filter(item => item.part === selectedPart);
       
       // 운동 종류 필터링
       if (selectedExercise !== 'all') {
         filtered = filtered.filter(item => 
-          item.mainExercise && item.mainExercise.name.includes(selectedExercise)
+          item.mainExercise && item.mainExercise.name.includes(
+            exerciseOptions[selectedPart].find(opt => opt.value === selectedExercise)?.label || ''
+          )
         );
       }
       
@@ -461,15 +459,13 @@ const WorkoutGraph: React.FC = () => {
           {/* 왼쪽: 그래프 */}
           <div className="flex-1">
             {filteredData.length > 0 ? (
-              <div className="h-96">
+              <div className="h-120">
                 <Line options={chartOptions} data={chartData} />
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center">
                 <p className="text-gray-500 dark:text-gray-400">
-                  {selectedPart === 'all' 
-                    ? '기록된 운동 데이터가 없습니다.' 
-                    : `${partOptions.find(p => p.value === selectedPart)?.label || ''} 부위의 운동 데이터가 없습니다.`}
+                  {`${partOptions.find(p => p.value === selectedPart)?.label || ''} 부위의 운동 데이터가 없습니다.`}
                 </p>
               </div>
             )}

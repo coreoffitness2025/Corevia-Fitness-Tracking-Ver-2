@@ -858,13 +858,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     </span>
                   </CardTitle>
                   
-                  {/* 메인 운동 선택 드롭다운 */}
-                  <div className="w-full md:w-auto">
+                  {/* 메인 운동 선택 드롭다운 - 위치 및 스타일 수정 */}
+                  <div className="w-full md:w-auto flex-shrink-0">
                     <select
                       id={`mainExerciseSelect-${part}`}
                       value={selectedMainExercise}
                       onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-                      className="w-full md:w-60 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="w-full md:w-60 p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-800 dark:text-white"
                       aria-label="메인 운동 선택"
                     >
                       {mainExerciseOptions[part].map(option => (
