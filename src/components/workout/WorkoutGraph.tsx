@@ -133,7 +133,12 @@ const WorkoutGraph: React.FC = () => {
     responsive: true,
     plugins: {
       legend: {
-        display: false,
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 15
+        }
       },
       tooltip: {
         mode: 'index',
@@ -145,12 +150,23 @@ const WorkoutGraph: React.FC = () => {
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.raw as number;
+            
+            if (value === null) return null;
+            
             let tooltipText = `${label}: ${value} kg`;
             
             // 추가: 해당 날짜의 데이터가 있을 경우 보조 운동 정보 추가
             const dateLabel = context.chart.data.labels?.[context.dataIndex] as string;
             if (dateLabel && dateWorkoutMap[dateLabel]) {
               const workout = dateWorkoutMap[dateLabel];
+              
+              // 세트 구성 정보 추가
+              const sets = workout.mainExercise?.sets;
+              if (sets && sets.length > 0) {
+                tooltipText += `\n세트 구성: ${sets.length}세트 x ${sets[0].reps}회`;
+              }
+              
+              // 보조 운동 정보 추가
               if (workout.accessoryExercises && workout.accessoryExercises.length > 0) {
                 tooltipText += '\n보조 운동:';
                 workout.accessoryExercises.forEach(exercise => {
@@ -209,13 +225,22 @@ const WorkoutGraph: React.FC = () => {
         return;
       }
       
-      // 날짜별 성공한 세트 중 최대 무게 추출 및 보조 운동 정보 포함
-      const successWeightsByDate: Record<string, number> = {};
-      const allDates: string[] = [];
+      // 날짜별 운동 데이터 맵 생성
       const newDateWorkoutMap: Record<string, Workout> = {};
       
+      // 세트 구성별 날짜와 무게 데이터
+      const setConfigData: Record<string, Record<string, number>> = {
+        '6x3': {},  // 6회 3세트
+        '10x5': {}, // 10회 5세트
+        '15x5': {}, // 15회 5세트
+        'custom': {} // 기타 커스텀 세트
+      };
+      
+      // 모든 날짜 수집
+      const allDates: string[] = [];
+      
       data.forEach(workout => {
-        if (!workout.mainExercise || !workout.mainExercise.sets) return;
+        if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
         
         const dateStr = formatShortDate(new Date(workout.date));
         allDates.push(dateStr);
@@ -225,19 +250,29 @@ const WorkoutGraph: React.FC = () => {
           newDateWorkoutMap[dateStr] = workout;
         }
         
+        // 세트 구성 확인
+        const sets = workout.mainExercise.sets;
+        let setConfig = 'custom';
+        
+        if (sets.length === 3 && sets.every(set => set.reps === 6)) {
+          setConfig = '6x3';
+        } else if (sets.length === 5 && sets.every(set => set.reps === 10)) {
+          setConfig = '10x5';
+        } else if (sets.length === 5 && sets.every(set => set.reps === 15)) {
+          setConfig = '15x5';
+        }
+        
         // 성공한 세트 중 최대 무게 찾기
         let maxWeight = 0;
-        workout.mainExercise.sets.forEach((set: any) => {
+        sets.forEach(set => {
           if (set.isSuccess && set.weight > maxWeight) {
             maxWeight = set.weight;
           }
         });
         
-        // 기존 값과 비교하여 더 큰 값 저장
+        // 세트 구성별 데이터에 저장
         if (maxWeight > 0) {
-          if (!successWeightsByDate[dateStr] || maxWeight > successWeightsByDate[dateStr]) {
-            successWeightsByDate[dateStr] = maxWeight;
-          }
+          setConfigData[setConfig][dateStr] = maxWeight;
         }
       });
       
@@ -251,25 +286,85 @@ const WorkoutGraph: React.FC = () => {
         return dateA.getTime() - dateB.getTime();
       });
       
-      // 차트 데이터셋 구성
-      const weights = uniqueDates.map(date => successWeightsByDate[date] || null);
+      // 세트 구성별 데이터셋 생성
+      const datasets = [
+        {
+          label: '6x3세트',
+          data: uniqueDates.map(date => setConfigData['6x3'][date] || null),
+          borderColor: 'rgb(59, 130, 246)', // 파란색
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          tension: 0.2,
+          pointRadius: 5,
+          pointBackgroundColor: uniqueDates.map(date => 
+            setConfigData['6x3'][date] ? 'rgb(59, 130, 246)' : 'transparent'
+          ),
+          pointBorderColor: uniqueDates.map(date => 
+            setConfigData['6x3'][date] ? 'rgb(59, 130, 246)' : 'transparent'
+          ),
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: 'rgba(59, 130, 246, 0.9)',
+          pointHitRadius: 10,
+          spanGaps: false // 데이터 없는 부분은 선으로 연결하지 않음
+        },
+        {
+          label: '10x5세트',
+          data: uniqueDates.map(date => setConfigData['10x5'][date] || null),
+          borderColor: 'rgb(239, 68, 68)', // 빨간색
+          backgroundColor: 'rgba(239, 68, 68, 0.5)',
+          tension: 0.2,
+          pointRadius: 5,
+          pointBackgroundColor: uniqueDates.map(date => 
+            setConfigData['10x5'][date] ? 'rgb(239, 68, 68)' : 'transparent'
+          ),
+          pointBorderColor: uniqueDates.map(date => 
+            setConfigData['10x5'][date] ? 'rgb(239, 68, 68)' : 'transparent'
+          ),
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: 'rgba(239, 68, 68, 0.9)',
+          pointHitRadius: 10,
+          spanGaps: false
+        },
+        {
+          label: '15x5세트',
+          data: uniqueDates.map(date => setConfigData['15x5'][date] || null),
+          borderColor: 'rgb(16, 185, 129)', // 초록색
+          backgroundColor: 'rgba(16, 185, 129, 0.5)',
+          tension: 0.2,
+          pointRadius: 5,
+          pointBackgroundColor: uniqueDates.map(date => 
+            setConfigData['15x5'][date] ? 'rgb(16, 185, 129)' : 'transparent'
+          ),
+          pointBorderColor: uniqueDates.map(date => 
+            setConfigData['15x5'][date] ? 'rgb(16, 185, 129)' : 'transparent'
+          ),
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: 'rgba(16, 185, 129, 0.9)',
+          pointHitRadius: 10,
+          spanGaps: false
+        },
+        {
+          label: '커스텀 세트',
+          data: uniqueDates.map(date => setConfigData['custom'][date] || null),
+          borderColor: 'rgb(156, 163, 175)', // 회색
+          backgroundColor: 'rgba(156, 163, 175, 0.5)',
+          tension: 0.2,
+          pointRadius: 5,
+          pointBackgroundColor: uniqueDates.map(date => 
+            setConfigData['custom'][date] ? 'rgb(156, 163, 175)' : 'transparent'
+          ),
+          pointBorderColor: uniqueDates.map(date => 
+            setConfigData['custom'][date] ? 'rgb(156, 163, 175)' : 'transparent'
+          ),
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: 'rgba(156, 163, 175, 0.9)',
+          pointHitRadius: 10,
+          spanGaps: false
+        }
+      ];
       
       setChartData({
         labels: uniqueDates,
-        datasets: [
-          {
-            label: '',
-            data: weights,
-            borderColor: 'rgb(16, 185, 129)',
-            backgroundColor: 'rgba(16, 185, 129, 0.5)',
-            tension: 0.2,
-            pointRadius: 5,
-            pointBackgroundColor: weights.map(w => w ? 'rgba(0, 200, 0, 0.8)' : 'rgba(200, 0, 0, 0.8)'),
-            pointHoverRadius: 8,
-            pointHoverBackgroundColor: 'rgba(16, 185, 129, 0.9)',
-            pointHitRadius: 10,
-          }
-        ]
+        datasets: datasets
       });
     } catch (error) {
       console.error('차트 데이터 변환 오류:', error);
