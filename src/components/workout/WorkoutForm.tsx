@@ -119,6 +119,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [reps, setReps] = useState<number>(5);
   const [customSets, setCustomSets] = useState<number>(5);
   const [customReps, setCustomReps] = useState<number>(5);
+  
+  // 최근 운동 이력 정보 저장 상태 추가
+  const [latestWorkoutInfo, setLatestWorkoutInfo] = useState<{
+    date: Date | null;
+    weight: number;
+    allSuccess: boolean;
+    exists: boolean;
+  }>({
+    date: null,
+    weight: 0,
+    allSuccess: false,
+    exists: false
+  });
 
   // 컴포넌트 마운트 시 사용자 프로필에서 선호 운동과 세트 설정을 가져와 초기화
   useEffect(() => {
@@ -633,6 +646,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           // 운동 이름이 다르면 처리 중단
           if (currentExerciseLabel && latestSession.mainExercise.name !== currentExerciseLabel) {
             console.log('선택된 운동이 최근 기록과 일치하지 않습니다. 무게를 로드하지 않습니다.');
+            setLatestWorkoutInfo({
+              date: null,
+              weight: 0,
+              allSuccess: false,
+              exists: false
+            });
             return;
           }
         }
@@ -648,6 +667,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           const newWeight = allSuccess ? lastWeight + 2.5 : lastWeight;
           
           console.log(`최근 운동 성공 여부: ${allSuccess}, 이전 무게: ${lastWeight}kg, 새 무게: ${newWeight}kg`);
+          
+          // 최근 운동 이력 정보 업데이트
+          setLatestWorkoutInfo({
+            date: latestSession.date.toDate(),
+            weight: lastWeight,
+            allSuccess,
+            exists: true
+          });
           
           // 세트 수 가져오기
           const setsCount = latestSession.mainExercise.sets.length;
@@ -680,9 +707,21 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         }
       } else {
         console.log('해당 운동의 이전 기록이 없습니다.');
+        setLatestWorkoutInfo({
+          date: null,
+          weight: 0,
+          allSuccess: false,
+          exists: false
+        });
       }
     } catch (error) {
       console.error('최근 운동 기록 가져오기 실패:', error);
+      setLatestWorkoutInfo({
+        date: null,
+        weight: 0,
+        allSuccess: false,
+        exists: false
+      });
     }
   };
 
@@ -955,6 +994,28 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     </select>
                   </div>
                 </div>
+
+                {/* 최근 운동 이력 정보 표시 */}
+                {latestWorkoutInfo.exists && (
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                          최근 운동 이력: {latestWorkoutInfo.date?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                          무게: {latestWorkoutInfo.weight}kg
+                        </p>
+                      </div>
+                      {latestWorkoutInfo.allSuccess && (
+                        <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-lg text-sm font-medium">
+                          💪 2.5kg 증량을 도전해보세요!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   {mainExercise.sets.map((set, index) => (
                     <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-fadeIn transition-all duration-300 hover:shadow-md">
