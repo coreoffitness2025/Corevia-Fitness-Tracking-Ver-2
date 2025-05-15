@@ -139,7 +139,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     reps: 0
   });
 
-  // 컴포넌트 마운트 시 사용자 프로필에서 선호 운동과 세트 설정을 가져와 초기화
+  // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
     if (userProfile) {
       console.log('운동 컴포넌트: 사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
@@ -159,7 +159,29 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         setPreferredExercises(prefExercises);
       }
       
-      // 세트 구성 설정
+      // 세트 구성 설정 - 컴포넌트 마운트 시 한 번만 설정
+      // 로컬 스토리지에 저장된 설정이 있으면 그것을 우선 사용
+      const savedConfig = localStorage.getItem('lastSetConfiguration');
+      
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          console.log('로컬 스토리지에서 세트 설정 로드:', config);
+          
+          // 상태 업데이트
+          setSelectedSetConfiguration(config.preferredSetup);
+          setCustomSets(config.customSets || 5);
+          setCustomReps(config.customReps || 10);
+          
+          // 세트 구성 적용
+          applySetConfiguration(config);
+          return;  // 로컬 스토리지에서 설정을 로드했으면 프로필 설정은 무시
+        } catch (error) {
+          console.error('저장된 세트 설정 로드 실패:', error);
+        }
+      }
+      
+      // 로컬 스토리지에 설정이 없는 경우 프로필 설정 사용
       if (userProfile.setConfiguration) {
         console.log('운동 컴포넌트: 세트 구성 설정 적용:', userProfile.setConfiguration);
         const config = userProfile.setConfiguration;
@@ -167,119 +189,50 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         if (config.preferredSetup) {
           // 선호하는 세트 구성 적용
           setSelectedSetConfiguration(config.preferredSetup);
-          
-          // 커스텀 세트/반복 횟수 상태 업데이트 (필요 시 사용)
           setCustomSets(config.customSets || 5);
           setCustomReps(config.customReps || 10);
-          
-          // 비동기 처리로 상태 업데이트 이후에 세트 생성
-          setTimeout(() => {
-            console.log('세트 설정 적용 시작:', config.preferredSetup);
-            
-            // 세트 수와 반복 횟수 결정
-            const { setsCount, repsCount } = getSetConfiguration(
-              config.preferredSetup,
-              config.customSets,
-              config.customReps
-            );
-            
-            console.log(`세트/횟수 결정됨: ${setsCount}세트 x ${repsCount}회`);
-            
-            // 초기 세트 배열 생성
-            const initialSets: Array<{reps: number, weight: number, isSuccess: boolean | null}> = [];
-            for (let i = 0; i < setsCount; i++) {
-              initialSets.push({
-                reps: repsCount,
-                weight: 0,
-                isSuccess: null
-              });
-            }
-            
-            console.log(`초기 세트 생성됨: ${initialSets.length}개`);
-            
-            // 메인 운동에 세트 적용
-            setMainExercise(prev => {
-              const updated = {
-                ...prev,
-                sets: initialSets
-              };
-              console.log(`메인 운동 세트 업데이트 완료: ${updated.sets.length}개`);
-              return updated;
-            });
-            
-            // 세트 생성 확인
-            setTimeout(() => {
-              console.log('최종 메인 운동 세트 확인:', mainExercise.sets.length);
-            }, 100);
-          }, 100); // 상태 업데이트를 위한 충분한 지연 시간
+          applySetConfiguration(config);
         }
       } else {
         // 기본값으로 10x5 설정
         console.log('운동 컴포넌트: 세트 구성 설정이 없어 기본값(10x5) 적용');
-        setSelectedSetConfiguration('10x5');
-        
-        // 비동기 처리로 상태 업데이트 이후에 기본 세트 생성
-        setTimeout(() => {
-          console.log('기본 세트 설정(10x5) 생성 시작');
-          
-          // 초기 세트 배열 생성
-          const initialSets: Array<{reps: number, weight: number, isSuccess: boolean | null}> = [];
-          for (let i = 0; i < 5; i++) {
-            initialSets.push({
-              reps: 10,
-              weight: 0,
-              isSuccess: null
-            });
-          }
-          
-          console.log(`기본 세트 생성됨: ${initialSets.length}개`);
-          
-          // 메인 운동에 세트 적용
-          setMainExercise(prev => {
-            const updated = {
-              ...prev,
-              sets: initialSets
-            };
-            console.log(`기본값 세트 설정 완료: ${updated.sets.length}개`);
-            return updated;
-          });
-        }, 100);
+        const defaultConfig = {
+          preferredSetup: '10x5',
+          customSets: 5,
+          customReps: 10
+        };
+        setSelectedSetConfiguration(defaultConfig.preferredSetup);
+        applySetConfiguration(defaultConfig);
       }
     }
-  }, [userProfile]);
+  }, [userProfile?.uid]); // 의존성 배열에 userProfile.uid만 포함하여 로그인 시에만 실행
 
-  // 부위(part) 변경 시 해당 부위의 첫 번째 메인 운동으로 selectedMainExercise와 mainExercise.name 업데이트
+  // 부위(part) 변경 시 운동 이름만 업데이트하고, 세트 설정은 그대로 유지
   useEffect(() => {
+    console.log(`부위 변경: ${part}, 세트 설정 유지`);
     const newSelectedPart = part as ExercisePart; // 타입 단언
     if (mainExerciseOptions[newSelectedPart] && mainExerciseOptions[newSelectedPart].length > 0) {
       const firstExerciseForPart = mainExerciseOptions[newSelectedPart][0];
       setSelectedMainExercise(firstExerciseForPart.value);
+      
+      // 운동 이름만 변경하고 세트 유지
       setMainExercise(prev => ({
         ...prev,
         name: firstExerciseForPart.label
       }));
     } else {
       // 해당 부위에 운동이 없는 경우 (예: 잘못된 'part' 값), 기본값 또는 오류 처리
-      setSelectedMainExercise(mainExerciseOptions.chest[0].value); // 예시: 가슴 운동으로 기본 설정
+      setSelectedMainExercise(mainExerciseOptions.chest[0].value);
       setMainExercise(prev => ({
-          ...prev,
-          name: mainExerciseOptions.chest[0].label
+        ...prev,
+        name: mainExerciseOptions.chest[0].label
       }));
     }
 
     // 부위 변경 시 최근 운동 기록 가져오기
     fetchLatestWorkout(newSelectedPart);
     
-    // 부위 변경 시에도 세트 설정은 현재 상태를 유지 (기존 세트 설정 유지)
-    // 로컬 스토리지에서 설정을 불러오는 대신 현재 상태를 기반으로 세트 설정 적용
-    const currentConfig = {
-      preferredSetup: selectedSetConfiguration,
-      customSets: customSets,
-      customReps: customReps
-    };
-    
-    // 현재 세트 설정으로 새 운동 세트 생성
-    applySetConfiguration(currentConfig);
+    // 세트는 변경하지 않음 - 기존 세트 유지
   }, [part]);
 
   // 선택된 메인 운동(selectedMainExercise) 변경 시 mainExercise.name 업데이트
@@ -718,9 +671,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         // 바로 설정 적용 (setTimeout 제거)
         applySetConfiguration(setConfiguration);
-        
-        // 로컬 스토리지에도 저장하여 페이지 새로고침/이동 후에도 유지
-        localStorage.setItem('lastSetConfiguration', JSON.stringify(setConfiguration));
       }
     };
     
@@ -733,26 +683,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     };
   }, []);
   
-  // 컴포넌트 마운트 시 로컬 스토리지에서 마지막 세트 설정 불러오기
-  useEffect(() => {
-    const savedConfig = localStorage.getItem('lastSetConfiguration');
-    if (savedConfig) {
-      try {
-        const config = JSON.parse(savedConfig);
-        console.log('로컬 스토리지에서 세트 설정 로드:', config);
-        // 상태 업데이트
-        setSelectedSetConfiguration(config.preferredSetup);
-        setCustomSets(config.customSets || 5);
-        setCustomReps(config.customReps || 10);
-        // 세트 구성 적용 (타임아웃 없이 바로 적용)
-        applySetConfiguration(config);
-      } catch (error) {
-        console.error('저장된 세트 설정 로드 실패:', error);
-      }
-    }
-  }, []);
+  // 컴포넌트 마운트 시 로컬 스토리지에서 세트 설정 로드하는 코드는 메인 useEffect로 이동
 
-  // 세트 구성 적용 함수
+  // 세트 구성 적용 함수 개선
   const applySetConfiguration = (config: any) => {
     console.log('세트 구성 적용:', config);
     
@@ -768,6 +701,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setReps(repsCount);
     
     console.log(`세트 구성 적용: ${config.preferredSetup} - ${setsCount} 세트 x ${repsCount} 회`);
+    
+    // 상태를 바로 저장하여 다른 부위로 이동해도 세트 설정이 유지되도록 함
+    localStorage.setItem('lastSetConfiguration', JSON.stringify(config));
     
     // 함수형 업데이트로 변경하여 최신 상태를 보장
     setMainExercise(prevExercise => {
@@ -796,9 +732,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         console.log(`세트 수 변경: ${prevExercise.sets.length} -> ${updatedSets.length}`);
         console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
         
-        // 로컬 스토리지에 최종 구성 저장
-        localStorage.setItem('lastSetConfiguration', JSON.stringify(config));
-        
         return {
           ...prevExercise,
           sets: updatedSets
@@ -811,9 +744,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         }));
         
         console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
-        
-        // 로컬 스토리지에 최종 구성 저장
-        localStorage.setItem('lastSetConfiguration', JSON.stringify(config));
         
         return {
           ...prevExercise,
