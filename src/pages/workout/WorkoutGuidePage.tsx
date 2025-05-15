@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Layout from '../../components/common/Layout';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -8,7 +8,7 @@ import { WorkoutGuideInfo, WorkoutGuideResult } from '../../types/index';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
-import { ArrowRight, Calculator } from 'lucide-react';
+import { ArrowRight, Calculator, Settings } from 'lucide-react';
 
 // 1RM 계산기 컴포넌트
 const OneRMCalculator = ({
@@ -619,7 +619,7 @@ const WorkoutGuidePage: React.FC = () => {
           이전
         </Button>
         <Button variant="primary" onClick={handleNextStep}>
-          결과 확인하기
+          적용하기
         </Button>
       </div>
     </Card>
@@ -721,8 +721,8 @@ const WorkoutGuidePage: React.FC = () => {
           </Button>
           
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="primary" onClick={applyToProfile} icon={<ArrowRight size={16} />}>
-              프로필에 적용하기
+            <Button variant="primary" onClick={() => navigate('/settings')} icon={<ArrowRight size={16} />}>
+              돌아가기
             </Button>
           </div>
         </div>
@@ -731,7 +731,22 @@ const WorkoutGuidePage: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <Layout
+      header={
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <h1 className="text-lg font-bold text-gray-800 dark:text-white">메인 운동 세트 설정</h1>
+            <Link 
+              to="/settings" 
+              className="text-blue-600 dark:text-blue-400 flex items-center gap-1"
+            >
+              <Settings size={16} />
+              <span>설정</span>
+            </Link>
+          </div>
+        </div>
+      }
+    >
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           메인 운동 세트 구성 및 적정 무게 가이드

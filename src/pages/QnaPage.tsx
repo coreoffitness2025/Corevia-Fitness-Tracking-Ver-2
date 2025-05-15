@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ExerciseFaq from '../components/exercise/ExerciseFaq';
 import NutritionScout from '../components/nutrition/NutritionScout';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
+import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import Layout from '../components/common/Layout';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
@@ -757,9 +758,10 @@ const QnaPage: React.FC = () => {
               </div>
             </div>
             
-            {/* 오른쪽: 1RM 계산기 */}
+            {/* 오른쪽: 1RM 계산기와 무게 추천 */}
             <div className="space-y-6">
               <OneRepMaxCalculator />
+              <WorkoutWeightGuide />
             </div>
           </div>
         )}

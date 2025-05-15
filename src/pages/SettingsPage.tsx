@@ -250,7 +250,7 @@ const SettingsPage = () => {
                     variant="primary"
                     size="md"
                   >
-                    운동 설정 구성하기
+                    메인 운동 세트 설정
                   </Button>
                 </div>
                 
@@ -258,7 +258,7 @@ const SettingsPage = () => {
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md mb-6">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     이 섹션에서는 운동 관련 세부 설정(메인 운동 선택, 1RM, 세트 구성 등)을 관리할 수 있습니다.
-                    세부 설정은 '운동 설정 구성하기' 버튼을 통해 한번에 진행할 수 있습니다.
+                    세부 설정은 '메인 운동 세트 설정' 버튼을 통해 한번에 진행할 수 있습니다.
                   </p>
                 </div>
                 
