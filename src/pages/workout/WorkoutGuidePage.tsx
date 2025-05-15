@@ -247,7 +247,13 @@ const WorkoutGuidePage: React.FC = () => {
   };
 
   const calculateResults = () => {
-    const { gender, age, weight, experience, oneRepMaxes, preferredSetConfig } = guideInfo;
+    const { oneRepMaxes, preferredSetConfig } = guideInfo;
+    
+    // 기본값 설정
+    const gender = 'male';
+    const age = 30;
+    const weight = 70;
+    const experience = 'intermediate';
     
     // 연령 그룹 결정
     let ageGroup: '20-35' | '36-50' | '51+' = '20-35';
@@ -257,33 +263,8 @@ const WorkoutGuidePage: React.FC = () => {
       ageGroup = '36-50';
     }
     
-    // 사용자 레벨 결정 (경험과 1RM 기준으로)
+    // 사용자 레벨
     let userLevel: 'beginner' | 'intermediate' | 'advanced' = experience;
-    
-    // 몸무게 대비 1RM 비율 계산하여 레벨 보정
-    if (gender === 'male') {
-      // 남성 기준
-      if (oneRepMaxes.squat && oneRepMaxes.deadlift) {
-        if (oneRepMaxes.squat >= weight * 1.8 && oneRepMaxes.deadlift >= weight * 2.3) {
-          userLevel = 'advanced';
-        } else if (oneRepMaxes.squat >= weight * 1.3 && oneRepMaxes.deadlift >= weight * 1.7) {
-          userLevel = 'intermediate';
-        } else {
-          userLevel = 'beginner';
-        }
-      }
-    } else {
-      // 여성 기준
-      if (oneRepMaxes.squat && oneRepMaxes.deadlift) {
-        if (oneRepMaxes.squat >= weight * 1.3 && oneRepMaxes.deadlift >= weight * 1.8) {
-          userLevel = 'advanced';
-        } else if (oneRepMaxes.squat >= weight * 0.9 && oneRepMaxes.deadlift >= weight * 1.3) {
-          userLevel = 'intermediate';
-        } else {
-          userLevel = 'beginner';
-        }
-      }
-    }
     
     // 세트 설정에 따른 1RM 백분율 계산
     let percentageOfOneRM = 0;
@@ -444,97 +425,7 @@ const WorkoutGuidePage: React.FC = () => {
       )}
       
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">운동 구력 및 1RM 입력</h2>
-      </div>
-
-      <div className="mb-6">
-        <label className="block text-gray-700 dark:text-gray-300 mb-2">성별</label>
-        <div className="flex space-x-4">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="gender"
-              value="male"
-              checked={guideInfo.gender === 'male'}
-              onChange={handleInputChange}
-              className="mr-2"
-            />
-            남자
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="gender"
-              value="female"
-              checked={guideInfo.gender === 'female'}
-              onChange={handleInputChange}
-              className="mr-2"
-            />
-            여자
-          </label>
-        </div>
-      </div>
-      
-      <div className="mb-4">
-        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-          나이
-        </label>
-        <input
-          type="number"
-          name="age"
-          value={guideInfo.age}
-          onChange={handleInputChange}
-          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-          min="15"
-          max="100"
-        />
-      </div>
-      
-      <div className="mb-4">
-        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-          몸무게 (kg)
-        </label>
-        <input
-          type="number"
-          name="weight"
-          value={guideInfo.weight}
-          onChange={handleInputChange}
-          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-          min="30"
-          max="200"
-        />
-      </div>
-      
-      <div className="mb-4">
-        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-          운동 경력
-        </label>
-        <select
-          name="experience"
-          value={guideInfo.experience}
-          onChange={handleInputChange}
-          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-        >
-          <option value="beginner">1년 미만</option>
-          <option value="intermediate">3년 미만</option>
-          <option value="advanced">3년 이상</option>
-        </select>
-      </div>
-      
-      <div className="mb-6">
-        <label className="block text-gray-700 dark:text-gray-300 mb-2">
-          운동 경력 (연수)
-        </label>
-        <input
-          type="number"
-          name="trainingYears"
-          value={guideInfo.trainingYears || 0}
-          onChange={handleInputChange}
-          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-          min="0"
-          max="50"
-          step="0.5"
-        />
+        <h2 className="text-xl font-bold">1RM 입력</h2>
       </div>
       
       <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
@@ -896,7 +787,7 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>운동 구력 입력</span>
+          <span>1RM 입력</span>
           <span>세트 설정</span>
           <span>결과</span>
         </div>
