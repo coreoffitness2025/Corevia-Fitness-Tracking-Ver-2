@@ -216,18 +216,19 @@ const WorkoutGuidePage: React.FC = () => {
         customReps: 0
       };
       
-      // 3. 운동 경력 업데이트
-      const experience = {
-        level: guideInfo.experience,
-        years: guideInfo.trainingYears || 0
+      // 3. 업데이트할 프로필 정보
+      const profileUpdate: Partial<UserProfile> = {
+        oneRepMax,
+        setConfiguration
       };
       
-      // 4. 프로필 업데이트
-      const profileUpdate = {
-        oneRepMax,
-        setConfiguration,
-        experience
-      };
+      // 경험 정보가 있으면 추가
+      if (userProfile?.experience) {
+        profileUpdate.experience = {
+          ...userProfile.experience,
+          level: guideInfo.experience
+        };
+      }
       
       // Firebase와 컨텍스트 상태 모두 업데이트
       await updateProfile(profileUpdate);
@@ -247,13 +248,12 @@ const WorkoutGuidePage: React.FC = () => {
   };
 
   const calculateResults = () => {
-    const { oneRepMaxes, preferredSetConfig } = guideInfo;
+    const { experience, oneRepMaxes, preferredSetConfig } = guideInfo;
     
-    // 기본값 설정
-    const gender = 'male';
-    const age = 30;
-    const weight = 70;
-    const experience = 'intermediate';
+    // 사용자 프로필에서 기본 정보 가져오기
+    const gender = userProfile?.gender || 'male';
+    const age = userProfile?.age || 30;
+    const weight = userProfile?.weight || 70;
     
     // 연령 그룹 결정
     let ageGroup: '20-35' | '36-50' | '51+' = '20-35';
@@ -263,7 +263,7 @@ const WorkoutGuidePage: React.FC = () => {
       ageGroup = '36-50';
     }
     
-    // 사용자 레벨
+    // 사용자 레벨 - 입력된 경험 레벨 사용
     let userLevel: 'beginner' | 'intermediate' | 'advanced' = experience;
     
     // 세트 설정에 따른 1RM 백분율 계산
@@ -425,7 +425,23 @@ const WorkoutGuidePage: React.FC = () => {
       )}
       
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">1RM 입력</h2>
+        <h2 className="text-xl font-bold">운동 구력 및 1RM 입력</h2>
+      </div>
+      
+      <div className="mb-4">
+        <label className="block text-gray-700 dark:text-gray-300 mb-2">
+          운동 경력
+        </label>
+        <select
+          name="experience"
+          value={guideInfo.experience}
+          onChange={handleInputChange}
+          className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+        >
+          <option value="beginner">1년 미만</option>
+          <option value="intermediate">3년 미만</option>
+          <option value="advanced">3년 이상</option>
+        </select>
       </div>
       
       <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
@@ -442,7 +458,7 @@ const WorkoutGuidePage: React.FC = () => {
               스쿼트 1RM (kg)
             </label>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('squat')}
@@ -466,7 +482,7 @@ const WorkoutGuidePage: React.FC = () => {
               데드리프트 1RM (kg)
             </label>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('deadlift')}
@@ -490,7 +506,7 @@ const WorkoutGuidePage: React.FC = () => {
               벤치프레스 1RM (kg)
             </label>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('bench')}
@@ -514,7 +530,7 @@ const WorkoutGuidePage: React.FC = () => {
               오버헤드프레스 1RM (kg)
             </label>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               className="text-blue-600 dark:text-blue-400"
               onClick={() => handleOneRmCalculator('overheadPress')}
@@ -628,7 +644,7 @@ const WorkoutGuidePage: React.FC = () => {
       </div>
       
       <div className="flex justify-between mt-6">
-        <Button variant="ghost" onClick={handlePrevStep}>
+        <Button variant="outline" onClick={handlePrevStep}>
           이전
         </Button>
         <Button variant="primary" onClick={handleNextStep}>
@@ -729,7 +745,7 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <Button variant="ghost" onClick={() => setCurrentStep(2)}>
+          <Button variant="outline" onClick={() => setCurrentStep(2)}>
             설정 변경
           </Button>
           
@@ -787,7 +803,7 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>1RM 입력</span>
+          <span>운동 구력 및 1RM 입력</span>
           <span>세트 설정</span>
           <span>결과</span>
         </div>
