@@ -1006,6 +1006,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         <p className="text-sm text-blue-600 dark:text-blue-400">
                           무게: {latestWorkoutInfo.weight}kg
                         </p>
+                        <p className="text-sm mt-1">
+                          <span className={latestWorkoutInfo.allSuccess ? 
+                            "inline-block px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full font-medium" : 
+                            "inline-block px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full font-medium"}>
+                            {latestWorkoutInfo.allSuccess ? '모든 세트 성공' : '일부 세트 실패'}
+                          </span>
+                        </p>
                       </div>
                       {latestWorkoutInfo.allSuccess && (
                         <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-lg text-sm font-medium">
