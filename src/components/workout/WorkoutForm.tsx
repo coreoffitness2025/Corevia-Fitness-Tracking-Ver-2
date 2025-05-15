@@ -126,11 +126,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     weight: number;
     allSuccess: boolean;
     exists: boolean;
+    exerciseName: string;
+    sets: number;
+    reps: number;
   }>({
     date: null,
     weight: 0,
     allSuccess: false,
-    exists: false
+    exists: false,
+    exerciseName: '',
+    sets: 0,
+    reps: 0
   });
 
   // 컴포넌트 마운트 시 사용자 프로필에서 선호 운동과 세트 설정을 가져와 초기화
@@ -552,71 +558,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     };
   }, []);
 
-  // 세트 구성 적용 함수
-  const applySetConfiguration = (config: any) => {
-    console.log('세트 구성 적용:', config);
-    
-    // 세트 구성에 따라 초기 세트 수 설정
-    const { setsCount, repsCount } = getSetConfiguration(
-      config.preferredSetup, 
-      config.customSets, 
-      config.customReps
-    );
-    
-    // 상태 업데이트
-    setSets(setsCount);
-    setReps(repsCount);
-    
-    console.log(`세트 구성 적용: ${config.preferredSetup} - ${setsCount} 세트 x ${repsCount} 회`);
-    
-    // 함수형 업데이트로 변경하여 최신 상태를 보장
-    setMainExercise(prevExercise => {
-      console.log('현재 메인 운동 세트:', prevExercise.sets.length);
-      
-      // 현재 세트와 설정 세트 수 비교
-      if (prevExercise.sets.length !== setsCount) {
-        // 세트 수가 다르면 새로운 세트 배열로 대체
-        const updatedSets = Array.from({ length: setsCount }, (_, i) => {
-          // 기존 세트가 있으면 무게 유지
-          if (i < prevExercise.sets.length) {
-            return {
-              reps: repsCount,
-              weight: prevExercise.sets[i].weight || 0,
-              isSuccess: null as boolean | null
-            };
-          } else {
-            return {
-              reps: repsCount,
-              weight: 0,
-              isSuccess: null as boolean | null
-            };
-          }
-        });
-        
-        console.log(`세트 수 변경: ${prevExercise.sets.length} -> ${updatedSets.length}`);
-        console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
-        
-        return {
-          ...prevExercise,
-          sets: updatedSets
-        };
-      } else {
-        // 세트 수가 동일하면 반복 횟수만 업데이트
-        const updatedSets = prevExercise.sets.map(set => ({
-          ...set,
-          reps: repsCount  // 반복 횟수 업데이트
-        }));
-        
-        console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
-        
-        return {
-          ...prevExercise,
-          sets: updatedSets
-        };
-      }
-    });
-  };
-
   // 최근 운동 기록 가져오기
   const fetchLatestWorkout = async (exercisePart: ExercisePart, mainExerciseType?: MainExerciseType) => {
     if (!userProfile) return;
@@ -668,7 +609,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               date: null,
               weight: 0,
               allSuccess: false,
-              exists: false
+              exists: false,
+              exerciseName: '',
+              sets: 0,
+              reps: 0
             });
             return;
           }
@@ -686,16 +630,20 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           
           console.log(`최근 운동 성공 여부: ${allSuccess}, 이전 무게: ${lastWeight}kg, 새 무게: ${newWeight}kg`);
           
+          // 세트 수와 반복 횟수 패턴 확인
+          const setsCount = latestSession.mainExercise.sets.length;
+          const repsCount = latestSession.mainExercise.sets[0]?.reps || 0;
+          
           // 최근 운동 이력 정보 업데이트
           setLatestWorkoutInfo({
             date: latestSession.date instanceof Date ? latestSession.date : latestSession.date.toDate(),
             weight: lastWeight,
             allSuccess,
-            exists: true
+            exists: true,
+            exerciseName: latestSession.mainExercise.name,
+            sets: setsCount,
+            reps: repsCount
           });
-          
-          // 세트 수 가져오기
-          const setsCount = latestSession.mainExercise.sets.length;
           
           // 메인 운동 세트 설정: 새 무게 적용 (모든 세트에 동일한 무게 적용)
           const newSets = Array(setsCount).fill(0).map((_, index) => {
@@ -729,7 +677,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           date: null,
           weight: 0,
           allSuccess: false,
-          exists: false
+          exists: false,
+          exerciseName: '',
+          sets: 0,
+          reps: 0
         });
       }
     } catch (error) {
@@ -738,7 +689,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         date: null,
         weight: 0,
         allSuccess: false,
-        exists: false
+        exists: false,
+        exerciseName: '',
+        sets: 0,
+        reps: 0
       });
     }
   };
@@ -780,17 +734,91 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (savedConfig) {
       try {
         const config = JSON.parse(savedConfig);
+        console.log('로컬 스토리지에서 세트 설정 로드:', config);
         // 상태 업데이트
         setSelectedSetConfiguration(config.preferredSetup);
         setCustomSets(config.customSets || 5);
         setCustomReps(config.customReps || 10);
-        // 세트 구성 적용
-        applySetConfiguration(config);
+        // 세트 구성 적용 (약간의 지연 후 적용하여 상태 업데이트가 완료되도록 함)
+        setTimeout(() => {
+          applySetConfiguration(config);
+        }, 100);
       } catch (error) {
         console.error('저장된 세트 설정 로드 실패:', error);
       }
     }
   }, []);
+
+  // 세트 구성 적용 함수
+  const applySetConfiguration = (config: any) => {
+    console.log('세트 구성 적용:', config);
+    
+    // 세트 구성에 따라 초기 세트 수 설정
+    const { setsCount, repsCount } = getSetConfiguration(
+      config.preferredSetup, 
+      config.customSets, 
+      config.customReps
+    );
+    
+    // 상태 업데이트
+    setSets(setsCount);
+    setReps(repsCount);
+    
+    console.log(`세트 구성 적용: ${config.preferredSetup} - ${setsCount} 세트 x ${repsCount} 회`);
+    
+    // 함수형 업데이트로 변경하여 최신 상태를 보장
+    setMainExercise(prevExercise => {
+      console.log('현재 메인 운동 세트:', prevExercise.sets.length);
+      
+      // 현재 세트와 설정 세트 수 비교
+      if (prevExercise.sets.length !== setsCount) {
+        // 세트 수가 다르면 새로운 세트 배열로 대체
+        const updatedSets = Array.from({ length: setsCount }, (_, i) => {
+          // 기존 세트가 있으면 무게 유지
+          if (i < prevExercise.sets.length) {
+            return {
+              reps: repsCount,
+              weight: prevExercise.sets[i].weight || 0,
+              isSuccess: null as boolean | null
+            };
+          } else {
+            return {
+              reps: repsCount,
+              weight: 0,
+              isSuccess: null as boolean | null
+            };
+          }
+        });
+        
+        console.log(`세트 수 변경: ${prevExercise.sets.length} -> ${updatedSets.length}`);
+        console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
+        
+        // 로컬 스토리지에 최종 구성 저장
+        localStorage.setItem('lastSetConfiguration', JSON.stringify(config));
+        
+        return {
+          ...prevExercise,
+          sets: updatedSets
+        };
+      } else {
+        // 세트 수가 동일하면 반복 횟수만 업데이트
+        const updatedSets = prevExercise.sets.map(set => ({
+          ...set,
+          reps: repsCount  // 반복 횟수 업데이트
+        }));
+        
+        console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
+        
+        // 로컬 스토리지에 최종 구성 저장
+        localStorage.setItem('lastSetConfiguration', JSON.stringify(config));
+        
+        return {
+          ...prevExercise,
+          sets: updatedSets
+        };
+      }
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1042,8 +1070,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
                           최근 운동 이력: {latestWorkoutInfo.date?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                          무게: {latestWorkoutInfo.weight}kg
+                        <p className="text-sm font-semibold text-blue-800 dark:text-blue-200 mt-1">
+                          {latestWorkoutInfo.reps}x{latestWorkoutInfo.sets}set 메인 운동 : {latestWorkoutInfo.exerciseName} {latestWorkoutInfo.weight}kg
                         </p>
                         <p className="text-sm mt-1">
                           <span className={latestWorkoutInfo.allSuccess ? 
