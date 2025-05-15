@@ -180,7 +180,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             console.log(`세트/횟수 결정됨: ${setsCount}세트 x ${repsCount}회`);
             
             // 초기 세트 배열 생성
-            const initialSets = [];
+            const initialSets: Array<{reps: number, weight: number, isSuccess: boolean | null}> = [];
             for (let i = 0; i < setsCount; i++) {
               initialSets.push({
                 reps: repsCount,
@@ -217,7 +217,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           console.log('기본 세트 설정(10x5) 생성 시작');
           
           // 초기 세트 배열 생성
-          const initialSets = [];
+          const initialSets: Array<{reps: number, weight: number, isSuccess: boolean | null}> = [];
           for (let i = 0; i < 5; i++) {
             initialSets.push({
               reps: 10,
@@ -263,7 +263,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
     // 부위 변경 시 최근 운동 기록 가져오기
     fetchLatestWorkout(newSelectedPart);
-  }, [part]);
+    
+    // 부위 변경 시에도 선택된 세트 구성 적용
+    if (userProfile?.setConfiguration?.preferredSetup) {
+      const config = userProfile.setConfiguration;
+      applySetConfiguration(config);
+    }
+  }, [part, userProfile?.setConfiguration]);
 
   // 선택된 메인 운동(selectedMainExercise) 변경 시 mainExercise.name 업데이트
   useEffect(() => {
@@ -456,7 +462,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (!userProfile) return;
     
     // 현재 프로필의 1RM 정보
-    const currentOneRM = userProfile.oneRepMax || {};
+    const currentOneRM = userProfile.oneRepMax || {
+      bench: 0,
+      squat: 0,
+      deadlift: 0,
+      overheadPress: 0
+    };
     let shouldUpdate = false;
     let exerciseKey = '';
     
@@ -500,7 +511,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         const updatedOneRM = { ...currentOneRM, [exerciseKey]: newOneRM };
         
         // AuthContext의 updateProfile 함수를 사용하여 프로필 업데이트
-        await updateProfile({ oneRepMax: updatedOneRM });
+        await updateProfile({ 
+          oneRepMax: updatedOneRM as {
+            bench: number;
+            squat: number;
+            deadlift: number;
+            overheadPress: number;
+          }
+        });
         
         // 성공 토스트 메시지
         toast.success(
@@ -670,7 +688,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           
           // 최근 운동 이력 정보 업데이트
           setLatestWorkoutInfo({
-            date: latestSession.date.toDate(),
+            date: latestSession.date instanceof Date ? latestSession.date : latestSession.date.toDate(),
             weight: lastWeight,
             allSuccess,
             exists: true
@@ -741,6 +759,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         // 바로 설정 적용 (setTimeout 제거)
         applySetConfiguration(setConfiguration);
+        
+        // 로컬 스토리지에도 저장하여 페이지 새로고침/이동 후에도 유지
+        localStorage.setItem('lastSetConfiguration', JSON.stringify(setConfiguration));
       }
     };
     
@@ -751,6 +772,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     return () => {
       window.removeEventListener('setConfigUpdated', handleSetConfigUpdate as EventListener);
     };
+  }, []);
+  
+  // 컴포넌트 마운트 시 로컬 스토리지에서 마지막 세트 설정 불러오기
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('lastSetConfiguration');
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig);
+        // 상태 업데이트
+        setSelectedSetConfiguration(config.preferredSetup);
+        setCustomSets(config.customSets || 5);
+        setCustomReps(config.customReps || 10);
+        // 세트 구성 적용
+        applySetConfiguration(config);
+      } catch (error) {
+        console.error('저장된 세트 설정 로드 실패:', error);
+      }
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
