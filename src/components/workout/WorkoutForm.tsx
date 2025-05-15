@@ -270,12 +270,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     // 부위 변경 시 최근 운동 기록 가져오기
     fetchLatestWorkout(newSelectedPart);
     
-    // 부위 변경 시에도 선택된 세트 구성 적용
-    if (userProfile?.setConfiguration?.preferredSetup) {
-      const config = userProfile.setConfiguration;
-      applySetConfiguration(config);
-    }
-  }, [part, userProfile?.setConfiguration]);
+    // 부위 변경 시에도 세트 설정은 현재 상태를 유지 (기존 세트 설정 유지)
+    // 로컬 스토리지에서 설정을 불러오는 대신 현재 상태를 기반으로 세트 설정 적용
+    const currentConfig = {
+      preferredSetup: selectedSetConfiguration,
+      customSets: customSets,
+      customReps: customReps
+    };
+    
+    // 현재 세트 설정으로 새 운동 세트 생성
+    applySetConfiguration(currentConfig);
+  }, [part]);
 
   // 선택된 메인 운동(selectedMainExercise) 변경 시 mainExercise.name 업데이트
   useEffect(() => {
@@ -636,7 +641,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           
           // 최근 운동 이력 정보 업데이트
           setLatestWorkoutInfo({
-            date: latestSession.date instanceof Date ? latestSession.date : latestSession.date.toDate(),
+            date: latestSession.date instanceof Date ? latestSession.date : (latestSession.date?.toDate ? latestSession.date.toDate() : new Date()),
             weight: lastWeight,
             allSuccess,
             exists: true,
@@ -739,10 +744,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         setSelectedSetConfiguration(config.preferredSetup);
         setCustomSets(config.customSets || 5);
         setCustomReps(config.customReps || 10);
-        // 세트 구성 적용 (약간의 지연 후 적용하여 상태 업데이트가 완료되도록 함)
-        setTimeout(() => {
-          applySetConfiguration(config);
-        }, 100);
+        // 세트 구성 적용 (타임아웃 없이 바로 적용)
+        applySetConfiguration(config);
       } catch (error) {
         console.error('저장된 세트 설정 로드 실패:', error);
       }
