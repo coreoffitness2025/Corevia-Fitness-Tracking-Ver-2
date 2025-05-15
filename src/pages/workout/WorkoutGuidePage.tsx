@@ -66,6 +66,29 @@ const WorkoutGuidePage: React.FC = () => {
         customReps: 0
       };
       
+      // 세트 구성에 따라 적절한 세트 수와 반복 횟수 설정
+      switch (guideInfo.preferredSetConfig) {
+        case '6x3':
+          // 6회 3세트 (근력 향상 - 스트렝스 초점)
+          setConfiguration.customSets = 3;
+          setConfiguration.customReps = 6;
+          break;
+        case '10x5':
+          // 10회 5세트 (근비대-보디빌딩 초점)
+          setConfiguration.customSets = 5;
+          setConfiguration.customReps = 10;
+          break;
+        case '15x5':
+          // 15회 5세트 (근육 성장 자극)
+          setConfiguration.customSets = 5;
+          setConfiguration.customReps = 15;
+          break;
+        default:
+          // 기본값: 10회 5세트
+          setConfiguration.customSets = 5;
+          setConfiguration.customReps = 10;
+      }
+      
       // 2. 업데이트할 프로필 정보
       const profileUpdate: Partial<UserProfile> = {
         setConfiguration

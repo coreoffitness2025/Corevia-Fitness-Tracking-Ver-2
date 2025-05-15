@@ -146,13 +146,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         const config = userProfile.setConfiguration;
         
         if (config.preferredSetup) {
+          // 선호하는 세트 구성 적용
           setSelectedSetConfiguration(config.preferredSetup);
+          
+          // 세트 구성에 따른 값 로그 확인
+          console.log(`세트 구성 확인: ${config.preferredSetup}, 세트 수: ${config.customSets}, 반복 횟수: ${config.customReps}`);
+          
+          // 커스텀 세트/반복 횟수 상태 업데이트 (필요 시 사용)
+          setCustomSets(config.customSets);
+          setCustomReps(config.customReps);
+          
+          // 세트 구성 적용
           applySetConfiguration(config);
         }
       } else {
         // 기본값으로 10x5 설정
+        console.log('운동 컴포넌트: 세트 구성 설정이 없어 기본값(10x5) 적용');
         setSelectedSetConfiguration('10x5');
-        applySetConfiguration({ preferredSetup: '10x5' });
+        applySetConfiguration({ preferredSetup: '10x5', customSets: 5, customReps: 10 });
       }
     }
   }, [userProfile]);
@@ -520,6 +531,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setSets(setsCount);
     setReps(repsCount);
     
+    console.log(`세트 구성 적용: ${config.preferredSetup} - ${setsCount} 세트 x ${repsCount} 회`);
+    
     // 해당 세트 수만큼 초기 세트 배열 생성
     const initialSets = Array(setsCount).fill(0).map(() => ({
       reps: repsCount,  // 선호 반복 수로 초기화
@@ -527,10 +540,22 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       isSuccess: null as boolean | null
     }));
     
-    console.log(`세트 구성 적용: ${setsCount} 세트 x ${repsCount} 회`);
+    // 메인 운동 세트 업데이트
+    // 기존 세트의 무게는 유지하고 세트 수와 반복 횟수만 업데이트
+    const updatedSets = initialSets.map((newSet, idx) => {
+      // 기존 세트가 있으면 무게 유지
+      if (mainExercise.sets[idx]) {
+        return {
+          ...newSet,
+          weight: mainExercise.sets[idx].weight || 0
+        };
+      }
+      return newSet;
+    });
+    
     setMainExercise(prev => ({
       ...prev,
-      sets: initialSets.map(set => ({ ...set, isSuccess: null }))
+      sets: updatedSets
     }));
   };
 
