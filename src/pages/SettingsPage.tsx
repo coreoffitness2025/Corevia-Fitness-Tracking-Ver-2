@@ -177,14 +177,14 @@ const SettingsPage = () => {
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
-              운동 개인화 설정
+              기본 정보 설정
             </h3>
             <Button
               onClick={() => setIsPersonalizationModalOpen(true)}
               variant="primary"
               size="md"
             >
-              {userProfile ? '설정 변경' : '새로 설정하기'}
+              기본 정보 변경
             </Button>
           </div>
           
@@ -230,91 +230,107 @@ const SettingsPage = () => {
                 </div>
               </div>
               
-              {/* 추가: 운동 세트 및 무게 가이드 링크 */}
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">메인 운동 세트 구성 및 적정 무게 가이드</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    개인 프로필에 맞는 운동 세트 구성과 무게를 설정하세요. 세트 구성 설정도 이곳에서 함께 할 수 있습니다.
-                  </p>
-                </div>
-                <Button
-                  onClick={() => navigate('/workout/guide')}
-                  variant="primary"
-                  size="md"
-                >
-                  가이드 설정하기
-                </Button>
-              </div>
-              
-              {/* 메인 운동 설정 */}
-              {userProfile.preferredExercises && (
-                <div className="mt-6">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">메인 운동 선택</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">가슴</p>
-                      <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.chest)}</p>
-                    </div>
-                    <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">등</p>
-                      <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.back)}</p>
-                    </div>
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">어깨</p>
-                      <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.shoulder)}</p>
-                    </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">하체</p>
-                      <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.leg)}</p>
-                    </div>
-                    <div className="bg-pink-50 dark:bg-pink-900/20 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">이두</p>
-                      <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.biceps)}</p>
-                    </div>
-                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">삼두</p>
-                      <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.triceps)}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* 1RM 정보 */}
-              {userProfile.oneRepMax && (
-                <div className="mt-6">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">1RM (최대 중량)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">벤치 프레스</p>
-                      <p className="font-medium">{userProfile.oneRepMax.bench || 0} kg</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">스쿼트</p>
-                      <p className="font-medium">{userProfile.oneRepMax.squat || 0} kg</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">데드리프트</p>
-                      <p className="font-medium">{userProfile.oneRepMax.deadlift || 0} kg</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">오버헤드 프레스</p>
-                      <p className="font-medium">{userProfile.oneRepMax.overheadPress || 0} kg</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* 목표 칼로리 정보 */}
               {userProfile.targetCalories !== undefined && (
-                <div className="mt-6">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">목표 칼로리</h4>
+                <div>
                   <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                     <p className="text-sm text-gray-500 dark:text-gray-400">일일 목표 칼로리</p>
                     <p className="font-medium">{isNaN(userProfile.targetCalories) ? '목표 칼로리를 설정해주세요' : `${userProfile.targetCalories} kcal`}</p>
                   </div>
                 </div>
               )}
+              
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                    운동 세부 설정
+                  </h3>
+                  <Button
+                    onClick={() => navigate('/workout/guide')}
+                    variant="primary"
+                    size="md"
+                  >
+                    운동 설정 구성하기
+                  </Button>
+                </div>
+                
+                {/* 운동 세부 정보 안내 */}
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md mb-6">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    이 섹션에서는 운동 관련 세부 설정(메인 운동 선택, 1RM, 세트 구성 등)을 관리할 수 있습니다.
+                    세부 설정은 '운동 설정 구성하기' 버튼을 통해 한번에 진행할 수 있습니다.
+                  </p>
+                </div>
+                
+                {/* 메인 운동 설정 */}
+                {userProfile.preferredExercises && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">메인 운동 선택</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">가슴</p>
+                        <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.chest)}</p>
+                      </div>
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">등</p>
+                        <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.back)}</p>
+                      </div>
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">어깨</p>
+                        <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.shoulder)}</p>
+                      </div>
+                      <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">하체</p>
+                        <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.leg)}</p>
+                      </div>
+                      <div className="bg-pink-50 dark:bg-pink-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">이두</p>
+                        <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.biceps)}</p>
+                      </div>
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">삼두</p>
+                        <p className="font-medium">{getMainExerciseName(userProfile.preferredExercises.triceps)}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 1RM 정보 */}
+                {userProfile.oneRepMax && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">1RM (최대 중량)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">벤치 프레스</p>
+                        <p className="font-medium">{userProfile.oneRepMax.bench || 0} kg</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">스쿼트</p>
+                        <p className="font-medium">{userProfile.oneRepMax.squat || 0} kg</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">데드리프트</p>
+                        <p className="font-medium">{userProfile.oneRepMax.deadlift || 0} kg</p>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">오버헤드 프레스</p>
+                        <p className="font-medium">{userProfile.oneRepMax.overheadPress || 0} kg</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 세트 구성 정보 */}
+                {userProfile.setConfiguration && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">세트 구성 설정</h4>
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">선호하는 세트 구성</p>
+                      <p className="font-medium">{getSetConfigDescription(userProfile.setConfiguration.preferredSetup)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           
