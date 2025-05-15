@@ -351,7 +351,6 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 <option value="light">가벼운 활동 (주 1-3회 운동)</option>
                 <option value="moderate">보통 활동 (주 3-5회 운동)</option>
                 <option value="active">활동적 (주 6-7회 운동)</option>
-                <option value="veryActive">매우 활동적 (하루 2회 이상 운동)</option>
               </select>
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
                 <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -372,7 +371,6 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 required
               >
                 <option value="loss">체중 감소</option>
-                <option value="maintain">체중 유지</option>
                 <option value="gain">체중 증가</option>
               </select>
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
