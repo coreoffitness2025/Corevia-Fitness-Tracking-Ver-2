@@ -426,6 +426,17 @@ const WorkoutGuidePage: React.FC = () => {
       
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">운동 구력 및 1RM 입력</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-blue-600 dark:text-blue-400"
+          onClick={() => {
+            setCalculatorExercise('squat');
+            setShowCalculator(true);
+          }}
+        >
+          1RM 예상 계산하기
+        </Button>
       </div>
       
       <div className="mb-4">
@@ -447,25 +458,15 @@ const WorkoutGuidePage: React.FC = () => {
       <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           1RM(One Repetition Maximum)은 한 번에 들 수 있는 최대 무게를 의미합니다.
-          정확한 수치를 모르신다면 각 운동 옆의 1RM 예상 계산기를 이용하세요.
+          정확한 수치를 모르신다면 상단의 1RM 예상 계산하기 버튼을 이용하세요.
         </p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-gray-700 dark:text-gray-300">
-              스쿼트 1RM (kg)
-            </label>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-blue-600 dark:text-blue-400"
-              onClick={() => handleOneRmCalculator('squat')}
-            >
-              1RM 예상 계산기
-            </Button>
-          </div>
+          <label className="block text-gray-700 dark:text-gray-300 mb-2">
+            스쿼트 1RM (kg)
+          </label>
           <input
             type="number"
             name="oneRepMaxes.squat"
@@ -477,19 +478,9 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-gray-700 dark:text-gray-300">
-              데드리프트 1RM (kg)
-            </label>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-blue-600 dark:text-blue-400"
-              onClick={() => handleOneRmCalculator('deadlift')}
-            >
-              1RM 예상 계산기
-            </Button>
-          </div>
+          <label className="block text-gray-700 dark:text-gray-300 mb-2">
+            데드리프트 1RM (kg)
+          </label>
           <input
             type="number"
             name="oneRepMaxes.deadlift"
@@ -501,19 +492,9 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-gray-700 dark:text-gray-300">
-              벤치프레스 1RM (kg)
-            </label>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-blue-600 dark:text-blue-400"
-              onClick={() => handleOneRmCalculator('bench')}
-            >
-              1RM 예상 계산기
-            </Button>
-          </div>
+          <label className="block text-gray-700 dark:text-gray-300 mb-2">
+            벤치프레스 1RM (kg)
+          </label>
           <input
             type="number"
             name="oneRepMaxes.bench"
@@ -525,19 +506,9 @@ const WorkoutGuidePage: React.FC = () => {
         </div>
         
         <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-gray-700 dark:text-gray-300">
-              오버헤드프레스 1RM (kg)
-            </label>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-blue-600 dark:text-blue-400"
-              onClick={() => handleOneRmCalculator('overheadPress')}
-            >
-              1RM 예상 계산기
-            </Button>
-          </div>
+          <label className="block text-gray-700 dark:text-gray-300 mb-2">
+            오버헤드프레스 1RM (kg)
+          </label>
           <input
             type="number"
             name="oneRepMaxes.overheadPress"
