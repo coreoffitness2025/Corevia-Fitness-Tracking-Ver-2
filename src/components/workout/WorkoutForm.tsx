@@ -152,59 +152,73 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           // 세트 구성에 따른 값 로그 확인
           console.log(`세트 구성 확인: ${config.preferredSetup}, 세트 수: ${config.customSets}, 반복 횟수: ${config.customReps}`);
           
-          // 커스텀 세트/반복 횟수 상태 업데이트
+          // 커스텀 세트/반복 횟수 상태 업데이트 (필요 시 사용)
           setCustomSets(config.customSets || 5);
           setCustomReps(config.customReps || 10);
           
-          // 세트 구성에 따라 초기 세트 생성
-          const { setsCount, repsCount } = getSetConfiguration(
-            config.preferredSetup,
-            config.customSets,
-            config.customReps
-          );
-          
-          console.log(`세트/횟수 확인: ${setsCount}세트 x ${repsCount}회`);
-          
-          // 세트 수에 맞는 초기 세트 배열 생성 (Array.from 사용)
-          const initialSets = Array.from({ length: setsCount }, () => ({
-            reps: repsCount,  // 선호 반복 수로 초기화
-            weight: 0,        // 무게는 사용자가 입력
-            isSuccess: null as boolean | null
-          }));
-          
-          console.log(`초기 세트 배열 생성 완료: ${initialSets.length}개`);
-          
-          // 메인 운동의 초기 세트 설정
-          setMainExercise(prev => {
-            const updated = {
-              ...prev,
-              sets: initialSets
-            };
-            console.log(`메인 운동 세트 설정 완료: ${updated.sets.length}개`);
-            return updated;
-          });
+          // 문제 수정: setTimeout을 사용하여 상태 업데이트 완료 후 세트 생성 보장
+          setTimeout(() => {
+            // 세트 구성에 따라 초기 세트 생성
+            const { setsCount, repsCount } = getSetConfiguration(
+              config.preferredSetup,
+              config.customSets,
+              config.customReps
+            );
+            
+            console.log(`초기 세트 생성: ${setsCount}세트 x ${repsCount}회 생성 시작`);
+            
+            // 세트 수에 맞는 초기 세트 배열 생성
+            const initialSets = [];
+            
+            // 일반 for문을 사용하여 배열 생성 - 더 안정적인 방식
+            for (let i = 0; i < setsCount; i++) {
+              initialSets.push({
+                reps: repsCount,
+                weight: 0,
+                isSuccess: null
+              });
+            }
+            
+            console.log(`세트 배열 생성 완료: ${initialSets.length}개`);
+            
+            // 메인 운동의 초기 세트 설정
+            setMainExercise(prev => {
+              const updated = {
+                ...prev,
+                sets: initialSets
+              };
+              console.log(`메인 운동 세트 업데이트 후: ${updated.sets.length}개`);
+              return updated;
+            });
+          }, 0);
         }
       } else {
         // 기본값으로 10x5 설정
         console.log('운동 컴포넌트: 세트 구성 설정이 없어 기본값(10x5) 적용');
         setSelectedSetConfiguration('10x5');
         
-        // 10x5 세트 구성에 맞는 초기 세트 생성 (Array.from 사용)
-        const initialSets = Array.from({ length: 5 }, () => ({
-          reps: 10,
-          weight: 0,
-          isSuccess: null as boolean | null
-        }));
-        
-        // 메인 운동의 초기 세트 설정
-        setMainExercise(prev => {
-          const updated = {
+        // 문제 수정: setTimeout을 사용하여 상태 업데이트 완료 후 세트 생성 보장
+        setTimeout(() => {
+          // 10x5 세트 구성에 맞는 초기 세트 배열 생성
+          const initialSets = [];
+          
+          // 일반 for문을 사용하여 배열 생성 - 더 안정적인 방식
+          for (let i = 0; i < 5; i++) {
+            initialSets.push({
+              reps: 10,
+              weight: 0,
+              isSuccess: null
+            });
+          }
+          
+          // 메인 운동의 초기 세트 설정
+          setMainExercise(prev => ({
             ...prev,
             sets: initialSets
-          };
-          console.log(`기본값 세트 설정 완료: ${updated.sets.length}개`);
-          return updated;
-        });
+          }));
+          
+          console.log(`기본값 세트 생성 완료: 5세트 x 10회`);
+        }, 0);
       }
     }
   }, [userProfile]);
@@ -583,12 +597,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     
     console.log(`세트 구성 적용: ${config.preferredSetup} - ${setsCount} 세트 x ${repsCount} 회`);
     
-    // 해당 세트 수만큼 초기 세트 배열 생성 (Array.from 사용으로 변경)
-    const initialSets = Array.from({ length: setsCount }, () => ({
-      reps: repsCount,  // 선호 반복 수로 초기화
-      weight: 0,        // 무게는 사용자가 입력
-      isSuccess: null as boolean | null
-    }));
+    // 해당 세트 수만큼 초기 세트 배열 생성 (for문 사용으로 변경)
+    const initialSets = [];
+    for (let i = 0; i < setsCount; i++) {
+      initialSets.push({
+        reps: repsCount,  // 선호 반복 수로 초기화
+        weight: 0,        // 무게는 사용자가 입력
+        isSuccess: null as boolean | null
+      });
+    }
     
     console.log(`세트 생성: ${initialSets.length}개 생성됨`);
     
@@ -596,16 +613,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (mainExercise.sets.length !== setsCount) {
       // 세트 수가 다르면 새로운 세트 배열로 완전히 대체
       // 기존 세트가 있으면 무게 값 유지
-      const updatedSets = initialSets.map((newSet, idx) => {
+      const updatedSets = [];
+      for (let i = 0; i < setsCount; i++) {
         // 기존 세트가 있으면 무게 유지
-        if (idx < mainExercise.sets.length) {
-          return {
-            ...newSet,
-            weight: mainExercise.sets[idx].weight || 0
-          };
+        if (i < mainExercise.sets.length) {
+          updatedSets.push({
+            reps: repsCount,
+            weight: mainExercise.sets[i].weight || 0,
+            isSuccess: null
+          });
+        } else {
+          updatedSets.push({
+            reps: repsCount,
+            weight: 0,
+            isSuccess: null
+          });
         }
-        return newSet;
-      });
+      }
       
       console.log(`세트 수 변경: ${mainExercise.sets.length} -> ${updatedSets.length}`);
       setMainExercise(prev => ({
