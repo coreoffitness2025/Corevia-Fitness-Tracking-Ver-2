@@ -152,18 +152,49 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           // 세트 구성에 따른 값 로그 확인
           console.log(`세트 구성 확인: ${config.preferredSetup}, 세트 수: ${config.customSets}, 반복 횟수: ${config.customReps}`);
           
-          // 커스텀 세트/반복 횟수 상태 업데이트 (필요 시 사용)
-          setCustomSets(config.customSets);
-          setCustomReps(config.customReps);
+          // 커스텀 세트/반복 횟수 상태 업데이트
+          setCustomSets(config.customSets || 5);
+          setCustomReps(config.customReps || 10);
           
-          // 세트 구성 적용
-          applySetConfiguration(config);
+          // 세트 구성에 따라 초기 세트 생성
+          const { setsCount, repsCount } = getSetConfiguration(
+            config.preferredSetup,
+            config.customSets,
+            config.customReps
+          );
+          
+          // 세트 수에 맞는 초기 세트 배열 생성
+          const initialSets = Array(setsCount).fill(0).map(() => ({
+            reps: repsCount,  // 선호 반복 수로 초기화
+            weight: 0,        // 무게는 사용자가 입력
+            isSuccess: null as boolean | null
+          }));
+          
+          // 메인 운동의 초기 세트 설정
+          setMainExercise(prev => ({
+            ...prev,
+            sets: initialSets
+          }));
+          
+          console.log(`초기 세트 생성 완료: ${setsCount}세트 x ${repsCount}회`);
         }
       } else {
         // 기본값으로 10x5 설정
         console.log('운동 컴포넌트: 세트 구성 설정이 없어 기본값(10x5) 적용');
         setSelectedSetConfiguration('10x5');
-        applySetConfiguration({ preferredSetup: '10x5', customSets: 5, customReps: 10 });
+        
+        // 10x5 세트 구성에 맞는 초기 세트 생성
+        const initialSets = Array(5).fill(0).map(() => ({
+          reps: 10,
+          weight: 0,
+          isSuccess: null as boolean | null
+        }));
+        
+        // 메인 운동의 초기 세트 설정
+        setMainExercise(prev => ({
+          ...prev,
+          sets: initialSets
+        }));
       }
     }
   }, [userProfile]);
@@ -353,7 +384,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setAccessoryExercises(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 횟수 자동 성공 처리 함수 수정
+  // 횟수 자동 성공 처리 함수
   const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
     // 횟수 제한: 선택된 세트 구성에 따라 다른 최대값 적용
     const { repsCount: maxReps } = getSetConfiguration(
@@ -362,6 +393,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       customReps
     );
     
+    // 입력된 값이 최대 반복 횟수를 초과하지 않도록 제한
     const limitedReps = Math.max(1, Math.min(maxReps, newReps));
     
     if (isMainExercise) {
@@ -391,8 +423,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           customReps
         );
         
-        const isSuccess = newSets[setIndex].reps >= targetReps;
+        // 현재 입력된 횟수가 목표 횟수 이상이면 성공, 그렇지 않으면 실패
+        const currentReps = newSets[setIndex].reps;
+        const isSuccess = currentReps >= targetReps;
         newSets[setIndex].isSuccess = isSuccess;
+        
+        console.log(`세트 ${setIndex+1} 완료: ${currentReps}/${targetReps}회, 결과: ${isSuccess ? '성공' : '실패'}`);
         
         // 성공한 세트인 경우 1RM 예상 계산 및 프로필 업데이트
         if (isSuccess) {
@@ -425,8 +461,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           customReps
         );
         
-        newExercises[accessoryIndex].sets[setIndex].isSuccess = 
-          newExercises[accessoryIndex].sets[setIndex].reps >= targetReps;
+        // 현재 입력된 횟수가 목표 횟수 이상이면 성공, 그렇지 않으면 실패
+        const currentReps = newExercises[accessoryIndex].sets[setIndex].reps;
+        const isSuccess = currentReps >= targetReps;
+        newExercises[accessoryIndex].sets[setIndex].isSuccess = isSuccess;
+        
+        console.log(`보조운동 ${accessoryIndex+1}, 세트 ${setIndex+1} 완료: ${currentReps}/${targetReps}회, 결과: ${isSuccess ? '성공' : '실패'}`);
       }
       
       setAccessoryExercises(newExercises);
@@ -540,23 +580,41 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       isSuccess: null as boolean | null
     }));
     
-    // 메인 운동 세트 업데이트
-    // 기존 세트의 무게는 유지하고 세트 수와 반복 횟수만 업데이트
-    const updatedSets = initialSets.map((newSet, idx) => {
-      // 기존 세트가 있으면 무게 유지
-      if (mainExercise.sets[idx]) {
-        return {
-          ...newSet,
-          weight: mainExercise.sets[idx].weight || 0
-        };
-      }
-      return newSet;
-    });
+    // 현재 메인 운동 세트 수와 설정 세트 수 비교
+    if (mainExercise.sets.length !== setsCount) {
+      // 세트 수가 다르면 새로운 세트 배열로 완전히 대체
+      // 기존 세트가 있으면 무게 값 유지
+      const updatedSets = initialSets.map((newSet, idx) => {
+        // 기존 세트가 있으면 무게 유지
+        if (idx < mainExercise.sets.length) {
+          return {
+            ...newSet,
+            weight: mainExercise.sets[idx].weight || 0
+          };
+        }
+        return newSet;
+      });
+      
+      console.log(`세트 수 변경: ${mainExercise.sets.length} -> ${setsCount}`);
+      setMainExercise(prev => ({
+        ...prev,
+        sets: updatedSets
+      }));
+    } else {
+      // 세트 수가 동일하면 반복 횟수만 업데이트
+      const updatedSets = mainExercise.sets.map((set, idx) => ({
+        ...set,
+        reps: repsCount  // 반복 횟수 업데이트
+      }));
+      
+      setMainExercise(prev => ({
+        ...prev,
+        sets: updatedSets
+      }));
+    }
     
-    setMainExercise(prev => ({
-      ...prev,
-      sets: updatedSets
-    }));
+    // 선택된 세트 구성으로 부터 세트 수와 횟수 설정값을 로그로 출력
+    console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
   };
 
   // 최근 운동 기록 가져오기
