@@ -155,6 +155,7 @@ const WorkoutGraph: React.FC = () => {
   // 클릭한 운동 데이터 관리 상태
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [dateWorkoutMap, setDateWorkoutMap] = useState<Record<string, Workout>>({});
+  const [dateAllWorkoutsMap, setDateAllWorkoutsMap] = useState<Record<string, Workout[]>>({});
   
   // 차트 데이터
   const [chartData, setChartData] = useState<ChartData<'line'>>({
@@ -285,42 +286,39 @@ const WorkoutGraph: React.FC = () => {
       const clickedElement = elements[0];
       const dataIndex = clickedElement.index;
       const datasetIndex = clickedElement.datasetIndex;
-      const label = chart.data.labels?.[dataIndex] as string;
+      const dateLabel = chart.data.labels?.[dataIndex] as string;
       
-      if (label) {
-        // 클릭한 날짜의 운동 정보 찾기
-        let selectedWorkout = dateWorkoutMap[label];
+      if (dateLabel) {
+        // 클릭한 날짜에 해당하는 모든 운동 찾기
+        const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
         
-        // 여러 데이터셋이 있을 경우 클릭한 특정 데이터셋에 대한 운동 찾기
+        // 클릭한 데이터셋에 해당하는 운동 특정하기
+        let selectedWorkouts: Workout[] = [];
+        
         if (datasetIndex >= 0 && chart.data.datasets[datasetIndex]) {
           const datasetLabel = chart.data.datasets[datasetIndex].label;
           
-          // 데이터셋 레이블에서 운동 이름 추출
           if (datasetLabel) {
             const labelMatch = datasetLabel.match(/^(.+) \((.+)\)$/);
             if (labelMatch) {
               const exerciseName = labelMatch[1];
               
-              // 클릭한 날짜에 여러 운동이 있을 경우 정확한 운동 선택
-              if (selectedWorkout && selectedWorkout.mainExercise.name !== exerciseName) {
-                // 동일 날짜의 다른 운동 기록이 있는지 확인
-                Object.values(dateWorkoutMap).forEach(workout => {
-                  if (typeof workout.date === 'string') {
-                    workout.date = new Date(workout.date);
-                  }
-                  
-                  const workoutDate = formatShortDate(workout.date instanceof Date ? workout.date : new Date(workout.date));
-                  if (workoutDate === label && workout.mainExercise.name === exerciseName) {
-                    selectedWorkout = workout;
-                  }
-                });
-              }
+              // 클릭한 운동명과 일치하는 운동만 필터링
+              selectedWorkouts = workoutsForDate.filter(
+                workout => workout.mainExercise.name === exerciseName
+              );
             }
           }
         }
         
-        if (selectedWorkout) {
-          setSelectedWorkout(selectedWorkout);
+        // 클릭한 데이터셋에 해당하는 운동이 없으면 해당 날짜의 모든 운동 표시
+        if (selectedWorkouts.length === 0) {
+          selectedWorkouts = workoutsForDate;
+        }
+        
+        // 선택된 운동들 저장
+        if (selectedWorkouts.length > 0) {
+          setSelectedWorkout(selectedWorkouts[0]);
         }
       }
     }
@@ -340,6 +338,9 @@ const WorkoutGraph: React.FC = () => {
       
       // 날짜별 운동 데이터 맵 생성
       const newDateWorkoutMap: Record<string, Workout> = {};
+      
+      // 날짜별 모든 운동 기록을 저장하는 맵
+      const dateAllWorkoutsMap: Record<string, Workout[]> = {};
       
       // 중복 제거 및 정렬된 날짜 배열 준비
       const allDates: string[] = [];
@@ -362,6 +363,12 @@ const WorkoutGraph: React.FC = () => {
         // 각 고유한 운동 기록을 날짜+운동이름의 조합으로 저장
         const workoutKey = `${dateStr}-${workout.mainExercise.name}`;
         newDateWorkoutMap[workoutKey] = workout;
+        
+        // 날짜별 모든 운동 기록 저장
+        if (!dateAllWorkoutsMap[dateStr]) {
+          dateAllWorkoutsMap[dateStr] = [];
+        }
+        dateAllWorkoutsMap[dateStr].push(workout);
         
         // 기본 날짜별 맵에도 추가 (호환성 유지)
         if (!newDateWorkoutMap[dateStr] || new Date(workout.date) > new Date(newDateWorkoutMap[dateStr].date)) {
@@ -417,10 +424,19 @@ const WorkoutGraph: React.FC = () => {
         if (maxWorkoutWeight > 0) {
           exerciseConfigData[exerciseName][setConfig][dateStr] = maxWorkoutWeight;
         }
+        
+        // 디버깅: 벤치프레스 6x3 데이터 확인
+        if (exerciseName === '벤치 프레스' && setConfig === '6x3') {
+          console.log(`벤치프레스 6x3 데이터 발견: ${dateStr}, ${maxWorkoutWeight}kg`);
+        }
       });
       
       // 날짜별 운동 데이터 맵 업데이트
       setDateWorkoutMap(newDateWorkoutMap);
+      
+      // 날짜별 모든 운동 기록 맵 업데이트 (새로운 상태로 저장)
+      // 새 상태 변수를 컴포넌트에 추가해야 함
+      setDateAllWorkoutsMap(dateAllWorkoutsMap);
       
       // 중복 제거 및 정렬된 날짜 배열
       const uniqueDates = [...new Set(allDates)].sort((a, b) => {
@@ -456,6 +472,17 @@ const WorkoutGraph: React.FC = () => {
           // 이를 위해 운동별 구분된 ID 생성
           const datasetId = `${exerciseName}-${config}`;
           
+          // 디버깅: 벤치프레스 6x3 데이터셋 확인
+          if (exerciseName === '벤치 프레스' && config === '6x3') {
+            console.log('벤치프레스 6x3 데이터셋 생성:', dateData);
+          }
+          
+          let pointStyleValue = pointStyle;
+          // 벤치프레스 6x3인 경우 삼각형으로 설정
+          if (exerciseName === '벤치 프레스' && config === '6x3') {
+            pointStyleValue = 'triangle';
+          }
+          
           datasets.push({
             label: `${exerciseName} (${config})`,
             data: uniqueDates.map(date => dateData[date] || null),
@@ -463,7 +490,7 @@ const WorkoutGraph: React.FC = () => {
             backgroundColor: configColor.background,
             tension: 0.2,
             pointRadius: 6,
-            pointStyle: pointStyle, // 운동 종류별 다른 포인트 모양
+            pointStyle: pointStyleValue, // 운동 종류와 세트 구성에 따른 포인트 스타일
             pointBackgroundColor: uniqueDates.map(date => 
               dateData[date] ? configColor.border : 'transparent'
             ),
@@ -487,10 +514,13 @@ const WorkoutGraph: React.FC = () => {
       
       // 최소/최대 무게에 따라 Y축 범위 계산
       if (minWeight !== Infinity && maxWeight !== -Infinity) {
-        // 현재 기록 기준 ±30kg 범위 설정
+        // 현재 운동 무게 기준 정확히 -30kg ~ +30kg 범위 설정
         // 최소값은 0보다 작으면 안 됨
-        const yMin = Math.max(0, minWeight - 30);
-        const yMax = maxWeight + 30;
+        const currentWeight = filteredData.length > 0 && filteredData[filteredData.length - 1].mainExercise?.sets?.[0]?.weight || maxWeight;
+        const yMin = Math.max(0, currentWeight - 30);
+        const yMax = currentWeight + 30;
+        
+        console.log(`무게 범위: ${minWeight}kg ~ ${maxWeight}kg, 현재 무게: ${currentWeight}kg, Y축 설정: ${yMin}kg ~ ${yMax}kg`);
         
         // 차트 옵션 업데이트
         chartOptions.scales = {
@@ -620,10 +650,22 @@ const WorkoutGraph: React.FC = () => {
         });
       }
       
-      setFilteredData(filtered);
+      // 같은 날짜에 여러 운동이 있을 경우 모두 유지
+      const uniqueWorkouts: Workout[] = [];
+      const workoutKeys = new Set<string>();
+      
+      filtered.forEach(workout => {
+        const key = `${workout.date}-${workout.mainExercise?.name || ''}`;
+        if (!workoutKeys.has(key)) {
+          workoutKeys.add(key);
+          uniqueWorkouts.push(workout);
+        }
+      });
+      
+      setFilteredData(uniqueWorkouts);
       
       // 차트 데이터 변환
-      prepareChartData(filtered);
+      prepareChartData(filtered); // 여기서는 필터링된 모든 데이터 사용
     } catch (error) {
       console.error('필터 적용 오류:', error);
     }

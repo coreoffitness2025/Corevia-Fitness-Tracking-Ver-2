@@ -509,11 +509,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   };
 
   // 최근 운동 기록 가져오기
-  const fetchLatestWorkout = async (exercisePart: ExercisePart, mainExerciseType?: MainExerciseType, useCurrentSettings?: boolean) => {
+  const fetchLatestWorkout = async (
+    exercisePart: ExercisePart, 
+    mainExerciseType?: MainExerciseType,
+    useCurrentSettings: boolean = false
+  ) => {
     if (!userProfile) return;
 
     try {
-      console.log(`fetchLatestWorkout 실행: 부위=${exercisePart}, 운동타입=${mainExerciseType || '없음'}`);
+      console.log(`fetchLatestWorkout 실행: 부위=${exercisePart}, 운동타입=${mainExerciseType || '없음'}, 현재설정사용=${useCurrentSettings}`);
       
       // 1. 특정 부위와 운동 타입에 대한 최근 기록 쿼리
       const sessionsCollection = collection(db, 'sessions');
