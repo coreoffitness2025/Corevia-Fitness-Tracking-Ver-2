@@ -1,6 +1,28 @@
 // src/types/index.ts (혹은 types.ts)
 
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
+export type ExercisePart = 
+  | 'chest' 
+  | 'back' 
+  | 'shoulder' 
+  | 'leg' 
+  | 'biceps' 
+  | 'triceps' 
+  | 'abs' 
+  | 'cardio';
+
+export type ExerciseLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export interface Exercise {
+  id: string;
+  name: string;
+  part: ExercisePart;
+  description: string;
+  instructions: string[];
+  videoUrl: string;
+  equipment: string[];
+  muscles: string[];
+  level: ExerciseLevel;
+}
 
 export interface WorkoutSet {
   reps: number;
