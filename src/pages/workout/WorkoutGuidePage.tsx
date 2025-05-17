@@ -124,6 +124,15 @@ const WorkoutGuidePage: React.FC = () => {
       window.dispatchEvent(event);
       console.log('세트 설정 변경 이벤트 발생');
       
+      // 로컬 스토리지에 현재 시간과 함께 설정 저장
+      const configWithTimestamp = {
+        ...setConfiguration,
+        timestamp: new Date().getTime() // 현재 시간 추가
+      };
+      localStorage.setItem('lastSetConfiguration', JSON.stringify(configWithTimestamp));
+      localStorage.removeItem('lastSetConfigurationChecked'); // 체크 기록 삭제하여 즉시 적용되게 함
+      console.log('세트 설정을 로컬 스토리지에 저장 완료:', configWithTimestamp);
+      
       // 잠시 기다렸다가 설정 페이지로 리디렉션
       setTimeout(() => {
         navigate('/settings');

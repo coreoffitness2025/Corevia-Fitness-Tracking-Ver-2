@@ -693,6 +693,76 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     };
   }, []);
   
+  // 로컬 스토리지 변경 감지하여 세트 설정 적용 (다른 페이지에서 설정이 변경된 경우 대응)
+  useEffect(() => {
+    // 로컬 스토리지 변경 이벤트 핸들러
+    const handleStorageChange = (e: StorageEvent) => {
+      // lastSetConfiguration 키에 대한 변경만 처리
+      if (e.key === 'lastSetConfiguration' && e.newValue) {
+        console.log('로컬 스토리지 세트 설정 변경 감지:', e.newValue);
+        try {
+          const config = JSON.parse(e.newValue);
+          
+          // 상태 업데이트
+          setSelectedSetConfiguration(config.preferredSetup as SetConfiguration);
+          setCustomSets(config.customSets || 5);
+          setCustomReps(config.customReps || 10);
+          
+          // 세트 구성 적용
+          applySetConfiguration(config);
+        } catch (error) {
+          console.error('로컬 스토리지 세트 설정 파싱 실패:', error);
+        }
+      }
+    };
+    
+    // 로컬 스토리지 이벤트 리스너 등록
+    window.addEventListener('storage', handleStorageChange);
+    
+    // 추가: 현재 탭에서도 로컬 스토리지 확인 (페이지 새로고침/이동 후)
+    const checkLocalStorage = () => {
+      const savedConfig = localStorage.getItem('lastSetConfiguration');
+      if (savedConfig) {
+        try {
+          const now = new Date().getTime();
+          const config = JSON.parse(savedConfig);
+          
+          // lastChecked 필드가 없거나 마지막 체크 이후 5초 이상 지났을 때만 적용
+          // (이중 적용 방지)
+          const lastChecked = localStorage.getItem('lastSetConfigurationChecked');
+          if (!lastChecked || now - parseInt(lastChecked) > 5000) {
+            console.log('페이지 이동 후 로컬 스토리지 세트 설정 확인:', config);
+            
+            // 상태 업데이트
+            setSelectedSetConfiguration(config.preferredSetup as SetConfiguration);
+            setCustomSets(config.customSets || 5);
+            setCustomReps(config.customReps || 10);
+            
+            // 세트 구성 적용
+            applySetConfiguration(config);
+            
+            // 마지막 체크 시간 업데이트
+            localStorage.setItem('lastSetConfigurationChecked', now.toString());
+          }
+        } catch (error) {
+          console.error('로컬 스토리지 세트 설정 체크 실패:', error);
+        }
+      }
+    };
+    
+    // 페이지 로드/포커스 시에도 설정 확인
+    window.addEventListener('focus', checkLocalStorage);
+    
+    // 초기 한번 실행
+    checkLocalStorage();
+    
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', checkLocalStorage);
+    };
+  }, []);
+  
   // 컴포넌트 마운트 시 로컬 스토리지에서 세트 설정 로드하는 코드는 메인 useEffect로 이동
 
   // 세트 구성 적용 함수 개선
