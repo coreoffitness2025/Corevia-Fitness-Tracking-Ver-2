@@ -154,25 +154,47 @@ const WorkoutGraph: React.FC = () => {
             
             if (value === null) return null;
             
-            let tooltipText = `${label}: ${value} kg`;
+            // 라벨에서 운동 이름과 세트 구성 추출
+            const labelMatch = label.match(/^(.+) \((.+)\)$/);
+            const exerciseName = labelMatch ? labelMatch[1] : label;
+            const setConfig = labelMatch ? labelMatch[2] : '';
             
-            // 추가: 해당 날짜의 데이터가 있을 경우 보조 운동 정보 추가
+            let tooltipText = `${exerciseName}: ${value} kg`;
+            if (setConfig) {
+              tooltipText += ` (${setConfig})`;
+            }
+            
+            // 해당 날짜의 데이터가 있을 경우 추가 정보 표시
             const dateLabel = context.chart.data.labels?.[context.dataIndex] as string;
             if (dateLabel && dateWorkoutMap[dateLabel]) {
               const workout = dateWorkoutMap[dateLabel];
               
-              // 세트 구성 정보 추가
-              const sets = workout.mainExercise?.sets;
-              if (sets && sets.length > 0) {
-                tooltipText += `\n세트 구성: ${sets.length}세트 x ${sets[0].reps}회`;
+              // 같은 운동 이름을 찾아 세트 정보 추출
+              if (workout.mainExercise && workout.mainExercise.name === exerciseName) {
+                const sets = workout.mainExercise.sets;
+                if (sets && sets.length > 0) {
+                  // 세트별 성공/실패 정보 추가
+                  const successCount = sets.filter(set => set.isSuccess).length;
+                  const failCount = sets.filter(set => set.isSuccess === false).length;
+                  const pendingCount = sets.filter(set => set.isSuccess === null).length;
+                  
+                  tooltipText += `\n세트 구성: ${sets.length}세트 x ${sets[0].reps}회`;
+                  tooltipText += `\n성공: ${successCount}, 실패: ${failCount}`;
+                  
+                  if (pendingCount > 0) {
+                    tooltipText += `, 미완료: ${pendingCount}`;
+                  }
+                }
               }
               
-              // 보조 운동 정보 추가
-              if (workout.accessoryExercises && workout.accessoryExercises.length > 0) {
-                tooltipText += '\n보조 운동:';
-                workout.accessoryExercises.forEach(exercise => {
-                  tooltipText += `\n- ${exercise.name}`;
-                });
+              // 보조 운동 정보 추가 (메인 운동과 동일한 경우만)
+              if (workout.mainExercise && workout.mainExercise.name === exerciseName) {
+                if (workout.accessoryExercises && workout.accessoryExercises.length > 0) {
+                  tooltipText += '\n보조 운동:';
+                  workout.accessoryExercises.forEach(exercise => {
+                    tooltipText += `\n- ${exercise.name}`;
+                  });
+                }
               }
             }
             
@@ -200,6 +222,25 @@ const WorkoutGraph: React.FC = () => {
       mode: 'nearest',
       axis: 'x',
       intersect: false
+    },
+    elements: {
+      line: {
+        segment: {
+          borderColor: (ctx) => {
+            const index1 = ctx.p0.parsed.x;
+            const index2 = ctx.p1.parsed.x;
+            const dataset = ctx.p0.dataset;
+            
+            for (let i = index1 + 1; i < index2; i++) {
+              if (dataset.data[i] === null) {
+                return 'transparent';
+              }
+            }
+            
+            return dataset.borderColor;
+          }
+        }
+      }
     },
     onClick: (event, elements, chart) => {
       if (elements.length === 0) return;
@@ -229,17 +270,12 @@ const WorkoutGraph: React.FC = () => {
       // 날짜별 운동 데이터 맵 생성
       const newDateWorkoutMap: Record<string, Workout> = {};
       
-      // 세트 구성별 날짜와 무게 데이터
-      const setConfigData: Record<string, Record<string, number>> = {
-        '5x5': {},  // 5회 5세트 (신규 추가)
-        '6x3': {},  // 6회 3세트
-        '10x5': {}, // 10회 5세트
-        '15x5': {}, // 15회 5세트
-        'custom': {} // 기타 커스텀 세트
-      };
-      
-      // 모든 날짜 수집
+      // 중복 제거 및 정렬된 날짜 배열 준비
       const allDates: string[] = [];
+      
+      // 운동 종류별, 세트 구성별로 데이터 구성
+      // 구조: { 운동이름: { 세트구성: { 날짜: 무게 } } }
+      const exerciseConfigData: Record<string, Record<string, Record<string, number>>> = {};
       
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
@@ -251,6 +287,9 @@ const WorkoutGraph: React.FC = () => {
         if (!newDateWorkoutMap[dateStr] || new Date(workout.date) > new Date(newDateWorkoutMap[dateStr].date)) {
           newDateWorkoutMap[dateStr] = workout;
         }
+        
+        // 운동 이름 가져오기
+        const exerciseName = workout.mainExercise.name;
         
         // 세트 구성 확인
         const sets = workout.mainExercise.sets;
@@ -266,17 +305,29 @@ const WorkoutGraph: React.FC = () => {
           setConfig = '15x5';
         }
         
-        // 성공한 세트 중 최대 무게 찾기
+        // 운동 별 데이터 초기화 (존재하지 않을 경우)
+        if (!exerciseConfigData[exerciseName]) {
+          exerciseConfigData[exerciseName] = {
+            '5x5': {},
+            '6x3': {},
+            '10x5': {},
+            '15x5': {},
+            'custom': {}
+          };
+        }
+        
+        // 세트 중 최대 무게 찾기 (성공/실패 관계 없이)
         let maxWeight = 0;
         sets.forEach(set => {
-          if (set.isSuccess && set.weight > maxWeight) {
+          // 모든 세트의 무게 데이터 (성공, 실패 모두 포함)
+          if (set.weight > maxWeight) {
             maxWeight = set.weight;
           }
         });
         
         // 세트 구성별 데이터에 저장
         if (maxWeight > 0) {
-          setConfigData[setConfig][dateStr] = maxWeight;
+          exerciseConfigData[exerciseName][setConfig][dateStr] = maxWeight;
         }
       });
       
@@ -290,99 +341,90 @@ const WorkoutGraph: React.FC = () => {
         return dateA.getTime() - dateB.getTime();
       });
       
-      // 세트 구성별 데이터셋 생성
-      const datasets = [
-        {
-          label: '5x5세트',
-          data: uniqueDates.map(date => setConfigData['5x5'][date] || null),
-          borderColor: 'rgb(124, 58, 237)', // 보라색 (5x5 세트용 새 색상)
-          backgroundColor: 'rgba(124, 58, 237, 0.5)',
-          tension: 0.2,
-          pointRadius: 5,
-          pointBackgroundColor: uniqueDates.map(date => 
-            setConfigData['5x5'][date] ? 'rgb(124, 58, 237)' : 'transparent'
-          ),
-          pointBorderColor: uniqueDates.map(date => 
-            setConfigData['5x5'][date] ? 'rgb(124, 58, 237)' : 'transparent'
-          ),
-          pointHoverRadius: 8,
-          pointHoverBackgroundColor: 'rgba(124, 58, 237, 0.9)',
-          pointHitRadius: 10,
-          spanGaps: false // 데이터 없는 부분은 선으로 연결하지 않음
-        },
-        {
-          label: '6x3세트',
-          data: uniqueDates.map(date => setConfigData['6x3'][date] || null),
-          borderColor: 'rgb(59, 130, 246)', // 파란색
-          backgroundColor: 'rgba(59, 130, 246, 0.5)',
-          tension: 0.2,
-          pointRadius: 5,
-          pointBackgroundColor: uniqueDates.map(date => 
-            setConfigData['6x3'][date] ? 'rgb(59, 130, 246)' : 'transparent'
-          ),
-          pointBorderColor: uniqueDates.map(date => 
-            setConfigData['6x3'][date] ? 'rgb(59, 130, 246)' : 'transparent'
-          ),
-          pointHoverRadius: 8,
-          pointHoverBackgroundColor: 'rgba(59, 130, 246, 0.9)',
-          pointHitRadius: 10,
-          spanGaps: false // 데이터 없는 부분은 선으로 연결하지 않음
-        },
-        {
-          label: '10x5세트',
-          data: uniqueDates.map(date => setConfigData['10x5'][date] || null),
-          borderColor: 'rgb(239, 68, 68)', // 빨간색
-          backgroundColor: 'rgba(239, 68, 68, 0.5)',
-          tension: 0.2,
-          pointRadius: 5,
-          pointBackgroundColor: uniqueDates.map(date => 
-            setConfigData['10x5'][date] ? 'rgb(239, 68, 68)' : 'transparent'
-          ),
-          pointBorderColor: uniqueDates.map(date => 
-            setConfigData['10x5'][date] ? 'rgb(239, 68, 68)' : 'transparent'
-          ),
-          pointHoverRadius: 8,
-          pointHoverBackgroundColor: 'rgba(239, 68, 68, 0.9)',
-          pointHitRadius: 10,
-          spanGaps: false
-        },
-        {
-          label: '15x5세트',
-          data: uniqueDates.map(date => setConfigData['15x5'][date] || null),
-          borderColor: 'rgb(16, 185, 129)', // 초록색
-          backgroundColor: 'rgba(16, 185, 129, 0.5)',
-          tension: 0.2,
-          pointRadius: 5,
-          pointBackgroundColor: uniqueDates.map(date => 
-            setConfigData['15x5'][date] ? 'rgb(16, 185, 129)' : 'transparent'
-          ),
-          pointBorderColor: uniqueDates.map(date => 
-            setConfigData['15x5'][date] ? 'rgb(16, 185, 129)' : 'transparent'
-          ),
-          pointHoverRadius: 8,
-          pointHoverBackgroundColor: 'rgba(16, 185, 129, 0.9)',
-          pointHitRadius: 10,
-          spanGaps: false
-        },
-        {
-          label: '커스텀 세트',
-          data: uniqueDates.map(date => setConfigData['custom'][date] || null),
-          borderColor: 'rgb(156, 163, 175)', // 회색
-          backgroundColor: 'rgba(156, 163, 175, 0.5)',
-          tension: 0.2,
-          pointRadius: 5,
-          pointBackgroundColor: uniqueDates.map(date => 
-            setConfigData['custom'][date] ? 'rgb(156, 163, 175)' : 'transparent'
-          ),
-          pointBorderColor: uniqueDates.map(date => 
-            setConfigData['custom'][date] ? 'rgb(156, 163, 175)' : 'transparent'
-          ),
-          pointHoverRadius: 8,
-          pointHoverBackgroundColor: 'rgba(156, 163, 175, 0.9)',
-          pointHitRadius: 10,
-          spanGaps: false
-        }
-      ];
+      // 세트 구성별 색상 정의
+      const configColors = {
+        '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, // 보라색
+        '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, // 파란색
+        '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, // 빨간색
+        '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' }, // 초록색
+        'custom': { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.5)' } // 회색
+      };
+      
+      // 운동 종류별 포인트 모양 정의
+      const exercisePointStyles: Record<string, string> = {
+        // 하체 운동
+        '스쿼트': 'triangle', // 삼각형
+        '레그 프레스': 'circle', // 원형
+        '런지': 'rect', // 사각형
+        '레그 익스텐션': 'rectRounded', // 둥근 사각형
+        '레그 컬': 'rectRot', // 회전된 사각형
+        
+        // 가슴 운동
+        '벤치 프레스': 'triangle',
+        '인클라인 벤치 프레스': 'circle',
+        '디클라인 벤치 프레스': 'rect',
+        
+        // 등 운동
+        '데드리프트': 'triangle',
+        '바벨로우': 'circle',
+        '티바로우': 'rect',
+        
+        // 어깨 운동
+        '오버헤드 프레스': 'triangle',
+        '레터럴 레이즈': 'circle',
+        
+        // 이두 운동
+        '덤벨 컬': 'triangle',
+        '바벨 컬': 'circle',
+        '해머 컬': 'rect',
+        
+        // 삼두 운동
+        '케이블 푸시다운': 'triangle',
+        '오버헤드 익스텐션': 'circle',
+        '라잉 트라이셉스 익스텐션': 'rect'
+      };
+      
+      // 데이터셋 생성
+      const datasets: any[] = [];
+      
+      // 각 운동과 세트 구성에 대한 데이터셋 생성
+      Object.entries(exerciseConfigData).forEach(([exerciseName, configData]) => {
+        // 운동별 포인트 스타일 결정
+        const pointStyle = exercisePointStyles[exerciseName] || 'circle'; // 기본값은 원형
+        
+        // 각 세트 구성별 데이터셋 생성
+        Object.entries(configData).forEach(([config, dateData]) => {
+          // 데이터가 없으면 건너뛰기
+          if (Object.keys(dateData).length === 0) return;
+          
+          const configColor = configColors[config as keyof typeof configColors];
+          
+          // 동일한 운동+세트 구성에 한하여 선으로 연결하도록 처리
+          // 이를 위해 운동별 구분된 ID 생성
+          const datasetId = `${exerciseName}-${config}`;
+          
+          datasets.push({
+            label: `${exerciseName} (${config})`,
+            data: uniqueDates.map(date => dateData[date] || null),
+            borderColor: configColor.border,
+            backgroundColor: configColor.background,
+            tension: 0.2,
+            pointRadius: 6,
+            pointStyle: pointStyle, // 운동 종류별 다른 포인트 모양
+            pointBackgroundColor: uniqueDates.map(date => 
+              dateData[date] ? configColor.border : 'transparent'
+            ),
+            pointBorderColor: uniqueDates.map(date => 
+              dateData[date] ? configColor.border : 'transparent'
+            ),
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: configColor.background,
+            pointHitRadius: 10,
+            id: datasetId, // 데이터셋 고유 ID
+            spanGaps: false // 데이터 없는 부분은 선으로 연결하지 않음
+          });
+        });
+      });
       
       setChartData({
         labels: uniqueDates,
