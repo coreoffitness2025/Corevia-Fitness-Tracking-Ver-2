@@ -106,27 +106,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 웜업 및 스트레칭 완료 상태 관리
   const [stretchingCompleted, setStretchingCompleted] = useState(false);
   const [warmupCompleted, setWarmupCompleted] = useState(false);
-  const [set1Completed, setSet1Completed] = useState(false);
-  
-  // 웜업 세트 상태 관리
-  const [warmupSet1Weight, setWarmupSet1Weight] = useState('');
-  const [warmupSet1Reps, setWarmupSet1Reps] = useState('');
-  
-  // 메인 운동 검색 관련 상태
-  const [mainExerciseName, setMainExerciseName] = useState('');
-  const [mainExerciseResults, setMainExerciseResults] = useState<any[]>([]);
-  const [showMainExerciseDropdown, setShowMainExerciseDropdown] = useState(false);
-  
-  // 메인 세트 관리
-  const [mainSets, setMainSets] = useState<Record<string, { 
-    weight: string | number; 
-    targetReps: string | number; 
-    actualReps: string | number; 
-    rpe: string | number;
-    isSuccess: boolean | null;
-  }>>({
-    '0': { weight: '', targetReps: '', actualReps: '', rpe: '', isSuccess: null }
-  });
 
   // 타이머 관련 상태
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
@@ -1027,41 +1006,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     } catch (error) {
       console.error('[보조운동 로드] 오류:', error);
     }
-  };
-
-  // 메인 운동 검색 관련 함수
-  const handleMainExerciseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setMainExerciseName(value);
-    
-    if (value.trim().length > 0) {
-      // 간단한 검색 로직
-      const results = Object.values(exercisePartOptions)
-        .filter(option => option.mainExerciseName.toLowerCase().includes(value.toLowerCase()));
-      setMainExerciseResults(results);
-      setShowMainExerciseDropdown(true);
-    } else {
-      setMainExerciseResults([]);
-      setShowMainExerciseDropdown(false);
-    }
-  };
-  
-  // 메인 운동 선택 처리
-  const handleMainExerciseSelect = (exercise: any) => {
-    setMainExerciseName(exercise.mainExerciseName);
-    setPart(exercise.value as ExercisePart);
-    setShowMainExerciseDropdown(false);
-  };
-  
-  // 메인 세트 변경 처리
-  const handleMainSetChange = (setId: string, field: string, value: string | number) => {
-    setMainSets(prevSets => ({
-      ...prevSets,
-      [setId]: {
-        ...prevSets[setId],
-        [field]: value
-      }
-    }));
   };
 
   return (
