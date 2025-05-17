@@ -59,8 +59,8 @@ export function useWorkoutSettings() {
     queryFn: fetchWorkoutSettings,
     enabled: !!userId, // 사용자 ID가 있을 때만 쿼리 실행
     // 로컬 스토리지 폴백 구현
-    staleTime: 1000 * 60 * 5, // 5분
-    gcTime: 1000 * 60 * 60    // 1시간
+    staleTime: 1000 * 10, // 10초로 줄임 (원래 5분)
+    gcTime: 1000 * 60 * 10    // 10분으로 줄임 (원래 1시간)
   });
   
   // 로컬 스토리지 폴백 처리
@@ -95,6 +95,9 @@ export function useWorkoutSettings() {
       
       // Firebase 프로필 업데이트
       await updateProfile({ setConfiguration: newSettings });
+      
+      // 즉시 queryClient 무효화 추가
+      queryClient.invalidateQueries({ queryKey: ['workoutSettings', userId] });
       
       console.log('[useWorkoutSettings] 설정 업데이트 성공');
       return newSettings;
