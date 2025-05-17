@@ -371,57 +371,104 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 메인 운동 변경 시 이전 보조 운동 자동 로드
   useEffect(() => {
+    // 메인 운동이 변경될 때만 실행되도록
+    // 마운트 여부를 체크하는 플래그 추가
+    const isMounted = { current: true };
+    
     // 메인 운동이 변경될 때 해당 운동에 대한 이전 보조 운동 목록 조회
     const fetchPreviousAccessoryExercises = async () => {
-      if (!userProfile || !mainExercise.name) return;
+      if (!userProfile || !mainExercise.name || !isMounted.current) return;
       
       try {
+        console.log(`[보조운동 로드] 시작: ${mainExercise.name} 운동에 대한 이전 보조 운동 검색`);
+        
         const sessionsCollection = collection(db, 'sessions');
+        
+        // 쿼리 단순화: 메인 운동 이름으로만 필터링
         const q = query(
           sessionsCollection,
           where('userId', '==', userProfile.uid),
           where('mainExercise.name', '==', mainExercise.name),
-          where('accessoryExercises', '!=', []),
           orderBy('date', 'desc'),
-          limit(5) // 최근 5개만 가져옴
+          limit(10) // 좀 더 많은 기록에서 검색
         );
         
+        console.log('[보조운동 로드] Firestore 쿼리 실행');
         const querySnapshot = await getDocs(q);
+        if (!isMounted.current) return; // 비동기 작업 완료 후 언마운트 확인
+        
+        console.log(`[보조운동 로드] 쿼리 결과: ${querySnapshot.size}개 세션 발견`);
         
         if (!querySnapshot.empty) {
           const exercises: any[] = [];
+          let sessionsWithAccessories = 0;
+          
           querySnapshot.forEach(doc => {
             const data = doc.data();
-            if (data.accessoryExercises && data.accessoryExercises.length > 0) {
+            console.log(`[보조운동 로드] 세션 ID: ${doc.id}, 날짜: ${data.date?.toDate?.().toLocaleDateString() || '날짜 없음'}`);
+            
+            if (data.accessoryExercises && Array.isArray(data.accessoryExercises) && data.accessoryExercises.length > 0) {
+              sessionsWithAccessories++;
+              console.log(`[보조운동 로드] 보조 운동 개수: ${data.accessoryExercises.length}개`);
+              
               data.accessoryExercises.forEach((exercise: any) => {
-                // 중복 제거를 위해 이름 체크
-                if (!exercises.some(ex => ex.name === exercise.name)) {
-                  exercises.push(exercise);
+                // 유효한 보조 운동인지 확인
+                if (exercise && exercise.name) {
+                  console.log(`[보조운동 로드] 보조 운동 발견: ${exercise.name}, 세트 수: ${exercise.sets?.length || 0}`);
+                  
+                  // 중복 제거를 위해 이름 체크
+                  if (!exercises.some(ex => ex.name === exercise.name)) {
+                    exercises.push(exercise);
+                    console.log(`[보조운동 로드] 운동 추가됨: ${exercise.name}`);
+                  }
                 }
               });
+            } else {
+              console.log(`[보조운동 로드] 보조 운동 없음`);
             }
           });
           
-          // 메인 운동 이름으로 이전 보조 운동 맵 업데이트
-          setPreviousAccessoryExercises(prev => ({
-            ...prev,
-            [mainExercise.name]: exercises
-          }));
+          // 요약 정보 출력
+          console.log(`[보조운동 로드] 총 ${querySnapshot.size}개 세션 중 ${sessionsWithAccessories}개 세션에 보조 운동 존재`);
+          console.log(`[보조운동 로드] 고유한 보조 운동 ${exercises.length}개 발견`);
           
-          // 자동으로 이전에 했던 보조 운동 추가
-          // accessoryExercises가 비어있을 때만 자동으로 추가
-          if (exercises.length > 0 && accessoryExercises.length === 0) {
-            console.log('이전 보조 운동 자동 로드:', exercises);
-            setAccessoryExercises(exercises);
+          if (exercises.length > 0) {
+            // 메인 운동 이름으로 이전 보조 운동 맵 업데이트
+            setPreviousAccessoryExercises(prev => {
+              const updated = {
+                ...prev,
+                [mainExercise.name]: exercises
+              };
+              console.log(`[보조운동 로드] 이전 보조 운동 맵 업데이트: ${Object.keys(updated).length}개 메인 운동에 대한 매핑 보유`);
+              return updated;
+            });
+            
+            // 자동으로 이전에 했던 보조 운동 추가 - 조건 수정
+            // isFirstAccessoryLoad 플래그에 따라 처리
+            if (accessoryExercises.length === 0) {
+              console.log(`[보조운동 로드] 보조 운동 자동 설정 (${exercises.length}개)`);
+              setAccessoryExercises(exercises);
+            } else {
+              console.log(`[보조운동 로드] 이미 보조 운동이 ${accessoryExercises.length}개 설정되어 있어 자동 로드 생략`);
+            }
+          } else {
+            console.log(`[보조운동 로드] 사용 가능한 보조 운동 없음`);
           }
+        } else {
+          console.log(`[보조운동 로드] 쿼리 결과 없음 (${mainExercise.name} 운동 기록 없음)`);
         }
       } catch (error) {
-        console.error('이전 보조 운동 조회 오류:', error);
+        console.error(`[보조운동 로드] 오류:`, error);
       }
     };
     
     fetchPreviousAccessoryExercises();
-  }, [userProfile, mainExercise.name]);
+    
+    // 클린업 함수
+    return () => {
+      isMounted.current = false;
+    };
+  }, [userProfile, mainExercise.name]); // accessoryExercises.length 제거, 무한 루프 방지
 
   // 훈련 완료 처리 함수 수정
   const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
@@ -995,6 +1042,41 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       </option>
                     ))}
                   </select>
+                  
+                  {/* 디버깅 버튼 추가 - 개발 모드에서만 표시 */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log('-------------------- 디버깅 정보 --------------------');
+                          console.log('현재 메인 운동:', mainExercise.name);
+                          console.log('이전 보조 운동 맵:', previousAccessoryExercises);
+                          console.log('현재 보조 운동:', accessoryExercises);
+                          
+                          // 디버깅을 위해 강제로 이전 보조 운동 불러오기 시도
+                          if (previousAccessoryExercises[mainExercise.name]) {
+                            console.log('이 메인 운동에 대한 보조 운동 데이터가 있습니다.');
+                            console.log('데이터:', previousAccessoryExercises[mainExercise.name]);
+                            
+                            // 보조 운동이 없을 때만 설정 (기존 코드와 동일)
+                            if (accessoryExercises.length === 0) {
+                              console.log('보조 운동을 강제로 설정합니다.');
+                              setAccessoryExercises(previousAccessoryExercises[mainExercise.name]);
+                              alert('보조 운동이 자동으로 설정되었습니다.');
+                            } else {
+                              alert('이미 보조 운동이 설정되어 있습니다. 먼저 모든 보조 운동을 삭제해주세요.');
+                            }
+                          } else {
+                            alert('이 메인 운동에 대한 이전 보조 운동 데이터가 없습니다.');
+                          }
+                        }}
+                        className="text-xs bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-1 px-2 rounded-md"
+                      >
+                        보조 운동 데이터 디버깅
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 {/* 최근 운동 정보 */}
