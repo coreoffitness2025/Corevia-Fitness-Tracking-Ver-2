@@ -1125,7 +1125,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         className="h-8"
                         icon={
                           set.isSuccess === null
-                            ? '?'
+                            ? null
                             : set.isSuccess
                             ? <CheckCircle size={16} />
                             : <XCircle size={16} />

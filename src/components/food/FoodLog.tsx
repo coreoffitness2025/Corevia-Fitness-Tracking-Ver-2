@@ -7,9 +7,9 @@ import { fetchFoodsByDate } from '../../services/foodService';
 import FoodItem from './FoodItem';
 import NutritionSummary from './NutritionSummary';
 import Card from '../common/Card';
-import { Info, Calendar, CalendarDays, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Info, Calendar, CalendarDays } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // 활동 수준에 따른 칼로리 계수
 const activityMultipliers = {
@@ -40,6 +40,7 @@ const FoodLog: React.FC = () => {
   const { user } = useAuthStore();
   const { userProfile } = useAuth();
   const { foods, setFoods } = useFoodStore();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -49,7 +50,6 @@ const FoodLog: React.FC = () => {
   const [proteinTarget, setProteinTarget] = useState<number>(0);
   const [carbsTarget, setCarbsTarget] = useState<number>(0);
   const [fatTarget, setFatTarget] = useState<number>(0);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -116,11 +116,6 @@ const FoodLog: React.FC = () => {
     setProteinTarget(proteinGrams);
     setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
     setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
-  };
-
-  // Nutrition Scout 페이지로 이동
-  const navigateToNutritionScout = () => {
-    navigate('/nutrition-scout');
   };
 
   const loadFoodData = async () => {
@@ -239,51 +234,58 @@ const FoodLog: React.FC = () => {
     setSelectedDate(date.toISOString().split('T')[0]);
   };
 
+  // 영양정보 페이지로 이동하는 함수
+  const navigateToNutritionInfo = () => {
+    navigate('/qna', { state: { activeTab: 'nutrition' } });
+  };
+
   return (
     <div className="space-y-8">
       {/* 목표 칼로리 및 영양소 가이드 */}
       <Card className="mb-6 border-l-4 border-blue-500">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start">
-            <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
-            <div>
-              <h3 className="text-lg font-semibold mb-2">영양소 목표</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
-                  <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
-                  <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{targetCalories} kcal</span>
-                </div>
-                
-                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-                  <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-                  <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
-                </div>
-                
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
-                  <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-                  <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
-                </div>
-                
-                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
-                  <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-                  <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
-                </div>
+        <div className="flex items-start">
+          <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
+          <div>
+            <h3 className="text-lg font-semibold mb-2">영양소 목표</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
+                <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{targetCalories} kcal</span>
               </div>
               
-              <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
+              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
+                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
+              </div>
+              
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
+                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
+              </div>
+              
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
+                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
               </div>
             </div>
+            
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+              <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
+            </div>
+            
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={navigateToNutritionInfo}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                </svg>
+                음식별 칼로리 확인하기
+              </button>
+            </div>
           </div>
-          
-          {/* Nutrition Scout 버튼 */}
-          <button
-            onClick={navigateToNutritionScout}
-            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md shadow-sm flex items-center transition-all"
-          >
-            <span>영양 분석</span>
-            <ArrowRight size={16} className="ml-2" />
-          </button>
         </div>
       </Card>
 

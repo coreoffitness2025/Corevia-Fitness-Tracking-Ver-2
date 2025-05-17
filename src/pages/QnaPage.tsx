@@ -5,6 +5,7 @@ import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator
 import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import Layout from '../components/common/Layout';
 import { exercises } from '../data/exerciseData'; // 추가: exerciseData.ts에서 운동 데이터 가져오기
+import { useLocation } from 'react-router-dom';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
@@ -67,6 +68,7 @@ const partIcons: Record<ExercisePart, string> = {
 };
 
 const QnaPage: React.FC = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>('exercise');
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -75,6 +77,14 @@ const QnaPage: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [handbookSearchTerm, setHandbookSearchTerm] = useState<string>('');
   const [handbookSearchResults, setHandbookSearchResults] = useState<any[]>([]);
+  
+  // FoodForm 또는 FoodLog에서 전달받은 초기 탭 설정 적용
+  useEffect(() => {
+    const state = location.state as { activeTab?: TabType } | null;
+    if (state && state.activeTab) {
+      setActiveTab(state.activeTab);
+    }
+  }, [location.state]);
   
   // 칼로리 계산기 상태
   const [calculatorInputs, setCalculatorInputs] = useState<CalorieCalculatorInputs>({
