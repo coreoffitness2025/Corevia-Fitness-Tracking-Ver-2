@@ -22,6 +22,7 @@ import Button from '../common/Button';
 import Badge from '../common/Badge';
 import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash } from 'lucide-react';
 import { getSetConfiguration } from '../../utils/workoutUtils';
+import AccessoryExerciseComponent from './AccessoryExerciseComponent';
 
 interface WorkoutFormProps {
   onSuccess?: () => void; // 저장 성공 시 호출될 콜백
@@ -140,6 +141,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     sets: 0,
     reps: 0
   });
+
+  // 이전 보조 운동 히스토리 (메인 운동별로 저장)
+  const [previousAccessoryExercises, setPreviousAccessoryExercises] = useState<Record<string, Array<{
+    name: string;
+    weight: number;
+    reps: number;
+    sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
+  }>>>({});
 
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
@@ -322,46 +331,96 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
 
-  // 세트 추가/삭제 기능 제거 (WorkoutGuidePage에서 세트 구성 설정으로만 관리)
-
+  // 보조 운동 추가
   const addAccessoryExercise = () => {
-    setAccessoryExercises(prev => [
-      ...prev,
-      { 
-        name: '', 
+    // 기본 세트 구성을 현재 선택된 세트 구성과 일치시킴
+    const { setsCount, repsCount } = getSetConfiguration(
+      selectedSetConfiguration,
+      customSets,
+      customReps
+    );
+    
+    // 새 보조 운동 생성
+    const newExercise = {
+      name: '',
+      weight: 0,
+      reps: repsCount,
+      sets: Array.from({ length: setsCount }, () => ({
+        reps: repsCount,
         weight: 0,
-        reps: 0,
-        sets: [{ reps: 0, weight: 0, isSuccess: null }] 
-      }
-    ]);
+        isSuccess: null
+      }))
+    };
+    
+    setAccessoryExercises(prev => [...prev, newExercise]);
   };
 
+  // 보조 운동 제거
   const removeAccessoryExercise = (index: number) => {
     setAccessoryExercises(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 횟수 자동 성공 처리 함수
-  const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
-    // 횟수 제한: 선택된 세트 구성에 따라 다른 최대값 적용
-    const { repsCount: maxReps } = getSetConfiguration(
-      selectedSetConfiguration, 
-      customSets, 
-      customReps
-    );
-    
-    // 입력된 값이 최대 반복 횟수를 초과하지 않도록 제한
-    const limitedReps = Math.max(1, Math.min(maxReps, newReps));
-    
-    if (isMainExercise) {
-      const newSets = [...mainExercise.sets];
-      newSets[setIndex].reps = limitedReps;
-      setMainExercise(prev => ({ ...prev, sets: newSets }));
-    } else if (accessoryIndex !== undefined) {
-      const newExercises = [...accessoryExercises];
-      newExercises[accessoryIndex].sets[setIndex].reps = limitedReps;
-      setAccessoryExercises(newExercises);
-    }
+  // 보조 운동 변경
+  const handleAccessoryExerciseChange = (index: number, updatedExercise: any) => {
+    setAccessoryExercises(prev => {
+      const newExercises = [...prev];
+      newExercises[index] = updatedExercise;
+      return newExercises;
+    });
   };
+
+  // 이전 보조 운동 불러오기 (메인 운동 선택 시)
+  useEffect(() => {
+    // 메인 운동이 변경될 때 해당 운동에 대한 이전 보조 운동 목록 조회
+    const fetchPreviousAccessoryExercises = async () => {
+      if (!userProfile || !mainExercise.name) return;
+      
+      try {
+        const sessionsCollection = collection(db, 'sessions');
+        const q = query(
+          sessionsCollection,
+          where('userId', '==', userProfile.uid),
+          where('mainExercise.name', '==', mainExercise.name),
+          where('accessoryExercises', '!=', []),
+          orderBy('date', 'desc'),
+          limit(5) // 최근 5개만 가져옴
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const exercises: any[] = [];
+          querySnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.accessoryExercises && data.accessoryExercises.length > 0) {
+              data.accessoryExercises.forEach((exercise: any) => {
+                // 중복 제거를 위해 이름 체크
+                if (!exercises.some(ex => ex.name === exercise.name)) {
+                  exercises.push(exercise);
+                }
+              });
+            }
+          });
+          
+          // 메인 운동 이름으로 이전 보조 운동 맵 업데이트
+          setPreviousAccessoryExercises(prev => ({
+            ...prev,
+            [mainExercise.name]: exercises
+          }));
+          
+          // 자동으로 이전에 했던 보조 운동 하나 추가 (선택 사항)
+          if (exercises.length > 0 && accessoryExercises.length === 0) {
+            // 자동 추가 로직은 주석 처리 (사용자 요구에 따라 활성화)
+            // setAccessoryExercises([exercises[0]]);
+          }
+        }
+      } catch (error) {
+        console.error('이전 보조 운동 조회 오류:', error);
+      }
+    };
+    
+    fetchPreviousAccessoryExercises();
+  }, [userProfile, mainExercise.name]);
 
   // 훈련 완료 처리 함수 수정
   const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
@@ -819,406 +878,296 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">새 운동 기록</h2>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 웜업 안내 카드 */}
-          {showWarmupTips && (
-            <Card className="border-2 border-yellow-400 mb-4">
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center text-yellow-600">
-                  <AlertTriangle size={20} className="mr-2" />
-                  웜업 세트 안내
-                </CardTitle>
-                <Button 
-                  type="button" 
-                  size="sm"
-                  className="bg-transparent hover:bg-gray-100 text-gray-700 dark:text-gray-300"
-                  onClick={() => setShowWarmupTips(false)}
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">운동 기록</h1>
+        
+        {/* 부위 선택 섹션 */}
+        <Card className="mb-6">
+          <CardSection>
+            <CardTitle>운동 부위 선택</CardTitle>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {exercisePartOptions.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setPart(option.value)}
+                  className={`
+                    flex items-center justify-center p-4 rounded-lg transition-all
+                    ${part === option.value
+                      ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                    }
+                  `}
                 >
-                  <X size={16} />
-                </Button>
-              </div>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
-                부상 방지와 최적의 운동 효과를 위해 충분한 웜업 세트와 스트레칭을 완료한 후에 시작해주세요.
-              </p>
-              <div className="bg-yellow-50 dark:bg-gray-700 p-3 rounded-lg">
-                <h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-2">
-                  {part.charAt(0).toUpperCase() + part.slice(1)} 웜업 세트 추천
-                </h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  {warmupExercises[part].map((exercise, index) => (
-                    <li key={index} className="text-gray-600 dark:text-gray-300">{exercise}</li>
-                  ))}
-                </ul>
-                <div className="flex space-x-3 mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={`flex items-center ${
-                      stretchingCompleted ? 'bg-green-100 text-green-700 border-green-500' : 'bg-white'
-                    }`}
-                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
-                  >
-                    {stretchingCompleted ? <CheckCircle className="mr-2" size={16} /> : null}
-                    스트레칭 완료
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={`flex items-center ${
-                      warmupCompleted ? 'bg-green-100 text-green-700 border-green-500' : 'bg-white'
-                    }`}
-                    onClick={() => setWarmupCompleted(!warmupCompleted)}
-                  >
-                    {warmupCompleted ? <CheckCircle className="mr-2" size={16} /> : null}
-                    웜업 세트 완료
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          <Card className="animate-slideUp">
-            <div className="flex items-center mb-6">
-              <div className="flex items-center space-x-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                {exercisePartOptions.map(option => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setPart(option.value as ExercisePart)}
-                    className={`
-                      py-2 px-4 rounded-lg flex items-center transition-all duration-300 text-sm font-medium
-                      ${part === option.value 
-                        ? 'bg-emerald-500 text-white shadow-lg transform scale-105'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }
-                    `}
-                  >
-                    <span className="mr-2">{option.icon}</span>
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+                  <span className="text-2xl mr-2">{option.icon}</span>
+                  <span className="font-medium">{option.label}</span>
+                </button>
+              ))}
             </div>
-
-            <div className="space-y-6">
-              <CardSection>
-                <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-                  <CardTitle className="mb-2 md:mb-0">
-                    <span className="flex items-center">
-                      메인 운동: <span className="font-bold ml-2">{mainExercise.name}</span>
-                      <Badge
-                        variant={mainExercise.sets.some(set => set.isSuccess) ? "success" : "gray"}
-                        className="ml-2"
-                        size="sm"
-                      >
-                        {mainExercise.sets.filter(set => set.isSuccess).length}/{mainExercise.sets.length} 세트
-                      </Badge>
-                    </span>
-                  </CardTitle>
-                  
-                  {/* 메인 운동 선택 드롭다운 - 위치 및 스타일 수정 */}
-                  <div className="w-full md:w-auto flex-shrink-0">
-                    <select
-                      id={`mainExerciseSelect-${part}`}
-                      value={selectedMainExercise}
-                      onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-                      className="w-full md:w-60 p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-800 dark:text-white"
-                      aria-label="메인 운동 선택"
-                    >
-                      {mainExerciseOptions[part].map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+          </CardSection>
+        </Card>
+        
+        {/* 메인 운동 섹션 */}
+        <Card className="mb-6">
+          <CardSection>
+            <CardTitle>메인 운동</CardTitle>
+            
+            {/* 운동 선택 및 정보 */}
+            <div className="mb-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-1">운동 선택</label>
+                  <select
+                    value={selectedMainExercise}
+                    onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
+                    className="w-full p-2 border rounded-md bg-white dark:bg-gray-700"
+                  >
+                    {mainExerciseOptions[part].map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-
-                {/* 최근 운동 이력 정보 표시 */}
-                {latestWorkoutInfo.exists ? (
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                          최근 운동 이력: {latestWorkoutInfo.date?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
-                        <p className="text-sm font-semibold text-blue-800 dark:text-blue-200 mt-1">
-                          {latestWorkoutInfo.reps}x{latestWorkoutInfo.sets}set 메인 운동 : {latestWorkoutInfo.exerciseName} {latestWorkoutInfo.weight}kg
-                        </p>
-                        <p className="text-sm mt-1">
-                          <span className={latestWorkoutInfo.allSuccess ? 
-                            "inline-block px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full font-medium" : 
-                            "inline-block px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full font-medium"}>
-                            {latestWorkoutInfo.allSuccess ? '모든 세트 성공' : '일부 세트 실패'}
-                          </span>
-                        </p>
-                      </div>
-                      {latestWorkoutInfo.allSuccess && (
-                        <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-lg text-sm font-medium">
-                          💪 2.5kg 증량을 도전해보세요!
-                        </div>
-                      )}
+                
+                {/* 최근 운동 정보 */}
+                {latestWorkoutInfo.exists && (
+                  <div className="flex-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      최근 {latestWorkoutInfo.exerciseName} 기록
+                    </h3>
+                    <div className="text-sm">
+                      <p className="mb-1">
+                        <span className="font-medium">{latestWorkoutInfo.date?.toLocaleDateString()}</span>
+                        <Badge
+                          variant={latestWorkoutInfo.allSuccess ? 'success' : 'danger'}
+                          size="sm"
+                          className="ml-2"
+                        >
+                          {latestWorkoutInfo.allSuccess ? '성공' : '일부 실패'}
+                        </Badge>
+                      </p>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {latestWorkoutInfo.weight}kg x {latestWorkoutInfo.sets}세트 x {latestWorkoutInfo.reps}회
+                      </p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                      최근 운동 이력이 없습니다.
-                    </p>
                   </div>
                 )}
-
-                <div className="space-y-4">
-                  {mainExercise.sets.map((set, index) => (
-                    <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-fadeIn transition-all duration-300 hover:shadow-md">
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="primary" size="sm" rounded>{index + 1}</Badge>
-                          <span className="font-medium text-gray-800 dark:text-white">세트</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <label htmlFor={`mainExerciseWeight-${index}`} className="text-xs text-gray-500 mb-1">무게 (kg)</label>
-                          <input
-                            type="number"
-                            id={`mainExerciseWeight-${index}`}
-                            value={set.weight}
-                            onChange={(e) => {
-                              const newSets = [...mainExercise.sets];
-                              newSets[index].weight = Number(e.target.value);
-                              setMainExercise(prev => ({ ...prev, sets: newSets }));
-                            }}
-                            placeholder="kg"
-                            className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                        <div className="flex flex-col">
-                          <label htmlFor={`mainExerciseReps-${index}`} className="text-xs text-gray-500 mb-1">
-                            횟수 (최대 {selectedSetConfiguration === '10x5' ? 10 : 
-                             selectedSetConfiguration === '15x5' ? 15 : 
-                             selectedSetConfiguration === '6x3' ? 6 : 10})
-                          </label>
-                          <input
-                            type="number"
-                            id={`mainExerciseReps-${index}`}
-                            value={set.reps}
-                            onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
-                            placeholder="횟수"
-                            min="1"
-                            max={selectedSetConfiguration === '10x5' ? 10 : 
-                                 selectedSetConfiguration === '15x5' ? 15 : 
-                                 selectedSetConfiguration === '6x3' ? 6 : 10}
-                            className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          />
-                        </div>
-                        
-                        {/* 훈련 완료 버튼 */}
-                        <Button
-                          type="button"
-                          variant={
-                            set.isSuccess === null
-                              ? "default"
-                              : set.isSuccess
-                                ? "success"
-                                : "danger"
-                          }
-                          size="sm"
-                          onClick={() => handleTrainingComplete(index, true)}
-                          icon={set.isSuccess === null ? undefined : set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                        >
-                          {set.isSuccess === null
-                            ? '훈련 완료'
+              </div>
+            </div>
+            
+            {/* 세트 입력 영역 */}
+            <div className="space-y-3">
+              {mainExercise.sets.map((set, index) => (
+                <div key={index} className="p-3 border rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="font-medium">세트 {index + 1}</div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="xs"
+                        variant={
+                          set.isSuccess === null
+                            ? 'secondary'
                             : set.isSuccess
-                              ? '성공'
-                              : '실패'
-                          }
-                        </Button>
-                        
-                        <Button
-                          type="button"
-                          className={
-                            !activeTimers[`main_${index}`] 
-                              ? "px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg" 
-                              : activeTimers[`main_${index}`].isPaused 
-                                ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
-                                : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
-                          }
-                          size="sm"
-                          onClick={() => toggleTimer(-1, index)}
-                          icon={<Clock size={16} />}
-                        >
-                          {!activeTimers[`main_${index}`]
-                            ? '휴식 타이머' 
-                            : activeTimers[`main_${index}`].isPaused
-                              ? `▶️ ${formatTime(activeTimers[`main_${index}`].timeLeft)}` 
-                              : `⏸️ ${formatTime(activeTimers[`main_${index}`].timeLeft)}`
-                          }
-                        </Button>
-                      </div>
+                            ? 'success'
+                            : 'danger'
+                        }
+                        onClick={() => handleTrainingComplete(index, true)}
+                        className="h-8"
+                        icon={
+                          set.isSuccess === null
+                            ? '?'
+                            : set.isSuccess
+                            ? <CheckCircle size={16} />
+                            : <XCircle size={16} />
+                        }
+                      >
+                        {set.isSuccess === null
+                          ? '기록'
+                          : set.isSuccess
+                          ? '성공'
+                          : '실패'}
+                      </Button>
+                      
+                      <Button
+                        size="xs"
+                        variant="secondary"
+                        onClick={() => toggleTimer(index)}
+                        className="h-8"
+                        icon={<Clock size={16} />}
+                      >
+                        {activeTimers[`main_${index}`]
+                          ? formatTime(activeTimers[`main_${index}`].timeLeft)
+                          : '휴식'}
+                      </Button>
                     </div>
-                  ))}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        무게 (kg)
+                      </label>
+                      <input
+                        type="number"
+                        value={set.weight || ''}
+                        onChange={(e) => {
+                          const newSets = [...mainExercise.sets];
+                          newSets[index].weight = Number(e.target.value) || 0;
+                          setMainExercise({ ...mainExercise, sets: newSets });
+                        }}
+                        className="w-full p-2 border rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        횟수
+                      </label>
+                      <input
+                        type="number"
+                        value={set.reps || ''}
+                        onChange={(e) => {
+                          handleRepsChange(Number(e.target.value) || 0, index, true);
+                        }}
+                        className="w-full p-2 border rounded-md"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </CardSection>
-
-              {accessoryExercises.map((exercise, index) => (
-                <CardSection key={index} className="animate-slideUp">
-                  <div className="flex justify-between items-center mb-4">
-                    <CardTitle className="mb-0 pb-0 border-b-0">
-                      보조 운동 {index + 1}
-                    </CardTitle>
+              ))}
+            </div>
+          </CardSection>
+        </Card>
+        
+        {/* 준비 및 웜업 섹션 */}
+        <Card className="mb-6">
+          <CardSection>
+            <CardTitle>준비 및 웜업</CardTitle>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">스트레칭</h3>
+                  <Button
+                    size="sm"
+                    variant={stretchingCompleted ? 'success' : 'secondary'}
+                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
+                    icon={stretchingCompleted ? <CheckCircle size={16} /> : undefined}
+                  >
+                    {stretchingCompleted ? '완료' : '시작하기'}
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  운동 전 충분한 스트레칭으로 부상을 예방하세요.
+                </p>
+              </div>
+              
+              <div className="p-3 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">웜업</h3>
+                  <div className="flex gap-2">
                     <Button
-                      type="button"
                       size="sm"
-                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 bg-transparent"
-                      onClick={() => removeAccessoryExercise(index)}
-                      icon={<X size={16} className="text-danger-500" />}
+                      variant="secondary"
+                      onClick={() => setShowWarmupTips(!showWarmupTips)}
+                      icon={<Info size={16} />}
                     >
-                      삭제
+                      팁
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={warmupCompleted ? 'success' : 'secondary'}
+                      onClick={() => setWarmupCompleted(!warmupCompleted)}
+                      icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
+                    >
+                      {warmupCompleted ? '완료' : '시작하기'}
                     </Button>
                   </div>
-                  <input
-                    type="text"
-                    id={`accessoryExerciseName-${index}`}
-                    value={exercise.name}
-                    onChange={(e) => {
-                      const newExercises = [...accessoryExercises];
-                      newExercises[index].name = e.target.value;
-                      setAccessoryExercises(newExercises);
-                    }}
-                    placeholder="운동 이름"
-                    className="w-full p-2 border rounded-lg mb-4 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                  <div className="space-y-4">
-                    {exercise.sets.map((set, setIndex) => (
-                      <div key={setIndex} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg animate-fadeIn transition-all duration-300 hover:shadow-md">
-                        <div className="flex items-center gap-4 flex-wrap">
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="secondary" size="sm" rounded>{setIndex + 1}</Badge>
-                            <span className="font-medium text-gray-800 dark:text-white">세트</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <label htmlFor={`accessoryExerciseWeight-${index}-${setIndex}`} className="text-xs text-gray-500 mb-1">무게 (kg)</label>
-                            <input
-                              type="number"
-                              id={`accessoryExerciseWeight-${index}-${setIndex}`}
-                              value={set.weight}
-                              onChange={(e) => {
-                                const newExercises = [...accessoryExercises];
-                                newExercises[index].sets[setIndex].weight = Number(e.target.value);
-                                setAccessoryExercises(newExercises);
-                              }}
-                              placeholder="kg"
-                              className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <label htmlFor={`accessoryExerciseReps-${index}-${setIndex}`} className="text-xs text-gray-500 mb-1">
-                              횟수 (최대 {selectedSetConfiguration === '10x5' ? 10 : 
-                               selectedSetConfiguration === '15x5' ? 15 : 
-                               selectedSetConfiguration === '6x3' ? 6 : 10})
-                            </label>
-                            <input
-                              type="number"
-                              id={`accessoryExerciseReps-${index}-${setIndex}`}
-                              value={set.reps}
-                              onChange={(e) => handleRepsChange(Number(e.target.value), setIndex, false, index)}
-                              placeholder="횟수"
-                              min="1"
-                              max={selectedSetConfiguration === '10x5' ? 10 : 
-                                   selectedSetConfiguration === '15x5' ? 15 : 
-                                   selectedSetConfiguration === '6x3' ? 6 : 10}
-                              className="w-24 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
-                          </div>
-                          
-                          {/* 훈련 완료 버튼 */}
-                          <Button
-                            type="button"
-                            variant={
-                              set.isSuccess === null
-                                ? "default"
-                                : set.isSuccess
-                                  ? "success"
-                                  : "danger"
-                            }
-                            size="sm"
-                            onClick={() => handleTrainingComplete(setIndex, false, index)}
-                            icon={set.isSuccess === null ? undefined : set.isSuccess ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                          >
-                            {set.isSuccess === null
-                              ? '훈련 완료'
-                              : set.isSuccess
-                                ? '성공'
-                                : '실패'
-                            }
-                          </Button>
-                          
-                          <Button
-                            type="button"
-                            className={
-                              !activeTimers[`accessory_${index}_${setIndex}`] 
-                                ? "px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg" 
-                                : activeTimers[`accessory_${index}_${setIndex}`].isPaused 
-                                  ? "px-3 py-1.5 text-sm bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg" 
-                                  : "px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg"
-                            }
-                            size="sm"
-                            onClick={() => toggleTimer(index, setIndex)}
-                            icon={<Clock size={16} />}
-                          >
-                            {!activeTimers[`accessory_${index}_${setIndex}`]
-                              ? '휴식 타이머' 
-                              : activeTimers[`accessory_${index}_${setIndex}`].isPaused
-                                ? `▶️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}` 
-                                : `⏸️ ${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}`
-                            }
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  본 운동 전 가벼운 웜업으로 몸을 준비하세요.
+                </p>
+                
+                {showWarmupTips && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                    <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
+                      {part} 운동 웜업 추천
+                    </h4>
+                    <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300">
+                      {warmupExercises[part].map((tip, i) => (
+                        <li key={i}>{tip}</li>
+                      ))}
+                    </ul>
                   </div>
-                </CardSection>
-              ))}
-
+                )}
+              </div>
+            </div>
+          </CardSection>
+        </Card>
+        
+        {/* 보조 운동 섹션 */}
+        <Card className="mb-6">
+          <CardSection>
+            <div className="flex justify-between items-center mb-4">
+              <CardTitle>보조 운동</CardTitle>
               <Button
-                type="button"
-                className="w-full mt-4 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                size="sm"
+                variant="primary"
                 onClick={addAccessoryExercise}
                 icon={<Plus size={16} />}
               >
                 보조 운동 추가
               </Button>
             </div>
-          </Card>
-
-          <Card className="animate-slideUp">
+            
+            {accessoryExercises.length === 0 ? (
+              <div className="text-center p-6 border border-dashed rounded-lg">
+                <p className="text-gray-500 dark:text-gray-400">
+                  보조 운동을 추가하려면 위 버튼을 클릭하세요
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {accessoryExercises.map((exercise, index) => (
+                  <AccessoryExerciseComponent
+                    key={index}
+                    index={index}
+                    exercise={exercise}
+                    onChange={handleAccessoryExerciseChange}
+                    onRemove={removeAccessoryExercise}
+                    previousExercises={previousAccessoryExercises[mainExercise.name] || []}
+                  />
+                ))}
+              </div>
+            )}
+          </CardSection>
+        </Card>
+        
+        {/* 기타 정보 및 저장 버튼 */}
+        <Card className="mb-6">
+          <CardSection>
             <CardTitle>메모</CardTitle>
+            
             <textarea
-              id="workoutNotes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="오늘의 운동에 대한 메모를 남겨보세요"
-              className="w-full p-3 border rounded-lg resize-none h-32 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full p-3 min-h-20 border rounded-lg"
+              placeholder="이번 운동에 대한 메모를 남겨보세요..."
             />
-          </Card>
-
+          </CardSection>
+        </Card>
+        
+        <div className="flex justify-end">
           <Button
-            type="submit"
-            className={`w-full px-4 py-3 text-lg font-medium text-white rounded-md shadow-sm transition-all duration-500 ${
-              !isFormValid 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-green-500 hover:bg-green-600 focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-            }`}
+            size="lg"
+            variant="primary"
+            onClick={handleSubmit}
             disabled={!isFormValid}
             icon={<Save size={20} />}
           >
             저장하기
           </Button>
-        </form>
+        </div>
       </div>
     </Layout>
   );

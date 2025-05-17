@@ -306,10 +306,41 @@ const WorkoutGraph: React.FC = () => {
       const dateLabel = chart.data.labels?.[dataIndex] as string;
       
       if (dateLabel) {
-        // 클릭한 날짜에 해당하는 모든 운동 찾기
-        const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
+        // 클릭한 데이터셋에 해당하는 운동 특정하기
+        if (datasetIndex >= 0 && chart.data.datasets[datasetIndex]) {
+          const datasetLabel = chart.data.datasets[datasetIndex].label;
+          
+          if (datasetLabel) {
+            const labelMatch = datasetLabel.match(/^(.+) \((.+)\)$/);
+            
+            if (labelMatch) {
+              const exerciseName = labelMatch[1];
+              const setConfig = labelMatch[2];
+              
+              // 클릭한 날짜의 모든 운동 중에서 특정 운동 이름과 세트 구성에 해당하는 운동 찾기
+              const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
+              const matchingWorkouts = workoutsForDate.filter(
+                workout => workout.mainExercise.name === exerciseName &&
+                          workout.mainExercise.sets &&
+                          workout.mainExercise.sets.length > 0 &&
+                          (
+                            (setConfig === '5x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 5) ||
+                            (setConfig === '6x3' && workout.mainExercise.sets.length === 3 && workout.mainExercise.sets[0].reps === 6) ||
+                            (setConfig === '10x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 10) ||
+                            (setConfig === '15x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 15)
+                          )
+              );
+              
+              if (matchingWorkouts.length > 0) {
+                setSelectedWorkout(matchingWorkouts[0]);
+                return;
+              }
+            }
+          }
+        }
         
-        // 모든 운동 데이터를 표시하도록 변경
+        // 위에서 매칭되는 운동을 찾지 못한 경우, 해당 날짜의 첫 번째 운동 표시 (fallback)
+        const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
         if (workoutsForDate.length > 0) {
           setSelectedWorkout(workoutsForDate[0]);
         }
