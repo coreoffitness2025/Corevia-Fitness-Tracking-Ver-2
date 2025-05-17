@@ -465,12 +465,18 @@ const WorkoutGraph: React.FC = () => {
           // 운동별 구분된 ID 생성
           const datasetId = `${exerciseName}-${config}`;
           
-          // 벤치 프레스 6x3 포인트 스타일 설정
-          const pointStyleValue = (exerciseName === '벤치 프레스' && config === '6x3') 
-            ? 'triangle' 
-            : exerciseName === '데드리프트'
-              ? 'triangle'
-              : pointStyle;
+          // 포인트 스타일 결정 - 벤치 프레스(6x3)은 항상 삼각형으로 표시
+          let pointStyleValue = pointStyle;
+          
+          // 특정 운동 및 세트 구성 조합에 특별한 포인트 스타일 적용
+          if (exerciseName === '벤치 프레스' && config === '6x3') {
+            pointStyleValue = 'triangle';
+            console.log(`벤치 프레스(6x3) 포인트 스타일 설정됨: triangle`);
+          } else if (exerciseName === '데드리프트') {
+            pointStyleValue = 'triangle';
+          }
+          
+          console.log(`데이터셋 생성: ${exerciseName} (${config}) - 포인트 스타일: ${pointStyleValue}, 데이터 수: ${Object.keys(dateData).length}`);
           
           datasets.push({
             label: `${exerciseName} (${config})`,

@@ -11,6 +11,7 @@ import { Info, Calendar, CalendarDays } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 // 활동 수준에 따른 칼로리 계수
 const activityMultipliers = {
@@ -241,9 +242,93 @@ const FoodLog: React.FC = () => {
     navigate('/qna', { state: { activeTab: 'nutrition' } });
   };
 
+  // 날짜별 식단을 표시하는 함수
+  const renderFoodsByDate = (dateStr: string, foodsForDate: Food[]) => {
+    const date = new Date(dateStr);
+    const hasPhotos = foodsForDate.some(food => food.imageUrl);
+    
+    return (
+      <div key={dateStr} className="mb-8">
+        <div className="flex items-center mb-4">
+          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg mr-3">
+            <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
+            {date.toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric', 
+              weekday: 'long'
+            })}
+          </h3>
+        </div>
+        
+        {/* 영양 요약 정보 */}
+        <div className="mb-4">
+          <NutritionSummary 
+            totalNutrition={calculateTotalNutrition(foodsForDate)} 
+            targetProtein={proteinTarget}
+            targetCarbs={carbsTarget}
+            targetFat={fatTarget}
+          />
+        </div>
+        
+        {/* 사진이 있는 경우 그리드로 표시 */}
+        {hasPhotos && (
+          <div className="mb-6">
+            <h4 className="text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">식사 사진</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {foodsForDate
+                .filter(food => food.imageUrl)
+                .map(food => (
+                  <FoodItem key={food.id} food={food} isGridItem={true} />
+                ))}
+            </div>
+          </div>
+        )}
+        
+        {/* 식사 목록 */}
+        <div>
+          <h4 className="text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">식사 목록</h4>
+          <div className="space-y-3">
+            {foodsForDate.map(food => (
+              <div key={food.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3">
+                <div className="flex justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {food.date.toLocaleTimeString('ko-KR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </span>
+                    <h5 className="font-medium">{food.name || '식사 기록'}</h5>
+                  </div>
+                  
+                  {(food.calories > 0 || food.protein > 0 || food.carbs > 0 || food.fat > 0) && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <span className="bg-blue-50 dark:bg-blue-900/20 py-1 px-2 rounded-full">
+                        {food.calories > 0 ? `${food.calories}kcal` : '영양정보 있음'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {food.notes && (
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 italic bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                    "{food.notes}"
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-8">
-      {/* 목표 칼로리 및 영양소 가이드 */}
+    <div className="max-w-4xl mx-auto">
+      {/* 영양소 목표 및 버튼 */}
       <Card className="mb-6 border-l-4 border-blue-500">
         <div className="flex items-start">
           <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
@@ -369,26 +454,29 @@ const FoodLog: React.FC = () => {
         </div>
       </div>
       
-      {/* 식단 그룹화 및 표시 */}
-      {foodGroups && dates.length > 0 ? (
-        <div className="space-y-4">
-          {dates.map(date => (
-            <div key={date}>
-              <h2 className="text-2xl font-semibold mb-2">{date}</h2>
-              <div className="space-y-2">
-                {foodGroups[date].map(food => (
-                  <FoodItem key={food.id} food={food} />
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* 식단 기록 */}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <LoadingSpinner size="lg" showText={true} text="식단 기록을 불러오는 중입니다..." />
         </div>
       ) : (
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 기간에 식단 기록이 없습니다.</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            💡 <strong>참고:</strong> 식단 사진은 기기 내부 저장소에 저장됩니다. 기기에서 해당 파일이 삭제되거나 브라우저 데이터가 초기화되면 사진을 볼 수 없게 됩니다.
-          </p>
+        <div>
+          {foods.length > 0 ? (
+            <div>
+              {/* 날짜별로 식단 그룹화하여 표시 */}
+              {Object.entries(groupFoodsByDate(foods))
+                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // 최신순 정렬
+                .map(([dateStr, foodsForDate]) => renderFoodsByDate(dateStr, foodsForDate))
+              }
+            </div>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 기간에 식단 기록이 없습니다.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                💡 <strong>참고:</strong> 식단 사진은 기기 내부 저장소에 저장됩니다. 기기에서 해당 파일이 삭제되거나 브라우저 데이터가 초기화되면 사진을 볼 수 없게 됩니다.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -44,11 +44,54 @@ const calculateMacrosForHome = (targetCalories: number, weight_kg: number | unde
   };
 };
 
+// getYesterdayDate 함수를 getRecentDates로 수정
+const getRecentDates = (daysCount = 7) => {
+  const dates = [];
+  for (let i = 1; i <= daysCount; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    date.setHours(0, 0, 0, 0);
+    dates.push(date);
+  }
+  return dates;
+};
+
+// 날짜별 식단 기록을 그룹화하는 함수 추가
+const groupFoodsByDate = (foods: Food[]) => {
+  const grouped: Record<string, Food[]> = {};
+  
+  foods.forEach(food => {
+    // 날짜를 YYYY-MM-DD 형식의 문자열로 변환
+    const dateStr = food.date instanceof Date
+      ? food.date.toISOString().split('T')[0]
+      : new Date(food.date).toISOString().split('T')[0];
+    
+    if (!grouped[dateStr]) {
+      grouped[dateStr] = [];
+    }
+    
+    grouped[dateStr].push(food);
+  });
+  
+  return grouped;
+};
+
+// LoadingScreen 컴포넌트 추가
+const LoadingScreen = () => (
+  <div className="flex flex-col justify-center items-center h-96 animate-pulse">
+    <div className="mb-6">
+      <div className="w-16 h-16 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin"></div>
+    </div>
+    <p className="text-lg text-gray-600 dark:text-gray-300 animate-bounce">데이터를 불러오는 중입니다...</p>
+  </div>
+);
+
 const HomePage = () => {
   const { userProfile, loading: authLoading } = useAuth();
   const { settings: workoutSettings, isLoading: isLoadingSettings } = useWorkoutSettings();
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
-  const [yesterdayMeals, setYesterdayMeals] = useState<Food[]>([]);
+  const [recentMeals, setRecentMeals] = useState<Food[]>([]); // 어제 식단 -> 최근 식단
+  const [groupedMeals, setGroupedMeals] = useState<Record<string, Food[]>>({}); // 날짜별 그룹화된 식단
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nutrients, setNutrients] = useState({ protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 });
@@ -82,18 +125,19 @@ const HomePage = () => {
         
         setRecentSessions(sessionsData);
         
-        // 어제의 식사 기록 불러오기
-        const yesterday = getYesterdayDate();
-        const todayStart = new Date(yesterday);
-        todayStart.setDate(todayStart.getDate() + 1);
+        // 최근 7일 식사 기록 불러오기
+        const recentDates = getRecentDates(7);
+        const lastWeekStart = recentDates[recentDates.length - 1]; // 7일 전
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
         
         const mealsQuery = query(
           collection(db, 'foods'),
           where('userId', '==', userProfile.uid),
-          where('date', '>=', yesterday),
-          where('date', '<', todayStart),
-          orderBy('date', 'asc'),
-          limit(10)  // 최대 10개만 가져오도록 제한
+          where('date', '>=', lastWeekStart),
+          where('date', '<=', todayEnd),
+          orderBy('date', 'desc'),
+          limit(30)  // 충분한 수의 식단 기록 가져오기
         );
         
         const mealsSnapshot = await getDocs(mealsQuery);
@@ -106,7 +150,12 @@ const HomePage = () => {
           } as Food;
         });
         
-        setYesterdayMeals(mealsData);
+        setRecentMeals(mealsData);
+        
+        // 날짜별로 식단 그룹화
+        const grouped = groupFoodsByDate(mealsData);
+        setGroupedMeals(grouped);
+        
       } catch (err) {
         console.error('Error fetching home page data:', err);
         setError('데이터를 불러오는 중 오류가 발생했습니다.');
@@ -131,9 +180,7 @@ const HomePage = () => {
   if (authLoading || loading || isLoadingSettings) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-96">
-          <LoadingSpinner />
-        </div>
+        <LoadingScreen />
       </Layout>
     );
   }
@@ -362,48 +409,61 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* 어제의 식사 기록 카드 */} 
+        {/* 최근 식단 카드 */} 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center mb-4">
             <Utensils size={28} className="text-orange-500 mr-3" />
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">어제 식단</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">최근 식단</h2>
           </div>
-          <div className="space-y-6">
-            {yesterdayMeals.length > 0 ? (
-              yesterdayMeals.map((meal) => (
-                <div key={meal.id} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <h3 className="font-semibold text-lg text-orange-600 dark:text-orange-400">{meal.name || meal.type}</h3>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {meal.date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} - {meal.type || '식사'}
-                      </span>
+          <div className="space-y-4">
+            {Object.keys(groupedMeals).length > 0 ? (
+              Object.keys(groupedMeals)
+                .sort((a, b) => b.localeCompare(a)) // 최신 날짜순 정렬
+                .map(dateStr => {
+                  const meals = groupedMeals[dateStr];
+                  const dateObj = new Date(dateStr);
+                  const photoCount = meals.filter(meal => meal.imageUrl).length;
+                  
+                  return (
+                    <div 
+                      key={dateStr} 
+                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => navigate('/food')}
+                    >
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-lg text-orange-600 dark:text-orange-400">
+                          {dateObj.toLocaleDateString('ko-KR', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            weekday: 'long'
+                          })}
+                        </h3>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                          <Utensils size={14} className="mr-1" />
+                          식사 기록 {meals.length}개
+                        </span>
+                      </div>
+                      
+                      {photoCount > 0 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                          <span className="bg-orange-100 dark:bg-orange-800/40 text-orange-800 dark:text-orange-200 py-1 px-2 rounded-full text-xs">
+                            사진 {photoCount}개 저장됨
+                          </span>
+                        </p>
+                      )}
+                      
+                      {/* 다른 요약 정보 - 선택적으로 표시 */}
+                      {meals.some(meal => meal.calories > 0 || meal.protein > 0 || meal.carbs > 0 || meal.fat > 0) && (
+                        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          영양 정보가 포함된 식사 {meals.filter(m => m.calories > 0 || m.protein > 0 || m.carbs > 0 || m.fat > 0).length}개
+                        </div>
+                      )}
                     </div>
-                    {meal.calories > 0 && <span className="font-semibold text-gray-700 dark:text-gray-200">{meal.calories} kcal</span>}
-                  </div>
-                  {meal.imageUrl && (
-                    <img 
-                      src={meal.imageUrl} 
-                      alt={meal.name} 
-                      className="w-full h-40 object-cover rounded-md my-2"
-                    />
-                  )}
-                  {(meal.protein > 0 || meal.carbs > 0 || meal.fat > 0) && (
-                    <div className="grid grid-cols-3 gap-2 text-xs mt-2 text-center">
-                      <p><span className="font-medium">단백질:</span> {meal.protein}g</p>
-                      <p><span className="font-medium">탄수화물:</span> {meal.carbs}g</p>
-                      <p><span className="font-medium">지방:</span> {meal.fat}g</p>
-                    </div>
-                  )}
-                  {meal.notes && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 bg-gray-100 dark:bg-gray-600 p-2 rounded">
-                      {meal.notes}
-                    </p>
-                  )}
-                </div>
-              ))
+                  );
+                })
             ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">어제의 식사 기록이 없습니다.</p>
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">최근 식단 기록이 없습니다.</p>
             )}
           </div>
         </div>

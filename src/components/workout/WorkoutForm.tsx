@@ -955,68 +955,43 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           </CardSection>
         </Card>
         
-        {/* 준비 및 웜업 섹션 - 메인 운동 위로 이동 */}
+        {/* 준비 및 웜업 섹션을 간소화 */}
         <Card className="mb-6">
           <CardSection>
             <CardTitle>준비 및 웜업</CardTitle>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">스트레칭</h3>
-                  <Button
-                    size="sm"
-                    variant={stretchingCompleted ? 'success' : 'secondary'}
-                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
-                    icon={stretchingCompleted ? <CheckCircle size={16} /> : undefined}
-                  >
-                    {stretchingCompleted ? '완료' : '시작하기'}
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  운동 전 충분한 스트레칭으로 부상을 예방하세요.
-                </p>
+            <div className="p-3 border rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium">스트레칭/웜업</h3>
+                <Button
+                  size="sm"
+                  variant={warmupCompleted ? 'success' : 'secondary'}
+                  onClick={() => {
+                    setWarmupCompleted(!warmupCompleted);
+                    setStretchingCompleted(!warmupCompleted);
+                  }}
+                  icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
+                  className="bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500"
+                >
+                  {warmupCompleted ? '완료' : '시작하기'}
+                </Button>
               </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                운동 전 충분한 스트레칭과 웜업을 수행해주세요.
+              </p>
               
-              <div className="p-3 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">웜업</h3>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setShowWarmupTips(!showWarmupTips)}
-                      icon={<Info size={16} />}
-                    >
-                      팁
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={warmupCompleted ? 'success' : 'secondary'}
-                      onClick={() => setWarmupCompleted(!warmupCompleted)}
-                      icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
-                    >
-                      {warmupCompleted ? '완료' : '시작하기'}
-                    </Button>
-                  </div>
+              {showWarmupTips && (
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                  <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
+                    {part} 운동 웜업 추천
+                  </h4>
+                  <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300">
+                    {warmupExercises[part].map((tip, i) => (
+                      <li key={i}>{tip}</li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  본 운동 전 가벼운 웜업으로 몸을 준비하세요.
-                </p>
-                
-                {showWarmupTips && (
-                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                    <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
-                      {part} 운동 웜업 추천
-                    </h4>
-                    <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300">
-                      {warmupExercises[part].map((tip, i) => (
-                        <li key={i}>{tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </CardSection>
         </Card>
@@ -1209,8 +1184,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             
             {accessoryExercises.length === 0 ? (
               <div className="text-center p-6 border border-dashed rounded-lg">
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-gray-500 dark:text-gray-400 mb-2">
                   보조 운동을 추가하려면 위 버튼을 클릭하세요
+                </p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+                  보조 운동을 한번 저장해두면, 이후에는 해당 메인 운동에 따라 저장된 보조 운동이 표시됩니다.
                 </p>
               </div>
             ) : (
