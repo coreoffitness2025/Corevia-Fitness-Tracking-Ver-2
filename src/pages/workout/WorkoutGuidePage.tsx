@@ -70,6 +70,11 @@ const WorkoutGuidePage: React.FC = () => {
       
       // 세트 구성에 따라 적절한 세트 수와 반복 횟수 설정
       switch (guideInfo.preferredSetConfig) {
+        case '5x5':
+          // 5회 5세트 (근력-근비대 균형)
+          setConfiguration.customSets = 5;
+          setConfiguration.customReps = 5;
+          break;
         case '6x3':
           // 6회 3세트 (근력 향상 - 스트렝스 초점)
           setConfiguration.customSets = 3;
@@ -137,6 +142,33 @@ const WorkoutGuidePage: React.FC = () => {
       <h2 className="text-xl font-bold mb-6">메인 운동 세트 설정</h2>
       
       <div className="space-y-6">
+        <div>
+          <label className="flex items-center p-4 border rounded-md mb-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+            <input
+              type="radio"
+              name="preferredSetConfig"
+              value="5x5"
+              checked={guideInfo.preferredSetConfig === '5x5'}
+              onChange={handleInputChange}
+              className="mr-3"
+            />
+            <div>
+              <h3 className="font-medium">5x5세트 (5회 5세트)</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">근력과 근비대 균형</p>
+            </div>
+          </label>
+          
+          <div className="ml-6 text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <ul className="list-disc ml-5 space-y-1">
+              <li>근력과 근비대 균형에 최적화된 구성</li>
+              <li>초보자부터 중급자까지 적합한 세트 구성</li>
+              <li>기초 근력을 키우면서 적절한 부피 확보 가능</li>
+              <li>무게 증가에 집중하기 좋은 반복 횟수</li>
+              <li>주요 복합 운동(스쿼트, 데드리프트, 벤치프레스 등)에 이상적</li>
+            </ul>
+          </div>
+        </div>
+        
         <div>
           <label className="flex items-center p-4 border rounded-md mb-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
             <input

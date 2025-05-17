@@ -99,6 +99,7 @@ const periodOptions = [
 // 세트 구성 옵션
 const setConfigOptions = [
   { value: 'all', label: '전체' },
+  { value: '5x5', label: '5회 x 5세트' },
   { value: '10x5', label: '10회 x 5세트' },
   { value: '15x5', label: '15회 x 5세트' },
   { value: '6x3', label: '6회 x 3세트' },
@@ -230,6 +231,7 @@ const WorkoutGraph: React.FC = () => {
       
       // 세트 구성별 날짜와 무게 데이터
       const setConfigData: Record<string, Record<string, number>> = {
+        '5x5': {},  // 5회 5세트 (신규 추가)
         '6x3': {},  // 6회 3세트
         '10x5': {}, // 10회 5세트
         '15x5': {}, // 15회 5세트
@@ -254,7 +256,9 @@ const WorkoutGraph: React.FC = () => {
         const sets = workout.mainExercise.sets;
         let setConfig = 'custom';
         
-        if (sets.length === 3 && sets.every(set => set.reps === 6)) {
+        if (sets.length === 5 && sets.every(set => set.reps === 5)) {
+          setConfig = '5x5';
+        } else if (sets.length === 3 && sets.every(set => set.reps === 6)) {
           setConfig = '6x3';
         } else if (sets.length === 5 && sets.every(set => set.reps === 10)) {
           setConfig = '10x5';
@@ -288,6 +292,24 @@ const WorkoutGraph: React.FC = () => {
       
       // 세트 구성별 데이터셋 생성
       const datasets = [
+        {
+          label: '5x5세트',
+          data: uniqueDates.map(date => setConfigData['5x5'][date] || null),
+          borderColor: 'rgb(124, 58, 237)', // 보라색 (5x5 세트용 새 색상)
+          backgroundColor: 'rgba(124, 58, 237, 0.5)',
+          tension: 0.2,
+          pointRadius: 5,
+          pointBackgroundColor: uniqueDates.map(date => 
+            setConfigData['5x5'][date] ? 'rgb(124, 58, 237)' : 'transparent'
+          ),
+          pointBorderColor: uniqueDates.map(date => 
+            setConfigData['5x5'][date] ? 'rgb(124, 58, 237)' : 'transparent'
+          ),
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: 'rgba(124, 58, 237, 0.9)',
+          pointHitRadius: 10,
+          spanGaps: false // 데이터 없는 부분은 선으로 연결하지 않음
+        },
         {
           label: '6x3세트',
           data: uniqueDates.map(date => setConfigData['6x3'][date] || null),
@@ -465,15 +487,18 @@ const WorkoutGraph: React.FC = () => {
           // 세트 개수와 반복 횟수로 필터링
           const sets = item.mainExercise.sets;
           
-          if (selectedSetConfig === '10x5') {
+          if (selectedSetConfig === '5x5') {
+            return sets.length === 5 && sets.every(set => set.reps === 5);
+          } else if (selectedSetConfig === '10x5') {
             return sets.length === 5 && sets.every(set => set.reps === 10);
           } else if (selectedSetConfig === '15x5') {
             return sets.length === 5 && sets.every(set => set.reps === 15);
           } else if (selectedSetConfig === '6x3') {
             return sets.length === 3 && sets.every(set => set.reps === 6);
           } else if (selectedSetConfig === 'custom') {
-            // 10x5, 15x5, 6x3 패턴이 아닌 경우 커스텀으로 간주
+            // 5x5, 10x5, 15x5, 6x3 패턴이 아닌 경우 커스텀으로 간주
             return !(
+              (sets.length === 5 && sets.every(set => set.reps === 5)) ||
               (sets.length === 5 && sets.every(set => set.reps === 10)) ||
               (sets.length === 5 && sets.every(set => set.reps === 15)) ||
               (sets.length === 3 && sets.every(set => set.reps === 6))
