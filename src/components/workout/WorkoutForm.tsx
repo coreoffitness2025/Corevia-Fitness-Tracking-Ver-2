@@ -143,12 +143,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
+    console.log('[WorkoutForm] 컴포넌트 마운트, userProfile:', userProfile?.uid);
+    console.log('[WorkoutForm] 현재 Context 세트 설정:', setConfiguration);
+    
     if (userProfile) {
-      console.log('운동 컴포넌트: 사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
+      console.log('[WorkoutForm] 사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
       
       // 1. 부위별 선호 운동 설정 적용
       if (userProfile.preferredExercises) {
-        console.log('운동 컴포넌트: 선호 운동 설정 적용:', userProfile.preferredExercises);
+        console.log('[WorkoutForm] 선호 운동 설정 적용:', userProfile.preferredExercises);
         
         // 초기 부위는 가슴으로 설정하고 해당 부위의 선호 운동 적용
         const prefExercises = userProfile.preferredExercises;
@@ -167,10 +170,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   }, [userProfile?.uid]); // 의존성 배열에 userProfile.uid만 포함하여 로그인 시에만 실행
   
+  // 컴포넌트 마운트 직후 한 번 세트 설정 강제 적용
+  useEffect(() => {
+    // 초기 1회만 실행: 컴포넌트 마운트 시 Context에서 세트 설정 강제 적용
+    if (setConfiguration) {
+      console.log('[WorkoutForm] 컴포넌트 마운트 직후 세트 설정 강제 적용:', setConfiguration);
+      applySetConfiguration(setConfiguration);
+    }
+  }, []); // 빈 의존성 배열로 초기 1회만 실행
+  
   // 세트 설정이 변경될 때마다 적용
   useEffect(() => {
     if (setConfiguration) {
-      console.log('Context에서 세트 설정 변경 감지:', setConfiguration);
+      console.log('[WorkoutForm] Context에서 세트 설정 변경 감지:', setConfiguration);
       
       // 세트 설정 적용
       setSelectedSetConfiguration(setConfiguration.preferredSetup);
@@ -620,11 +632,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 세트 구성 적용 함수 개선
   const applySetConfiguration = (config: any) => {
-    console.log('세트 구성 적용:', config);
+    console.log('[WorkoutForm] 세트 구성 적용 시작:', config);
+    
+    if (!config || !config.preferredSetup) {
+      console.error('[WorkoutForm] 유효하지 않은 세트 구성:', config);
+      return;
+    }
     
     // 세트 구성에 따라 세트 수와 반복 횟수 설정
     const { setsCount, repsCount } = getSetConfiguration(
-      config.preferredSetup as SetConfiguration, 
+      config.preferredSetup,
       config.customSets, 
       config.customReps
     );
@@ -633,26 +650,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setSets(setsCount);
     setReps(repsCount);
     
-    console.log(`세트 구성 적용: ${config.preferredSetup} - ${setsCount} 세트 x ${repsCount} 회`);
+    console.log(`[WorkoutForm] 세트 구성: ${config.preferredSetup} - ${setsCount} 세트 x ${repsCount} 회`);
     
-    // 메인 운동의 세트 배열 업데이트
-    setMainExercise(prevExercise => {
-      // 새 세트 배열 생성
-      const updatedSets = Array.from({ length: setsCount }, (_, i) => ({
-        // 기존 세트가 있으면 무게 유지, 새 세트는 무게 0으로 설정
-        weight: i < prevExercise.sets.length ? prevExercise.sets[i].weight || 0 : 0,
-        // 모든 세트의 반복 횟수는 설정값으로 통일
-        reps: repsCount,
-        isSuccess: null as boolean | null
-      }));
-      
-      console.log(`세트 수 변경: ${prevExercise.sets.length} -> ${updatedSets.length}`);
-      console.log(`세트 구성 적용 완료:`, updatedSets);
-      
-      return {
-        ...prevExercise,
+    // 현재 메인 운동 세트 정보 로깅
+    console.log('[WorkoutForm] 현재 메인 운동 세트 상태:', 
+      mainExercise.sets.length, mainExercise.sets.map(s => ({ w: s.weight, r: s.reps })));
+    
+    // 메인 운동의 세트 배열 업데이트 - 즉시 실행 버전
+    const updatedSets = Array.from({ length: setsCount }, (_, i) => ({
+      // 기존 세트가 있으면 무게 유지, 새 세트는 무게 0으로 설정
+      weight: i < mainExercise.sets.length ? mainExercise.sets[i].weight || 0 : 0,
+      // 모든 세트의 반복 횟수는 설정값으로 통일
+      reps: repsCount,
+      isSuccess: null as boolean | null
+    }));
+    
+    console.log('[WorkoutForm] 업데이트된 세트 배열:', updatedSets);
+    
+    // 상태 업데이트
+    setMainExercise(prev => {
+      const updated = {
+        ...prev,
         sets: updatedSets
       };
+      console.log('[WorkoutForm] 세트 구성 적용 완료:', updated);
+      return updated;
     });
   };
 

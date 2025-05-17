@@ -51,19 +51,22 @@ export const WorkoutSettingsProvider: React.FC<{children: React.ReactNode}> = ({
     try {
       console.log('[WorkoutSettingsContext] 세트 설정 업데이트 시작:', newConfig);
       
+      // 로컬 상태 먼저 업데이트 - 즉시 반영
+      setSetConfiguration(newConfig);
+      console.log('[WorkoutSettingsContext] 로컬 상태 업데이트 완료');
+      
       // Firebase 사용자 프로필 업데이트
       await updateProfile({ setConfiguration: newConfig });
-      
-      // 로컬 상태 업데이트
-      setSetConfiguration(newConfig);
-      
-      console.log('[WorkoutSettingsContext] 세트 설정 업데이트 완료');
+      console.log('[WorkoutSettingsContext] Firebase 업데이트 완료');
       
       // 성공 메시지
       toast.success('세트 설정이 저장되었습니다', {
         duration: 3000,
         position: 'top-center'
       });
+      
+      // 업데이트 완료 로그
+      console.log('[WorkoutSettingsContext] 세트 설정 업데이트 완전히 완료됨:', newConfig);
       
       return Promise.resolve();
     } catch (error) {
