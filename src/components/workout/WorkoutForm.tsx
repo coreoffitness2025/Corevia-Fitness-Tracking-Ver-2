@@ -384,13 +384,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         const sessionsCollection = collection(db, 'sessions');
         
-        // 쿼리 단순화: 메인 운동 이름으로만 필터링
+        // 쿼리 완전 단순화: 사용자 ID와 메인 운동 이름만으로 필터링
         const q = query(
           sessionsCollection,
           where('userId', '==', userProfile.uid),
-          where('mainExercise.name', '==', mainExercise.name),
-          orderBy('date', 'desc'),
-          limit(10) // 좀 더 많은 기록에서 검색
+          where('mainExercise.name', '==', mainExercise.name)
+          // orderBy와 다른 조건 제거
         );
         
         console.log('[보조운동 로드] Firestore 쿼리 실행');
@@ -403,9 +402,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           const exercises: any[] = [];
           let sessionsWithAccessories = 0;
           
-          querySnapshot.forEach(doc => {
+          // 날짜 기준으로 직접 정렬 (Firestore orderBy 대신)
+          const sortedDocs = querySnapshot.docs.sort((a, b) => {
+            const dateA = a.data().date.toDate?.();
+            const dateB = b.data().date.toDate?.();
+            if (!dateA || !dateB) return 0;
+            return dateB.getTime() - dateA.getTime(); // 최신 날짜 우선
+          });
+          
+          // 최대 10개 세션만 처리
+          const recentDocs = sortedDocs.slice(0, 10);
+          
+          recentDocs.forEach(doc => {
             const data = doc.data();
-            console.log(`[보조운동 로드] 세션 ID: ${doc.id}, 날짜: ${data.date?.toDate?.().toLocaleDateString() || '날짜 없음'}`);
+            const docDate = data.date?.toDate?.();
+            const dateStr = docDate ? docDate.toLocaleDateString() : '날짜 없음';
+            
+            console.log(`[보조운동 로드] 세션 ID: ${doc.id}, 날짜: ${dateStr}`);
             
             if (data.accessoryExercises && Array.isArray(data.accessoryExercises) && data.accessoryExercises.length > 0) {
               sessionsWithAccessories++;
@@ -429,7 +442,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           });
           
           // 요약 정보 출력
-          console.log(`[보조운동 로드] 총 ${querySnapshot.size}개 세션 중 ${sessionsWithAccessories}개 세션에 보조 운동 존재`);
+          console.log(`[보조운동 로드] 총 ${recentDocs.length}개 세션 중 ${sessionsWithAccessories}개 세션에 보조 운동 존재`);
           console.log(`[보조운동 로드] 고유한 보조 운동 ${exercises.length}개 발견`);
           
           if (exercises.length > 0) {
@@ -444,7 +457,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             });
             
             // 자동으로 이전에 했던 보조 운동 추가 - 조건 수정
-            // isFirstAccessoryLoad 플래그에 따라 처리
             if (accessoryExercises.length === 0) {
               console.log(`[보조운동 로드] 보조 운동 자동 설정 (${exercises.length}개)`);
               setAccessoryExercises(exercises);
@@ -468,7 +480,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     return () => {
       isMounted.current = false;
     };
-  }, [userProfile, mainExercise.name]); // accessoryExercises.length 제거, 무한 루프 방지
+  }, [userProfile, mainExercise.name, accessoryExercises.length]);
 
   // 훈련 완료 처리 함수 수정
   const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
@@ -695,8 +707,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           setLatestWorkoutInfo({
             date: latestSession.date instanceof Date 
               ? latestSession.date 
-              : (typeof latestSession.date === 'object' && latestSession.date && 'toDate' in latestSession.date 
-                ? latestSession.date.toDate() 
+              : (typeof latestSession.date === 'object' && latestSession.date
+                ? new Date(latestSession.date.seconds * 1000)
                 : new Date()),
             weight: lastWeight,
             allSuccess,
@@ -801,6 +813,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         sets: 0,
         reps: 0
       });
+    }
+  };
+
+  // handleRepsChange 함수 추가
+  const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean = true) => {
+    if (isMainExercise) {
+      const newSets = [...mainExercise.sets];
+      newSets[setIndex].reps = newReps;
+      setMainExercise({ ...mainExercise, sets: newSets });
     }
   };
 
@@ -938,7 +959,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               {exercisePartOptions.map(option => (
                 <button
                   key={option.value}
-                  onClick={() => setPart(option.value)}
+                  onClick={() => setPart(option.value as ExercisePart)}
                   className={`
                     flex items-center justify-center p-4 rounded-lg transition-all
                     ${part === option.value
@@ -1141,7 +1162,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       <Button
                         size="xs"
                         variant="secondary"
-                        onClick={() => toggleTimer(index)}
+                        onClick={() => toggleTimer(-1, index)}
                         className="h-8"
                         icon={<Clock size={16} />}
                       >
