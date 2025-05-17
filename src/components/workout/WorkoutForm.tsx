@@ -175,9 +175,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       console.log('[WorkoutForm] 세트 설정 변경 감지:', settings);
       
       // 세트 설정 적용
-      setSelectedSetConfiguration(settings.preferredSetup);
-      setCustomSets(settings.customSets);
-      setCustomReps(settings.customReps);
+      if (settings.preferredSetup) {
+        setSelectedSetConfiguration(settings.preferredSetup);
+      }
+      
+      if (typeof settings.customSets === 'number') {
+        setCustomSets(settings.customSets);
+      }
+      
+      if (typeof settings.customReps === 'number') {
+        setCustomReps(settings.customReps);
+      }
       
       // 세트 구성 생성 및 적용
       applySetConfiguration(settings);

@@ -86,7 +86,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5분간 데이터 신선함 유지
-      cacheTime: 1000 * 60 * 60, // 1시간 캐싱
+      gcTime: 1000 * 60 * 60, // 1시간 가비지 컬렉션 시간 (이전의 cacheTime)
       retry: 1, // 실패 시 1번만 재시도
       refetchOnWindowFocus: false, // 창 포커스 시 자동 리페치 비활성화
     },

@@ -2,19 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import { useAuth } from '../../contexts/AuthContext';
-import { WorkoutGuideInfo } from '../../types/index';
+import { WorkoutGuideInfo, UserProfile, SetConfiguration } from '../../types';
 import { toast } from 'react-hot-toast';
 import { useWorkoutSettings, WorkoutSettings } from '../../hooks/useWorkoutSettings';
 
-interface WorkoutSetConfigProps {
-  onConfigSaved?: () => void;
-}
-
-const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) => {
-  const { currentUser, userProfile } = useAuth();
-  const { settings, updateSettings, isLoading, isUpdating } = useWorkoutSettings();
-  
-  const [guideInfo, setGuideInfo] = useState<WorkoutGuideInfo>({
+// guideInfo 초기 설정 함수
+const getInitialGuideInfo = (userProfile: any, settings: WorkoutSettings): WorkoutGuideInfo => {
+  return {
     gender: userProfile?.gender || 'male',
     age: userProfile?.age || 30,
     weight: userProfile?.weight || 70,
@@ -26,15 +20,35 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       bench: userProfile?.oneRepMax?.bench || 0,
       overheadPress: userProfile?.oneRepMax?.overheadPress || 0,
     },
-    preferredSetConfig: settings.preferredSetup,
-  });
+    preferredSetConfig: settings?.preferredSetup || '10x5',
+  };
+};
+
+interface WorkoutSetConfigProps {
+  onConfigSaved?: () => void;
+}
+
+const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) => {
+  const { currentUser, userProfile } = useAuth();
+  const { settings, updateSettings, isLoading, isUpdating } = useWorkoutSettings();
+  
+  // 초기화된 guideInfo 상태
+  const [guideInfo, setGuideInfo] = useState<WorkoutGuideInfo>(() => 
+    getInitialGuideInfo(userProfile, settings || { 
+      preferredSetup: '10x5' as SetConfiguration, 
+      customSets: 5, 
+      customReps: 10 
+    })
+  );
   
   // 설정이 변경되면 guideInfo 업데이트
   useEffect(() => {
-    setGuideInfo(prev => ({
-      ...prev,
-      preferredSetConfig: settings.preferredSetup
-    }));
+    if (settings) {
+      setGuideInfo(prev => ({
+        ...prev,
+        preferredSetConfig: settings.preferredSetup
+      }));
+    }
   }, [settings]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -74,7 +88,10 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       let customSets = 5;
       let customReps = 10;
       
-      switch (guideInfo.preferredSetConfig) {
+      // 문자열 리터럴 타입 비교 문제 해결을 위한 타입 가드
+      const setConfig = guideInfo.preferredSetConfig as SetConfiguration;
+      
+      switch (setConfig) {
         case '5x5':
           // 5회 5세트 (근력-근비대 균형)
           customSets = 5;
@@ -103,7 +120,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       
       // 새 설정 구성
       const newSettings: WorkoutSettings = {
-        preferredSetup: guideInfo.preferredSetConfig,
+        preferredSetup: setConfig,
         customSets,
         customReps
       };
@@ -115,14 +132,15 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       
       // 경험 정보 업데이트 - 이 부분은 기존 방식 유지
       if (userProfile?.experience) {
-        const profileUpdate: Partial<UserProfile> = {
+        // 타입 단언을 사용하여 타입 오류 해결
+        const profileUpdate = {
           experience: {
             ...userProfile.experience,
             level: guideInfo.experience
           }
         };
         
-        // updateProfile 함수를 직접 호출하는 대신, 나중에 확장 필요
+        // 여기에서 추가 업데이트 로직을 구현할 수 있습니다.
       }
       
       // 콜백 함수 호출

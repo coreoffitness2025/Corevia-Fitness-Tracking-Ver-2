@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
+import { useEffect } from 'react';
 
 // 기본 세트 설정 값
 const defaultSetConfiguration = {
@@ -53,32 +54,36 @@ export function useWorkoutSettings() {
   };
 
   // 설정 가져오기 쿼리
-  const { data: settings, isLoading, error } = useQuery<WorkoutSettings>(
-    ['workoutSettings', userId],
-    fetchWorkoutSettings,
-    {
-      enabled: !!userId, // 사용자 ID가 있을 때만 쿼리 실행
-      // 로컬 스토리지 폴백: 온라인 상태 복구 후 캐시 업데이트
-      onError: (err) => {
-        console.error('설정 로드 오류, 로컬 스토리지 사용 시도:', err);
-        
-        // 로컬 스토리지에서 설정 가져오기 시도
-        try {
-          const cachedSettings = localStorage.getItem('workoutSettings');
-          if (cachedSettings) {
-            const parsedSettings = JSON.parse(cachedSettings);
-            queryClient.setQueryData(['workoutSettings', userId], parsedSettings);
-          }
-        } catch (cacheError) {
-          console.error('로컬 캐시 로드 실패:', cacheError);
+  const { data: settings, isLoading, error } = useQuery<WorkoutSettings>({
+    queryKey: ['workoutSettings', userId],
+    queryFn: fetchWorkoutSettings,
+    enabled: !!userId, // 사용자 ID가 있을 때만 쿼리 실행
+    // 로컬 스토리지 폴백 구현
+    staleTime: 1000 * 60 * 5, // 5분
+    gcTime: 1000 * 60 * 60    // 1시간
+  });
+  
+  // 로컬 스토리지 폴백 처리
+  useEffect(() => {
+    if (error) {
+      console.error('설정 로드 오류, 로컬 스토리지 사용 시도:', error);
+      
+      // 로컬 스토리지에서 설정 가져오기 시도
+      try {
+        const cachedSettings = localStorage.getItem('workoutSettings');
+        if (cachedSettings) {
+          const parsedSettings = JSON.parse(cachedSettings);
+          queryClient.setQueryData(['workoutSettings', userId], parsedSettings);
         }
+      } catch (cacheError) {
+        console.error('로컬 캐시 로드 실패:', cacheError);
       }
     }
-  );
+  }, [error, queryClient, userId]);
 
   // 설정 업데이트 뮤테이션
-  const { mutate: updateSettings, isLoading: isUpdating } = useMutation(
-    async (newSettings: WorkoutSettings) => {
+  const { mutate: updateSettings, isPending: isUpdating } = useMutation({
+    mutationFn: async (newSettings: WorkoutSettings) => {
       if (!userId) {
         throw new Error('사용자가 로그인하지 않았습니다.');
       }
@@ -94,42 +99,40 @@ export function useWorkoutSettings() {
       console.log('[useWorkoutSettings] 설정 업데이트 성공');
       return newSettings;
     },
-    {
-      // 낙관적 업데이트: 서버 응답 전에 UI 업데이트
-      onMutate: async (newSettings) => {
-        // 이전 쿼리 취소
-        await queryClient.cancelQueries(['workoutSettings', userId]);
-        
-        // 이전 설정 값 저장
-        const previousSettings = queryClient.getQueryData<WorkoutSettings>(['workoutSettings', userId]);
-        
-        // 새 값으로 캐시 업데이트
-        queryClient.setQueryData(['workoutSettings', userId], newSettings);
-        
-        // 롤백을 위해 이전 값 반환
-        return { previousSettings };
-      },
-      // 성공 시 처리
-      onSuccess: () => {
-        toast.success('세트 설정이 저장되었습니다', {
-          duration: 3000,
-          position: 'top-center'
-        });
-      },
-      // 오류 시 롤백
-      onError: (err, newSettings, context: any) => {
-        console.error('[useWorkoutSettings] 설정 업데이트 실패:', err);
-        if (context?.previousSettings) {
-          queryClient.setQueryData(['workoutSettings', userId], context.previousSettings);
-        }
-        toast.error('설정 적용 중 오류가 발생했습니다');
-      },
-      // 성공/실패 후 쿼리 데이터 리프레시
-      onSettled: () => {
-        queryClient.invalidateQueries(['workoutSettings', userId]);
+    // 낙관적 업데이트: 서버 응답 전에 UI 업데이트
+    onMutate: async (newSettings) => {
+      // 이전 쿼리 취소
+      await queryClient.cancelQueries({ queryKey: ['workoutSettings', userId] });
+      
+      // 이전 설정 값 저장
+      const previousSettings = queryClient.getQueryData<WorkoutSettings>(['workoutSettings', userId]);
+      
+      // 새 값으로 캐시 업데이트
+      queryClient.setQueryData(['workoutSettings', userId], newSettings);
+      
+      // 롤백을 위해 이전 값 반환
+      return { previousSettings };
+    },
+    // 성공 시 처리
+    onSuccess: () => {
+      toast.success('세트 설정이 저장되었습니다', {
+        duration: 3000,
+        position: 'top-center'
+      });
+    },
+    // 오류 시 롤백
+    onError: (err, newSettings, context: any) => {
+      console.error('[useWorkoutSettings] 설정 업데이트 실패:', err);
+      if (context?.previousSettings) {
+        queryClient.setQueryData(['workoutSettings', userId], context.previousSettings);
       }
+      toast.error('설정 적용 중 오류가 발생했습니다');
+    },
+    // 성공/실패 후 쿼리 데이터 리프레시
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['workoutSettings', userId] });
     }
-  );
+  });
 
   return {
     settings: settings || defaultSetConfiguration,

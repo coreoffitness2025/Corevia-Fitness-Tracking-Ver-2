@@ -203,14 +203,18 @@ export interface Food {
 }
 
 export interface WorkoutGuideInfo {
+  gender?: 'male' | 'female';
+  age?: number;
+  weight?: number;
   experience: 'beginner' | 'intermediate' | 'advanced';
-  preferredSetConfig: string;
+  trainingYears?: number;
   oneRepMaxes?: {
     squat: number;
     deadlift: number;
     bench: number;
     overheadPress: number;
   };
+  preferredSetConfig: string;
 }
 
 export interface WorkoutGuideResult {
