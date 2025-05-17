@@ -35,11 +35,19 @@ export const getPartColor = (part: ExercisePart, isSuccess: boolean = true): str
  */
 export const getSetConfiguration = (configType: string, customSets: number = 5, customReps: number = 10) => {
   const configMap: Record<string, { setsCount: number, repsCount: number }> = {
+    '5x5': { setsCount: 5, repsCount: 5 },     // 5회 5세트 추가
     '10x5': { setsCount: 5, repsCount: 10 },
     '15x5': { setsCount: 5, repsCount: 15 },
     '6x3': { setsCount: 3, repsCount: 6 },
+    '6x5': { setsCount: 5, repsCount: 6 },     // 6회 5세트 추가
+    '3x10': { setsCount: 10, repsCount: 3 },   // 3회 10세트 추가
     'custom': { setsCount: customSets, repsCount: customReps }
   };
+  
+  // 요청된 설정이 없으면 기본값(10x5) 반환 전에 로그로 경고
+  if (!configMap[configType]) {
+    console.warn(`지원되지 않는 세트 설정: ${configType}, 기본값 10x5로 대체합니다.`);
+  }
   
   return configMap[configType] || configMap['10x5']; // 기본값으로 10x5 반환
 };

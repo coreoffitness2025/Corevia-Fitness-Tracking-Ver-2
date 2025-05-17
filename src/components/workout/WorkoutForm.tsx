@@ -114,11 +114,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 추가 상태 변수 정의
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
   const [preferredExercises, setPreferredExercises] = useState<Record<string, string>>({});
-  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<SetConfiguration>('5x5');
+  const [selectedSetConfiguration, setSelectedSetConfiguration] = useState<SetConfiguration>('10x5');
   const [sets, setSets] = useState<number>(5);
-  const [reps, setReps] = useState<number>(5);
+  const [reps, setReps] = useState<number>(10);
   const [customSets, setCustomSets] = useState<number>(5);
-  const [customReps, setCustomReps] = useState<number>(5);
+  const [customReps, setCustomReps] = useState<number>(10);
   
   // 최근 운동 이력 정보 저장 상태 추가
   const [latestWorkoutInfo, setLatestWorkoutInfo] = useState<{
@@ -165,7 +165,20 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       let setConfig = null;
       
       // 2-1. 로컬 스토리지에서 세트 설정 확인
-      const storedConfig = localStorage.getItem('userSetConfiguration');
+      // 새 키와 이전 키 모두 확인
+      const newStoredConfig = localStorage.getItem('userSetConfiguration');
+      const oldStoredConfig = localStorage.getItem('lastSetConfiguration');
+      
+      // 이전 키가 있고 새 키가 없으면 마이그레이션 처리
+      if (oldStoredConfig && !newStoredConfig) {
+        console.log('이전 설정 키가 발견되어 새 형식으로 마이그레이션합니다.');
+        localStorage.setItem('userSetConfiguration', oldStoredConfig);
+        localStorage.removeItem('lastSetConfiguration');
+        localStorage.removeItem('lastSetConfigurationChecked');
+      }
+      
+      // 새 키 기준으로 설정 로드 시도
+      const storedConfig = newStoredConfig || oldStoredConfig;
       if (storedConfig) {
         try {
           setConfig = JSON.parse(storedConfig);

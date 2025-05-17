@@ -112,6 +112,9 @@ const WorkoutGuidePage: React.FC = () => {
       console.log('프로필 업데이트 완료');
       
       // 2. 로컬 스토리지에 간단히 저장 - 세션 지속
+      // 이전 키 데이터 삭제 후 새 설정 저장
+      localStorage.removeItem('lastSetConfiguration'); // 이전 키 삭제
+      localStorage.removeItem('lastSetConfigurationChecked'); // 이전 관련 키 삭제
       localStorage.setItem('userSetConfiguration', JSON.stringify(setConfiguration));
       console.log('세트 설정을 로컬 스토리지에 저장 완료:', setConfiguration);
       
