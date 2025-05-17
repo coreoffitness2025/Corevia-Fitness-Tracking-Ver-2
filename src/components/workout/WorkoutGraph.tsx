@@ -328,43 +328,75 @@ const WorkoutGraph: React.FC = () => {
       const dateLabel = chart.data.labels?.[dataIndex] as string;
       
       if (dateLabel) {
-        // 클릭한 데이터셋에 해당하는 운동 특정하기
-        if (datasetIndex >= 0 && chart.data.datasets[datasetIndex]) {
-          const datasetLabel = chart.data.datasets[datasetIndex].label;
-          
-          if (datasetLabel) {
-            const labelMatch = datasetLabel.match(/^(.+) \((.+)\)$/);
+        // 클릭한 날짜의 모든 운동 목록
+        const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
+        
+        if (workoutsForDate.length > 0) {
+          // 클릭한 데이터셋에 해당하는 운동 특정하기
+          if (datasetIndex >= 0 && chart.data.datasets[datasetIndex]) {
+            const datasetLabel = chart.data.datasets[datasetIndex].label;
             
-            if (labelMatch) {
-              const exerciseName = labelMatch[1];
-              const setConfig = labelMatch[2];
+            if (datasetLabel) {
+              const labelMatch = datasetLabel.match(/^(.+) \((.+)\)$/);
               
-              // 클릭한 날짜의 모든 운동 중에서 특정 운동 이름과 세트 구성에 해당하는 운동 찾기
-              const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
-              const matchingWorkouts = workoutsForDate.filter(
-                workout => workout.mainExercise.name === exerciseName &&
-                          workout.mainExercise.sets &&
-                          workout.mainExercise.sets.length > 0 &&
-                          (
-                            (setConfig === '5x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 5) ||
-                            (setConfig === '6x3' && workout.mainExercise.sets.length === 3 && workout.mainExercise.sets[0].reps === 6) ||
-                            (setConfig === '10x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 10) ||
-                            (setConfig === '15x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 15)
-                          )
-              );
-              
-              if (matchingWorkouts.length > 0) {
-                setSelectedWorkout(matchingWorkouts[0]);
-                return;
+              if (labelMatch) {
+                const exerciseName = labelMatch[1];
+                const setConfig = labelMatch[2];
+                
+                // 클릭한 날짜의 모든 운동 중에서 특정 운동 이름과 세트 구성에 해당하는 운동 찾기
+                const matchingWorkouts = workoutsForDate.filter(
+                  workout => workout.mainExercise && workout.mainExercise.name === exerciseName
+                );
+                
+                if (matchingWorkouts.length > 0) {
+                  // 세트 구성까지 정확하게 일치하는 운동 찾기
+                  const exactMatchWorkout = matchingWorkouts.find(
+                    workout => workout.mainExercise.sets &&
+                    workout.mainExercise.sets.length > 0 &&
+                    (
+                      (setConfig === '5x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 5) ||
+                      (setConfig === '6x3' && workout.mainExercise.sets.length === 3 && workout.mainExercise.sets[0].reps === 6) ||
+                      (setConfig === '10x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 10) ||
+                      (setConfig === '15x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 15)
+                    )
+                  );
+                  
+                  if (exactMatchWorkout) {
+                    setSelectedWorkout(exactMatchWorkout);
+                    return;
+                  }
+                  
+                  // 정확한 일치가 없으면 같은 운동 이름의 첫 번째 운동 선택
+                  setSelectedWorkout(matchingWorkouts[0]);
+                  return;
+                }
               }
             }
           }
-        }
-        
-        // 위에서 매칭되는 운동을 찾지 못한 경우, 해당 날짜의 첫 번째 운동 표시 (fallback)
-        const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
-        if (workoutsForDate.length > 0) {
-          setSelectedWorkout(workoutsForDate[0]);
+          
+          // 클릭한 날짜에 여러 운동이 있는 경우 선택 UI 표시
+          if (workoutsForDate.length > 1) {
+            // 이미 선택된 운동이 있으면 다음 운동으로 순환
+            if (selectedWorkout) {
+              const currentIndex = workoutsForDate.findIndex(w => 
+                w.id === selectedWorkout.id || 
+                (w.mainExercise.name === selectedWorkout.mainExercise.name && 
+                 new Date(w.date).getTime() === new Date(selectedWorkout.date).getTime())
+              );
+              
+              if (currentIndex !== -1) {
+                const nextIndex = (currentIndex + 1) % workoutsForDate.length;
+                setSelectedWorkout(workoutsForDate[nextIndex]);
+                return;
+              }
+            }
+            
+            // 선택된 운동이 없거나 현재 날짜의 운동이 아니면 첫 번째 운동 선택
+            setSelectedWorkout(workoutsForDate[0]);
+          } else {
+            // 운동이 하나뿐이면 바로 선택
+            setSelectedWorkout(workoutsForDate[0]);
+          }
         }
       }
     }
@@ -785,12 +817,22 @@ const WorkoutGraph: React.FC = () => {
               <div className="animate-fadeIn">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-medium">선택된 운동 상세 정보</h4>
-                  <Button 
-                    size="sm" 
-                    className="bg-transparent text-gray-500 hover:text-gray-700 p-1"
-                    onClick={() => setSelectedWorkout(null)}
-                    icon={<X size={18} />}
-                  />
+                  <div className="flex items-center gap-2">
+                    {/* 날짜에 여러 운동이 있는 경우 이동 버튼 표시 */}
+                    {dateAllWorkoutsMap[formatShortDate(new Date(selectedWorkout.date))]?.length > 1 && (
+                      <div className="text-xs text-gray-500">
+                        {`${dateAllWorkoutsMap[formatShortDate(new Date(selectedWorkout.date))].findIndex(
+                          w => w.mainExercise.name === selectedWorkout.mainExercise.name
+                        ) + 1} / ${dateAllWorkoutsMap[formatShortDate(new Date(selectedWorkout.date))].length}`}
+                      </div>
+                    )}
+                    <Button 
+                      size="sm" 
+                      className="bg-transparent text-gray-500 hover:text-gray-700 p-1"
+                      onClick={() => setSelectedWorkout(null)}
+                      icon={<X size={18} />}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
@@ -840,7 +882,7 @@ const WorkoutGraph: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* 보조 운동 정보 표시 */}
+                  {/* 보조 운동 정보 표시 - 더 자세하게 표시 */}
                   {selectedWorkout.accessoryExercises && selectedWorkout.accessoryExercises.length > 0 && (
                     <div>
                       <h4 className="font-medium text-sm mt-3">보조 운동</h4>
@@ -850,13 +892,30 @@ const WorkoutGraph: React.FC = () => {
                             key={index}
                             className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
                           >
-                            <p className="font-medium">{exercise.name}</p>
+                            <div className="flex justify-between">
+                              <p className="font-medium">{exercise.name}</p>
+                              <Badge variant="secondary" size="sm">
+                                {exercise.sets?.length || 0}세트
+                              </Badge>
+                            </div>
+                            
                             {exercise.sets && exercise.sets.length > 0 ? (
-                              <div className="grid grid-cols-2 gap-2 mt-1">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                                 {exercise.sets.map((set, setIndex) => (
-                                  <div key={setIndex} className="text-xs flex justify-between">
-                                    <span>세트 {setIndex + 1}:</span>
-                                    <span>{set.weight}kg × {set.reps}회</span>
+                                  <div 
+                                    key={setIndex} 
+                                    className={`p-1.5 rounded ${
+                                      set.isSuccess === true 
+                                        ? 'bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500' 
+                                        : set.isSuccess === false
+                                          ? 'bg-red-50 dark:bg-red-900/20 border-l-2 border-red-500'
+                                          : 'bg-gray-100 dark:bg-gray-700 border-l-2 border-gray-400'
+                                    }`}
+                                  >
+                                    <div className="flex justify-between text-xs">
+                                      <span>세트 {setIndex + 1}</span>
+                                      <span>{set.weight}kg × {set.reps}회</span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>

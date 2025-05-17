@@ -389,7 +389,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           sessionsCollection,
           where('userId', '==', userProfile.uid),
           where('mainExercise.name', '==', mainExercise.name)
-          // orderBy와 다른 조건 제거
         );
         
         console.log('[보조운동 로드] Firestore 쿼리 실행');
@@ -399,9 +398,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         console.log(`[보조운동 로드] 쿼리 결과: ${querySnapshot.size}개 세션 발견`);
         
         if (!querySnapshot.empty) {
-          const exercises: any[] = [];
-          let sessionsWithAccessories = 0;
-          
           // 날짜 기준으로 직접 정렬 (Firestore orderBy 대신)
           const sortedDocs = querySnapshot.docs.sort((a, b) => {
             const dateA = a.data().date.toDate?.();
@@ -410,61 +406,44 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             return dateB.getTime() - dateA.getTime(); // 최신 날짜 우선
           });
           
-          // 최대 10개 세션만 처리
-          const recentDocs = sortedDocs.slice(0, 10);
+          // 가장 최근 세션만 사용
+          const latestSession = sortedDocs[0].data();
+          const latestSessionDate = latestSession.date?.toDate?.();
+          const dateStr = latestSessionDate ? latestSessionDate.toLocaleDateString() : '날짜 없음';
           
-          recentDocs.forEach(doc => {
-            const data = doc.data();
-            const docDate = data.date?.toDate?.();
-            const dateStr = docDate ? docDate.toLocaleDateString() : '날짜 없음';
+          console.log(`[보조운동 로드] 최근 세션 ID: ${sortedDocs[0].id}, 날짜: ${dateStr}`);
+          
+          if (latestSession.accessoryExercises && Array.isArray(latestSession.accessoryExercises) && latestSession.accessoryExercises.length > 0) {
+            console.log(`[보조운동 로드] 최근 세션의 보조 운동 개수: ${latestSession.accessoryExercises.length}개`);
             
-            console.log(`[보조운동 로드] 세션 ID: ${doc.id}, 날짜: ${dateStr}`);
+            // 최근 세션의 보조 운동만 사용
+            const latestExercises = latestSession.accessoryExercises;
             
-            if (data.accessoryExercises && Array.isArray(data.accessoryExercises) && data.accessoryExercises.length > 0) {
-              sessionsWithAccessories++;
-              console.log(`[보조운동 로드] 보조 운동 개수: ${data.accessoryExercises.length}개`);
-              
-              data.accessoryExercises.forEach((exercise: any) => {
-                // 유효한 보조 운동인지 확인
-                if (exercise && exercise.name) {
-                  console.log(`[보조운동 로드] 보조 운동 발견: ${exercise.name}, 세트 수: ${exercise.sets?.length || 0}`);
-                  
-                  // 중복 제거를 위해 이름 체크
-                  if (!exercises.some(ex => ex.name === exercise.name)) {
-                    exercises.push(exercise);
-                    console.log(`[보조운동 로드] 운동 추가됨: ${exercise.name}`);
-                  }
-                }
-              });
-            } else {
-              console.log(`[보조운동 로드] 보조 운동 없음`);
-            }
-          });
-          
-          // 요약 정보 출력
-          console.log(`[보조운동 로드] 총 ${recentDocs.length}개 세션 중 ${sessionsWithAccessories}개 세션에 보조 운동 존재`);
-          console.log(`[보조운동 로드] 고유한 보조 운동 ${exercises.length}개 발견`);
-          
-          if (exercises.length > 0) {
+            latestExercises.forEach((exercise: any) => {
+              if (exercise && exercise.name) {
+                console.log(`[보조운동 로드] 보조 운동 발견: ${exercise.name}, 세트 수: ${exercise.sets?.length || 0}`);
+              }
+            });
+            
             // 메인 운동 이름으로 이전 보조 운동 맵 업데이트
             setPreviousAccessoryExercises(prev => {
               const updated = {
                 ...prev,
-                [mainExercise.name]: exercises
+                [mainExercise.name]: latestExercises
               };
               console.log(`[보조운동 로드] 이전 보조 운동 맵 업데이트: ${Object.keys(updated).length}개 메인 운동에 대한 매핑 보유`);
               return updated;
             });
             
-            // 자동으로 이전에 했던 보조 운동 추가 - 조건 수정
+            // 자동으로 직전 보조 운동 추가
             if (accessoryExercises.length === 0) {
-              console.log(`[보조운동 로드] 보조 운동 자동 설정 (${exercises.length}개)`);
-              setAccessoryExercises(exercises);
+              console.log(`[보조운동 로드] 최근 보조 운동 자동 설정 (${latestExercises.length}개)`);
+              setAccessoryExercises(latestExercises);
             } else {
               console.log(`[보조운동 로드] 이미 보조 운동이 ${accessoryExercises.length}개 설정되어 있어 자동 로드 생략`);
             }
           } else {
-            console.log(`[보조운동 로드] 사용 가능한 보조 운동 없음`);
+            console.log(`[보조운동 로드] 최근 세션에 보조 운동 없음`);
           }
         } else {
           console.log(`[보조운동 로드] 쿼리 결과 없음 (${mainExercise.name} 운동 기록 없음)`);
