@@ -384,13 +384,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         const sessionsCollection = collection(db, 'sessions');
         
-        // 정확히 일치하는 메인 운동 이름으로만 쿼리
+        // 복합 인덱스 오류 해결: orderBy 제거하고 기본 쿼리만 사용
         const q = query(
           sessionsCollection,
           where('userId', '==', userProfile.uid),
-          where('mainExercise.name', '==', mainExercise.name),
-          orderBy('date', 'desc'),
-          limit(1) // 가장 최근 세션만 가져옴
+          where('mainExercise.name', '==', mainExercise.name)
+          // orderBy('date', 'desc')와 limit(1) 제거
         );
         
         console.log('[보조운동 로드] Firestore 쿼리 실행');
@@ -402,11 +401,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         // 보조 운동 목록 초기화 (이전 보조 운동 기록 제거)
         if (accessoryExercises.length === 0) {
           if (!querySnapshot.empty) {
-            const latestSession = querySnapshot.docs[0].data();
+            // 클라이언트에서 날짜 기준으로 정렬
+            const sortedDocs = querySnapshot.docs.sort((a, b) => {
+              const dateA = a.data().date.toDate();
+              const dateB = b.data().date.toDate();
+              return dateB.getTime() - dateA.getTime(); // 최신 날짜순 정렬
+            });
+            
+            // 가장 최근 세션 사용
+            const latestSession = sortedDocs[0].data();
             const latestSessionDate = latestSession.date?.toDate?.();
             const dateStr = latestSessionDate ? latestSessionDate.toLocaleDateString() : '날짜 없음';
             
-            console.log(`[보조운동 로드] 최근 세션 ID: ${querySnapshot.docs[0].id}, 날짜: ${dateStr}`);
+            console.log(`[보조운동 로드] 최근 세션 ID: ${sortedDocs[0].id}, 날짜: ${dateStr}`);
             
             if (latestSession.accessoryExercises && Array.isArray(latestSession.accessoryExercises) && latestSession.accessoryExercises.length > 0) {
               console.log(`[보조운동 로드] 최근 세션의 보조 운동 개수: ${latestSession.accessoryExercises.length}개`);
