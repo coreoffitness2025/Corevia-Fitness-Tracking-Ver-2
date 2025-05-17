@@ -106,6 +106,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 웜업 및 스트레칭 완료 상태 관리
   const [stretchingCompleted, setStretchingCompleted] = useState(false);
   const [warmupCompleted, setWarmupCompleted] = useState(false);
+  const [set1Completed, setSet1Completed] = useState(false);
+  
+  // 웜업 세트 상태 관리
+  const [warmupSet1Weight, setWarmupSet1Weight] = useState('');
+  const [warmupSet1Reps, setWarmupSet1Reps] = useState('');
+  
+  // 메인 운동 검색 관련 상태
+  const [mainExerciseName, setMainExerciseName] = useState('');
+  const [mainExerciseResults, setMainExerciseResults] = useState<any[]>([]);
+  const [showMainExerciseDropdown, setShowMainExerciseDropdown] = useState(false);
+  
+  // 메인 세트 관리
+  const [mainSets, setMainSets] = useState<Record<string, { 
+    weight: string | number; 
+    targetReps: string | number; 
+    actualReps: string | number; 
+    rpe: string | number;
+    isSuccess: boolean | null;
+  }>>({
+    '0': { weight: '', targetReps: '', actualReps: '', rpe: '', isSuccess: null }
+  });
 
   // 타이머 관련 상태
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
@@ -308,8 +329,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             
             if (updated[timerKey].timeLeft <= 0) {
               clearInterval(timerRefs.current[timerKey]);
-              toast.success('휴식 시간이 끝났습니다!', { position: 'top-center' });
               delete updated[timerKey];
+              
+              // 타이머 종료 시 알람 소리 재생
+              playAlarmSound();
+              
+              toast.success('휴식 시간이 끝났습니다!', { position: 'top-center' });
               return updated;
             }
           }
@@ -328,6 +353,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         ...prev,
         [timerKey]: { ...prev[timerKey], isPaused: true }
       }));
+    }
+  };
+
+  // 알람 소리 재생 함수
+  const playAlarmSound = () => {
+    try {
+      // 오디오 객체 생성
+      const audio = new Audio();
+      // 기본 알람 소리 URL 설정
+      audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3';
+      audio.volume = 0.8; // 볼륨 설정 (0.0 ~ 1.0)
+      
+      // 소리 재생
+      audio.play().catch(error => {
+        console.error('알람 소리 재생 실패:', error);
+      });
+    } catch (error) {
+      console.error('알람 소리 재생 중 오류 발생:', error);
     }
   };
 
@@ -929,6 +972,98 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
 
+  // 보조 운동 로드 (Firebase에서)
+  const loadAccessoryExercisesFromFirebase = async () => {
+    try {
+      if (!userProfile || !mainExercise?.name) return;
+      console.log(`보조 운동 로드 시도: ${mainExercise.name}`);
+  
+      // 쿼리 수정: 복합 인덱스가 필요한 복잡한 쿼리 대신 간단한 쿼리로 먼저 불러온 후 클라이언트에서 필터링
+      const accessoryExercisesQuery = query(
+        collection(db, 'accessoryExercises'),
+        where('userId', '==', userProfile.uid),
+        orderBy('date', 'desc'),
+        limit(20) // 최근 20개 데이터만 가져오기
+      );
+  
+      const querySnapshot = await getDocs(accessoryExercisesQuery);
+      
+      if (querySnapshot.empty) {
+        console.log('보조 운동 데이터가 없습니다.');
+        return;
+      }
+  
+      // 클라이언트에서 메인 운동 이름으로 필터링
+      const filteredDocs = querySnapshot.docs.filter(
+        doc => doc.data().mainExercise?.name === mainExercise.name
+      );
+      
+      if (filteredDocs.length === 0) {
+        console.log(`${mainExercise.name}과 관련된 보조 운동 데이터가 없습니다.`);
+        return;
+      }
+  
+      // 가장 최근 데이터 사용
+      const latestDoc = filteredDocs[0];
+      const latestData = latestDoc.data();
+  
+      console.log('보조 운동 로드 성공:', latestData.exercises);
+  
+      if (!latestData.exercises || latestData.exercises.length === 0) {
+        console.log('보조 운동 데이터가 비어 있습니다.');
+        return;
+      }
+  
+      // 보조 운동 데이터 설정
+      setAccessoryExercises(latestData.exercises);
+  
+      // 보조 운동 데이터 캐싱
+      setPreviousAccessoryExercises(prev => ({
+        ...prev,
+        [mainExercise.name]: latestData.exercises
+      }));
+  
+      console.log('보조 운동 맵에 추가됨:', mainExercise.name);
+    } catch (error) {
+      console.error('[보조운동 로드] 오류:', error);
+    }
+  };
+
+  // 메인 운동 검색 관련 함수
+  const handleMainExerciseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMainExerciseName(value);
+    
+    if (value.trim().length > 0) {
+      // 간단한 검색 로직
+      const results = Object.values(exercisePartOptions)
+        .filter(option => option.mainExerciseName.toLowerCase().includes(value.toLowerCase()));
+      setMainExerciseResults(results);
+      setShowMainExerciseDropdown(true);
+    } else {
+      setMainExerciseResults([]);
+      setShowMainExerciseDropdown(false);
+    }
+  };
+  
+  // 메인 운동 선택 처리
+  const handleMainExerciseSelect = (exercise: any) => {
+    setMainExerciseName(exercise.mainExerciseName);
+    setPart(exercise.value as ExercisePart);
+    setShowMainExerciseDropdown(false);
+  };
+  
+  // 메인 세트 변경 처리
+  const handleMainSetChange = (setId: string, field: string, value: string | number) => {
+    setMainSets(prevSets => ({
+      ...prevSets,
+      [setId]: {
+        ...prevSets[setId],
+        [field]: value
+      }
+    }));
+  };
+
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -968,35 +1103,64 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             <div className="p-3 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-medium">스트레칭/웜업</h3>
-                <Button
-                  size="sm"
-                  variant={warmupCompleted ? 'success' : 'primary'}
-                  onClick={() => {
-                    setWarmupCompleted(!warmupCompleted);
-                    setStretchingCompleted(!warmupCompleted);
-                  }}
-                  icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
-                  className={warmupCompleted ? "bg-green-500 text-white hover:bg-green-600" : "bg-blue-500 text-white hover:bg-blue-600"}
-                >
-                  {warmupCompleted ? '완료' : '완료'}
-                </Button>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                운동 전 충분한 스트레칭과 웜업을 수행해주세요.
-              </p>
-              
-              {showWarmupTips && (
-                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                  <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
-                    {part} 운동 웜업 추천
-                  </h4>
-                  <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300">
-                    {warmupExercises[part].map((tip, i) => (
-                      <li key={i}>{tip}</li>
-                    ))}
-                  </ul>
+                <div className="flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant={warmupCompleted ? 'success' : 'primary'}
+                    onClick={() => {
+                      setWarmupCompleted(!warmupCompleted);
+                      setStretchingCompleted(!warmupCompleted);
+                    }}
+                    icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
+                    className={warmupCompleted ? "bg-green-500 text-white hover:bg-green-600" : "bg-blue-500 text-white hover:bg-blue-600"}
+                  >
+                    {warmupCompleted ? '완료됨' : '완료'}
+                  </Button>
                 </div>
-              )}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                가벼운 스트레칭 또는 유산소 운동으로 웜업을 진행하세요. (5-10분 권장)
+              </p>
+            </div>
+            
+            {/* 세트 1 */}
+            <div className="p-3 border rounded-lg mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium">세트 1</h3>
+                <div className="flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant={set1Completed ? 'success' : 'primary'}
+                    onClick={() => {
+                      setSet1Completed(!set1Completed);
+                    }}
+                    icon={set1Completed ? <CheckCircle size={16} /> : undefined}
+                    className={set1Completed ? "bg-green-500 text-white hover:bg-green-600" : "bg-blue-500 text-white hover:bg-blue-600"}
+                  >
+                    {set1Completed ? '완료됨' : '완료'}
+                  </Button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 md:gap-4">
+                <div className="flex items-center">
+                  <label className="mr-2 text-sm">무게 (kg):</label>
+                  <input
+                    type="number"
+                    className="w-20 p-1 border rounded"
+                    value={warmupSet1Weight}
+                    onChange={(e) => setWarmupSet1Weight(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center">
+                  <label className="mr-2 text-sm">횟수:</label>
+                  <input
+                    type="number"
+                    className="w-20 p-1 border rounded"
+                    value={warmupSet1Reps}
+                    onChange={(e) => setWarmupSet1Reps(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           </CardSection>
         </Card>
@@ -1006,169 +1170,130 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <CardSection>
             <CardTitle>메인 운동</CardTitle>
             
-            {/* 운동 선택 및 정보 */}
             <div className="mb-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">운동 선택</label>
-                  <select
-                    value={selectedMainExercise}
-                    onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-                    className="w-full p-2 border rounded-md bg-white dark:bg-gray-700"
-                  >
-                    {mainExerciseOptions[part].map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  
-                  {/* 디버깅 버튼 추가 - 개발 모드에서만 표시 */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          console.log('-------------------- 디버깅 정보 --------------------');
-                          console.log('현재 메인 운동:', mainExercise.name);
-                          console.log('이전 보조 운동 맵:', previousAccessoryExercises);
-                          console.log('현재 보조 운동:', accessoryExercises);
-                          
-                          // 디버깅을 위해 강제로 이전 보조 운동 불러오기 시도
-                          if (previousAccessoryExercises[mainExercise.name]) {
-                            console.log('이 메인 운동에 대한 보조 운동 데이터가 있습니다.');
-                            console.log('데이터:', previousAccessoryExercises[mainExercise.name]);
-                            
-                            // 보조 운동이 없을 때만 설정 (기존 코드와 동일)
-                            if (accessoryExercises.length === 0) {
-                              console.log('보조 운동을 강제로 설정합니다.');
-                              setAccessoryExercises(previousAccessoryExercises[mainExercise.name]);
-                              alert('보조 운동이 자동으로 설정되었습니다.');
-                            } else {
-                              alert('이미 보조 운동이 설정되어 있습니다. 먼저 모든 보조 운동을 삭제해주세요.');
-                            }
-                          } else {
-                            alert('이 메인 운동에 대한 이전 보조 운동 데이터가 없습니다.');
-                          }
-                        }}
-                        className="text-xs bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-1 px-2 rounded-md"
+              <label className="block mb-2">운동 선택</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={mainExerciseName}
+                  onChange={handleMainExerciseChange}
+                  onClick={() => setShowMainExerciseDropdown(true)}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="운동을 검색하세요..."
+                />
+                {showMainExerciseDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {mainExerciseResults.map((exercise) => (
+                      <div
+                        key={exercise.id}
+                        className="p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => handleMainExerciseSelect(exercise)}
                       >
-                        보조 운동 데이터 디버깅
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
-                {/* 최근 운동 정보 */}
-                {latestWorkoutInfo.exists && (
-                  <div className="flex-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      최근 {latestWorkoutInfo.exerciseName} 기록
-                    </h3>
-                    <div className="text-sm">
-                      <p className="mb-1">
-                        <span className="font-medium">{latestWorkoutInfo.date?.toLocaleDateString()}</span>
-                        <Badge
-                          variant={latestWorkoutInfo.allSuccess ? 'success' : 'danger'}
-                          size="sm"
-                          className="ml-2"
-                        >
-                          {latestWorkoutInfo.allSuccess ? '성공' : '일부 실패'}
-                        </Badge>
-                      </p>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {latestWorkoutInfo.weight}kg x {latestWorkoutInfo.sets}세트 x {latestWorkoutInfo.reps}회
-                      </p>
-                    </div>
+                        {exercise.name}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
             
-            {/* 세트 입력 영역 */}
-            <div className="space-y-3">
-              {mainExercise.sets.map((set, index) => (
-                <div key={index} className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="font-medium">세트 {index + 1}</div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="xs"
-                        variant={
-                          set.isSuccess === null
-                            ? 'secondary'
-                            : set.isSuccess
-                            ? 'success'
-                            : 'danger'
-                        }
-                        onClick={() => handleTrainingComplete(index, true)}
-                        className={`h-8 ${
-                          set.isSuccess === null 
-                          ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                          : ''
-                        }`}
-                        icon={
-                          set.isSuccess === null
-                            ? null
-                            : set.isSuccess
-                            ? <CheckCircle size={16} />
-                            : <XCircle size={16} />
-                        }
-                      >
-                        {set.isSuccess === null
-                          ? '완료'
-                          : set.isSuccess
-                          ? '성공'
-                          : '실패'}
-                      </Button>
-                      
-                      <Button
-                        size="xs"
-                        variant="secondary"
-                        onClick={() => toggleTimer(-1, index)}
-                        className="h-8"
-                        icon={<Clock size={16} />}
-                      >
-                        {activeTimers[`main_${index}`]
-                          ? formatTime(activeTimers[`main_${index}`].timeLeft)
-                          : '휴식'}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        무게 (kg)
-                      </label>
-                      <input
-                        type="number"
-                        value={set.weight || ''}
-                        onChange={(e) => {
-                          const newSets = [...mainExercise.sets];
-                          newSets[index].weight = Number(e.target.value) || 0;
-                          setMainExercise({ ...mainExercise, sets: newSets });
-                        }}
-                        className="w-full p-2 border rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        횟수
-                      </label>
-                      <input
-                        type="number"
-                        value={set.reps || ''}
-                        onChange={(e) => {
-                          handleRepsChange(Number(e.target.value) || 0, index, true);
-                        }}
-                        className="w-full p-2 border rounded-md"
-                      />
-                    </div>
+            {Object.keys(mainSets).map((setId, index) => (
+              <div key={setId} className="mb-4 p-3 border rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="font-medium">세트 {index + 1}</div>
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      size="xs"
+                      variant={
+                        mainSets[setId].isSuccess === true
+                          ? 'success'
+                          : mainSets[setId].isSuccess === false
+                          ? 'danger'
+                          : 'primary'
+                      }
+                      onClick={() => handleTrainingComplete(index, true)}
+                      className={`h-8 ${
+                        mainSets[setId].isSuccess === null
+                        ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                        : ''
+                      }`}
+                      icon={
+                        mainSets[setId].isSuccess === true
+                          ? <CheckCircle size={16} className="text-green-500" />
+                          : mainSets[setId].isSuccess === false
+                          ? <XCircle size={16} className="text-red-500" />
+                          : undefined
+                      }
+                    >
+                      완료
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => toggleTimer(index, index)}
+                      className="h-8"
+                    >
+                      <Clock size={16} className="mr-1" />
+                      {activeTimers[`main_${index}`]
+                        ? formatTime(activeTimers[`main_${index}`].timeLeft)
+                        : '1:00'}
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div>
+                    <label className="block text-xs mb-1">무게 (kg)</label>
+                    <input
+                      type="number"
+                      value={mainSets[setId].weight}
+                      onChange={(e) =>
+                        handleMainSetChange(setId, 'weight', e.target.value)
+                      }
+                      className="w-full p-1 border rounded"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs mb-1">목표 횟수</label>
+                    <input
+                      type="number"
+                      value={mainSets[setId].targetReps}
+                      onChange={(e) =>
+                        handleMainSetChange(setId, 'targetReps', e.target.value)
+                      }
+                      className="w-full p-1 border rounded"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs mb-1">실제 횟수</label>
+                    <input
+                      type="number"
+                      value={mainSets[setId].actualReps}
+                      onChange={(e) =>
+                        handleMainSetChange(setId, 'actualReps', e.target.value)
+                      }
+                      className="w-full p-1 border rounded"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs mb-1">RPE (0-10)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={mainSets[setId].rpe}
+                      onChange={(e) =>
+                        handleMainSetChange(setId, 'rpe', e.target.value)
+                      }
+                      className="w-full p-1 border rounded"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
           </CardSection>
         </Card>
         
