@@ -384,11 +384,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         const sessionsCollection = collection(db, 'sessions');
         
-        // 쿼리 완전 단순화: 사용자 ID와 메인 운동 이름만으로 필터링
+        // 정확히 일치하는 메인 운동 이름으로만 쿼리
         const q = query(
           sessionsCollection,
           where('userId', '==', userProfile.uid),
-          where('mainExercise.name', '==', mainExercise.name)
+          where('mainExercise.name', '==', mainExercise.name),
+          orderBy('date', 'desc'),
+          limit(1) // 가장 최근 세션만 가져옴
         );
         
         console.log('[보조운동 로드] Firestore 쿼리 실행');
@@ -397,61 +399,56 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         console.log(`[보조운동 로드] 쿼리 결과: ${querySnapshot.size}개 세션 발견`);
         
-        if (!querySnapshot.empty) {
-          // 날짜 기준으로 직접 정렬 (Firestore orderBy 대신)
-          const sortedDocs = querySnapshot.docs.sort((a, b) => {
-            const dateA = a.data().date.toDate?.();
-            const dateB = b.data().date.toDate?.();
-            if (!dateA || !dateB) return 0;
-            return dateB.getTime() - dateA.getTime(); // 최신 날짜 우선
-          });
-          
-          // 가장 최근 세션만 사용
-          const latestSession = sortedDocs[0].data();
-          const latestSessionDate = latestSession.date?.toDate?.();
-          const dateStr = latestSessionDate ? latestSessionDate.toLocaleDateString() : '날짜 없음';
-          
-          console.log(`[보조운동 로드] 최근 세션 ID: ${sortedDocs[0].id}, 날짜: ${dateStr}`);
-          
-          if (latestSession.accessoryExercises && Array.isArray(latestSession.accessoryExercises) && latestSession.accessoryExercises.length > 0) {
-            console.log(`[보조운동 로드] 최근 세션의 보조 운동 개수: ${latestSession.accessoryExercises.length}개`);
+        // 보조 운동 목록 초기화 (이전 보조 운동 기록 제거)
+        if (accessoryExercises.length === 0) {
+          if (!querySnapshot.empty) {
+            const latestSession = querySnapshot.docs[0].data();
+            const latestSessionDate = latestSession.date?.toDate?.();
+            const dateStr = latestSessionDate ? latestSessionDate.toLocaleDateString() : '날짜 없음';
             
-            // 최근 세션의 보조 운동만 사용
-            const latestExercises = latestSession.accessoryExercises;
+            console.log(`[보조운동 로드] 최근 세션 ID: ${querySnapshot.docs[0].id}, 날짜: ${dateStr}`);
             
-            latestExercises.forEach((exercise: any) => {
-              if (exercise && exercise.name) {
-                console.log(`[보조운동 로드] 보조 운동 발견: ${exercise.name}, 세트 수: ${exercise.sets?.length || 0}`);
-              }
-            });
-            
-            // 메인 운동 이름으로 이전 보조 운동 맵 업데이트
-            setPreviousAccessoryExercises(prev => {
-              const updated = {
-                ...prev,
-                [mainExercise.name]: latestExercises
-              };
-              console.log(`[보조운동 로드] 이전 보조 운동 맵 업데이트: ${Object.keys(updated).length}개 메인 운동에 대한 매핑 보유`);
-              return updated;
-            });
-            
-            // 자동으로 직전 보조 운동 추가
-            if (accessoryExercises.length === 0) {
+            if (latestSession.accessoryExercises && Array.isArray(latestSession.accessoryExercises) && latestSession.accessoryExercises.length > 0) {
+              console.log(`[보조운동 로드] 최근 세션의 보조 운동 개수: ${latestSession.accessoryExercises.length}개`);
+              
+              // 최근 세션의 보조 운동만 사용
+              const latestExercises = latestSession.accessoryExercises;
+              
+              latestExercises.forEach((exercise: any) => {
+                if (exercise && exercise.name) {
+                  console.log(`[보조운동 로드] 보조 운동 발견: ${exercise.name}, 세트 수: ${exercise.sets?.length || 0}`);
+                }
+              });
+              
+              // 메인 운동 이름으로 이전 보조 운동 맵 업데이트
+              setPreviousAccessoryExercises(prev => {
+                const updated = {
+                  ...prev,
+                  [mainExercise.name]: latestExercises
+                };
+                console.log(`[보조운동 로드] 이전 보조 운동 맵 업데이트: ${Object.keys(updated).length}개 메인 운동에 대한 매핑 보유`);
+                return updated;
+              });
+              
+              // 자동으로 직전 보조 운동 추가
               console.log(`[보조운동 로드] 최근 보조 운동 자동 설정 (${latestExercises.length}개)`);
               setAccessoryExercises(latestExercises);
             } else {
-              console.log(`[보조운동 로드] 이미 보조 운동이 ${accessoryExercises.length}개 설정되어 있어 자동 로드 생략`);
+              console.log(`[보조운동 로드] 최근 세션에 보조 운동 없음`);
             }
           } else {
-            console.log(`[보조운동 로드] 최근 세션에 보조 운동 없음`);
+            console.log(`[보조운동 로드] 쿼리 결과 없음 (${mainExercise.name} 운동 기록 없음)`);
           }
         } else {
-          console.log(`[보조운동 로드] 쿼리 결과 없음 (${mainExercise.name} 운동 기록 없음)`);
+          console.log(`[보조운동 로드] 이미 보조 운동이 ${accessoryExercises.length}개 설정되어 있어 자동 로드 생략`);
         }
       } catch (error) {
         console.error(`[보조운동 로드] 오류:`, error);
       }
     };
+    
+    // 새로운 메인 운동으로 변경될 때 기존 보조 운동 초기화
+    setAccessoryExercises([]);
     
     fetchPreviousAccessoryExercises();
     
@@ -459,7 +456,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     return () => {
       isMounted.current = false;
     };
-  }, [userProfile, mainExercise.name, accessoryExercises.length]);
+  }, [userProfile, mainExercise.name]);
 
   // 훈련 완료 처리 함수 수정
   const handleTrainingComplete = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
@@ -502,28 +499,36 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       
       setMainExercise(prev => ({ ...prev, sets: newSets }));
     } else if (accessoryIndex !== undefined) {
-      const newExercises = [...accessoryExercises];
+      // 보조 운동에 대한 처리
+      console.log(`보조 운동 훈련 완료 처리: 세트 ${setIndex}, 보조운동 인덱스 ${accessoryIndex}`);
       
-      // 이미 상태가 있으면 초기 상태로 되돌리기 (토글 기능)
-      if (newExercises[accessoryIndex].sets[setIndex].isSuccess !== null) {
-        newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
+      // 보조 운동 배열의 범위 확인
+      if (accessoryIndex >= 0 && accessoryIndex < accessoryExercises.length) {
+        const newExercises = [...accessoryExercises];
+        
+        // 이미 상태가 있으면 초기 상태로 되돌리기 (토글 기능)
+        if (newExercises[accessoryIndex].sets[setIndex].isSuccess !== null) {
+          newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
+        } else {
+          // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
+          const { repsCount: targetReps } = getSetConfiguration(
+            selectedSetConfiguration, 
+            customSets, 
+            customReps
+          );
+          
+          // 현재 입력된 횟수가 목표 횟수 이상이면 성공, 그렇지 않으면 실패
+          const currentReps = newExercises[accessoryIndex].sets[setIndex].reps;
+          const isSuccess = currentReps >= targetReps;
+          newExercises[accessoryIndex].sets[setIndex].isSuccess = isSuccess;
+          
+          console.log(`보조운동 ${accessoryIndex+1}, 세트 ${setIndex+1} 완료: ${currentReps}/${targetReps}회, 결과: ${isSuccess ? '성공' : '실패'}`);
+        }
+        
+        setAccessoryExercises(newExercises);
       } else {
-        // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
-        const { repsCount: targetReps } = getSetConfiguration(
-          selectedSetConfiguration, 
-          customSets, 
-          customReps
-        );
-        
-        // 현재 입력된 횟수가 목표 횟수 이상이면 성공, 그렇지 않으면 실패
-        const currentReps = newExercises[accessoryIndex].sets[setIndex].reps;
-        const isSuccess = currentReps >= targetReps;
-        newExercises[accessoryIndex].sets[setIndex].isSuccess = isSuccess;
-        
-        console.log(`보조운동 ${accessoryIndex+1}, 세트 ${setIndex+1} 완료: ${currentReps}/${targetReps}회, 결과: ${isSuccess ? '성공' : '실패'}`);
+        console.error(`보조 운동 인덱스 범위 오류: ${accessoryIndex}, 전체 개수: ${accessoryExercises.length}`);
       }
-      
-      setAccessoryExercises(newExercises);
     }
   };
   
@@ -1200,6 +1205,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     exercise={exercise}
                     onChange={handleAccessoryExerciseChange}
                     onRemove={removeAccessoryExercise}
+                    onTrainingComplete={handleTrainingComplete}
                     previousExercises={previousAccessoryExercises[mainExercise.name] || []}
                   />
                 ))}

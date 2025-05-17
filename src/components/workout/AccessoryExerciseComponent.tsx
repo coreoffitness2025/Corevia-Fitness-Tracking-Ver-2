@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import { SetConfiguration } from '../../types';
-import { Plus, Trash, X, Clock } from 'lucide-react';
+import { Plus, Trash, X, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 interface AccessoryExerciseProps {
   index: number;
@@ -14,6 +14,7 @@ interface AccessoryExerciseProps {
   };
   onChange: (index: number, updatedExercise: any) => void;
   onRemove: (index: number) => void;
+  onTrainingComplete?: (setIndex: number, isMainExercise: boolean, accessoryIndex: number) => void;
   previousExercises?: Array<{
     name: string;
     weight: number;
@@ -27,6 +28,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   exercise,
   onChange,
   onRemove,
+  onTrainingComplete,
   previousExercises = []
 }) => {
   // 세트 구성 옵션
@@ -274,6 +276,38 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
               <div className="flex justify-between items-center mb-2">
                 <div className="font-medium">세트 {setIndex + 1}</div>
                 <div className="flex items-center gap-2">
+                  {onTrainingComplete && (
+                    <Button
+                      size="xs"
+                      variant={
+                        set.isSuccess === null
+                          ? 'secondary'
+                          : set.isSuccess
+                          ? 'success'
+                          : 'danger'
+                      }
+                      onClick={() => onTrainingComplete(setIndex, false, index)}
+                      className={`h-8 ${
+                        set.isSuccess === null 
+                        ? 'bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500' 
+                        : ''
+                      }`}
+                      icon={
+                        set.isSuccess === null
+                          ? null
+                          : set.isSuccess
+                          ? <CheckCircle size={16} />
+                          : <XCircle size={16} />
+                      }
+                    >
+                      {set.isSuccess === null
+                        ? '훈련 완료'
+                        : set.isSuccess
+                        ? '성공'
+                        : '실패'}
+                    </Button>
+                  )}
+                  
                   <Button
                     size="xs"
                     variant="secondary"

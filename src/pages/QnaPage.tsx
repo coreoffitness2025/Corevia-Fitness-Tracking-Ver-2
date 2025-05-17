@@ -5,7 +5,7 @@ import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator
 import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import Layout from '../components/common/Layout';
 import { exercises } from '../data/exerciseData'; // 추가: exerciseData.ts에서 운동 데이터 가져오기
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
@@ -69,6 +69,7 @@ const partIcons: Record<ExercisePart, string> = {
 
 const QnaPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('exercise');
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -77,6 +78,9 @@ const QnaPage: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [handbookSearchTerm, setHandbookSearchTerm] = useState<string>('');
   const [handbookSearchResults, setHandbookSearchResults] = useState<any[]>([]);
+  const [showCalculator, setShowCalculator] = useState<boolean>(true);
+  const [showNutritionScout, setShowNutritionScout] = useState<boolean>(false);
+  const [showAllExercises, setShowAllExercises] = useState<boolean>(false);
   
   // FoodForm 또는 FoodLog에서 전달받은 초기 탭 설정 적용
   useEffect(() => {
@@ -262,335 +266,304 @@ const QnaPage: React.FC = () => {
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               }`}
             >
-              {tab === 'exercise' && '운동 정보'}
+              {tab === 'exercise' && '운동 검색'}
               {tab === 'nutrition' && '영양 정보'}
               {tab === 'handbook' && '핸드북'}
             </button>
           ))}
         </div>
 
+        {/* 새로운 버튼들 추가 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <button
+            onClick={() => setActiveTab('exercise')}
+            className="p-4 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            운동 검색
+          </button>
+          
+          <button
+            onClick={() => {setActiveTab('nutrition'); setShowCalculator(true); setShowNutritionScout(false);}}
+            className="p-4 bg-[#00C853] text-white rounded-lg shadow hover:bg-[#00B04A] transition-colors flex flex-col items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            목표 칼로리 계산
+          </button>
+          
+          <button
+            onClick={() => {setActiveTab('nutrition'); setShowCalculator(false); setShowNutritionScout(true);}}
+            className="p-4 bg-[#FF9800] text-white rounded-lg shadow hover:bg-[#F57C00] transition-colors flex flex-col items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            음식 영양성분 확인
+          </button>
+          
+          <button
+            onClick={() => navigate('/1rm-calculator')}
+            className="p-4 bg-[#F44336] text-white rounded-lg shadow hover:bg-[#E53935] transition-colors flex flex-col items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            1RM 계산기
+          </button>
+        </div>
+
         {/* 탭 콘텐츠 */}
         {activeTab === 'exercise' && (
           <div className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 왼쪽: 운동 정보 */}
-              <div>
-                <div className="mb-6">
-                  <input
-                    type="text"
-                    placeholder="운동 이름 검색..."
-                    className="w-full p-2 border rounded-lg"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                  />
-                  {showDropdown && (
-                    <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg">
-                      {searchResults.map(exercise => (
-                        <div
-                          key={exercise.id}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                          onClick={() => handleSearchSelect(exercise)}
-                        >
-                          <div className="font-medium">{exercise.name}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {getPartLabel(exercise.part as ExercisePart)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                  {Object.entries(exercisesByPart).map(([part, _]) => (
-                    <button
-                      key={part}
-                      className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
-                        selectedPart === part
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
-                      onClick={() => handlePartSelect(part as ExercisePart)}
-                    >
-                      <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
-                      <span>{getPartLabel(part as ExercisePart)}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {exercisesByPart[selectedPart].map(exercise => (
+            <div className="mb-6">
+              <input
+                type="text"
+                placeholder="운동 이름 검색..."
+                className="w-full p-2 border rounded-lg"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+              {showDropdown && (
+                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg">
+                  {searchResults.map(exercise => (
                     <div
                       key={exercise.id}
-                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => handleExerciseSelect(exercise)}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={() => handleSearchSelect(exercise)}
                     >
-                      <div className="p-4">
-                        <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                            {getPartLabel(exercise.part as ExercisePart)}
-                          </span>
-                          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
-                            {exercise.level === 'beginner' ? '초급' : 
-                             exercise.level === 'intermediate' ? '중급' : '고급'}
-                          </span>
-                        </div>
+                      <div className="font-medium">{exercise.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {getPartLabel(exercise.part as ExercisePart)}
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* 오른쪽: 1RM 계산기와 무게 추천 */}
-              <div className="space-y-6">
-                <OneRepMaxCalculator />
-                <WorkoutWeightGuide />
-              </div>
+              )}
             </div>
 
-            {/* 운동 상세 모달 */}
-            {selectedExercise && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-90vh overflow-y-auto">
-                  <div className="p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold">{selectedExercise.name}</h2>
-                      <button
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        onClick={() => setSelectedExercise(null)}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <span className="inline-block bg-blue-100 text-blue-800 text-sm font-semibold px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 mr-2">
-                        {getPartLabel(selectedExercise.part as ExercisePart)}
-                      </span>
-                      <span className="inline-block bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
-                        {selectedExercise.level === 'beginner' ? '초급' : 
-                         selectedExercise.level === 'intermediate' ? '중급' : '고급'}
-                      </span>
-                    </div>
-                    
-                    <p className="text-gray-700 dark:text-gray-300 mb-4">
-                      {selectedExercise.description}
-                    </p>
-                    
-                    <div className="mb-4">
-                      <h3 className="font-semibold mb-2">수행 방법:</h3>
-                      <ol className="list-decimal pl-5 space-y-1">
-                        {selectedExercise.instructions.map((instruction, index) => (
-                          <li key={index} className="text-gray-700 dark:text-gray-300">{instruction}</li>
-                        ))}
-                      </ol>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <h3 className="font-semibold mb-2">사용 장비:</h3>
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {Object.entries(exercisesByPart).map(([part, _]) => (
+                <button
+                  key={part}
+                  className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
+                    selectedPart === part
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                  onClick={() => handlePartSelect(part as ExercisePart)}
+                >
+                  <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
+                  <span>{getPartLabel(part as ExercisePart)}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* 표시할 운동 개수 제한 및 전체보기 버튼 추가 */}
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {exercisesByPart[selectedPart].slice(0, showAllExercises ? undefined : 4).map(exercise => (
+                  <div
+                    key={exercise.id}
+                    className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleExerciseSelect(exercise)}
+                  >
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
                       <div className="flex flex-wrap gap-2">
-                        {selectedExercise.equipment.map((item, index) => (
-                          <span 
-                            key={index}
-                            className="bg-gray-100 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300"
-                          >
-                            {item}
-                          </span>
-                        ))}
+                        <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                          {getPartLabel(exercise.part as ExercisePart)}
+                        </span>
+                        <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
+                          {exercise.level === 'beginner' ? '초급' : 
+                           exercise.level === 'intermediate' ? '중급' : '고급'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* 전체보기 버튼 */}
+              {exercisesByPart[selectedPart].length > 4 && (
+                <div className="text-center mt-4 mb-6">
+                  <button 
+                    onClick={() => setShowAllExercises(!showAllExercises)}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
+                  >
+                    {showAllExercises ? '간략히 보기' : '전체 보기'}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                      {showAllExercises ? (
+                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                      ) : (
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      )}
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'nutrition' && (
+          <div className="grid grid-cols-1 gap-6">
+            {/* 목표 칼로리 계산기 표시 */}
+            {showCalculator && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">목표 칼로리 계산기</h2>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                  <div className="space-y-4">
+                    <div className="mb-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">성별</label>
+                      <div className="flex gap-4">
+                        <div className="flex items-center">
+                          <input 
+                            type="radio" 
+                            id="male" 
+                            name="gender" 
+                            checked={calculatorInputs.gender === 'male'}
+                            onChange={() => handleInputChange('gender', 'male')}
+                            className="mr-2" 
+                          />
+                          <label htmlFor="male" className="text-gray-700 dark:text-gray-300">남성</label>
+                        </div>
+                        <div className="flex items-center">
+                          <input 
+                            type="radio" 
+                            id="female" 
+                            name="gender" 
+                            checked={calculatorInputs.gender === 'female'}
+                            onChange={() => handleInputChange('gender', 'female')}
+                            className="mr-2" 
+                          />
+                          <label htmlFor="female" className="text-gray-700 dark:text-gray-300">여성</label>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="mb-4">
-                      <h3 className="font-semibold mb-2">주요 근육:</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedExercise.muscles.map((muscle, index) => (
-                          <span 
-                            key={index}
-                            className="bg-purple-100 text-purple-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300"
-                          >
-                            {muscle}
-                          </span>
-                        ))}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-2">나이</label>
+                        <input 
+                          type="number" 
+                          value={calculatorInputs.age || ''}
+                          onChange={(e) => handleInputChange('age', parseInt(e.target.value) || 0)}
+                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                          placeholder="25"
+                        />
                       </div>
-                    </div>
-                    
-                    {selectedExercise.videoUrl && (
-                      <div className="mt-6">
-                        <a
-                          href={selectedExercise.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-2">체중 (kg)</label>
+                        <input 
+                          type="number" 
+                          value={calculatorInputs.weight || ''}
+                          onChange={(e) => handleInputChange('weight', parseInt(e.target.value) || 0)}
+                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                          placeholder="70"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-2">신장 (cm)</label>
+                        <input 
+                          type="number" 
+                          value={calculatorInputs.height || ''}
+                          onChange={(e) => handleInputChange('height', parseInt(e.target.value) || 0)}
+                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                          placeholder="175"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 mb-2">활동 수준</label>
+                        <select 
+                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          value={calculatorInputs.activityLevel}
+                          onChange={(e) => handleInputChange('activityLevel', parseFloat(e.target.value))}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                          </svg>
-                          동영상 보기
-                        </a>
+                          <option value="1.2">거의 운동 안함</option>
+                          <option value="1.375">가벼운 운동 (주 1-3회)</option>
+                          <option value="1.55">보통 수준 (주 3-5회)</option>
+                          <option value="1.725">활발한 운동 (주 6-7회)</option>
+                          <option value="1.9">매우 활발함 (하루 2회)</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <label className="block text-gray-700 dark:text-gray-300 mb-2">목표</label>
+                      <select 
+                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        value={calculatorInputs.goal}
+                        onChange={(e) => handleInputChange('goal', e.target.value as Goal)}
+                      >
+                        <option value="lose">체중 감량</option>
+                        <option value="maintain">체중 유지</option>
+                        <option value="gain">체중 증가</option>
+                      </select>
+                    </div>
+                    
+                    <button 
+                      onClick={calculateCalories}
+                      className="w-full bg-[#4285F4] text-white py-2 px-4 rounded-md hover:bg-[#3b78db] mt-4"
+                    >
+                      계산하기
+                    </button>
+                    
+                    {calculatorResults && (
+                      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                        <h3 className="font-medium text-gray-800 dark:text-white mb-2">계산 결과</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">기초 대사량 (BMR)</p>
+                            <p className="font-medium">{calculatorResults.bmr.toLocaleString()} kcal</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">활동 대사량 (TDEE)</p>
+                            <p className="font-medium">{calculatorResults.tdee.toLocaleString()} kcal</p>
+                          </div>
+                          <div className="col-span-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">하루 권장 칼로리</p>
+                            <p className="font-medium text-[#4285F4] dark:text-blue-400 text-lg">
+                              {calculatorResults.targetCalories.toLocaleString()} kcal
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 grid grid-cols-3 gap-3">
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
+                            <p className="text-xs text-gray-500">단백질</p>
+                            <p className="font-medium">{calculatorResults.protein}g</p>
+                            <p className="text-xs text-gray-400">({Math.round(calculatorResults.protein / 3)}g/끼니)</p>
+                          </div>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
+                            <p className="text-xs text-gray-500">탄수화물</p>
+                            <p className="font-medium">{calculatorResults.carbs}g</p>
+                            <p className="text-xs text-gray-400">({Math.round(calculatorResults.carbs / 3)}g/끼니)</p>
+                          </div>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
+                            <p className="text-xs text-gray-500">지방</p>
+                            <p className="font-medium">{calculatorResults.fat}g</p>
+                            <p className="text-xs text-gray-400">({Math.round(calculatorResults.fat / 3)}g/끼니)</p>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {activeTab === 'nutrition' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 왼쪽에 목표 칼로리 계산기 */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">목표 칼로리 계산기</h2>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <div className="space-y-4">
-                  <div className="mb-4">
-                    <label className="block text-gray-700 dark:text-gray-300 mb-2">성별</label>
-                    <div className="flex gap-4">
-                      <div className="flex items-center">
-                        <input 
-                          type="radio" 
-                          id="male" 
-                          name="gender" 
-                          checked={calculatorInputs.gender === 'male'}
-                          onChange={() => handleInputChange('gender', 'male')}
-                          className="mr-2" 
-                        />
-                        <label htmlFor="male" className="text-gray-700 dark:text-gray-300">남성</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input 
-                          type="radio" 
-                          id="female" 
-                          name="gender" 
-                          checked={calculatorInputs.gender === 'female'}
-                          onChange={() => handleInputChange('gender', 'female')}
-                          className="mr-2" 
-                        />
-                        <label htmlFor="female" className="text-gray-700 dark:text-gray-300">여성</label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">나이</label>
-                      <input 
-                        type="number" 
-                        value={calculatorInputs.age || ''}
-                        onChange={(e) => handleInputChange('age', parseInt(e.target.value) || 0)}
-                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                        placeholder="25"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">체중 (kg)</label>
-                      <input 
-                        type="number" 
-                        value={calculatorInputs.weight || ''}
-                        onChange={(e) => handleInputChange('weight', parseInt(e.target.value) || 0)}
-                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                        placeholder="70"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">신장 (cm)</label>
-                      <input 
-                        type="number" 
-                        value={calculatorInputs.height || ''}
-                        onChange={(e) => handleInputChange('height', parseInt(e.target.value) || 0)}
-                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                        placeholder="175"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">활동 수준</label>
-                      <select 
-                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        value={calculatorInputs.activityLevel}
-                        onChange={(e) => handleInputChange('activityLevel', parseFloat(e.target.value))}
-                      >
-                        <option value="1.2">거의 운동 안함</option>
-                        <option value="1.375">가벼운 운동 (주 1-3회)</option>
-                        <option value="1.55">보통 수준 (주 3-5회)</option>
-                        <option value="1.725">활발한 운동 (주 6-7회)</option>
-                        <option value="1.9">매우 활발함 (하루 2회)</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-gray-700 dark:text-gray-300 mb-2">목표</label>
-                    <select 
-                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={calculatorInputs.goal}
-                      onChange={(e) => handleInputChange('goal', e.target.value as Goal)}
-                    >
-                      <option value="lose">체중 감량</option>
-                      <option value="maintain">체중 유지</option>
-                      <option value="gain">체중 증가</option>
-                    </select>
-                  </div>
-                  
-                  <button 
-                    onClick={calculateCalories}
-                    className="w-full bg-[#4285F4] text-white py-2 px-4 rounded-md hover:bg-[#3b78db] mt-4"
-                  >
-                    계산하기
-                  </button>
-                  
-                  {calculatorResults && (
-                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                      <h3 className="font-medium text-gray-800 dark:text-white mb-2">계산 결과</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">기초 대사량 (BMR)</p>
-                          <p className="font-medium">{calculatorResults.bmr.toLocaleString()} kcal</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">활동 대사량 (TDEE)</p>
-                          <p className="font-medium">{calculatorResults.tdee.toLocaleString()} kcal</p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="text-sm text-gray-600 dark:text-gray-400">하루 권장 칼로리</p>
-                          <p className="font-medium text-[#4285F4] dark:text-blue-400 text-lg">
-                            {calculatorResults.targetCalories.toLocaleString()} kcal
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 grid grid-cols-3 gap-3">
-                        <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
-                          <p className="text-xs text-gray-500">단백질</p>
-                          <p className="font-medium">{calculatorResults.protein}g</p>
-                          <p className="text-xs text-gray-400">({Math.round(calculatorResults.protein / 3)}g/끼니)</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
-                          <p className="text-xs text-gray-500">탄수화물</p>
-                          <p className="font-medium">{calculatorResults.carbs}g</p>
-                          <p className="text-xs text-gray-400">({Math.round(calculatorResults.carbs / 3)}g/끼니)</p>
-                        </div>
-                        <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
-                          <p className="text-xs text-gray-500">지방</p>
-                          <p className="font-medium">{calculatorResults.fat}g</p>
-                          <p className="text-xs text-gray-400">({Math.round(calculatorResults.fat / 3)}g/끼니)</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
             
-            {/* 오른쪽에 음식 영양성분 확인하기 */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">음식 영양성분 확인하기</h2>
-              <NutritionScout />
-            </div>
+            {/* 음식 영양성분 확인 표시 */}
+            {showNutritionScout && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">음식 영양성분 확인하기</h2>
+                <NutritionScout />
+              </div>
+            )}
           </div>
         )}
 

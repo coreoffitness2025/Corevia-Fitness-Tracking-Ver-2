@@ -78,11 +78,16 @@ const groupFoodsByDate = (foods: Food[]) => {
 
 // LoadingScreen 컴포넌트 추가
 const LoadingScreen = () => (
-  <div className="flex flex-col justify-center items-center h-96 animate-pulse">
+  <div className="flex flex-col justify-center items-center h-96">
     <div className="mb-6">
       <div className="w-16 h-16 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin"></div>
     </div>
-    <p className="text-lg text-gray-600 dark:text-gray-300 animate-bounce">데이터를 불러오는 중입니다...</p>
+    <div className="flex flex-col items-center">
+      <p className="text-lg text-gray-600 dark:text-gray-300">데이터를 불러오는 중입니다...</p>
+      <div className="mt-3 w-48 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="h-full bg-blue-500 animate-pulse rounded-full"></div>
+      </div>
+    </div>
   </div>
 );
 
@@ -135,7 +140,6 @@ const HomePage = () => {
           collection(db, 'foods'),
           where('userId', '==', userProfile.uid),
           where('date', '>=', lastWeekStart),
-          where('date', '<=', todayEnd),
           orderBy('date', 'desc'),
           limit(30)  // 충분한 수의 식단 기록 가져오기
         );

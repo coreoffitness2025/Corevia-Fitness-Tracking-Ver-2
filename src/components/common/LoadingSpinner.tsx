@@ -34,9 +34,14 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       </div>
       
       {showText && (
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 animate-pulse">
-          {text}
-        </p>
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-300 animate-pulse">
+            {text}
+          </p>
+          <div className="mt-2 w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 animate-pulsate-slow rounded-full"></div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -49,9 +54,12 @@ export const LoadingScreen: React.FC<{message?: string}> = ({ message = '데이�
       <LoadingSpinner size="lg" />
       
       <div className="mt-6 text-center">
-        <p className="text-lg text-gray-600 dark:text-gray-300 animate-pulse">
+        <p className="text-lg text-gray-600 dark:text-gray-300">
           {message}
         </p>
+        <div className="mt-3 w-48 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 animate-pulse rounded-full"></div>
+        </div>
       </div>
     </div>
   );

@@ -101,6 +101,7 @@ export default {
         'slideLeft': 'slideLeft 0.3s ease-out',
         'slideRight': 'slideRight 0.3s ease-out',
         'scale': 'scale 0.3s ease-out',
+        'pulsate-slow': 'pulsate 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -126,6 +127,11 @@ export default {
         scale: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        pulsate: {
+          '0%': { transform: 'translateX(-100%)' },
+          '50%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(-100%)' },
         }
       },
       borderRadius: {

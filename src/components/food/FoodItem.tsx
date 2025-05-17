@@ -68,7 +68,7 @@ const FoodItem: React.FC<FoodItemProps> = ({ food, isGridItem = false }) => {
               <img
                 src={imageSource}
                 alt={food.name || '식사 사진'}
-                className="max-w-full max-h-[90vh] object-contain"
+                className="max-w-full max-h-[80vh] object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
               <button 
@@ -81,10 +81,32 @@ const FoodItem: React.FC<FoodItemProps> = ({ food, isGridItem = false }) => {
               </button>
               
               {/* 정보 오버레이 */}
-              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-3">
-                <p className="text-sm font-medium">{food.name || '식사 기록'}</p>
-                <p className="text-xs">{food.date.toLocaleString('ko-KR')}</p>
-                {food.notes && <p className="text-xs mt-1 italic">"{food.notes}"</p>}
+              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-4">
+                <p className="text-lg font-medium">{food.name || '식사 기록'}</p>
+                <p className="text-base">{food.date.toLocaleString('ko-KR')}</p>
+                {food.notes && <p className="text-base mt-2 italic">"{food.notes}"</p>}
+                
+                {/* 영양 정보가 있으면 표시 */}
+                {(food.calories > 0 || food.protein > 0 || food.carbs > 0 || food.fat > 0) && (
+                  <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                    <div className="bg-blue-900/30 p-2 rounded">
+                      <p className="text-xs text-blue-200">칼로리</p>
+                      <p className="text-lg font-bold">{food.calories}kcal</p>
+                    </div>
+                    <div className="bg-green-900/30 p-2 rounded">
+                      <p className="text-xs text-green-200">단백질</p>
+                      <p className="text-lg font-bold">{food.protein}g</p>
+                    </div>
+                    <div className="bg-yellow-900/30 p-2 rounded">
+                      <p className="text-xs text-yellow-200">탄수화물</p>
+                      <p className="text-lg font-bold">{food.carbs}g</p>
+                    </div>
+                    <div className="bg-red-900/30 p-2 rounded">
+                      <p className="text-xs text-red-200">지방</p>
+                      <p className="text-lg font-bold">{food.fat}g</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -168,6 +190,35 @@ const FoodItem: React.FC<FoodItemProps> = ({ food, isGridItem = false }) => {
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
+            
+            {/* 정보 오버레이 */}
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-4">
+              <p className="text-lg font-medium">{food.name || '식사 기록'}</p>
+              <p className="text-base">{food.date.toLocaleString('ko-KR')}</p>
+              {food.notes && <p className="text-base mt-2 italic">"{food.notes}"</p>}
+              
+              {/* 영양 정보가 있으면 표시 */}
+              {(food.calories > 0 || food.protein > 0 || food.carbs > 0 || food.fat > 0) && (
+                <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                  <div className="bg-blue-900/30 p-2 rounded">
+                    <p className="text-xs text-blue-200">칼로리</p>
+                    <p className="text-lg font-bold">{food.calories}kcal</p>
+                  </div>
+                  <div className="bg-green-900/30 p-2 rounded">
+                    <p className="text-xs text-green-200">단백질</p>
+                    <p className="text-lg font-bold">{food.protein}g</p>
+                  </div>
+                  <div className="bg-yellow-900/30 p-2 rounded">
+                    <p className="text-xs text-yellow-200">탄수화물</p>
+                    <p className="text-lg font-bold">{food.carbs}g</p>
+                  </div>
+                  <div className="bg-red-900/30 p-2 rounded">
+                    <p className="text-xs text-red-200">지방</p>
+                    <p className="text-lg font-bold">{food.fat}g</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -763,8 +763,8 @@ const WorkoutGraph: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* 그래프와 운동 기록을 함께 표시하는 섹션 */}
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* 그래프와 필터 */}
       <Card className="animate-slideUp">
         <h3 className="text-lg font-semibold mb-4">운동 성과 그래프</h3>
         
@@ -790,204 +790,193 @@ const WorkoutGraph: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* 왼쪽: 그래프 */}
-          <div className="flex-1">
-            {filteredData.length > 0 ? (
-              <div className="h-120">
-                <Line options={chartOptions} data={chartData} />
-              </div>
-            ) : (
-              <div className="h-64 flex items-center justify-center">
-                <p className="text-gray-500 dark:text-gray-400">
-                  {`${partOptions.find(p => p.value === selectedPart)?.label || ''} 부위의 운동 데이터가 없습니다.`}
-                </p>
-              </div>
-            )}
-          </div>
-          
-          {/* 오른쪽: 선택된 운동 상세 정보 */}
-          <div className="lg:w-2/5 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700 pt-4 lg:pt-0 lg:pl-4">
-            {selectedWorkout ? (
-              <div className="animate-fadeIn">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium">선택된 운동 상세 정보</h4>
-                  <div className="flex items-center gap-2">
-                    {/* 운동 페이지네이션 컨트롤 */}
-                    {workoutsForSelectedDate.length > 1 && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => navigateWorkout('prev')}
-                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M15 18l-6-6 6-6" />
-                          </svg>
-                        </button>
-                        
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {selectedWorkoutIndex + 1} / {workoutsForSelectedDate.length}
-                        </span>
-                        
-                        <button
-                          onClick={() => navigateWorkout('next')}
-                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 18l6-6-6-6" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-                    
-                    <Button 
-                      size="sm" 
-                      className="bg-transparent text-gray-500 hover:text-gray-700 p-1"
-                      onClick={() => setSelectedWorkout(null)}
-                      icon={<X size={18} />}
-                    />
-                  </div>
-                </div>
-                
-                {/* 운동 선택 인터페이스 (같은 날짜의 여러 운동이 있는 경우) */}
-                {workoutsForSelectedDate.length > 1 && (
-                  <div className="mb-4">
-                    <div className="text-sm font-medium mb-2">운동 선택:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {workoutsForSelectedDate.map((workout, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => selectWorkoutByIndex(idx)}
-                          className={`
-                            px-3 py-1 text-xs rounded-full 
-                            ${selectedWorkoutIndex === idx 
-                              ? 'bg-blue-500 text-white' 
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}
-                          `}
-                        >
-                          {idx + 1}: {workout.mainExercise?.name || '운동'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="primary">
-                      {typeof selectedWorkout.date === 'string' 
-                        ? new Date(selectedWorkout.date).toLocaleDateString() 
-                        : selectedWorkout.date.toLocaleDateString()}
-                    </Badge>
-                    <Badge variant="secondary">{getPartLabel(selectedWorkout.part)}</Badge>
-                    <Badge variant={selectedWorkout.isAllSuccess ? 'success' : 'danger'}>
-                      {selectedWorkout.isAllSuccess ? '성공' : '일부 실패'}
-                    </Badge>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">{selectedWorkout.mainExercise?.name}</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                      {selectedWorkout.mainExercise?.sets?.map((set, index) => (
-                        <div 
-                          key={index}
-                          className={`p-2 rounded-lg text-sm ${
-                            set.isSuccess 
-                              ? 'bg-green-50 dark:bg-green-900/30 border-l-2 border-green-500' 
-                              : 'bg-red-50 dark:bg-red-900/30 border-l-2 border-red-500'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">세트 {index + 1}</span>
-                            <Badge 
-                              variant={set.isSuccess ? 'success' : 'danger'} 
-                              size="sm"
-                            >
-                              {set.isSuccess ? '성공' : '실패'}
-                            </Badge>
-                          </div>
-                          <div className="mt-1 grid grid-cols-2 gap-1">
-                            <div>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">무게</span>
-                              <p className="font-bold">{set.weight} kg</p>
-                            </div>
-                            <div>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">횟수</span>
-                              <p className="font-bold">{set.reps} 회</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* 보조 운동 정보 표시 (선택된 상세 정보에서만 표시) */}
-                  {selectedWorkout.accessoryExercises && selectedWorkout.accessoryExercises.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm mt-3">보조 운동</h4>
-                      <div className="grid grid-cols-1 gap-2 mt-2">
-                        {selectedWorkout.accessoryExercises.map((exercise, index) => (
-                          <div 
-                            key={index}
-                            className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
-                          >
-                            <div className="flex justify-between">
-                              <p className="font-medium">{exercise.name}</p>
-                              <Badge variant="secondary" size="sm">
-                                {exercise.sets?.length || 0}세트
-                              </Badge>
-                            </div>
-                            
-                            {exercise.sets && exercise.sets.length > 0 ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                                {exercise.sets.map((set, setIndex) => (
-                                  <div 
-                                    key={setIndex} 
-                                    className={`p-1.5 rounded ${
-                                      set.isSuccess === true 
-                                        ? 'bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500' 
-                                        : set.isSuccess === false
-                                          ? 'bg-red-50 dark:bg-red-900/20 border-l-2 border-red-500'
-                                          : 'bg-gray-100 dark:bg-gray-700 border-l-2 border-gray-400'
-                                    }`}
-                                  >
-                                    <div className="flex justify-between text-xs">
-                                      <span>세트 {setIndex + 1}</span>
-                                      <span>{set.weight}kg × {set.reps}회</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="mt-1 text-xs flex justify-between">
-                                {exercise.weight && <span>무게: {exercise.weight}kg</span>}
-                                {exercise.reps && <span>반복: {exercise.reps}회</span>}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {selectedWorkout.notes && (
-                    <div>
-                      <h4 className="font-medium text-sm">메모</h4>
-                      <p className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg mt-1 text-sm">{selectedWorkout.notes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center text-center p-6">
-                <div className="text-gray-500 dark:text-gray-400">
-                  <p className="mb-2">그래프의 데이터 포인트를 클릭하면</p>
-                  <p>해당 일자의 운동 상세 기록이 여기에 표시됩니다.</p>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* 그래프 */}
+        <div>
+          {filteredData.length > 0 ? (
+            <div className="h-120">
+              <Line options={chartOptions} data={chartData} />
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center">
+              <p className="text-gray-500 dark:text-gray-400">
+                {`${partOptions.find(p => p.value === selectedPart)?.label || ''} 부위의 운동 데이터가 없습니다.`}
+              </p>
+            </div>
+          )}
         </div>
       </Card>
+
+      {/* 선택된 운동 상세 정보 - 그래프 아래에 배치 */}
+      {selectedWorkout && (
+        <Card className="animate-fadeIn">
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="font-medium">선택된 운동 상세 정보</h4>
+            <div className="flex items-center gap-2">
+              {/* 운동 페이지네이션 컨트롤 */}
+              {workoutsForSelectedDate.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigateWorkout('prev')}
+                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {selectedWorkoutIndex + 1} / {workoutsForSelectedDate.length}
+                  </span>
+                  
+                  <button
+                    onClick={() => navigateWorkout('next')}
+                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              
+              <Button 
+                size="sm" 
+                className="bg-transparent text-gray-500 hover:text-gray-700 p-1"
+                onClick={() => setSelectedWorkout(null)}
+                icon={<X size={18} />}
+              />
+            </div>
+          </div>
+          
+          {/* 운동 선택 인터페이스 (같은 날짜의 여러 운동이 있는 경우) */}
+          {workoutsForSelectedDate.length > 1 && (
+            <div className="mb-4">
+              <div className="text-sm font-medium mb-2">운동 선택:</div>
+              <div className="flex flex-wrap gap-2">
+                {workoutsForSelectedDate.map((workout, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => selectWorkoutByIndex(idx)}
+                    className={`
+                      px-3 py-1 text-xs rounded-full 
+                      ${selectedWorkoutIndex === idx 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}
+                    `}
+                  >
+                    {idx + 1}: {workout.mainExercise?.name || '운동'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="primary">
+                {typeof selectedWorkout.date === 'string' 
+                  ? new Date(selectedWorkout.date).toLocaleDateString() 
+                  : selectedWorkout.date.toLocaleDateString()}
+              </Badge>
+              <Badge variant="secondary">{getPartLabel(selectedWorkout.part)}</Badge>
+              <Badge variant={selectedWorkout.isAllSuccess ? 'success' : 'danger'}>
+                {selectedWorkout.isAllSuccess ? '성공' : '일부 실패'}
+              </Badge>
+            </div>
+            <div>
+              <h4 className="font-medium">{selectedWorkout.mainExercise?.name}</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+                {selectedWorkout.mainExercise?.sets?.map((set, index) => (
+                  <div 
+                    key={index}
+                    className={`p-2 rounded-lg text-sm ${
+                      set.isSuccess 
+                        ? 'bg-green-50 dark:bg-green-900/30 border-l-2 border-green-500' 
+                        : 'bg-red-50 dark:bg-red-900/30 border-l-2 border-red-500'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">세트 {index + 1}</span>
+                      <Badge 
+                        variant={set.isSuccess ? 'success' : 'danger'} 
+                        size="sm"
+                      >
+                        {set.isSuccess ? '성공' : '실패'}
+                      </Badge>
+                    </div>
+                    <div className="mt-1 grid grid-cols-2 gap-1">
+                      <div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">무게</span>
+                        <p className="font-bold">{set.weight} kg</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">횟수</span>
+                        <p className="font-bold">{set.reps} 회</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* 보조 운동 정보 표시 (선택된 상세 정보에서만 표시) */}
+            {selectedWorkout.accessoryExercises && selectedWorkout.accessoryExercises.length > 0 && (
+              <div>
+                <h4 className="font-medium text-sm mt-3">보조 운동</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  {selectedWorkout.accessoryExercises.map((exercise, index) => (
+                    <div 
+                      key={index}
+                      className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
+                    >
+                      <div className="flex justify-between">
+                        <p className="font-medium">{exercise.name}</p>
+                        <Badge variant="secondary" size="sm">
+                          {exercise.sets?.length || 0}세트
+                        </Badge>
+                      </div>
+                      
+                      {exercise.sets && exercise.sets.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                          {exercise.sets.map((set, setIndex) => (
+                            <div 
+                              key={setIndex} 
+                              className={`p-1.5 rounded ${
+                                set.isSuccess === true 
+                                  ? 'bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500' 
+                                  : set.isSuccess === false
+                                    ? 'bg-red-50 dark:bg-red-900/20 border-l-2 border-red-500'
+                                    : 'bg-gray-100 dark:bg-gray-700 border-l-2 border-gray-400'
+                              }`}
+                            >
+                              <div className="flex justify-between text-xs">
+                                <span>세트 {setIndex + 1}</span>
+                                <span>{set.weight}kg × {set.reps}회</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-1 text-xs flex justify-between">
+                          {exercise.weight && <span>무게: {exercise.weight}kg</span>}
+                          {exercise.reps && <span>반복: {exercise.reps}회</span>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {selectedWorkout.notes && (
+              <div>
+                <h4 className="font-medium text-sm">메모</h4>
+                <p className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg mt-1 text-sm">{selectedWorkout.notes}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

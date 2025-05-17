@@ -291,15 +291,15 @@ const FoodLog: React.FC = () => {
         <div>
           <h4 className="text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">식사 목록</h4>
           <div className="space-y-3">
-            {foodsForDate.map(food => (
+            {foodsForDate.map((food, index) => (
               <div key={food.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3">
                 <div className="flex justify-between">
                   <div>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {food.date.toLocaleTimeString('ko-KR', { 
+                      식사 기록 {index + 1} ({food.date.toLocaleTimeString('ko-KR', { 
                         hour: '2-digit', 
                         minute: '2-digit' 
-                      })}
+                      })})
                     </span>
                     <h5 className="font-medium">{food.name || '식사 기록'}</h5>
                   </div>
