@@ -248,7 +248,7 @@ const FoodLog: React.FC = () => {
         <div className="flex items-start">
           <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
           <div>
-            <h3 className="text-lg font-semibold mb-2">1끼당 권장 섭취량</h3>
+            <h3 className="text-lg font-semibold mb-2">1끼당 권장 섭취량(3끼 기준)</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
                 <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
@@ -267,11 +267,6 @@ const FoodLog: React.FC = () => {
             </div>
             
             <div className="mt-3">
-              <div className="flex flex-wrap gap-2">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  <span className="font-medium">식사별 목표:</span> 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>
-                </p>
-              </div>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
               </p>

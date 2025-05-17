@@ -1122,7 +1122,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             : 'danger'
                         }
                         onClick={() => handleTrainingComplete(index, true)}
-                        className={`h-8 ${set.isSuccess === null ? 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600' : ''}`}
+                        className={`h-8 ${
+                          set.isSuccess === null 
+                          ? 'bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500' 
+                          : ''
+                        }`}
                         icon={
                           set.isSuccess === null
                             ? null

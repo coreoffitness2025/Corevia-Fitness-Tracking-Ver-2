@@ -168,6 +168,52 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     input.click();
   };
 
+  // 이미지를 저장하는 부분을 수정합니다.
+  // 이미지 크기 조정 함수 추가
+  const resizeImage = (dataUrl: string, maxWidth: number = 800, maxHeight: number = 600): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          
+          // 최대 크기 조정
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.floor(width * ratio);
+            height = Math.floor(height * ratio);
+          }
+          
+          // 캔버스에 그리기
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('캔버스 컨텍스트를 생성할 수 없습니다.'));
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // JPEG 형식으로 출력 (품질 0.8)
+          const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(resizedDataUrl);
+        };
+        
+        img.onerror = () => {
+          reject(new Error('이미지 로드 중 오류가 발생했습니다.'));
+        };
+        
+        img.src = dataUrl;
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -185,11 +231,27 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       const mealDateTime = new Date(`${mealDate}T12:00:00`); // 기본 시간 정오로 설정
       
       // 로컬 저장소에 이미지 저장 (웹 브라우저의 IndexedDB나 localStorage를 사용할 수 있음)
-      // 실제 구현에서는 IndexedDB를 사용하는 것이 좋습니다
       if (localImageFile && imagePreview) {
-        // 여기서는 로컬 저장소 API를 직접 구현하지 않고, 미리보기 이미지 URL을 사용합니다
-        localStorage.setItem(imageUrl, imagePreview);
-        console.log('로컬 이미지 저장됨:', imageUrl);
+        try {
+          // 이미지 크기 조정 (최대 800x600, 품질 80%)
+          const resizedImage = await resizeImage(imagePreview, 800, 600);
+          console.log('이미지 크기 조정 완료. 원본 크기:', imagePreview.length, '조정 후:', resizedImage.length);
+          
+          // 크기 조정된 이미지 저장
+          localStorage.setItem(`food_image_${imageUrl}`, resizedImage);
+          console.log('로컬 이미지 저장됨:', imageUrl);
+        } catch (storageError) {
+          console.error('이미지 저장 오류:', storageError);
+          
+          // 스토리지 쿼터 초과 오류 처리
+          if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
+            toast.error('저장 공간이 부족합니다. 일부 오래된 이미지를 삭제하거나 더 작은 이미지를 사용해주세요.');
+            return;
+          } else {
+            toast.error('이미지 저장 중 오류가 발생했습니다.');
+            return;
+          }
+        }
       }
       
       const foodData: Omit<Food, 'id'> = {
@@ -239,7 +301,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
         <div className="flex items-start">
           <Info className="text-[#4285F4] mr-2 mt-1 flex-shrink-0" size={20} />
           <div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">1끼당 권장 섭취량</h3>
+            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">1끼당 권장 섭취량(3끼 기준)</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
                 <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
@@ -258,11 +320,6 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             </div>
             
             <div className="mt-3">
-              <div className="flex flex-wrap gap-2">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  <span className="font-medium">식사별 목표:</span> 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>
-                </p>
-              </div>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
               </p>

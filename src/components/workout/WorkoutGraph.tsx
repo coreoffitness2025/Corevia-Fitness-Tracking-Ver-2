@@ -503,17 +503,29 @@ const WorkoutGraph: React.FC = () => {
       
       // 최소/최대 무게에 따라 Y축 범위 계산
       if (minWeight !== Infinity && maxWeight !== -Infinity) {
-        // 최소값은 항상 데이터의 최소값보다 10kg 작게 설정
-        let yMin = Math.max(0, minWeight - 10);
-        let yMax = maxWeight + 10;
+        // 부위별로 다른 Y축 범위 설정
+        let yMin = 0;
+        let yMax = 0;
         
-        // 어깨 운동일 경우, 범위를 더 넓게 설정 (문제 해결)
-        if (selectedPart === 'shoulder') {
-          yMin = Math.max(0, minWeight - 15);
-          yMax = maxWeight + 15;
+        // 부위별 적절한 Y축 범위 설정
+        switch (selectedPart) {
+          case 'shoulder':
+            // 어깨 운동은 무게가 상대적으로 낮으므로 더 좁은 범위 설정
+            yMin = Math.max(0, minWeight - 5);
+            yMax = maxWeight + 10;
+            break;
+          case 'leg':
+            // 하체 운동은 무게가 높으므로 더 넓은 범위 설정
+            yMin = Math.max(0, minWeight - 20);
+            yMax = maxWeight + 20;
+            break;
+          default:
+            // 기본 범위 설정
+            yMin = Math.max(0, minWeight - 10);
+            yMax = maxWeight + 10;
         }
         
-        console.log(`무게 범위: ${minWeight}kg ~ ${maxWeight}kg, Y축 설정: ${yMin}kg ~ ${yMax}kg`);
+        console.log(`부위: ${selectedPart}, 무게 범위: ${minWeight}kg ~ ${maxWeight}kg, Y축 설정: ${yMin}kg ~ ${yMax}kg`);
         
         // 차트 옵션 업데이트
         chartOptions.scales = {
@@ -607,7 +619,7 @@ const WorkoutGraph: React.FC = () => {
     try {
       let filtered = [...data];
       
-      // 부위 필터링
+      // 부위 필터링 - 선택된 부위만 정확히 포함하도록 수정
       filtered = filtered.filter(item => item.part === selectedPart);
       
       // 운동 종류 필터링
@@ -618,6 +630,11 @@ const WorkoutGraph: React.FC = () => {
           )
         );
       }
+      
+      // 이 부분을 추가하여 데이터 검증 (디버깅용)
+      console.log(`필터링 결과 (${selectedPart}): `, filtered.length, '개의 데이터');
+      console.log(`필터링 전 전체 데이터:`, data.length, '개');
+      console.log(`필터링된 운동 이름들:`, filtered.map(w => w.mainExercise?.name).join(', '));
       
       // 세트 구성 필터링 (실제 세트 구성에 따라 필터링)
       if (selectedSetConfig !== 'all') {
@@ -657,8 +674,16 @@ const WorkoutGraph: React.FC = () => {
       
       setFilteredData(uniqueWorkouts);
       
-      // 차트 데이터 변환
-      prepareChartData(filtered); // 여기서는 필터링된 모든 데이터 사용
+      // 차트 데이터 변환 - 부위별 데이터만 사용하도록 수정
+      if (filtered.length > 0) {
+        prepareChartData(filtered);
+      } else {
+        // 데이터가 없을 경우 빈 차트 데이터 설정
+        setChartData({
+          labels: [],
+          datasets: []
+        });
+      }
     } catch (error) {
       console.error('필터 적용 오류:', error);
     }
