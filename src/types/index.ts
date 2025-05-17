@@ -101,7 +101,7 @@ export interface UserProfile {
   updatedAt: string;
 }
 
-export type SetConfiguration = '10x5' | '15x5' | '6x3' | 'custom';
+export type SetConfiguration = '10x5' | '15x5' | '6x3' | '5x5';
 
 export interface UserSettings {
   darkMode: boolean;

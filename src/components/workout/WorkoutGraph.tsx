@@ -102,8 +102,7 @@ const setConfigOptions = [
   { value: '5x5', label: '5회 x 5세트' },
   { value: '10x5', label: '10회 x 5세트' },
   { value: '15x5', label: '15회 x 5세트' },
-  { value: '6x3', label: '6회 x 3세트' },
-  { value: 'custom', label: '커스텀' }
+  { value: '6x3', label: '6회 x 3세트' }
 ];
 
 const WorkoutGraph: React.FC = () => {
@@ -293,7 +292,7 @@ const WorkoutGraph: React.FC = () => {
         
         // 세트 구성 확인
         const sets = workout.mainExercise.sets;
-        let setConfig = 'custom';
+        let setConfig = '';
         
         if (sets.length === 5 && sets.every(set => set.reps === 5)) {
           setConfig = '5x5';
@@ -303,6 +302,9 @@ const WorkoutGraph: React.FC = () => {
           setConfig = '10x5';
         } else if (sets.length === 5 && sets.every(set => set.reps === 15)) {
           setConfig = '15x5';
+        } else {
+          // 표준 세트 구성이 아닌 경우 건너뛰기
+          return;
         }
         
         // 운동 별 데이터 초기화 (존재하지 않을 경우)
@@ -311,8 +313,7 @@ const WorkoutGraph: React.FC = () => {
             '5x5': {},
             '6x3': {},
             '10x5': {},
-            '15x5': {},
-            'custom': {}
+            '15x5': {}
           };
         }
         
@@ -346,8 +347,7 @@ const WorkoutGraph: React.FC = () => {
         '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, // 보라색
         '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, // 파란색
         '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, // 빨간색
-        '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' }, // 초록색
-        'custom': { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.5)' } // 회색
+        '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } // 초록색
       };
       
       // 운동 종류별 포인트 모양 정의
@@ -537,17 +537,9 @@ const WorkoutGraph: React.FC = () => {
             return sets.length === 5 && sets.every(set => set.reps === 15);
           } else if (selectedSetConfig === '6x3') {
             return sets.length === 3 && sets.every(set => set.reps === 6);
-          } else if (selectedSetConfig === 'custom') {
-            // 5x5, 10x5, 15x5, 6x3 패턴이 아닌 경우 커스텀으로 간주
-            return !(
-              (sets.length === 5 && sets.every(set => set.reps === 5)) ||
-              (sets.length === 5 && sets.every(set => set.reps === 10)) ||
-              (sets.length === 5 && sets.every(set => set.reps === 15)) ||
-              (sets.length === 3 && sets.every(set => set.reps === 6))
-            );
           }
           
-          return true;
+          return false;
         });
       }
       

@@ -41,12 +41,13 @@ export const getSetConfiguration = (configType: string, customSets: number = 5, 
     '6x3': { setsCount: 3, repsCount: 6 }      // 6회 3세트
   };
   
-  // 요청된 설정이 없으면 기본값(10x5) 반환 전에 로그로 경고
+  // 요청된 설정이 없으면 기본값(10x5) 반환
   if (!configMap[configType]) {
     console.warn(`지원되지 않는 세트 설정: ${configType}, 기본값 10x5로 대체합니다.`);
+    return configMap['10x5']; // 기본값으로 10x5 반환
   }
   
-  return configMap[configType] || configMap['10x5']; // 기본값으로 10x5 반환
+  return configMap[configType];
 };
 
 /**
