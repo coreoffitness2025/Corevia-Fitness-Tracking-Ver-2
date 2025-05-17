@@ -247,7 +247,24 @@ const WorkoutGraph: React.FC = () => {
         ticks: {
           stepSize: 5 // 5kg 단위로 눈금 표시
         },
-        // 동적으로 최소/최대값을 설정하는 부분은 데이터 처리 시 설정
+        // 최소 무게에서 10kg 정도 밑에서 시작하도록 설정
+        min: (context) => {
+          const minValue = context.chart.data.datasets.reduce((min, dataset) => {
+            const dataValues = dataset.data.filter((val): val is number => typeof val === 'number' && val !== null);
+            return dataValues.length > 0 ? Math.min(min, Math.min(...dataValues)) : min;
+          }, Infinity);
+          
+          return minValue !== Infinity ? Math.max(0, minValue - 10) : 0;
+        },
+        // 최대 무게에서 10kg 정도 위에서 끝나도록 설정
+        max: (context) => {
+          const maxValue = context.chart.data.datasets.reduce((max, dataset) => {
+            const dataValues = dataset.data.filter((val): val is number => typeof val === 'number' && val !== null);
+            return dataValues.length > 0 ? Math.max(max, Math.max(...dataValues)) : max;
+          }, -Infinity);
+          
+          return maxValue !== -Infinity ? maxValue + 10 : 100;
+        }
       },
       x: {
         title: {
@@ -292,33 +309,9 @@ const WorkoutGraph: React.FC = () => {
         // 클릭한 날짜에 해당하는 모든 운동 찾기
         const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
         
-        // 클릭한 데이터셋에 해당하는 운동 특정하기
-        let selectedWorkouts: Workout[] = [];
-        
-        if (datasetIndex >= 0 && chart.data.datasets[datasetIndex]) {
-          const datasetLabel = chart.data.datasets[datasetIndex].label;
-          
-          if (datasetLabel) {
-            const labelMatch = datasetLabel.match(/^(.+) \((.+)\)$/);
-            if (labelMatch) {
-              const exerciseName = labelMatch[1];
-              
-              // 클릭한 운동명과 일치하는 운동만 필터링
-              selectedWorkouts = workoutsForDate.filter(
-                workout => workout.mainExercise.name === exerciseName
-              );
-            }
-          }
-        }
-        
-        // 클릭한 데이터셋에 해당하는 운동이 없으면 해당 날짜의 모든 운동 표시
-        if (selectedWorkouts.length === 0) {
-          selectedWorkouts = workoutsForDate;
-        }
-        
-        // 선택된 운동들 저장
-        if (selectedWorkouts.length > 0) {
-          setSelectedWorkout(selectedWorkouts[0]);
+        // 모든 운동 데이터를 표시하도록 변경
+        if (workoutsForDate.length > 0) {
+          setSelectedWorkout(workoutsForDate[0]);
         }
       }
     }
@@ -371,7 +364,7 @@ const WorkoutGraph: React.FC = () => {
         dateAllWorkoutsMap[dateStr].push(workout);
         
         // 기본 날짜별 맵에도 추가 (호환성 유지)
-        if (!newDateWorkoutMap[dateStr] || new Date(workout.date) > new Date(newDateWorkoutMap[dateStr].date)) {
+        if (!newDateWorkoutMap[dateStr]) {
           newDateWorkoutMap[dateStr] = workout;
         }
         
@@ -424,18 +417,12 @@ const WorkoutGraph: React.FC = () => {
         if (maxWorkoutWeight > 0) {
           exerciseConfigData[exerciseName][setConfig][dateStr] = maxWorkoutWeight;
         }
-        
-        // 디버깅: 벤치프레스 6x3 데이터 확인
-        if (exerciseName === '벤치 프레스' && setConfig === '6x3') {
-          console.log(`벤치프레스 6x3 데이터 발견: ${dateStr}, ${maxWorkoutWeight}kg`);
-        }
       });
       
       // 날짜별 운동 데이터 맵 업데이트
       setDateWorkoutMap(newDateWorkoutMap);
       
-      // 날짜별 모든 운동 기록 맵 업데이트 (새로운 상태로 저장)
-      // 새 상태 변수를 컴포넌트에 추가해야 함
+      // 날짜별 모든 운동 기록 맵 업데이트
       setDateAllWorkoutsMap(dateAllWorkoutsMap);
       
       // 중복 제거 및 정렬된 날짜 배열
@@ -468,20 +455,15 @@ const WorkoutGraph: React.FC = () => {
           
           const configColor = configColors[config as keyof typeof configColors];
           
-          // 동일한 운동+세트 구성에 한하여 선으로 연결하도록 처리
-          // 이를 위해 운동별 구분된 ID 생성
+          // 운동별 구분된 ID 생성
           const datasetId = `${exerciseName}-${config}`;
           
-          // 디버깅: 벤치프레스 6x3 데이터셋 확인
-          if (exerciseName === '벤치 프레스' && config === '6x3') {
-            console.log('벤치프레스 6x3 데이터셋 생성:', dateData);
-          }
-          
-          let pointStyleValue = pointStyle;
-          // 벤치프레스 6x3인 경우 삼각형으로 설정
-          if (exerciseName === '벤치 프레스' && config === '6x3') {
-            pointStyleValue = 'triangle';
-          }
+          // 벤치 프레스 6x3 포인트 스타일 설정
+          const pointStyleValue = (exerciseName === '벤치 프레스' && config === '6x3') 
+            ? 'triangle' 
+            : exerciseName === '데드리프트'
+              ? 'triangle'
+              : pointStyle;
           
           datasets.push({
             label: `${exerciseName} (${config})`,
@@ -490,7 +472,7 @@ const WorkoutGraph: React.FC = () => {
             backgroundColor: configColor.background,
             tension: 0.2,
             pointRadius: 6,
-            pointStyle: pointStyleValue, // 운동 종류와 세트 구성에 따른 포인트 스타일
+            pointStyle: pointStyleValue,
             pointBackgroundColor: uniqueDates.map(date => 
               dateData[date] ? configColor.border : 'transparent'
             ),
