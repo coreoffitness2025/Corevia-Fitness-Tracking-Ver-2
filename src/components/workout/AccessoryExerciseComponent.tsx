@@ -289,19 +289,19 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                       onClick={() => onTrainingComplete(setIndex, false, index)}
                       className={`h-8 ${
                         set.isSuccess === null 
-                        ? 'bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500' 
+                        ? 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700' 
                         : ''
                       }`}
                       icon={
                         set.isSuccess === null
                           ? null
                           : set.isSuccess
-                          ? <CheckCircle size={16} />
-                          : <XCircle size={16} />
+                          ? <CheckCircle size={16} className="text-green-500" />
+                          : <XCircle size={16} className="text-red-500" />
                       }
                     >
                       {set.isSuccess === null
-                        ? '훈련 완료'
+                        ? '완료'
                         : set.isSuccess
                         ? '성공'
                         : '실패'}

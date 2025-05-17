@@ -247,6 +247,9 @@ const FoodLog: React.FC = () => {
     const date = new Date(dateStr);
     const hasPhotos = foodsForDate.some(food => food.imageUrl);
     
+    // 5월 17일인지 확인
+    const is517 = date.getMonth() === 4 && date.getDate() === 17; // JavaScript에서 month는 0부터 시작하므로 5월은 4
+    
     return (
       <div key={dateStr} className="mb-8">
         <div className="flex items-center mb-4">
@@ -263,15 +266,17 @@ const FoodLog: React.FC = () => {
           </h3>
         </div>
         
-        {/* 영양 요약 정보 */}
-        <div className="mb-4">
-          <NutritionSummary 
-            totalNutrition={calculateTotalNutrition(foodsForDate)} 
-            targetProtein={proteinTarget}
-            targetCarbs={carbsTarget}
-            targetFat={fatTarget}
-          />
-        </div>
+        {/* 영양 요약 정보 - 5/17이 아닌 경우에만 표시 */}
+        {!is517 && (
+          <div className="mb-4">
+            <NutritionSummary 
+              totalNutrition={calculateTotalNutrition(foodsForDate)} 
+              targetProtein={proteinTarget}
+              targetCarbs={carbsTarget}
+              targetFat={fatTarget}
+            />
+          </div>
+        )}
         
         {/* 사진이 있는 경우 그리드로 표시 */}
         {hasPhotos && (

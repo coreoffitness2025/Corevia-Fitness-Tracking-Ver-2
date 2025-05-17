@@ -970,15 +970,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 <h3 className="font-medium">스트레칭/웜업</h3>
                 <Button
                   size="sm"
-                  variant={warmupCompleted ? 'success' : 'secondary'}
+                  variant={warmupCompleted ? 'success' : 'primary'}
                   onClick={() => {
                     setWarmupCompleted(!warmupCompleted);
                     setStretchingCompleted(!warmupCompleted);
                   }}
                   icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
-                  className="bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500"
+                  className={warmupCompleted ? "bg-green-500 text-white hover:bg-green-600" : "bg-blue-500 text-white hover:bg-blue-600"}
                 >
-                  {warmupCompleted ? '완료' : '시작하기'}
+                  {warmupCompleted ? '완료' : '완료'}
                 </Button>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -1104,7 +1104,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         onClick={() => handleTrainingComplete(index, true)}
                         className={`h-8 ${
                           set.isSuccess === null 
-                          ? 'bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500' 
+                          ? 'bg-blue-500 text-white hover:bg-blue-600' 
                           : ''
                         }`}
                         icon={
@@ -1116,7 +1116,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         }
                       >
                         {set.isSuccess === null
-                          ? '훈련 완료'
+                          ? '완료'
                           : set.isSuccess
                           ? '성공'
                           : '실패'}

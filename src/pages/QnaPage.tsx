@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import Layout from '../components/common/Layout';
 import ExerciseFaq from '../components/exercise/ExerciseFaq';
+import NutritionCalculator from '../components/nutrition/NutritionCalculator';
 import NutritionScout from '../components/nutrition/NutritionScout';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
 import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
-import Layout from '../components/common/Layout';
-import { exercises } from '../data/exerciseData'; // 추가: exerciseData.ts에서 운동 데이터 가져오기
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Exercise, ExercisePart } from '../types';
+import { exercises } from '../data/exerciseData';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
 type Goal = 'lose' | 'maintain' | 'gain';
-type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps' | 'abs' | 'cardio';
 
 // Exercise 타입을 exerciseData.ts와 호환되도록 수정
 interface Exercise {
@@ -78,9 +79,11 @@ const QnaPage: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [handbookSearchTerm, setHandbookSearchTerm] = useState<string>('');
   const [handbookSearchResults, setHandbookSearchResults] = useState<any[]>([]);
-  const [showCalculator, setShowCalculator] = useState<boolean>(true);
+  const [showCalculator, setShowCalculator] = useState<boolean>(false);
   const [showNutritionScout, setShowNutritionScout] = useState<boolean>(false);
   const [showAllExercises, setShowAllExercises] = useState<boolean>(false);
+  const [showWeightGuide, setShowWeightGuide] = useState<boolean>(false);
+  const [show1RMCalculator, setShow1RMCalculator] = useState<boolean>(false);
   
   // FoodForm 또는 FoodLog에서 전달받은 초기 탭 설정 적용
   useEffect(() => {
@@ -274,10 +277,10 @@ const QnaPage: React.FC = () => {
         </div>
 
         {/* 새로운 버튼들 추가 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <button
             onClick={() => setActiveTab('exercise')}
-            className="p-4 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -287,7 +290,7 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); setShowCalculator(true); setShowNutritionScout(false);}}
-            className="p-4 bg-[#00C853] text-white rounded-lg shadow hover:bg-[#00B04A] transition-colors flex flex-col items-center"
+            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -297,22 +300,32 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); setShowCalculator(false); setShowNutritionScout(true);}}
-            className="p-4 bg-[#FF9800] text-white rounded-lg shadow hover:bg-[#F57C00] transition-colors flex flex-col items-center"
+            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             음식 영양성분 확인
           </button>
           
           <button
-            onClick={() => navigate('/1rm-calculator')}
-            className="p-4 bg-[#F44336] text-white rounded-lg shadow hover:bg-[#E53935] transition-colors flex flex-col items-center"
+            onClick={() => setShow1RMCalculator(true)}
+            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             1RM 계산기
+          </button>
+          
+          <button
+            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true);}}
+            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            운동 무게 추천
           </button>
         </div>
 
@@ -362,51 +375,78 @@ const QnaPage: React.FC = () => {
               ))}
             </div>
 
-            {/* 표시할 운동 개수 제한 및 전체보기 버튼 추가 */}
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {exercisesByPart[selectedPart].slice(0, showAllExercises ? undefined : 4).map(exercise => (
-                  <div
-                    key={exercise.id}
-                    className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => handleExerciseSelect(exercise)}
-                  >
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                          {getPartLabel(exercise.part as ExercisePart)}
-                        </span>
-                        <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
-                          {exercise.level === 'beginner' ? '초급' : 
-                           exercise.level === 'intermediate' ? '중급' : '고급'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* 전체보기 버튼 */}
-              {exercisesByPart[selectedPart].length > 4 && (
-                <div className="text-center mt-4 mb-6">
+            {showWeightGuide ? (
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-4">운동 무게 추천</h3>
+                <WorkoutWeightGuide />
+                <div className="mt-4 text-center">
                   <button 
-                    onClick={() => setShowAllExercises(!showAllExercises)}
+                    onClick={() => setShowWeightGuide(false)}
                     className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
                   >
-                    {showAllExercises ? '간략히 보기' : '전체 보기'}
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                      {showAllExercises ? (
-                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                      ) : (
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      )}
-                    </svg>
+                    운동 검색으로 돌아가기
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : show1RMCalculator ? (
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-4">1RM 계산기</h3>
+                <OneRepMaxCalculator />
+                <div className="mt-4 text-center">
+                  <button 
+                    onClick={() => setShow1RMCalculator(false)}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
+                  >
+                    운동 검색으로 돌아가기
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {exercisesByPart[selectedPart].slice(0, showAllExercises ? undefined : 4).map(exercise => (
+                    <div
+                      key={exercise.id}
+                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => handleExerciseSelect(exercise)}
+                    >
+                      <div className="p-4">
+                        <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                            {getPartLabel(exercise.part as ExercisePart)}
+                          </span>
+                          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
+                            {exercise.level === 'beginner' ? '초급' : 
+                             exercise.level === 'intermediate' ? '중급' : '고급'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* 전체보기 버튼 */}
+                {exercisesByPart[selectedPart].length > 4 && (
+                  <div className="text-center mt-4 mb-6">
+                    <button 
+                      onClick={() => setShowAllExercises(!showAllExercises)}
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
+                    >
+                      {showAllExercises ? '간략히 보기' : '전체 보기'}
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                        {showAllExercises ? (
+                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        ) : (
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        )}
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
