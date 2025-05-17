@@ -105,6 +105,40 @@ const setConfigOptions = [
   { value: '6x3', label: '6회 x 3세트' }
 ];
 
+// 운동 종류별 포인트 모양 정의
+const exercisePointStyles: Record<string, string> = {
+  // 가슴 운동
+  '벤치 프레스': 'triangle',
+  '인클라인 벤치 프레스': 'circle',
+  '디클라인 벤치 프레스': 'rect',
+  
+  // 등 운동
+  '데드리프트': 'triangle',
+  '바벨로우': 'circle',
+  '티바로우': 'rect',
+  
+  // 어깨 운동
+  '오버헤드 프레스': 'triangle',
+  '레터럴 레이즈': 'circle',
+  
+  // 하체 운동
+  '스쿼트': 'triangle', 
+  '레그 프레스': 'circle',
+  '런지': 'rect',
+  '레그 익스텐션': 'rectRounded',
+  '레그 컬': 'rectRot',
+  
+  // 이두 운동
+  '덤벨 컬': 'triangle',
+  '바벨 컬': 'circle',
+  '해머 컬': 'rect',
+  
+  // 삼두 운동
+  '케이블 푸시다운': 'triangle',
+  '오버헤드 익스텐션': 'circle',
+  '라잉 트라이셉스 익스텐션': 'rect'
+};
+
 const WorkoutGraph: React.FC = () => {
   const { currentUser } = useAuth();
   const [selectedPart, setSelectedPart] = useState<string>('chest');
@@ -208,7 +242,11 @@ const WorkoutGraph: React.FC = () => {
         title: {
           display: true,
           text: '무게 (kg)'
-        }
+        },
+        ticks: {
+          stepSize: 5 // 5kg 단위로 눈금 표시
+        },
+        // 동적으로 최소/최대값을 설정하는 부분은 데이터 처리 시 설정
       },
       x: {
         title: {
@@ -246,10 +284,44 @@ const WorkoutGraph: React.FC = () => {
       
       const clickedElement = elements[0];
       const dataIndex = clickedElement.index;
+      const datasetIndex = clickedElement.datasetIndex;
       const label = chart.data.labels?.[dataIndex] as string;
       
-      if (label && dateWorkoutMap[label]) {
-        setSelectedWorkout(dateWorkoutMap[label]);
+      if (label) {
+        // 클릭한 날짜의 운동 정보 찾기
+        let selectedWorkout = dateWorkoutMap[label];
+        
+        // 여러 데이터셋이 있을 경우 클릭한 특정 데이터셋에 대한 운동 찾기
+        if (datasetIndex >= 0 && chart.data.datasets[datasetIndex]) {
+          const datasetLabel = chart.data.datasets[datasetIndex].label;
+          
+          // 데이터셋 레이블에서 운동 이름 추출
+          if (datasetLabel) {
+            const labelMatch = datasetLabel.match(/^(.+) \((.+)\)$/);
+            if (labelMatch) {
+              const exerciseName = labelMatch[1];
+              
+              // 클릭한 날짜에 여러 운동이 있을 경우 정확한 운동 선택
+              if (selectedWorkout && selectedWorkout.mainExercise.name !== exerciseName) {
+                // 동일 날짜의 다른 운동 기록이 있는지 확인
+                Object.values(dateWorkoutMap).forEach(workout => {
+                  if (typeof workout.date === 'string') {
+                    workout.date = new Date(workout.date);
+                  }
+                  
+                  const workoutDate = formatShortDate(workout.date instanceof Date ? workout.date : new Date(workout.date));
+                  if (workoutDate === label && workout.mainExercise.name === exerciseName) {
+                    selectedWorkout = workout;
+                  }
+                });
+              }
+            }
+          }
+        }
+        
+        if (selectedWorkout) {
+          setSelectedWorkout(selectedWorkout);
+        }
       }
     }
   };
@@ -276,6 +348,10 @@ const WorkoutGraph: React.FC = () => {
       // 구조: { 운동이름: { 세트구성: { 날짜: 무게 } } }
       const exerciseConfigData: Record<string, Record<string, Record<string, number>>> = {};
       
+      // 무게의 최소/최대값을 추적하기 위한 변수
+      let minWeight = Infinity;
+      let maxWeight = -Infinity;
+      
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
         
@@ -283,6 +359,11 @@ const WorkoutGraph: React.FC = () => {
         allDates.push(dateStr);
         
         // 날짜별 운동 기록 저장 (클릭 이벤트용)
+        // 각 고유한 운동 기록을 날짜+운동이름의 조합으로 저장
+        const workoutKey = `${dateStr}-${workout.mainExercise.name}`;
+        newDateWorkoutMap[workoutKey] = workout;
+        
+        // 기본 날짜별 맵에도 추가 (호환성 유지)
         if (!newDateWorkoutMap[dateStr] || new Date(workout.date) > new Date(newDateWorkoutMap[dateStr].date)) {
           newDateWorkoutMap[dateStr] = workout;
         }
@@ -318,17 +399,23 @@ const WorkoutGraph: React.FC = () => {
         }
         
         // 세트 중 최대 무게 찾기 (성공/실패 관계 없이)
-        let maxWeight = 0;
+        let maxWorkoutWeight = 0;
         sets.forEach(set => {
           // 모든 세트의 무게 데이터 (성공, 실패 모두 포함)
-          if (set.weight > maxWeight) {
-            maxWeight = set.weight;
+          if (set.weight > maxWorkoutWeight) {
+            maxWorkoutWeight = set.weight;
+          }
+          
+          // 전체 최소/최대 무게 업데이트
+          if (set.weight > 0) {
+            minWeight = Math.min(minWeight, set.weight);
+            maxWeight = Math.max(maxWeight, set.weight);
           }
         });
         
         // 세트 구성별 데이터에 저장
-        if (maxWeight > 0) {
-          exerciseConfigData[exerciseName][setConfig][dateStr] = maxWeight;
+        if (maxWorkoutWeight > 0) {
+          exerciseConfigData[exerciseName][setConfig][dateStr] = maxWorkoutWeight;
         }
       });
       
@@ -348,40 +435,6 @@ const WorkoutGraph: React.FC = () => {
         '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, // 파란색
         '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, // 빨간색
         '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } // 초록색
-      };
-      
-      // 운동 종류별 포인트 모양 정의
-      const exercisePointStyles: Record<string, string> = {
-        // 하체 운동
-        '스쿼트': 'triangle', // 삼각형
-        '레그 프레스': 'circle', // 원형
-        '런지': 'rect', // 사각형
-        '레그 익스텐션': 'rectRounded', // 둥근 사각형
-        '레그 컬': 'rectRot', // 회전된 사각형
-        
-        // 가슴 운동
-        '벤치 프레스': 'triangle',
-        '인클라인 벤치 프레스': 'circle',
-        '디클라인 벤치 프레스': 'rect',
-        
-        // 등 운동
-        '데드리프트': 'triangle',
-        '바벨로우': 'circle',
-        '티바로우': 'rect',
-        
-        // 어깨 운동
-        '오버헤드 프레스': 'triangle',
-        '레터럴 레이즈': 'circle',
-        
-        // 이두 운동
-        '덤벨 컬': 'triangle',
-        '바벨 컬': 'circle',
-        '해머 컬': 'rect',
-        
-        // 삼두 운동
-        '케이블 푸시다운': 'triangle',
-        '오버헤드 익스텐션': 'circle',
-        '라잉 트라이셉스 익스텐션': 'rect'
       };
       
       // 데이터셋 생성
@@ -426,10 +479,34 @@ const WorkoutGraph: React.FC = () => {
         });
       });
       
-      setChartData({
+      // 차트 데이터 설정
+      const chartData = {
         labels: uniqueDates,
         datasets: datasets
-      });
+      };
+      
+      // 최소/최대 무게에 따라 Y축 범위 계산
+      if (minWeight !== Infinity && maxWeight !== -Infinity) {
+        // 현재 기록 기준 ±30kg 범위 설정
+        // 최소값은 0보다 작으면 안 됨
+        const yMin = Math.max(0, minWeight - 30);
+        const yMax = maxWeight + 30;
+        
+        // 차트 옵션 업데이트
+        chartOptions.scales = {
+          ...chartOptions.scales,
+          y: {
+            ...chartOptions.scales?.y,
+            min: yMin,
+            max: yMax,
+            ticks: {
+              stepSize: 5  // 5kg 단위로 눈금 표시
+            }
+          }
+        };
+      }
+      
+      setChartData(chartData);
     } catch (error) {
       console.error('차트 데이터 변환 오류:', error);
     }
