@@ -7,6 +7,7 @@ import { saveFoodRecord } from '../../services/foodService';
 import Card from '../common/Card';
 import { Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import NutritionSourcesGuide from './NutritionSourcesGuide';
 
 interface FoodFormProps {
   onSuccess?: () => void; // 식단 저장 후 호출될 콜백
@@ -46,6 +47,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const [notes, setNotes] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [localImageFile, setLocalImageFile] = useState<File | null>(null);
+  const [showNutritionSources, setShowNutritionSources] = useState<boolean>(false);
   
   // 칼로리 목표 관련 상태
   const [targetCalories, setTargetCalories] = useState<number>(0);
@@ -237,46 +239,61 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
         <div className="flex items-start">
           <Info className="text-[#4285F4] mr-2 mt-1 flex-shrink-0" size={20} />
           <div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">영양소 목표</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 dark:bg-[#4285F4]/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
-                <span className="block text-lg font-bold text-[#4285F4] dark:text-sky-400">{targetCalories} kcal</span>
-              </div>
-              
+            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">1끼당 권장 섭취량</h3>
+            <div className="grid grid-cols-3 gap-4">
               <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
                 <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
+                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{Math.round(proteinTarget/3)}g</span>
               </div>
               
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
                 <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
+                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{Math.round(carbsTarget/3)}g</span>
               </div>
               
               <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
                 <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
+                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{Math.round(fatTarget/3)}g</span>
               </div>
             </div>
             
-            <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-              <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
-              <p className="mt-1">💡 단백질은 근육 합성과 유지를 돕고, 적절한 탄수화물은 에너지를 공급하며, 지방은 호르몬 생성을 지원합니다.</p>
+            <div className="mt-3">
+              <div className="flex flex-wrap gap-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <span className="font-medium">식사별 목표:</span> 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>
+                </p>
+              </div>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
+              </p>
             </div>
             
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={navigateToNutritionInfo}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                 </svg>
                 음식별 칼로리 확인하기
               </button>
+              
+              <button
+                type="button"
+                onClick={() => setShowNutritionSources(!showNutritionSources)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                </svg>
+                주요 탄/단/지 급원 확인하기
+              </button>
             </div>
+            
+            {/* 영양소 급원 표시 영역 */}
+            {showNutritionSources && <NutritionSourcesGuide />}
           </div>
         </div>
       </Card>
