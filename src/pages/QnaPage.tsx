@@ -84,6 +84,7 @@ const QnaPage: React.FC = () => {
   const [showAllExercises, setShowAllExercises] = useState<boolean>(false);
   const [showWeightGuide, setShowWeightGuide] = useState<boolean>(false);
   const [show1RMCalculator, setShow1RMCalculator] = useState<boolean>(false);
+  const [showWorkoutSets, setShowWorkoutSets] = useState<boolean>(false);
   
   // FoodForm 또는 FoodLog에서 전달받은 초기 탭 설정 적용
   useEffect(() => {
@@ -257,29 +258,10 @@ const QnaPage: React.FC = () => {
           </p>
         </div>
 
-        {/* 탭 메뉴 */}
-        <div className="flex gap-2 mb-6">
-          {(['exercise', 'nutrition', 'handbook'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg ${
-                activeTab === tab
-                  ? 'bg-[#4285F4] text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
-            >
-              {tab === 'exercise' && '운동 검색'}
-              {tab === 'nutrition' && '영양 정보'}
-              {tab === 'handbook' && '핸드북'}
-            </button>
-          ))}
-        </div>
-
-        {/* 새로운 버튼들 추가 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        {/* 새로운 버튼들 */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
           <button
-            onClick={() => setActiveTab('exercise')}
+            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
             className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -309,7 +291,7 @@ const QnaPage: React.FC = () => {
           </button>
           
           <button
-            onClick={() => setShow1RMCalculator(true)}
+            onClick={() => {setActiveTab('exercise'); setShow1RMCalculator(true); setShowWeightGuide(false); setShowWorkoutSets(false);}}
             className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -319,7 +301,7 @@ const QnaPage: React.FC = () => {
           </button>
           
           <button
-            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true);}}
+            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
             className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -327,54 +309,31 @@ const QnaPage: React.FC = () => {
             </svg>
             운동 무게 추천
           </button>
+
+          <button
+            onClick={() => {setActiveTab('exercise'); setShowWorkoutSets(true); setShowWeightGuide(false); setShow1RMCalculator(false);}}
+            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            운동 세트 검색
+          </button>
+
+          <button
+            onClick={() => setActiveTab('handbook')}
+            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            핸드북
+          </button>
         </div>
 
         {/* 탭 콘텐츠 */}
         {activeTab === 'exercise' && (
           <div className="mt-6">
-            <div className="mb-6">
-              <input
-                type="text"
-                placeholder="운동 이름 검색..."
-                className="w-full p-2 border rounded-lg"
-                value={searchTerm}
-                onChange={handleSearchChange}
-              />
-              {showDropdown && (
-                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg">
-                  {searchResults.map(exercise => (
-                    <div
-                      key={exercise.id}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                      onClick={() => handleSearchSelect(exercise)}
-                    >
-                      <div className="font-medium">{exercise.name}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {getPartLabel(exercise.part as ExercisePart)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              {Object.entries(exercisesByPart).map(([part, _]) => (
-                <button
-                  key={part}
-                  className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
-                    selectedPart === part
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                  onClick={() => handlePartSelect(part as ExercisePart)}
-                >
-                  <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
-                  <span>{getPartLabel(part as ExercisePart)}</span>
-                </button>
-              ))}
-            </div>
-
             {showWeightGuide ? (
               <div className="mb-6">
                 <h3 className="text-xl font-semibold mb-4">운동 무게 추천</h3>
@@ -401,11 +360,231 @@ const QnaPage: React.FC = () => {
                   </button>
                 </div>
               </div>
+            ) : showWorkoutSets ? (
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-4">운동 세트 검색</h3>
+                <div className="mb-4">
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    {Object.entries(exercisesByPart).map(([part, _]) => (
+                      <button
+                        key={part}
+                        className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
+                          selectedPart === part
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
+                        onClick={() => handlePartSelect(part as ExercisePart)}
+                      >
+                        <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
+                        <span>{getPartLabel(part as ExercisePart)}</span>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* 가슴 운동 세트 정보 */}
+                  {selectedPart === 'chest' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">가슴 운동 세트 구성</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 벤치 프레스</h5>
+                          <p className="ml-4">10회 x 5세트 (세트 사이 1-2분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 인클라인 벤치 프레스</h5>
+                          <p className="ml-4">10회 x 5세트 (세트 사이 1-2분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 플라이</h5>
+                          <p className="ml-4">15회 x 5세트 (세트 사이 1분 휴식)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 등 운동 세트 정보 */}
+                  {selectedPart === 'back' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">등 운동 세트 구성</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 데드리프트</h5>
+                          <p className="ml-4">6회 x 3세트 (세트 사이 2-3분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 바벨 로우</h5>
+                          <p className="ml-4">10회 x 4세트 (세트 사이 1-2분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 랫 풀다운</h5>
+                          <p className="ml-4">12회 x 4세트 (세트 사이 1분 휴식)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 어깨 운동 세트 정보 */}
+                  {selectedPart === 'shoulder' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">어깨 운동 세트 구성</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 오버헤드 프레스</h5>
+                          <p className="ml-4">8회 x 4세트 (세트 사이 1-2분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 사이드 레터럴 레이즈</h5>
+                          <p className="ml-4">12회 x 3세트 (세트 사이 45-60초 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 페이스 풀</h5>
+                          <p className="ml-4">15회 x 3세트 (세트 사이 45-60초 휴식)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 하체 운동 세트 정보 */}
+                  {selectedPart === 'leg' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">하체 운동 세트 구성</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 스쿼트</h5>
+                          <p className="ml-4">8회 x 4세트 (세트 사이 2분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 레그 프레스</h5>
+                          <p className="ml-4">10회 x 3세트 (세트 사이 1-2분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 레그 익스텐션</h5>
+                          <p className="ml-4">12회 x 3세트 (세트 사이 1분 휴식)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 이두 운동 세트 정보 */}
+                  {selectedPart === 'biceps' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">이두 운동 세트 구성</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 바벨 컬</h5>
+                          <p className="ml-4">10회 x 4세트 (세트 사이 1분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 해머 컬</h5>
+                          <p className="ml-4">12회 x 3세트 (세트 사이 45초 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 케이블 컬</h5>
+                          <p className="ml-4">15회 x 3세트 (세트 사이 30초 휴식)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 삼두 운동 세트 정보 */}
+                  {selectedPart === 'triceps' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">삼두 운동 세트 구성</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 케이블 푸시다운</h5>
+                          <p className="ml-4">12회 x 4세트 (세트 사이 1분 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 트라이셉스 익스텐션</h5>
+                          <p className="ml-4">10회 x 3세트 (세트 사이 45초 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 딥스</h5>
+                          <p className="ml-4">8-12회 x 3세트 (세트 사이 1분 휴식)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 복근 운동 세트 정보 */}
+                  {selectedPart === 'abs' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">복근 운동 세트 구성</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 크런치</h5>
+                          <p className="ml-4">15회 x 3세트 (세트 사이 30초 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 레그 레이즈</h5>
+                          <p className="ml-4">12회 x 3세트 (세트 사이 30초 휴식)</p>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 플랭크</h5>
+                          <p className="ml-4">30초 x 3세트 (세트 사이 30초 휴식)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 text-center">
+                  <button 
+                    onClick={() => setShowWorkoutSets(false)}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
+                  >
+                    운동 검색으로 돌아가기
+                  </button>
+                </div>
+              </div>
             ) : (
               <>
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    placeholder="운동 이름 검색..."
+                    className="w-full p-2 border rounded-lg"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                  />
+                  {showDropdown && (
+                    <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg">
+                      {searchResults.map(exercise => (
+                        <div
+                          key={exercise.id}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                          onClick={() => handleSearchSelect(exercise)}
+                        >
+                          <div className="font-medium">{exercise.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {getPartLabel(exercise.part as ExercisePart)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  {Object.entries(exercisesByPart).map(([part, _]) => (
+                    <button
+                      key={part}
+                      className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
+                        selectedPart === part
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                      onClick={() => handlePartSelect(part as ExercisePart)}
+                    >
+                      <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
+                      <span>{getPartLabel(part as ExercisePart)}</span>
+                    </button>
+                  ))}
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {exercisesByPart[selectedPart].slice(0, showAllExercises ? undefined : 4).map(exercise => (
-                    <div
+                    <div 
                       key={exercise.id}
                       className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                       onClick={() => handleExerciseSelect(exercise)}
@@ -419,7 +598,7 @@ const QnaPage: React.FC = () => {
                           </span>
                           <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
                             {exercise.level === 'beginner' ? '초급' : 
-                             exercise.level === 'intermediate' ? '중급' : '고급'}
+                            exercise.level === 'intermediate' ? '중급' : '고급'}
                           </span>
                         </div>
                       </div>

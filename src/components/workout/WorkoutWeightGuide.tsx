@@ -375,6 +375,32 @@ const WorkoutWeightGuide: React.FC = () => {
     setResult(null);
   };
 
+  // 반복 횟수별 무게 테이블 생성 함수
+  const generateRepsTable = (maxWeight: number | null, exerciseName: string) => {
+    if (!maxWeight) return <p>1RM 정보가 없습니다</p>;
+    
+    const repRanges = [
+      { reps: 1, percentage: 1.00 },
+      { reps: 2, percentage: 0.97 },
+      { reps: 3, percentage: 0.94 },
+      { reps: 4, percentage: 0.92 },
+      { reps: 5, percentage: 0.89 },
+      { reps: 6, percentage: 0.86 },
+      { reps: 8, percentage: 0.81 },
+      { reps: 10, percentage: 0.75 },
+      { reps: 12, percentage: 0.70 },
+      { reps: 15, percentage: 0.65 }
+    ];
+    
+    return repRanges.map(range => (
+      <div key={range.reps} className="bg-gray-50 dark:bg-gray-800 p-2 rounded border dark:border-gray-700">
+        <div className="text-sm font-medium">{range.reps}회</div>
+        <div className="text-lg font-bold">{Math.round(maxWeight * range.percentage)}kg</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">1RM의 {Math.round(range.percentage * 100)}%</div>
+      </div>
+    ));
+  };
+
   return (
     <Card className="p-6 relative">
       {showCalculator && (
@@ -547,89 +573,60 @@ const WorkoutWeightGuide: React.FC = () => {
           </div>
         </>
       ) : (
-        <>
-          <div className="mb-6">
-            <h3 className="font-medium text-lg mb-2">
-              선호 세트: {result.setConfig.description}
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              해당 세트를 수행할 경우 훈련 무게 세팅 권장 사항은 아래와 같습니다.
-            </p>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">운동 무게 추천 결과</h3>
+            <Button
+              variant="outline"
+              onClick={() => setResult(null)}
+              size="sm"
+            >
+              다시 계산하기
+            </Button>
+          </div>
+          
+          {/* 결과 표시 섹션 */}
+          <div className="space-y-6">
+            {/* 스쿼트 결과 */}
+            <div className="border-t pt-4 dark:border-gray-700">
+              <h4 className="text-md font-medium mb-2">스쿼트 (Squat)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {generateRepsTable(guideInfo.oneRepMaxes.squat, 'squat')}
+              </div>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {result.recommendedWeights.squat && (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">스쿼트</p>
-                  <p className="font-bold text-xl">{result.recommendedWeights.squat} kg</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    (1RM의 {Math.round(result.percentageOfOneRM * 100)}%)
-                  </p>
-                </div>
-              )}
-              
-              {result.recommendedWeights.deadlift && (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">데드리프트</p>
-                  <p className="font-bold text-xl">{result.recommendedWeights.deadlift} kg</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    (1RM의 {Math.round(result.percentageOfOneRM * 100)}%)
-                  </p>
-                </div>
-              )}
-              
-              {result.recommendedWeights.bench && (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">벤치프레스</p>
-                  <p className="font-bold text-xl">{result.recommendedWeights.bench} kg</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    (1RM의 {Math.round(result.percentageOfOneRM * 100)}%)
-                  </p>
-                </div>
-              )}
-              
-              {result.recommendedWeights.overheadPress && (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">오버헤드프레스</p>
-                  <p className="font-bold text-xl">{result.recommendedWeights.overheadPress} kg</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    (1RM의 {Math.round(result.percentageOfOneRM * 100)}%)
-                  </p>
-                </div>
-              )}
+            {/* 데드리프트 결과 */}
+            <div className="border-t pt-4 dark:border-gray-700">
+              <h4 className="text-md font-medium mb-2">데드리프트 (Deadlift)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {generateRepsTable(guideInfo.oneRepMaxes.deadlift, 'deadlift')}
+              </div>
+            </div>
+            
+            {/* 벤치프레스 결과 */}
+            <div className="border-t pt-4 dark:border-gray-700">
+              <h4 className="text-md font-medium mb-2">벤치프레스 (Bench Press)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {generateRepsTable(guideInfo.oneRepMaxes.bench, 'bench')}
+              </div>
+            </div>
+            
+            {/* 오버헤드프레스 결과 */}
+            <div className="border-t pt-4 dark:border-gray-700">
+              <h4 className="text-md font-medium mb-2">오버헤드프레스 (Overhead Press)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {generateRepsTable(guideInfo.oneRepMaxes.overheadPress, 'overheadPress')}
+              </div>
             </div>
           </div>
           
-          <div className="mb-6">
-            <h3 className="font-medium mb-2">세트 간 휴식 시간</h3>
-            <p className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-              {result.recoveryTime}
+          <div className="p-4 mt-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
+            <p className="text-sm text-yellow-700 dark:text-yellow-400">
+              <strong>참고:</strong> 이 무게는 참고용이며, 실제 운동 시 컨디션과 경험에 따라 조절하세요.
+              처음 시도하는 무게라면 낮은 무게부터 시작하여 점진적으로 증가시키는 것이 안전합니다.
             </p>
           </div>
-          
-          <div className="mb-6">
-            <h3 className="font-medium mb-2">훈련 강도 설명</h3>
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <p className="mb-2">
-                이 무게는 1RM(최대 중량)의 {Math.round(result.percentageOfOneRM * 100)}%로, 
-                {guideInfo.gender === 'male' ? '남성' : '여성'} {
-                  result.userLevel === 'beginner' ? '초보자' : 
-                  result.userLevel === 'intermediate' ? '중급자' : '고급자'
-                }에게 적합한 {result.setConfig.description} 훈련 강도입니다.
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                이 무게로 모든 세트를 완료할 수 있다면, 다음 세션에서 2.5~5kg 증가시키는 것을 고려하세요.
-              </p>
-            </div>
-          </div>
-          
-          <Button
-            variant="outline"
-            onClick={resetCalculator}
-            className="w-full"
-          >
-            다시 계산하기
-          </Button>
-        </>
+        </div>
       )}
     </Card>
   );

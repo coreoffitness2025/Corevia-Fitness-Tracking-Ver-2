@@ -152,6 +152,10 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
               delete newIntervals[timerKey];
               setTimerIntervals(newIntervals);
               delete updated[timerKey];
+              
+              // 타이머 종료 시 알람 소리 재생
+              playAlarmSound();
+              
               return updated;
             }
           }
@@ -172,6 +176,24 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         ...prev,
         [timerKey]: { ...prev[timerKey], isPaused: true }
       }));
+    }
+  };
+
+  // 알람 소리 재생 함수
+  const playAlarmSound = () => {
+    try {
+      // 오디오 객체 생성
+      const audio = new Audio();
+      // 기본 알람 소리 URL 설정
+      audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3';
+      audio.volume = 0.8; // 볼륨 설정 (0.0 ~ 1.0)
+      
+      // 소리 재생
+      audio.play().catch(error => {
+        console.error('알람 소리 재생 실패:', error);
+      });
+    } catch (error) {
+      console.error('알람 소리 재생 중 오류 발생:', error);
     }
   };
 
