@@ -85,6 +85,7 @@ const QnaPage: React.FC = () => {
   const [showWeightGuide, setShowWeightGuide] = useState<boolean>(false);
   const [show1RMCalculator, setShow1RMCalculator] = useState<boolean>(false);
   const [showWorkoutSets, setShowWorkoutSets] = useState<boolean>(false);
+  const [selectedProgramType, setSelectedProgramType] = useState<string>('strength');
   
   // FoodForm 또는 FoodLog에서 전달받은 초기 탭 설정 적용
   useEffect(() => {
@@ -259,12 +260,12 @@ const QnaPage: React.FC = () => {
         </div>
 
         {/* 새로운 버튼들 */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
-            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             운동 검색
@@ -272,9 +273,9 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); setShowCalculator(true); setShowNutritionScout(false);}}
-            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
             목표 칼로리 계산
@@ -282,9 +283,9 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); setShowCalculator(false); setShowNutritionScout(true);}}
-            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             음식 영양성분 확인
@@ -292,9 +293,9 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('exercise'); setShow1RMCalculator(true); setShowWeightGuide(false); setShowWorkoutSets(false);}}
-            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             1RM 계산기
@@ -302,9 +303,9 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
-            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
             운동 무게 추천
@@ -312,19 +313,19 @@ const QnaPage: React.FC = () => {
 
           <button
             onClick={() => {setActiveTab('exercise'); setShowWorkoutSets(true); setShowWeightGuide(false); setShow1RMCalculator(false);}}
-            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
-            운동 세트 검색
+            운동 프로그램
           </button>
 
           <button
             onClick={() => setActiveTab('handbook')}
-            className="p-3 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
             핸드북
@@ -362,171 +363,335 @@ const QnaPage: React.FC = () => {
               </div>
             ) : showWorkoutSets ? (
               <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-4">운동 세트 검색</h3>
+                <h3 className="text-xl font-semibold mb-4">운동 프로그램</h3>
                 <div className="mb-4">
-                  <div className="grid grid-cols-4 gap-4 mb-6">
-                    {Object.entries(exercisesByPart).map(([part, _]) => (
-                      <button
-                        key={part}
-                        className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
-                          selectedPart === part
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                        }`}
-                        onClick={() => handlePartSelect(part as ExercisePart)}
-                      >
-                        <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
-                        <span>{getPartLabel(part as ExercisePart)}</span>
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <button
+                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-blue-500 text-white"
+                      onClick={() => setSelectedProgramType('strength')}
+                    >
+                      <span className="text-lg font-semibold mb-1">스트렝스 프로그램</span>
+                      <span className="text-sm">근력 증가에 초점</span>
+                    </button>
+                    
+                    <button
+                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-purple-500 text-white"
+                      onClick={() => setSelectedProgramType('powerbuilding')}
+                    >
+                      <span className="text-lg font-semibold mb-1">파워빌딩 프로그램</span>
+                      <span className="text-sm">근력과 근비대 동시 발달</span>
+                    </button>
+                    
+                    <button
+                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-green-500 text-white"
+                      onClick={() => setSelectedProgramType('hypertrophy')}
+                    >
+                      <span className="text-lg font-semibold mb-1">근비대 프로그램</span>
+                      <span className="text-sm">근육 크기 증가에 초점</span>
+                    </button>
+                    
+                    <button
+                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-yellow-500 text-white"
+                      onClick={() => setSelectedProgramType('beginner')}
+                    >
+                      <span className="text-lg font-semibold mb-1">초보자 프로그램</span>
+                      <span className="text-sm">근신경계 발달 중심</span>
+                    </button>
+                    
+                    <button
+                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-red-500 text-white"
+                      onClick={() => setSelectedProgramType('popular')}
+                    >
+                      <span className="text-lg font-semibold mb-1">유명 프로그램</span>
+                      <span className="text-sm">검증된 다양한 루틴</span>
+                    </button>
                   </div>
                   
-                  {/* 가슴 운동 세트 정보 */}
-                  {selectedPart === 'chest' && (
+                  {/* 스트렝스 프로그램 */}
+                  {selectedProgramType === 'strength' && (
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">가슴 운동 세트 구성</h4>
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">스트렝스 프로그램 (근력 향상 중심)</h4>
+                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          <strong>연구 기반:</strong> Journal of Strength and Conditioning Research에 따르면, 낮은 반복 횟수(1-6회)와 
+                          높은 무게(1RM의 80-95%)로 훈련 시 최대 근력 발달에 가장 효과적입니다. (Schoenfeld et al., 2016)
+                        </p>
+                      </div>
+                      
                       <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 벤치 프레스</h5>
-                          <p className="ml-4">10회 x 5세트 (세트 사이 1-2분 휴식)</p>
+                        <h5 className="font-medium text-blue-600 dark:text-blue-400">5x5 프로그램 (Starting Strength 변형)</h5>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">A 데이 (월/목)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>스쿼트: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
+                            <li>벤치 프레스: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
+                            <li>바벨 로우: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
+                          </ul>
                         </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 인클라인 벤치 프레스</h5>
-                          <p className="ml-4">10회 x 5세트 (세트 사이 1-2분 휴식)</p>
+                        
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">B 데이 (수/토)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>스쿼트: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
+                            <li>오버헤드 프레스: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
+                            <li>데드리프트: 3세트 x 5회 (세트 간 3-5분 휴식)</li>
+                          </ul>
                         </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 플라이</h5>
-                          <p className="ml-4">15회 x 5세트 (세트 사이 1분 휴식)</p>
+                        
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                          <strong>진행 방법:</strong> 매 세션마다 무게를 2.5-5kg씩 증가시키며, 5x5를 모두 완료하지 못하면 
+                          같은 무게로 다음 세션에 다시 시도합니다. 3번 연속 실패할 경우 10% 무게를 감소시킨 후 다시 진행합니다.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 파워빌딩 프로그램 */}
+                  {selectedProgramType === 'powerbuilding' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">파워빌딩 프로그램 (근력+근비대 복합)</h4>
+                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          <strong>연구 기반:</strong> Sports Medicine의 메타분석에 따르면, 다양한 운동 강도(1RM의 70-95%)와 
+                          반복 범위(3-12회)를 혼합하는 것이 근력과 근비대를 동시에 발달시키는 데 효과적입니다. (Grgic et al., 2018)
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h5 className="font-medium text-purple-600 dark:text-purple-400">PHUL 프로그램 (Power Hypertrophy Upper Lower)</h5>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">1일차: 상체 파워 (월)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>벤치 프레스: 4세트 x 3-5회 (80-85% 1RM)</li>
+                            <li>인클라인 벤치: 3세트 x 6-8회</li>
+                            <li>바벨 로우: 4세트 x 3-5회</li>
+                            <li>풀업: 3세트 x 6-8회</li>
+                            <li>오버헤드 프레스: 3세트 x 5-8회</li>
+                            <li>바벨 컬: 3세트 x 6-8회</li>
+                            <li>스컬크러셔: 3세트 x 6-8회</li>
+                          </ul>
+                        </div>
+                        
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">2일차: 하체 파워 (화)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>스쿼트: 4세트 x 3-5회 (80-85% 1RM)</li>
+                            <li>데드리프트: 3세트 x 3-5회</li>
+                            <li>런지: 3세트 x 8-10회</li>
+                            <li>레그 컬: 3세트 x 6-8회</li>
+                            <li>카프 레이즈: 4세트 x 8-10회</li>
+                          </ul>
+                        </div>
+                        
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">3일차: 상체 근비대 (목)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>덤벨 벤치 프레스: 3세트 x 8-12회</li>
+                            <li>케이블 플라이: 3세트 x 10-15회</li>
+                            <li>시티드 로우: 3세트 x 8-12회</li>
+                            <li>랫 풀다운: 3세트 x 8-12회</li>
+                            <li>덤벨 숄더 프레스: 3세트 x 8-12회</li>
+                            <li>덤벨 컬: 3세트 x 10-15회</li>
+                            <li>트라이셉스 푸시다운: 3세트 x 10-15회</li>
+                          </ul>
+                        </div>
+                        
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">4일차: 하체 근비대 (금)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>프론트 스쿼트: 3세트 x 8-12회</li>
+                            <li>레그 프레스: 3세트 x 10-15회</li>
+                            <li>루마니안 데드리프트: 3세트 x 8-10회</li>
+                            <li>레그 익스텐션: 3세트 x 12-15회</li>
+                            <li>레그 컬: 3세트 x 12-15회</li>
+                            <li>카프 레이즈: 4세트 x 15-20회</li>
+                            <li>캐이블 크런치: 3세트 x 15-20회</li>
+                          </ul>
                         </div>
                       </div>
                     </div>
                   )}
                   
-                  {/* 등 운동 세트 정보 */}
-                  {selectedPart === 'back' && (
+                  {/* 근비대 프로그램 */}
+                  {selectedProgramType === 'hypertrophy' && (
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">등 운동 세트 구성</h4>
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">근비대 프로그램 (근육량 증가 중심)</h4>
+                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          <strong>연구 기반:</strong> Journal of Applied Physiology에 발표된 연구에 따르면, 6-12회 반복 범위와 
+                          1RM의 65-80% 무게로 훈련할 때 근비대 효과가 최대화됩니다. 또한 주당 근육그룹당 10-20세트가 최적입니다. (Schoenfeld et al., 2019)
+                        </p>
+                      </div>
+                      
                       <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 데드리프트</h5>
-                          <p className="ml-4">6회 x 3세트 (세트 사이 2-3분 휴식)</p>
+                        <h5 className="font-medium text-green-600 dark:text-green-400">PPL 프로그램 (Push-Pull-Legs)</h5>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">푸시 데이 (월/목)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>벤치 프레스: 4세트 x 8-10회 (세트 간 1-2분 휴식)</li>
+                            <li>인클라인 덤벨 프레스: 3세트 x 10-12회</li>
+                            <li>케이블 플라이: 3세트 x 12-15회</li>
+                            <li>숄더 프레스: 4세트 x 8-10회</li>
+                            <li>사이드 레터럴 레이즈: 3세트 x 12-15회</li>
+                            <li>트라이셉스 푸시다운: 3세트 x 10-12회</li>
+                            <li>오버헤드 트라이셉스 익스텐션: 3세트 x 10-12회</li>
+                          </ul>
                         </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 바벨 로우</h5>
-                          <p className="ml-4">10회 x 4세트 (세트 사이 1-2분 휴식)</p>
+                        
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">풀 데이 (화/금)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>바벨 로우: 4세트 x 8-10회</li>
+                            <li>랫 풀다운: 3세트 x 10-12회</li>
+                            <li>시티드 케이블 로우: 3세트 x 12-15회</li>
+                            <li>페이스 풀: 3세트 x 15-20회</li>
+                            <li>바벨 컬: 3세트 x 8-10회</li>
+                            <li>해머 컬: 3세트 x 10-12회</li>
+                            <li>케이블 컬: 3세트 x 12-15회</li>
+                          </ul>
                         </div>
+                        
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">레그 데이 (수/토)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>스쿼트: 4세트 x 8-10회</li>
+                            <li>레그 프레스: 3세트 x 10-12회</li>
+                            <li>루마니안 데드리프트: 3세트 x 8-10회</li>
+                            <li>레그 익스텐션: 3세트 x 12-15회</li>
+                            <li>레그 컬: 3세트 x 12-15회</li>
+                            <li>카프 레이즈: 4세트 x 15-20회</li>
+                            <li>캐이블 크런치: 3세트 x 15-20회</li>
+                          </ul>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                          <strong>진행 방법:</strong> 각 세트에서 근육 피로를 느낄 때까지 수행하고, 마지막 1-2회는 거의 실패 직전까지
+                          진행합니다. 무게는 점진적으로 증가시키되, 정해진 반복 횟수를 유지할 수 있는 범위 내에서 조절합니다.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 초보자 프로그램 */}
+                  {selectedProgramType === 'beginner' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">초보자 프로그램 (근신경계 발달 중심)</h4>
+                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          <strong>연구 기반:</strong> 초보자는 처음 3-6개월 동안 단순한 훈련 자극에도 신경근 적응과 근력 향상을 경험합니다.
+                          International Journal of Exercise Science에 발표된 연구에 따르면, 초보자는 복잡한 프로그램보다 
+                          기본 복합 운동을 중심으로 한 전신 루틴으로 시작하는 것이 좋습니다. (Kraemer et al., 2017)
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h5 className="font-medium text-yellow-600 dark:text-yellow-400">3일 풀바디 프로그램</h5>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">A 데이 (월/금)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>머신 체스트 프레스: 3세트 x 12-15회 (세트 간 1-2분 휴식)</li>
+                            <li>시티드 로우 머신: 3세트 x 12-15회</li>
+                            <li>레그 프레스: 3세트 x 12-15회</li>
+                            <li>레그 익스텐션: 2세트 x 12-15회</li>
+                            <li>레그 컬: 2세트 x 12-15회</li>
+                            <li>케이블 트라이셉스 푸시다운: 2세트 x 12-15회</li>
+                            <li>케이블 바이셉스 컬: 2세트 x 12-15회</li>
+                          </ul>
+                        </div>
+                        
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <p className="font-medium mb-2">B 데이 (수)</p>
+                          <ul className="list-disc pl-5 space-y-2">
+                            <li>랫 풀다운: 3세트 x 12-15회</li>
+                            <li>숄더 프레스 머신: 3세트 x 12-15회</li>
+                            <li>스미스 머신 스쿼트: 3세트 x 12-15회</li>
+                            <li>시티드 레그 프레스: 3세트 x 12-15회</li>
+                            <li>사이드 레터럴 레이즈: 2세트 x 12-15회</li>
+                            <li>케이블 페이스 풀: 2세트 x 12-15회</li>
+                            <li>플랭크: 3세트 x 30초</li>
+                          </ul>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                          <strong>진행 방법:</strong> 첫 2주는 가벼운 무게로 정확한 폼에 집중합니다. 이후 점차 무게를 증가시키되,
+                          12-15회를 완료할 수 있는 범위를 유지합니다. 4-6주 후 프리웨이트 운동을 점진적으로 도입할 수 있습니다.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 유명 프로그램 */}
+                  {selectedProgramType === 'popular' && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">유명 프로그램 루틴</h4>
+                      
+                      <div className="space-y-6">
                         <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 랫 풀다운</h5>
-                          <p className="ml-4">12회 x 4세트 (세트 사이 1분 휴식)</p>
+                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">nSuns 5/3/1</h5>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                            Jim Wendler의 5/3/1을 기반으로 한 고강도 주간 프로그램. 주요 복합 운동의 점진적 과부하에 중점을 둡니다.
+                          </p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="font-medium mb-2">주간 구성 (5일)</p>
+                            <ul className="list-disc pl-5 space-y-2">
+                              <li>월: 벤치 프레스 + 오버헤드 프레스 (9세트 각 운동)</li>
+                              <li>화: 스쿼트 + 서모 데드리프트 (9세트 각 운동)</li>
+                              <li>수: 오버헤드 프레스 + 인클라인 벤치 (9세트 각 운동)</li>
+                              <li>목: 데드리프트 + 프론트 스쿼트 (9세트 각 운동)</li>
+                              <li>금: 벤치 프레스 + 클로즈 그립 벤치 (9세트 각 운동)</li>
+                            </ul>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">매드카우 5x5</h5>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                            Bill Starr가 개발한 클래식 근력 프로그램으로, 복합 운동을 중심으로 주 3회 훈련합니다.
+                          </p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="font-medium mb-2">주간 구성 (3일)</p>
+                            <ul className="list-disc pl-5 space-y-2">
+                              <li>월: 스쿼트 5x5, 벤치 프레스 5x5, 바벨 로우 5x5</li>
+                              <li>수: 스쿼트 5x5, 오버헤드 프레스 5x5, 데드리프트 1x5</li>
+                              <li>금: 스쿼트 5x5, 벤치 프레스 5x5, 바벨 로우 5x5</li>
+                            </ul>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">텍사스 메소드</h5>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                            파워리프터 마크 리퍼토가 개발한 고강도 프로그램으로, 높은 볼륨과 고강도의 조합이 특징입니다.
+                          </p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="font-medium mb-2">주간 구성 (4일)</p>
+                            <ul className="list-disc pl-5 space-y-2">
+                              <li>월: 볼륨 - 스쿼트 5x5, 벤치 프레스 5x5, 액세서리</li>
+                              <li>수: 복구 - 경량 스쿼트 2x5, 오버헤드 프레스 3x5, 데드리프트 1x5</li>
+                              <li>금: 강도 - 스쿼트 1x5, 벤치 프레스 1x5 (최대 무게), 액세서리</li>
+                              <li>토: 다이나믹 - 폭발적 스쿼트 10x3, 백오프 벤치 3x5, 액세서리</li>
+                            </ul>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">GZCL 메소드</h5>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                            파워리프터 코리 그레고리가 개발한 유연한 프레임워크로, 티어 시스템으로 운동을 분류합니다.
+                          </p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <p className="font-medium mb-2">티어 시스템</p>
+                            <ul className="list-disc pl-5 space-y-2">
+                              <li>T1 (메인 리프트): 1-5회 반복, 85-100% 1RM, 10-15세트</li>
+                              <li>T2 (보조 리프트): 5-10회 반복, 65-85% 1RM, 15-25세트</li>
+                              <li>T3 (고립 운동): 10+ 반복, 65% 1RM 이하, 25-50세트</li>
+                            </ul>
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
                   
-                  {/* 어깨 운동 세트 정보 */}
-                  {selectedPart === 'shoulder' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">어깨 운동 세트 구성</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 오버헤드 프레스</h5>
-                          <p className="ml-4">8회 x 4세트 (세트 사이 1-2분 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 사이드 레터럴 레이즈</h5>
-                          <p className="ml-4">12회 x 3세트 (세트 사이 45-60초 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 페이스 풀</h5>
-                          <p className="ml-4">15회 x 3세트 (세트 사이 45-60초 휴식)</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 하체 운동 세트 정보 */}
-                  {selectedPart === 'leg' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">하체 운동 세트 구성</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 스쿼트</h5>
-                          <p className="ml-4">8회 x 4세트 (세트 사이 2분 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 레그 프레스</h5>
-                          <p className="ml-4">10회 x 3세트 (세트 사이 1-2분 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 레그 익스텐션</h5>
-                          <p className="ml-4">12회 x 3세트 (세트 사이 1분 휴식)</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 이두 운동 세트 정보 */}
-                  {selectedPart === 'biceps' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">이두 운동 세트 구성</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 바벨 컬</h5>
-                          <p className="ml-4">10회 x 4세트 (세트 사이 1분 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 해머 컬</h5>
-                          <p className="ml-4">12회 x 3세트 (세트 사이 45초 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 케이블 컬</h5>
-                          <p className="ml-4">15회 x 3세트 (세트 사이 30초 휴식)</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 삼두 운동 세트 정보 */}
-                  {selectedPart === 'triceps' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">삼두 운동 세트 구성</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 케이블 푸시다운</h5>
-                          <p className="ml-4">12회 x 4세트 (세트 사이 1분 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 트라이셉스 익스텐션</h5>
-                          <p className="ml-4">10회 x 3세트 (세트 사이 45초 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 딥스</h5>
-                          <p className="ml-4">8-12회 x 3세트 (세트 사이 1분 휴식)</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 복근 운동 세트 정보 */}
-                  {selectedPart === 'abs' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">복근 운동 세트 구성</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">메인 운동: 크런치</h5>
-                          <p className="ml-4">15회 x 3세트 (세트 사이 30초 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 1: 레그 레이즈</h5>
-                          <p className="ml-4">12회 x 3세트 (세트 사이 30초 휴식)</p>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-blue-600 dark:text-blue-400">보조 운동 2: 플랭크</h5>
-                          <p className="ml-4">30초 x 3세트 (세트 사이 30초 휴식)</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <div className="mt-4 text-center">
                   <button 

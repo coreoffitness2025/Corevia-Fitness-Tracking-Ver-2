@@ -7,9 +7,11 @@ import {
   addDoc,
   Timestamp,
   updateDoc,
-  doc
+  doc,
+  deleteDoc
 } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '../firebase/firebaseConfig';
 import { Food } from '../types';
 
 // 로컬 스토리지 키 정의
@@ -203,4 +205,202 @@ export const saveFoodRecord = async (foodData: Omit<Food, 'id'>): Promise<Food> 
     id: docRef.id,
     ...foodData
   };
+};
+
+// 식단 기록 저장 함수
+export const saveFoodEntry = async (
+  userId: string,
+  foodData: Omit<Food, 'id' | 'imageUrl'> & { imageFile?: File }
+): Promise<string> => {
+  try {
+    let imageUrl = '';
+    
+    // 이미지 파일이 있으면 스토리지에 업로드
+    if (foodData.imageFile) {
+      const timestamp = new Date().getTime();
+      const storageRef = ref(storage, `food-images/${userId}/${timestamp}_${foodData.imageFile.name}`);
+      
+      // 이미지 업로드
+      await uploadBytes(storageRef, foodData.imageFile);
+      
+      // 업로드된 이미지 URL 가져오기
+      imageUrl = await getDownloadURL(storageRef);
+      console.log('이미지 업로드 성공:', imageUrl);
+    } else if (foodData.image && typeof foodData.image === 'string' && foodData.image.startsWith('data:image')) {
+      // base64 이미지인 경우 그대로 저장
+      imageUrl = foodData.image;
+      console.log('Base64 이미지 저장');
+    }
+    
+    // Firestore에 식단 데이터 저장
+    const foodEntry = {
+      userId,
+      name: foodData.name,
+      calories: foodData.calories || 0,
+      date: foodData.date || Timestamp.fromDate(new Date()),
+      description: foodData.description || '',
+      imageUrl,
+      nutrients: foodData.nutrients || null,
+      mealType: foodData.mealType || '식사 기록'
+    };
+    
+    const docRef = await addDoc(collection(db, 'foods'), foodEntry);
+    console.log('식단 기록 저장 성공:', docRef.id);
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('식단 기록 저장 오류:', error);
+    throw error;
+  }
+};
+
+// 식단 기록 조회 함수
+export const getFoodEntries = async (userId: string, startDate?: Date, endDate?: Date): Promise<Food[]> => {
+  try {
+    let foodQuery;
+    
+    if (startDate && endDate) {
+      // 날짜 범위로 필터링
+      foodQuery = query(
+        collection(db, 'foods'),
+        where('userId', '==', userId),
+        where('date', '>=', Timestamp.fromDate(startDate)),
+        where('date', '<=', Timestamp.fromDate(endDate)),
+        orderBy('date', 'desc')
+      );
+    } else {
+      // 모든 데이터 조회
+      foodQuery = query(
+        collection(db, 'foods'),
+        where('userId', '==', userId),
+        orderBy('date', 'desc')
+      );
+    }
+    
+    const querySnapshot = await getDocs(foodQuery);
+    
+    // 결과 데이터 변환
+    const foods: Food[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const food: Food = {
+        id: doc.id,
+        name: data.name,
+        calories: data.calories,
+        date: data.date?.toDate() || new Date(),
+        description: data.description,
+        imageUrl: data.imageUrl,
+        nutrients: data.nutrients,
+        mealType: data.mealType || '식사 기록'
+      };
+      foods.push(food);
+    });
+    
+    console.log(`${foods.length}개의 식단 기록을 로드했습니다.`);
+    
+    // 이미지 URL에 캐시 방지를 위한 타임스탬프 추가
+    for (const food of foods) {
+      if (food.imageUrl && !food.imageUrl.startsWith('data:image')) {
+        const timestamp = new Date().getTime();
+        food.imageUrl = `${food.imageUrl}?t=${timestamp}`;
+      }
+    }
+    
+    return foods;
+  } catch (error) {
+    console.error('식단 기록 조회 오류:', error);
+    throw error;
+  }
+};
+
+// 식단 기록 삭제 함수
+export const deleteFoodEntry = async (userId: string, foodId: string, imageUrl?: string): Promise<void> => {
+  try {
+    // Firestore에서 기록 삭제
+    const foodRef = doc(db, 'foods', foodId);
+    await deleteDoc(foodRef);
+    
+    // 이미지가 있고 firebase 스토리지 URL인 경우 이미지도 삭제
+    if (imageUrl && imageUrl.includes('firebase') && !imageUrl.startsWith('data:image')) {
+      try {
+        // URL에서 ?t= 파라미터 제거
+        const cleanUrl = imageUrl.split('?')[0];
+        const storageRef = ref(storage, cleanUrl);
+        await deleteObject(storageRef);
+        console.log('이미지 삭제 성공');
+      } catch (imgError) {
+        console.warn('이미지 삭제 실패, 기록은 삭제됨:', imgError);
+      }
+    }
+    
+    console.log('식단 기록 삭제 성공');
+  } catch (error) {
+    console.error('식단 기록 삭제 오류:', error);
+    throw error;
+  }
+};
+
+// 이미지 파일을 base64 문자열로 변환
+export const convertImageToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
+
+// 특정 날짜의 식단 기록을 가져오는 함수
+export const getFoodEntriesByDate = async (userId: string, date: Date): Promise<Food[]> => {
+  try {
+    // 날짜의 시작과 끝 계산
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // 쿼리 실행
+    const foodQuery = query(
+      collection(db, 'foods'),
+      where('userId', '==', userId),
+      where('date', '>=', Timestamp.fromDate(startOfDay)),
+      where('date', '<=', Timestamp.fromDate(endOfDay)),
+      orderBy('date', 'asc')
+    );
+    
+    const querySnapshot = await getDocs(foodQuery);
+    
+    // 결과 데이터 변환
+    const foods: Food[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const food: Food = {
+        id: doc.id,
+        name: data.name,
+        calories: data.calories,
+        date: data.date?.toDate() || new Date(),
+        description: data.description,
+        imageUrl: data.imageUrl,
+        nutrients: data.nutrients,
+        mealType: data.mealType || '식사 기록'
+      };
+      foods.push(food);
+    });
+    
+    console.log(`${date.toLocaleDateString()}에 ${foods.length}개의 식단 기록을 로드했습니다.`);
+    
+    // 이미지 URL에 캐시 방지를 위한 타임스탬프 추가
+    for (const food of foods) {
+      if (food.imageUrl && !food.imageUrl.startsWith('data:image')) {
+        const timestamp = new Date().getTime();
+        food.imageUrl = `${food.imageUrl}?t=${timestamp}`;
+      }
+    }
+    
+    return foods;
+  } catch (error) {
+    console.error('특정 날짜 식단 기록 조회 오류:', error);
+    throw error;
+  }
 }; 
