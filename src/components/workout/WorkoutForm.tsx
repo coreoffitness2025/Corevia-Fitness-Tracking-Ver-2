@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWorkoutSettings } from '../../contexts/WorkoutSettingsContext';
 import { 
   ExercisePart, 
   Session, 
@@ -85,6 +86,7 @@ type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { userProfile, updateProfile } = useAuth();
+  const { setConfiguration } = useWorkoutSettings();
   const [part, setPart] = useState<ExercisePart>('chest');
   const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>(mainExerciseOptions.chest[0].value);
   const [mainExercise, setMainExercise] = useState({
@@ -160,61 +162,25 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         setPreferredExercises(prefExercises);
       }
       
-      // 2. 세트 구성 설정 적용
-      // 세트 구성을 사용자 프로필에서 직접 로드
-      if (userProfile.setConfiguration) {
-        const setConfig = userProfile.setConfiguration;
-        console.log('사용자 프로필에서 세트 설정 로드:', setConfig);
-        
-        // 세트 설정 적용
-        setSelectedSetConfiguration(setConfig.preferredSetup as SetConfiguration);
-        setCustomSets(setConfig.customSets || 5);
-        setCustomReps(setConfig.customReps || 10);
-        
-        // 세트 구성 생성 및 적용 (mainExercise.sets 업데이트)
-        applySetConfiguration(setConfig);
-      } else {
-        // 프로필에 세트 설정이 없는 경우 기본값 적용
-        const defaultConfig = {
-          preferredSetup: '10x5' as SetConfiguration,
-          customSets: 5,
-          customReps: 10
-        };
-        console.log('기본 세트 설정 적용:', defaultConfig);
-        
-        // 세트 설정 적용
-        setSelectedSetConfiguration(defaultConfig.preferredSetup);
-        setCustomSets(defaultConfig.customSets);
-        setCustomReps(defaultConfig.customReps);
-        
-        // 세트 구성 생성 및 적용
-        applySetConfiguration(defaultConfig);
-      }
-      
       // 3. 현재 선택된 부위에 대한 최근 운동 기록 조회
       fetchLatestWorkout(part);
     }
   }, [userProfile?.uid]); // 의존성 배열에 userProfile.uid만 포함하여 로그인 시에만 실행
   
-  // 세트 설정 업데이트 이벤트 리스너 추가
+  // 세트 설정이 변경될 때마다 적용
   useEffect(() => {
-    // 세트 설정이 업데이트되면 즉시 적용하는 이벤트 리스너
-    const handleSetConfigUpdate = (event: CustomEvent) => {
-      console.log('세트 설정 업데이트 이벤트 수신:', event.detail);
-      if (event.detail && event.detail.setConfiguration) {
-        // 새 세트 설정 적용
-        applySetConfiguration(event.detail.setConfiguration);
-      }
-    };
-    
-    // 이벤트 리스너 등록
-    window.addEventListener('setConfigurationUpdated' as any, handleSetConfigUpdate as EventListener);
-    
-    // 컴포넌트 언마운트 시 이벤트 리스너 제거
-    return () => {
-      window.removeEventListener('setConfigurationUpdated' as any, handleSetConfigUpdate as EventListener);
-    };
-  }, []);
+    if (setConfiguration) {
+      console.log('Context에서 세트 설정 변경 감지:', setConfiguration);
+      
+      // 세트 설정 적용
+      setSelectedSetConfiguration(setConfiguration.preferredSetup);
+      setCustomSets(setConfiguration.customSets);
+      setCustomReps(setConfiguration.customReps);
+      
+      // 세트 구성 생성 및 적용
+      applySetConfiguration(setConfiguration);
+    }
+  }, [setConfiguration]);
 
   // 부위(part) 변경 시 운동 이름만 업데이트하고, 세트 설정은 그대로 유지
   useEffect(() => {

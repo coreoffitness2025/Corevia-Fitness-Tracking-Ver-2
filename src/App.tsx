@@ -3,6 +3,7 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
+import { WorkoutSettingsProvider } from './contexts/WorkoutSettingsContext';
 
 // 보호된 라우트 컴포넌트 import
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -84,8 +85,10 @@ const renderRoutes = (routes: AppRoute[]) => {
 const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <AuthProvider>
-      <Toaster position="top-center" />
-      {children}
+      <WorkoutSettingsProvider>
+        <Toaster position="top-center" />
+        {children}
+      </WorkoutSettingsProvider>
     </AuthProvider>
   );
 };

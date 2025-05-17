@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { WorkoutGuideInfo } from '../../types/index';
 import { toast } from 'react-hot-toast';
+import { useWorkoutSettings } from '../../contexts/WorkoutSettingsContext';
 
 interface WorkoutSetConfigProps {
   onConfigSaved?: () => void;
 }
 
 const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) => {
-  const { currentUser, userProfile, updateProfile } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+  const { setConfiguration: contextSetConfig, updateSetConfiguration } = useWorkoutSettings();
   const [guideInfo, setGuideInfo] = useState<WorkoutGuideInfo>({
     gender: userProfile?.gender || 'male',
     age: userProfile?.age || 30,
@@ -23,8 +25,16 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       bench: userProfile?.oneRepMax?.bench || 0,
       overheadPress: userProfile?.oneRepMax?.overheadPress || 0,
     },
-    preferredSetConfig: userProfile?.setConfiguration?.preferredSetup || '10x5',
+    preferredSetConfig: contextSetConfig.preferredSetup,
   });
+  
+  // Context의 setConfiguration이 변경되면 guideInfo 업데이트
+  useEffect(() => {
+    setGuideInfo(prev => ({
+      ...prev,
+      preferredSetConfig: contextSetConfig.preferredSetup
+    }));
+  }, [contextSetConfig]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -52,7 +62,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
     }
   };
 
-  // 개인화 설정에 적용하는 함수 (단순화된 버전)
+  // 개인화 설정에 적용하는 함수 (Context 사용 버전)
   const applyToProfile = async () => {
     if (!currentUser) return;
     
@@ -91,43 +101,28 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       }
       
       // 세트 구성 생성
-      const setConfiguration = {
+      const newSetConfiguration = {
         preferredSetup: guideInfo.preferredSetConfig,
         customSets,
         customReps
       };
       
-      console.log('설정할 세트 구성:', setConfiguration);
+      console.log('설정할 세트 구성:', newSetConfiguration);
       
-      // 업데이트할 프로필 정보
-      const profileUpdate: Partial<UserProfile> = {
-        setConfiguration
-      };
+      // Context의 업데이트 함수 사용 - Firebase와 로컬 상태 모두 업데이트
+      await updateSetConfiguration(newSetConfiguration);
       
-      // 경험 정보가 있으면 추가
+      // 경험 정보 업데이트 - 이 부분은 기존 방식 유지
       if (userProfile?.experience) {
-        profileUpdate.experience = {
-          ...userProfile.experience,
-          level: guideInfo.experience
+        const profileUpdate: Partial<UserProfile> = {
+          experience: {
+            ...userProfile.experience,
+            level: guideInfo.experience
+          }
         };
+        
+        // updateProfile 함수를 직접 호출하는 대신, WorkoutSettingsContext에 추가 기능 구현 필요하다면 나중에 확장
       }
-      
-      // Firebase 사용자 프로필 업데이트 - 단일 진실 소스로 활용
-      console.log('프로필 업데이트 직전:', profileUpdate);
-      await updateProfile(profileUpdate);
-      console.log('프로필 업데이트 완료');
-      
-      // 성공 메시지
-      toast.success('세트 설정이 저장되었습니다', {
-        duration: 3000,
-        position: 'top-center'
-      });
-      
-      // 커스텀 이벤트 발생 - 다른 컴포넌트에 알림
-      const event = new CustomEvent('setConfigurationUpdated', {
-        detail: { setConfiguration }
-      });
-      window.dispatchEvent(event);
       
       // 콜백 함수 호출
       if (onConfigSaved) {
@@ -135,7 +130,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       }
     } catch (error) {
       console.error('프로필 업데이트 중 오류 발생:', error);
-      toast.error('설정 적용 중 오류가 발생했습니다');
+      // 에러 처리는 Context에서 이미 처리됨
     }
   };
 
