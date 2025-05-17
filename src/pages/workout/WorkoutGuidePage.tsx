@@ -106,37 +106,23 @@ const WorkoutGuidePage: React.FC = () => {
         };
       }
       
-      // Firebase와 컨텍스트 상태 모두 업데이트
+      // 1. Firebase 사용자 프로필 업데이트 - 영구 저장
       console.log('프로필 업데이트 직전:', profileUpdate);
       await updateProfile(profileUpdate);
       console.log('프로필 업데이트 완료');
       
+      // 2. 로컬 스토리지에 간단히 저장 - 세션 지속
+      localStorage.setItem('userSetConfiguration', JSON.stringify(setConfiguration));
+      console.log('세트 설정을 로컬 스토리지에 저장 완료:', setConfiguration);
+      
       // 성공 메시지
-      toast.success('세트 설정이 프로필에 적용되었습니다', {
+      toast.success('세트 설정이 저장되었습니다', {
         duration: 3000,
         position: 'top-center'
       });
-
-      // 이벤트 발생 - 세트 설정 변경을 알리기 위한 커스텀 이벤트
-      const event = new CustomEvent('setConfigUpdated', {
-        detail: { setConfiguration }
-      });
-      window.dispatchEvent(event);
-      console.log('세트 설정 변경 이벤트 발생');
       
-      // 로컬 스토리지에 현재 시간과 함께 설정 저장
-      const configWithTimestamp = {
-        ...setConfiguration,
-        timestamp: new Date().getTime() // 현재 시간 추가
-      };
-      localStorage.setItem('lastSetConfiguration', JSON.stringify(configWithTimestamp));
-      localStorage.removeItem('lastSetConfigurationChecked'); // 체크 기록 삭제하여 즉시 적용되게 함
-      console.log('세트 설정을 로컬 스토리지에 저장 완료:', configWithTimestamp);
-      
-      // 잠시 기다렸다가 설정 페이지로 리디렉션
-      setTimeout(() => {
-        navigate('/settings');
-      }, 200);
+      // 설정 페이지로 이동
+      navigate('/settings');
     } catch (error) {
       console.error('프로필 업데이트 중 오류 발생:', error);
       toast.error('설정 적용 중 오류가 발생했습니다');
