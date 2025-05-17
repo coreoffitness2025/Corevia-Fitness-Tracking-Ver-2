@@ -161,61 +161,60 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       }
       
       // 2. 세트 구성 설정 적용
-      // 세트 구성 설정 로드 (우선순위: 로컬 스토리지 > 사용자 프로필 > 기본값)
-      let setConfig = null;
-      
-      // 2-1. 로컬 스토리지에서 세트 설정 확인
-      // 새 키와 이전 키 모두 확인
-      const newStoredConfig = localStorage.getItem('userSetConfiguration');
-      const oldStoredConfig = localStorage.getItem('lastSetConfiguration');
-      
-      // 이전 키가 있고 새 키가 없으면 마이그레이션 처리
-      if (oldStoredConfig && !newStoredConfig) {
-        console.log('이전 설정 키가 발견되어 새 형식으로 마이그레이션합니다.');
-        localStorage.setItem('userSetConfiguration', oldStoredConfig);
-        localStorage.removeItem('lastSetConfiguration');
-        localStorage.removeItem('lastSetConfigurationChecked');
-      }
-      
-      // 새 키 기준으로 설정 로드 시도
-      const storedConfig = newStoredConfig || oldStoredConfig;
-      if (storedConfig) {
-        try {
-          setConfig = JSON.parse(storedConfig);
-          console.log('로컬 스토리지에서 세트 설정 로드:', setConfig);
-        } catch (error) {
-          console.error('로컬 스토리지 세트 설정 파싱 실패:', error);
-        }
-      }
-      
-      // 2-2. 로컬 스토리지에 없으면 사용자 프로필에서 확인
-      if (!setConfig && userProfile.setConfiguration) {
-        setConfig = userProfile.setConfiguration;
+      // 세트 구성을 사용자 프로필에서 직접 로드
+      if (userProfile.setConfiguration) {
+        const setConfig = userProfile.setConfiguration;
         console.log('사용자 프로필에서 세트 설정 로드:', setConfig);
-      }
-      
-      // 2-3. 둘 다 없으면 기본값 적용
-      if (!setConfig) {
-        setConfig = {
-          preferredSetup: '10x5',
+        
+        // 세트 설정 적용
+        setSelectedSetConfiguration(setConfig.preferredSetup as SetConfiguration);
+        setCustomSets(setConfig.customSets || 5);
+        setCustomReps(setConfig.customReps || 10);
+        
+        // 세트 구성 생성 및 적용 (mainExercise.sets 업데이트)
+        applySetConfiguration(setConfig);
+      } else {
+        // 프로필에 세트 설정이 없는 경우 기본값 적용
+        const defaultConfig = {
+          preferredSetup: '10x5' as SetConfiguration,
           customSets: 5,
           customReps: 10
         };
-        console.log('기본 세트 설정 적용:', setConfig);
+        console.log('기본 세트 설정 적용:', defaultConfig);
+        
+        // 세트 설정 적용
+        setSelectedSetConfiguration(defaultConfig.preferredSetup);
+        setCustomSets(defaultConfig.customSets);
+        setCustomReps(defaultConfig.customReps);
+        
+        // 세트 구성 생성 및 적용
+        applySetConfiguration(defaultConfig);
       }
-      
-      // 세트 설정 적용
-      setSelectedSetConfiguration(setConfig.preferredSetup as SetConfiguration);
-      setCustomSets(setConfig.customSets || 5);
-      setCustomReps(setConfig.customReps || 10);
-      
-      // 세트 구성 생성 및 적용 (mainExercise.sets 업데이트)
-      applySetConfiguration(setConfig);
       
       // 3. 현재 선택된 부위에 대한 최근 운동 기록 조회
       fetchLatestWorkout(part);
     }
   }, [userProfile?.uid]); // 의존성 배열에 userProfile.uid만 포함하여 로그인 시에만 실행
+  
+  // 세트 설정 업데이트 이벤트 리스너 추가
+  useEffect(() => {
+    // 세트 설정이 업데이트되면 즉시 적용하는 이벤트 리스너
+    const handleSetConfigUpdate = (event: CustomEvent) => {
+      console.log('세트 설정 업데이트 이벤트 수신:', event.detail);
+      if (event.detail && event.detail.setConfiguration) {
+        // 새 세트 설정 적용
+        applySetConfiguration(event.detail.setConfiguration);
+      }
+    };
+    
+    // 이벤트 리스너 등록
+    window.addEventListener('setConfigurationUpdated' as any, handleSetConfigUpdate as EventListener);
+    
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('setConfigurationUpdated' as any, handleSetConfigUpdate as EventListener);
+    };
+  }, []);
 
   // 부위(part) 변경 시 운동 이름만 업데이트하고, 세트 설정은 그대로 유지
   useEffect(() => {
@@ -509,22 +508,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       }
     }
   };
-
-  // 커스텀 이벤트 핸들러 - 세션 저장 이벤트 발생 시 프로필 업데이트
-  useEffect(() => {
-    const handleProfileUpdate = (event: CustomEvent) => {
-      console.log('커스텀 이벤트 발생: profileUpdated', event.detail);
-      // 필요한 경우, 여기서 추가 로직 처리
-    };
-
-    // 커스텀 이벤트 리스너 추가
-    window.addEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
-
-    // 컴포넌트 언마운트 시 이벤트 리스너 제거
-    return () => {
-      window.removeEventListener('profileUpdated' as any, handleProfileUpdate as EventListener);
-    };
-  }, []);
 
   // 최근 운동 기록 가져오기
   const fetchLatestWorkout = async (exercisePart: ExercisePart, mainExerciseType?: MainExerciseType) => {

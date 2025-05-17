@@ -52,51 +52,54 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
     }
   };
 
-  // 개인화 설정에 적용하는 함수
+  // 개인화 설정에 적용하는 함수 (단순화된 버전)
   const applyToProfile = async () => {
     if (!currentUser) return;
     
     try {
       console.log('세트 설정 적용 시작:', guideInfo.preferredSetConfig);
       
-      // 1. 세트 구성 업데이트
-      const setConfiguration = {
-        preferredSetup: guideInfo.preferredSetConfig,
-        customSets: 0,
-        customReps: 0
-      };
-      
       // 세트 구성에 따라 적절한 세트 수와 반복 횟수 설정
+      let customSets = 5;
+      let customReps = 10;
+      
       switch (guideInfo.preferredSetConfig) {
         case '5x5':
           // 5회 5세트 (근력-근비대 균형)
-          setConfiguration.customSets = 5;
-          setConfiguration.customReps = 5;
+          customSets = 5;
+          customReps = 5;
           break;
         case '6x3':
           // 6회 3세트 (근력 향상 - 스트렝스 초점)
-          setConfiguration.customSets = 3;
-          setConfiguration.customReps = 6;
+          customSets = 3;
+          customReps = 6;
           break;
         case '10x5':
           // 10회 5세트 (근비대-보디빌딩 초점)
-          setConfiguration.customSets = 5;
-          setConfiguration.customReps = 10;
+          customSets = 5;
+          customReps = 10;
           break;
         case '15x5':
           // 15회 5세트 (근육 성장 자극)
-          setConfiguration.customSets = 5;
-          setConfiguration.customReps = 15;
+          customSets = 5;
+          customReps = 15;
           break;
         default:
           // 기본값: 10회 5세트
-          setConfiguration.customSets = 5;
-          setConfiguration.customReps = 10;
+          customSets = 5;
+          customReps = 10;
       }
+      
+      // 세트 구성 생성
+      const setConfiguration = {
+        preferredSetup: guideInfo.preferredSetConfig,
+        customSets,
+        customReps
+      };
       
       console.log('설정할 세트 구성:', setConfiguration);
       
-      // 2. 업데이트할 프로필 정보
+      // 업데이트할 프로필 정보
       const profileUpdate: Partial<UserProfile> = {
         setConfiguration
       };
@@ -109,23 +112,22 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         };
       }
       
-      // 1. Firebase 사용자 프로필 업데이트 - 영구 저장
+      // Firebase 사용자 프로필 업데이트 - 단일 진실 소스로 활용
       console.log('프로필 업데이트 직전:', profileUpdate);
       await updateProfile(profileUpdate);
       console.log('프로필 업데이트 완료');
-      
-      // 2. 로컬 스토리지에 간단히 저장 - 세션 지속
-      // 이전 키 데이터 삭제 후 새 설정 저장
-      localStorage.removeItem('lastSetConfiguration'); // 이전 키 삭제
-      localStorage.removeItem('lastSetConfigurationChecked'); // 이전 관련 키 삭제
-      localStorage.setItem('userSetConfiguration', JSON.stringify(setConfiguration));
-      console.log('세트 설정을 로컬 스토리지에 저장 완료:', setConfiguration);
       
       // 성공 메시지
       toast.success('세트 설정이 저장되었습니다', {
         duration: 3000,
         position: 'top-center'
       });
+      
+      // 커스텀 이벤트 발생 - 다른 컴포넌트에 알림
+      const event = new CustomEvent('setConfigurationUpdated', {
+        detail: { setConfiguration }
+      });
+      window.dispatchEvent(event);
       
       // 콜백 함수 호출
       if (onConfigSaved) {
