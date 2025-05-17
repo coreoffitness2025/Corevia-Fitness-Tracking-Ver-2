@@ -174,23 +174,36 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (settings) {
       console.log('[WorkoutForm] 세트 설정 변경 감지:', settings);
       
-      // 세트 설정 적용
-      if (settings.preferredSetup) {
-        setSelectedSetConfiguration(settings.preferredSetup);
+      // 현재 선택된 세트 구성과 동일한지 확인
+      const isSameConfig = 
+        settings.preferredSetup === selectedSetConfiguration &&
+        settings.customSets === customSets &&
+        settings.customReps === customReps;
+        
+      // 세트 구성이 변경된 경우에만 적용
+      if (!isSameConfig) {
+        console.log('[WorkoutForm] 세트 구성 변경 감지, 새 구성 적용');
+        
+        // 세트 설정 적용
+        if (settings.preferredSetup) {
+          setSelectedSetConfiguration(settings.preferredSetup);
+        }
+        
+        if (typeof settings.customSets === 'number') {
+          setCustomSets(settings.customSets);
+        }
+        
+        if (typeof settings.customReps === 'number') {
+          setCustomReps(settings.customReps);
+        }
+        
+        // 세트 구성 생성 및 적용
+        applySetConfiguration(settings);
+      } else {
+        console.log('[WorkoutForm] 세트 구성이 동일하므로 재적용하지 않음');
       }
-      
-      if (typeof settings.customSets === 'number') {
-        setCustomSets(settings.customSets);
-      }
-      
-      if (typeof settings.customReps === 'number') {
-        setCustomReps(settings.customReps);
-      }
-      
-      // 세트 구성 생성 및 적용
-      applySetConfiguration(settings);
     }
-  }, [settings]);
+  }, [settings, selectedSetConfiguration, customSets, customReps]);
 
   // 부위(part) 변경 시 운동 이름만 업데이트하고, 세트 설정은 그대로 유지
   useEffect(() => {
@@ -655,26 +668,61 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       mainExercise.sets.length, mainExercise.sets.map(s => ({ w: s.weight, r: s.reps })));
     
     try {
-      // 메인 운동의 세트 배열 업데이트 - 즉시 실행 버전
-      const updatedSets = Array.from({ length: setsCount }, (_, i) => ({
-        // 기존 세트가 있으면 무게 유지, 새 세트는 무게 0으로 설정
-        weight: i < mainExercise.sets.length ? mainExercise.sets[i].weight || 0 : 0,
-        // 모든 세트의 반복 횟수는 설정값으로 통일
-        reps: repsCount,
-        isSuccess: null as boolean | null
-      }));
-      
-      console.log('[WorkoutForm] 업데이트된 세트 배열:', updatedSets);
-      
-      // 상태 업데이트
-      setMainExercise(prev => {
-        const updated = {
+      // 메인 운동의 세트 배열 업데이트
+      // 페이지 이동 후 세트 정보가 유지되도록 수정
+      // 운동 데이터가 이미 있는 경우 세트 수만 조정하고 기존 데이터 유지
+      if (mainExercise.sets.length > 0 && mainExercise.sets[0].weight > 0) {
+        console.log('[WorkoutForm] 기존 운동 데이터 있음, 세트 수만 조정');
+        
+        // 기존 세트가 새 세트 수보다 많으면 잘라내고, 적으면 추가
+        const updatedSets = [...mainExercise.sets];
+        
+        // 세트 수 조정
+        if (updatedSets.length > setsCount) {
+          // 세트 수 줄이기
+          updatedSets.splice(setsCount);
+        } else if (updatedSets.length < setsCount) {
+          // 세트 수 늘리기 - 마지막 세트 기준으로 복제
+          const lastSet = updatedSets[updatedSets.length - 1] || { 
+            reps: repsCount, 
+            weight: 0, 
+            isSuccess: null
+          };
+          
+          for (let i = updatedSets.length; i < setsCount; i++) {
+            updatedSets.push({ 
+              ...lastSet, 
+              isSuccess: null 
+            });
+          }
+        }
+        
+        // 반복 횟수만 업데이트 (무게와 성공 여부는 유지)
+        updatedSets.forEach(set => {
+          set.reps = repsCount;
+        });
+        
+        setMainExercise(prev => ({
           ...prev,
           sets: updatedSets
-        };
-        console.log('[WorkoutForm] 세트 구성 적용 완료:', updated);
-        return updated;
-      });
+        }));
+      } else {
+        // 운동 데이터가 없는 경우 새로 생성
+        console.log('[WorkoutForm] 기존 운동 데이터 없음, 새 세트 생성');
+        
+        const updatedSets = Array.from({ length: setsCount }, (_, i) => ({
+          weight: i < mainExercise.sets.length ? mainExercise.sets[i].weight || 0 : 0,
+          reps: repsCount,
+          isSuccess: null as boolean | null
+        }));
+        
+        setMainExercise(prev => ({
+          ...prev,
+          sets: updatedSets
+        }));
+      }
+      
+      console.log('[WorkoutForm] 세트 구성 적용 완료');
     } catch (error) {
       console.error('[WorkoutForm] 세트 구성 적용 중 오류 발생:', error);
     }
