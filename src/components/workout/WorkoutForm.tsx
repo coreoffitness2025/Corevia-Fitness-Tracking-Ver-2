@@ -169,12 +169,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           console.log('로컬 스토리지에서 세트 설정 로드:', config);
           
           // 상태 업데이트
-          setSelectedSetConfiguration(config.preferredSetup);
+          setSelectedSetConfiguration(config.preferredSetup as SetConfiguration);
           setCustomSets(config.customSets || 5);
           setCustomReps(config.customReps || 10);
           
           // 세트 구성 적용
           applySetConfiguration(config);
+          
+          // 부위에 따른 최근 운동 기록 조회
+          fetchLatestWorkout(part);
           return;  // 로컬 스토리지에서 설정을 로드했으면 프로필 설정은 무시
         } catch (error) {
           console.error('저장된 세트 설정 로드 실패:', error);
@@ -188,7 +191,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         
         if (config.preferredSetup) {
           // 선호하는 세트 구성 적용
-          setSelectedSetConfiguration(config.preferredSetup);
+          setSelectedSetConfiguration(config.preferredSetup as SetConfiguration);
           setCustomSets(config.customSets || 5);
           setCustomReps(config.customReps || 10);
           applySetConfiguration(config);
@@ -201,9 +204,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           customSets: 5,
           customReps: 10
         };
-        setSelectedSetConfiguration(defaultConfig.preferredSetup);
+        setSelectedSetConfiguration(defaultConfig.preferredSetup as SetConfiguration);
         applySetConfiguration(defaultConfig);
       }
+      
+      // 부위에 따른 최근 운동 기록 조회
+      fetchLatestWorkout(part);
     }
   }, [userProfile?.uid]); // 의존성 배열에 userProfile.uid만 포함하여 로그인 시에만 실행
 
@@ -594,7 +600,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           
           // 최근 운동 이력 정보 업데이트
           setLatestWorkoutInfo({
-            date: latestSession.date instanceof Date ? latestSession.date : (latestSession.date?.toDate ? latestSession.date.toDate() : new Date()),
+            date: latestSession.date instanceof Date 
+              ? latestSession.date 
+              : (typeof latestSession.date === 'object' && latestSession.date && 'toDate' in latestSession.date 
+                ? latestSession.date.toDate() 
+                : new Date()),
             weight: lastWeight,
             allSuccess,
             exists: true,
@@ -665,7 +675,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         console.log('이벤트로부터 세트 설정 적용:', setConfiguration);
         
         // 상태 업데이트 전에 설정을 적용하여 일관성 보장
-        setSelectedSetConfiguration(setConfiguration.preferredSetup);
+        setSelectedSetConfiguration(setConfiguration.preferredSetup as SetConfiguration);
         setCustomSets(setConfiguration.customSets || 5);
         setCustomReps(setConfiguration.customReps || 10);
         
@@ -691,7 +701,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     
     // 세트 구성에 따라 초기 세트 수 설정
     const { setsCount, repsCount } = getSetConfiguration(
-      config.preferredSetup, 
+      config.preferredSetup as SetConfiguration, 
       config.customSets, 
       config.customReps
     );
@@ -709,47 +719,32 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setMainExercise(prevExercise => {
       console.log('현재 메인 운동 세트:', prevExercise.sets.length);
       
-      // 현재 세트와 설정 세트 수 비교
-      if (prevExercise.sets.length !== setsCount) {
-        // 세트 수가 다르면 새로운 세트 배열로 대체
-        const updatedSets = Array.from({ length: setsCount }, (_, i) => {
-          // 기존 세트가 있으면 무게 유지
-          if (i < prevExercise.sets.length) {
-            return {
-              reps: repsCount,
-              weight: prevExercise.sets[i].weight || 0,
-              isSuccess: null as boolean | null
-            };
-          } else {
-            return {
-              reps: repsCount,
-              weight: 0,
-              isSuccess: null as boolean | null
-            };
-          }
-        });
-        
-        console.log(`세트 수 변경: ${prevExercise.sets.length} -> ${updatedSets.length}`);
-        console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
-        
-        return {
-          ...prevExercise,
-          sets: updatedSets
-        };
-      } else {
-        // 세트 수가 동일하면 반복 횟수만 업데이트
-        const updatedSets = prevExercise.sets.map(set => ({
-          ...set,
-          reps: repsCount  // 반복 횟수 업데이트
-        }));
-        
-        console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`);
-        
-        return {
-          ...prevExercise,
-          sets: updatedSets
-        };
-      }
+      // 새 세트 배열 생성
+      const updatedSets = Array.from({ length: setsCount }, (_, i) => {
+        // 기존 세트가 있으면 무게 유지, 반복 횟수만 업데이트
+        if (i < prevExercise.sets.length) {
+          return {
+            weight: prevExercise.sets[i].weight || 0,
+            reps: repsCount,
+            isSuccess: null as boolean | null
+          };
+        } else {
+          // 새 세트는 무게 0, 지정된 반복 횟수로 설정
+          return {
+            weight: 0,
+            reps: repsCount,
+            isSuccess: null as boolean | null
+          };
+        }
+      });
+      
+      console.log(`세트 수 변경: ${prevExercise.sets.length} -> ${updatedSets.length}`);
+      console.log(`세트 구성 적용 완료: ${setsCount}세트 x ${repsCount}회`, updatedSets);
+      
+      return {
+        ...prevExercise,
+        sets: updatedSets
+      };
     });
   };
 
@@ -996,7 +991,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 </div>
 
                 {/* 최근 운동 이력 정보 표시 */}
-                {latestWorkoutInfo.exists && (
+                {latestWorkoutInfo.exists ? (
                   <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center justify-between">
                       <div>
@@ -1020,6 +1015,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         </div>
                       )}
                     </div>
+                  </div>
+                ) : (
+                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                      최근 운동 이력이 없습니다.
+                    </p>
                   </div>
                 )}
 
