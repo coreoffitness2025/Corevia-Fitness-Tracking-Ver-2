@@ -6,8 +6,9 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../firebase/firebaseConfig';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
-import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight } from 'lucide-react';
+import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useWorkoutSettings } from '../hooks/useWorkoutSettings';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -45,6 +46,7 @@ const calculateMacrosForHome = (targetCalories: number, weight_kg: number | unde
 
 const HomePage = () => {
   const { userProfile, loading: authLoading } = useAuth();
+  const { settings: workoutSettings, isLoading: isLoadingSettings } = useWorkoutSettings();
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
   const [yesterdayMeals, setYesterdayMeals] = useState<Food[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -126,7 +128,7 @@ const HomePage = () => {
     }
   }, [userProfile]);
 
-  if (authLoading || loading) {
+  if (authLoading || loading || isLoadingSettings) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-96">
@@ -241,6 +243,45 @@ const HomePage = () => {
                 <p className="text-lg font-bold text-gray-800 dark:text-white">{nutrients.fat}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.fatPerMeal}g/끼니)</p>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 선호하는 세트 구성 표시 섹션 */}
+      <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="flex items-center mb-4">
+          <Settings size={28} className="text-blue-500 mr-3" />
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">메인 운동 세트 설정</h2>
+        </div>
+        <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                현재 선호 세트 구성: {workoutSettings?.preferredSetup || '10x5'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {workoutSettings?.preferredSetup === '5x5' && '근력과 근비대 균형에 최적화된 구성 (5회 5세트)'}
+                {workoutSettings?.preferredSetup === '10x5' && '근비대에 최적화된 구성 (10회 5세트)'}
+                {workoutSettings?.preferredSetup === '15x5' && '근지구력 향상에 최적화된 구성 (15회 5세트)'}
+                {workoutSettings?.preferredSetup === '6x3' && '근력 향상에 중점을 둔 구성 (6회 3세트)'}
+              </p>
+            </div>
+            <div className="flex items-center mt-4 md:mt-0">
+              <div className="mx-4 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">세트 수</p>
+                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{workoutSettings?.customSets || 5}</p>
+              </div>
+              <div className="mx-4 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">반복 횟수</p>
+                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{workoutSettings?.customReps || 10}</p>
+              </div>
+              <button 
+                onClick={() => navigate('/settings')}
+                className="ml-6 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 text-blue-700 dark:text-blue-200 py-2 px-4 rounded-lg text-sm transition-colors duration-300"
+              >
+                변경하기
+              </button>
             </div>
           </div>
         </div>
