@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { Food } from '../../types';
@@ -7,8 +7,9 @@ import { fetchFoodsByDate } from '../../services/foodService';
 import FoodItem from './FoodItem';
 import NutritionSummary from './NutritionSummary';
 import Card from '../common/Card';
-import { Info, Download, Share, Calendar, CalendarDays, Camera, Image as ImageIcon } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { Info, Calendar, CalendarDays, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 // 활동 수준에 따른 칼로리 계수
 const activityMultipliers = {
@@ -37,6 +38,7 @@ type ViewMode = 'day' | 'week' | 'month';
 
 const FoodLog: React.FC = () => {
   const { user } = useAuthStore();
+  const { userProfile } = useAuth();
   const { foods, setFoods } = useFoodStore();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -47,54 +49,79 @@ const FoodLog: React.FC = () => {
   const [proteinTarget, setProteinTarget] = useState<number>(0);
   const [carbsTarget, setCarbsTarget] = useState<number>(0);
   const [fatTarget, setFatTarget] = useState<number>(0);
-  const foodStampRef = useRef<HTMLDivElement>(null);
-  const [stampImage, setStampImage] = useState<string | null>(null);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [showCamera, setShowCamera] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      // 사용자 프로필에서 목표 칼로리 계산 (실제 앱에서는 Firebase에서 가져옴)
-      const mockUserProfile = {
-        height: 175,
-        weight: 70,
-        age: 30,
-        gender: 'male' as 'male' | 'female',
-        activityLevel: 'moderate' as 'low' | 'moderate' | 'high',
-        fitnessGoal: 'maintain' as 'loss' | 'maintain' | 'gain'
-      };
-      
-      // 기초 대사량(BMR) 계산
-      const bmr = calculateBMR(
-        mockUserProfile.gender, 
-        mockUserProfile.weight, 
-        mockUserProfile.height, 
-        mockUserProfile.age
-      );
-      
-      // 총 일일 에너지 소비량(TDEE) 계산
-      const tdee = bmr * activityMultipliers[mockUserProfile.activityLevel];
-      
-      // 목표에 따른 칼로리 조정
-      const calculatedCalories = Math.round(tdee * goalMultipliers[mockUserProfile.fitnessGoal]);
-      
-      setTargetCalories(calculatedCalories);
-      
-      // 단백질, 탄수화물, 지방 목표량 계산
-      const proteinGrams = Math.round(mockUserProfile.weight * 1.6);
-      const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
-      
-      const remainingCalories = calculatedCalories - proteinCalories;
-      const carbsCalories = remainingCalories * 0.55;
-      const fatCalories = remainingCalories * 0.3;
-      
-      setProteinTarget(proteinGrams);
-      setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
-      setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
-      
       loadFoodData();
     }
   }, [user, selectedDate, viewMode]);
+
+  // 사용자 프로필에서 목표 칼로리 가져오기
+  useEffect(() => {
+    if (userProfile) {
+      updateNutritionTargets(userProfile);
+    }
+  }, [userProfile]);
+
+  const updateNutritionTargets = (profile: any) => {
+    if (!profile) return;
+
+    // 이미 계산된 목표 칼로리가 있으면 사용
+    if (profile.targetCalories && !isNaN(profile.targetCalories)) {
+      setTargetCalories(profile.targetCalories);
+    } else {
+      // 계산된 목표 칼로리가 없으면 직접 계산
+      if (profile.height && profile.weight && profile.age && profile.gender && profile.activityLevel && profile.fitnessGoal) {
+        const bmr = calculateBMR(
+          profile.gender,
+          Number(profile.weight),
+          Number(profile.height),
+          Number(profile.age)
+        );
+
+        // 기본값 사용 및 타입 안전성 확보
+        const activityLevel = profile.activityLevel === 'moderate' ? 'moderate' : (profile.activityLevel || 'moderate');
+        const fitnessGoal = profile.fitnessGoal === 'maintain' ? 'maintain' : (profile.fitnessGoal || 'maintain');
+
+        // 총 일일 에너지 소비량(TDEE) 계산
+        const tdee = bmr * (activityMultipliers[activityLevel] || 1.5);
+
+        // 목표에 따른 칼로리 조정
+        const calculatedCalories = Math.round(tdee * (goalMultipliers[fitnessGoal] || 1.0));
+
+        setTargetCalories(calculatedCalories);
+      } else {
+        // 기본 목표 칼로리 설정
+        setTargetCalories(2000);
+      }
+    }
+
+    // 단백질, 탄수화물, 지방 목표량 계산
+    calculateMacroNutrientTargets(Number(profile.weight) || 70);
+  };
+
+  const calculateMacroNutrientTargets = (weight: number) => {
+    // 체중 1kg당 단백질 1.6g, 탄수화물과 지방은 남은 칼로리에서 분배
+    const proteinGrams = Math.round(weight * 1.6);
+    const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
+
+    const localTargetCalories = targetCalories > 0 ? targetCalories : 2000;
+    const remainingCalories = Math.max(0, localTargetCalories - proteinCalories);
+
+    // 탄수화물 45-65%, 지방 20-35% (여기서는 중간값 사용)
+    const carbsCalories = Math.max(0, remainingCalories * 0.55);
+    const fatCalories = Math.max(0, remainingCalories * 0.3);
+
+    setProteinTarget(proteinGrams);
+    setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
+    setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
+  };
+
+  // Nutrition Scout 페이지로 이동
+  const navigateToNutritionScout = () => {
+    navigate('/nutrition-scout');
+  };
 
   const loadFoodData = async () => {
     if (!user) return;
@@ -187,192 +214,6 @@ const FoodLog: React.FC = () => {
 
   const totalNutrition = calculateTotalNutrition(foods);
 
-  // 스탬프 캡처 및 다운로드 기능
-  const captureFoodStamp = async () => {
-    if (!foodStampRef.current || dates.length === 0) return;
-    
-    try {
-      const canvas = await html2canvas(foodStampRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        logging: false,
-        allowTaint: true,
-        useCORS: true
-      });
-      
-      const dataUrl = canvas.toDataURL('image/png');
-      setStampImage(dataUrl);
-    } catch (error) {
-      console.error('스탬프 캡처 중 오류:', error);
-    }
-  };
-
-  // 카메라로 촬영 (모바일 웹앱에서 작동)
-  const handleCameraCapture = () => {
-    setShowCamera(true);
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.setAttribute('capture', 'environment'); // 모바일 기기에서 카메라 활성화
-    input.onchange = (e: Event) => {
-      const fileInput = e.target as HTMLInputElement;
-      if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            setUploadedImage(reader.result);
-            setShowCamera(false);
-          }
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-      } else {
-        setShowCamera(false);
-      }
-    };
-    input.click();
-  };
-
-  // 앨범에서 이미지 선택
-  const handleFileSelect = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e: Event) => {
-      const fileInput = e.target as HTMLInputElement;
-      if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            setUploadedImage(reader.result);
-          }
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-      }
-    };
-    input.click();
-  };
-  
-  // 업로드된 이미지에 식단 내용 오버레이 하기
-  const createStampWithImage = async () => {
-    if (!uploadedImage || !foodStampRef.current || dates.length === 0) return;
-    
-    try {
-      // 식단 정보 캡처
-      const infoCanvas = await html2canvas(foodStampRef.current, {
-        backgroundColor: null, // 투명 배경
-        scale: 2,
-        logging: false,
-        allowTaint: true,
-        useCORS: true
-      });
-      
-      // 새 캔버스 생성
-      const finalCanvas = document.createElement('canvas');
-      const ctx = finalCanvas.getContext('2d');
-      
-      if (!ctx) return;
-      
-      // 업로드된 이미지 로드
-      const img = document.createElement('img');
-      img.crossOrigin = 'anonymous';
-      img.src = uploadedImage;
-      
-      img.onload = () => {
-        // 캔버스 크기 설정
-        finalCanvas.width = img.width;
-        finalCanvas.height = img.height;
-        
-        // 배경 이미지 그리기
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-        
-        // 식단 정보를 반투명하게 오버레이
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        
-        // 오버레이 영역 (이미지 하단 40% 영역)
-        const overlayHeight = img.height * 0.4;
-        ctx.fillRect(0, img.height - overlayHeight, img.width, overlayHeight);
-        
-        // 식단 정보 오버레이
-        ctx.globalAlpha = 1.0;
-        const scale = img.width / infoCanvas.width;
-        const scaledHeight = infoCanvas.height * scale * 0.7; // 70% 크기로 조정
-        
-        ctx.drawImage(
-          infoCanvas, 
-          0, 0, infoCanvas.width, infoCanvas.height,
-          img.width * 0.05, // 좌측 5% 여백
-          img.height - scaledHeight - (img.height * 0.05), // 하단 5% 여백
-          img.width * 0.9, // 90% 너비 사용
-          scaledHeight
-        );
-        
-        // 앱 워터마크 추가
-        ctx.font = `bold ${Math.round(img.width * 0.04)}px Arial`;
-        ctx.fillStyle = '#3B82F6';
-        ctx.textAlign = 'right';
-        ctx.fillText('Corevia Fitness', img.width - (img.width * 0.05), img.height - (img.height * 0.02));
-        
-        // 최종 이미지 설정
-        const finalImage = finalCanvas.toDataURL('image/jpeg', 0.9);
-        setStampImage(finalImage);
-        setUploadedImage(null);
-      };
-    } catch (error) {
-      console.error('스탬프 생성 중 오류:', error);
-    }
-  };
-  
-  // 업로드된 이미지가 있으면 스탬프 생성
-  useEffect(() => {
-    if (uploadedImage && dates.length > 0) {
-      createStampWithImage();
-    }
-  }, [uploadedImage]);
-
-  // 이미지 다운로드
-  const downloadStampImage = () => {
-    if (stampImage) {
-      const link = document.createElement('a');
-      link.href = stampImage;
-      link.download = `식단스탬프_${selectedDate}.png`;
-      link.click();
-    }
-  };
-
-  // 스탬프 공유 기능
-  const shareFoodStamp = async () => {
-    if (!stampImage) {
-      if (foodStampRef.current) {
-        await captureFoodStamp();
-      } else {
-        return;
-      }
-    }
-    
-    if (stampImage) {
-      try {
-        // 공유 API 사용 (if supported)
-        if (navigator.share) {
-          const blob = await (await fetch(stampImage)).blob();
-          const file = new File([blob], `식단스탬프_${selectedDate}.png`, { type: 'image/png' });
-          
-          await navigator.share({
-            title: `${selectedDate} 식단 기록`,
-            text: '오늘의 식단 기록입니다!',
-            files: [file]
-          });
-        } else {
-          // 클립보드에 복사 (fallback)
-          await navigator.clipboard.writeText(`${selectedDate} 식단 기록`);
-          alert('이미지 URL이 클립보드에 복사되었습니다.');
-        }
-      } catch (error) {
-        console.error('스탬프 공유 중 오류:', error);
-      }
-    }
-  };
-
   // 이전/다음 이동 함수
   const navigatePrevious = () => {
     const date = new Date(selectedDate);
@@ -402,36 +243,47 @@ const FoodLog: React.FC = () => {
     <div className="space-y-8">
       {/* 목표 칼로리 및 영양소 가이드 */}
       <Card className="mb-6 border-l-4 border-blue-500">
-        <div className="flex items-start">
-          <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
-          <div>
-            <h3 className="text-lg font-semibold mb-2">영양소 목표</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
-                <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{targetCalories} kcal</span>
+        <div className="flex items-start justify-between">
+          <div className="flex items-start">
+            <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
+            <div>
+              <h3 className="text-lg font-semibold mb-2">영양소 목표</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
+                  <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{targetCalories} kcal</span>
+                </div>
+                
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
+                  <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
+                </div>
+                
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
+                  <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
+                </div>
+                
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
+                  <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
+                </div>
               </div>
               
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
+              <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
               </div>
-              
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
-              </div>
-              
-              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
-              </div>
-            </div>
-            
-            <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-              <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
             </div>
           </div>
+          
+          {/* Nutrition Scout 버튼 */}
+          <button
+            onClick={navigateToNutritionScout}
+            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md shadow-sm flex items-center transition-all"
+          >
+            <span>영양 분석</span>
+            <ArrowRight size={16} className="ml-2" />
+          </button>
         </div>
       </Card>
 
@@ -503,7 +355,7 @@ const FoodLog: React.FC = () => {
       </div>
       
       {/* 식단 그룹화 및 표시 */}
-      {foodGroups && (
+      {foodGroups && dates.length > 0 ? (
         <div className="space-y-4">
           {dates.map(date => (
             <div key={date}>
@@ -516,29 +368,14 @@ const FoodLog: React.FC = () => {
             </div>
           ))}
         </div>
+      ) : (
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 기간에 식단 기록이 없습니다.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            💡 <strong>참고:</strong> 식단 사진은 기기 내부 저장소에 저장됩니다. 기기에서 해당 파일이 삭제되거나 브라우저 데이터가 초기화되면 사진을 볼 수 없게 됩니다.
+          </p>
+        </div>
       )}
-
-      {/* 스탬프 캡처 및 다운로드 기능 */}
-      <div className="mt-4 flex flex-col md:flex-row justify-between items-center">
-        <button
-          onClick={captureFoodStamp}
-          className="flex items-center px-3 py-1 rounded bg-blue-500 text-white"
-        >
-          <Camera size={16} className="mr-1" /> 스탬프 캡처
-        </button>
-        <button
-          onClick={downloadStampImage}
-          className="flex items-center px-3 py-1 rounded bg-blue-500 text-white ml-2"
-        >
-          <Download size={16} className="mr-1" /> 스탬프 다운로드
-        </button>
-        <button
-          onClick={shareFoodStamp}
-          className="flex items-center px-3 py-1 rounded bg-blue-500 text-white ml-2"
-        >
-          <Share size={16} className="mr-1" /> 스탬프 공유
-        </button>
-      </div>
     </div>
   );
 };

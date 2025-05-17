@@ -157,6 +157,11 @@ const WorkoutGraph: React.FC = () => {
   const [dateWorkoutMap, setDateWorkoutMap] = useState<Record<string, Workout>>({});
   const [dateAllWorkoutsMap, setDateAllWorkoutsMap] = useState<Record<string, Workout[]>>({});
   
+  // 새로 추가: 선택된 날짜와 해당 날짜의 워크아웃 목록 관리
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [workoutsForSelectedDate, setWorkoutsForSelectedDate] = useState<Workout[]>([]);
+  const [selectedWorkoutIndex, setSelectedWorkoutIndex] = useState<number>(0);
+  
   // 차트 데이터
   const [chartData, setChartData] = useState<ChartData<'line'>>({
     labels: [],
@@ -198,7 +203,7 @@ const WorkoutGraph: React.FC = () => {
               tooltipText += ` (${setConfig})`;
             }
             
-            // 해당 날짜의 데이터가 있을 경우 추가 정보 표시
+            // 해당 날짜의 데이터가 있을 경우 추가 정보 표시 (보조 운동 정보 제외)
             const dateLabel = context.chart.data.labels?.[context.dataIndex] as string;
             if (dateLabel && dateAllWorkoutsMap[dateLabel]) {
               // 해당 날짜의 모든 운동 시도
@@ -228,28 +233,6 @@ const WorkoutGraph: React.FC = () => {
                       tooltipText += `, 미완료: ${pendingCount}`;
                     }
                   }
-                }
-                
-                // 보조 운동 정보 추가 - 모든 보조 운동 표시
-                if (workout.accessoryExercises && workout.accessoryExercises.length > 0) {
-                  tooltipText += '\n\n보조 운동:';
-                  workout.accessoryExercises.forEach(exercise => {
-                    if (exercise.name) {
-                      let accessoryText = `\n- ${exercise.name}`;
-                      
-                      // 세트 정보가 있으면 추가
-                      if (exercise.sets && exercise.sets.length > 0) {
-                        const firstSet = exercise.sets[0];
-                        accessoryText += ` (${exercise.sets.length}세트 x ${firstSet.reps}회, ${firstSet.weight}kg)`;
-                      }
-                      // 세트 정보가 없지만 무게와 횟수가 있으면 추가
-                      else if (exercise.weight && exercise.reps) {
-                        accessoryText += ` (${exercise.weight}kg x ${exercise.reps}회)`;
-                      }
-                      
-                      tooltipText += accessoryText;
-                    }
-                  });
                 }
               }
             }
@@ -324,7 +307,6 @@ const WorkoutGraph: React.FC = () => {
       
       const clickedElement = elements[0];
       const dataIndex = clickedElement.index;
-      const datasetIndex = clickedElement.datasetIndex;
       const dateLabel = chart.data.labels?.[dataIndex] as string;
       
       if (dateLabel) {
@@ -332,71 +314,11 @@ const WorkoutGraph: React.FC = () => {
         const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
         
         if (workoutsForDate.length > 0) {
-          // 클릭한 데이터셋에 해당하는 운동 특정하기
-          if (datasetIndex >= 0 && chart.data.datasets[datasetIndex]) {
-            const datasetLabel = chart.data.datasets[datasetIndex].label;
-            
-            if (datasetLabel) {
-              const labelMatch = datasetLabel.match(/^(.+) \((.+)\)$/);
-              
-              if (labelMatch) {
-                const exerciseName = labelMatch[1];
-                const setConfig = labelMatch[2];
-                
-                // 클릭한 날짜의 모든 운동 중에서 특정 운동 이름과 세트 구성에 해당하는 운동 찾기
-                const matchingWorkouts = workoutsForDate.filter(
-                  workout => workout.mainExercise && workout.mainExercise.name === exerciseName
-                );
-                
-                if (matchingWorkouts.length > 0) {
-                  // 세트 구성까지 정확하게 일치하는 운동 찾기
-                  const exactMatchWorkout = matchingWorkouts.find(
-                    workout => workout.mainExercise.sets &&
-                    workout.mainExercise.sets.length > 0 &&
-                    (
-                      (setConfig === '5x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 5) ||
-                      (setConfig === '6x3' && workout.mainExercise.sets.length === 3 && workout.mainExercise.sets[0].reps === 6) ||
-                      (setConfig === '10x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 10) ||
-                      (setConfig === '15x5' && workout.mainExercise.sets.length === 5 && workout.mainExercise.sets[0].reps === 15)
-                    )
-                  );
-                  
-                  if (exactMatchWorkout) {
-                    setSelectedWorkout(exactMatchWorkout);
-                    return;
-                  }
-                  
-                  // 정확한 일치가 없으면 같은 운동 이름의 첫 번째 운동 선택
-                  setSelectedWorkout(matchingWorkouts[0]);
-                  return;
-                }
-              }
-            }
-          }
-          
-          // 클릭한 날짜에 여러 운동이 있는 경우 선택 UI 표시
-          if (workoutsForDate.length > 1) {
-            // 이미 선택된 운동이 있으면 다음 운동으로 순환
-            if (selectedWorkout) {
-              const currentIndex = workoutsForDate.findIndex(w => 
-                w.id === selectedWorkout.id || 
-                (w.mainExercise.name === selectedWorkout.mainExercise.name && 
-                 new Date(w.date).getTime() === new Date(selectedWorkout.date).getTime())
-              );
-              
-              if (currentIndex !== -1) {
-                const nextIndex = (currentIndex + 1) % workoutsForDate.length;
-                setSelectedWorkout(workoutsForDate[nextIndex]);
-                return;
-              }
-            }
-            
-            // 선택된 운동이 없거나 현재 날짜의 운동이 아니면 첫 번째 운동 선택
-            setSelectedWorkout(workoutsForDate[0]);
-          } else {
-            // 운동이 하나뿐이면 바로 선택
-            setSelectedWorkout(workoutsForDate[0]);
-          }
+          // 선택된 날짜 및 해당 날짜의 운동 목록 설정
+          setSelectedDate(dateLabel);
+          setWorkoutsForSelectedDate(workoutsForDate);
+          setSelectedWorkoutIndex(0); // 첫 번째 운동으로 초기화
+          setSelectedWorkout(workoutsForDate[0]); // 첫 번째 운동 선택
         }
       }
     }
@@ -581,13 +503,17 @@ const WorkoutGraph: React.FC = () => {
       
       // 최소/최대 무게에 따라 Y축 범위 계산
       if (minWeight !== Infinity && maxWeight !== -Infinity) {
-        // 현재 운동 무게 기준 정확히 -30kg ~ +30kg 범위 설정
-        // 최소값은 0보다 작으면 안 됨
-        const currentWeight = filteredData.length > 0 && filteredData[filteredData.length - 1].mainExercise?.sets?.[0]?.weight || maxWeight;
-        const yMin = Math.max(0, currentWeight - 30);
-        const yMax = currentWeight + 30;
+        // 최소값은 항상 데이터의 최소값보다 10kg 작게 설정
+        let yMin = Math.max(0, minWeight - 10);
+        let yMax = maxWeight + 10;
         
-        console.log(`무게 범위: ${minWeight}kg ~ ${maxWeight}kg, 현재 무게: ${currentWeight}kg, Y축 설정: ${yMin}kg ~ ${yMax}kg`);
+        // 어깨 운동일 경우, 범위를 더 넓게 설정 (문제 해결)
+        if (selectedPart === 'shoulder') {
+          yMin = Math.max(0, minWeight - 15);
+          yMax = maxWeight + 15;
+        }
+        
+        console.log(`무게 범위: ${minWeight}kg ~ ${maxWeight}kg, Y축 설정: ${yMin}kg ~ ${yMax}kg`);
         
         // 차트 옵션 업데이트
         chartOptions.scales = {
@@ -751,6 +677,44 @@ const WorkoutGraph: React.FC = () => {
     setSelectedExercise('all');
   };
   
+  // 이전/다음 운동으로 이동하는 함수
+  const navigateWorkout = (direction: 'prev' | 'next') => {
+    if (!workoutsForSelectedDate.length) return;
+    
+    let newIndex = selectedWorkoutIndex;
+    if (direction === 'prev') {
+      newIndex = (selectedWorkoutIndex - 1 + workoutsForSelectedDate.length) % workoutsForSelectedDate.length;
+    } else {
+      newIndex = (selectedWorkoutIndex + 1) % workoutsForSelectedDate.length;
+    }
+    
+    setSelectedWorkoutIndex(newIndex);
+    setSelectedWorkout(workoutsForSelectedDate[newIndex]);
+  };
+
+  // 특정 인덱스의 운동으로 이동하는 함수
+  const selectWorkoutByIndex = (index: number) => {
+    if (index >= 0 && index < workoutsForSelectedDate.length) {
+      setSelectedWorkoutIndex(index);
+      setSelectedWorkout(workoutsForSelectedDate[index]);
+    }
+  };
+
+  // 어깨 운동 그래프 문제 해결 - 어깨 운동 옵션 확인
+  useEffect(() => {
+    // 어깨 부위 선택 시 데이터 확인
+    if (selectedPart === 'shoulder') {
+      console.log('어깨 운동 데이터 확인:', filteredData);
+      
+      // 어깨 운동 데이터에 문제가 있는지 확인
+      const shoulderExercises = workoutData.filter(w => w.part === 'shoulder');
+      console.log('전체 어깨 운동 데이터:', shoulderExercises);
+      
+      // 필터링 결과 확인
+      console.log('필터링된 어깨 운동 데이터:', filteredData);
+    }
+  }, [selectedPart, filteredData]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -818,14 +782,33 @@ const WorkoutGraph: React.FC = () => {
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-medium">선택된 운동 상세 정보</h4>
                   <div className="flex items-center gap-2">
-                    {/* 날짜에 여러 운동이 있는 경우 이동 버튼 표시 */}
-                    {dateAllWorkoutsMap[formatShortDate(new Date(selectedWorkout.date))]?.length > 1 && (
-                      <div className="text-xs text-gray-500">
-                        {`${dateAllWorkoutsMap[formatShortDate(new Date(selectedWorkout.date))].findIndex(
-                          w => w.mainExercise.name === selectedWorkout.mainExercise.name
-                        ) + 1} / ${dateAllWorkoutsMap[formatShortDate(new Date(selectedWorkout.date))].length}`}
+                    {/* 운동 페이지네이션 컨트롤 */}
+                    {workoutsForSelectedDate.length > 1 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigateWorkout('prev')}
+                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M15 18l-6-6 6-6" />
+                          </svg>
+                        </button>
+                        
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {selectedWorkoutIndex + 1} / {workoutsForSelectedDate.length}
+                        </span>
+                        
+                        <button
+                          onClick={() => navigateWorkout('next')}
+                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 18l6-6-6-6" />
+                          </svg>
+                        </button>
                       </div>
                     )}
+                    
                     <Button 
                       size="sm" 
                       className="bg-transparent text-gray-500 hover:text-gray-700 p-1"
@@ -834,6 +817,30 @@ const WorkoutGraph: React.FC = () => {
                     />
                   </div>
                 </div>
+                
+                {/* 운동 선택 인터페이스 (같은 날짜의 여러 운동이 있는 경우) */}
+                {workoutsForSelectedDate.length > 1 && (
+                  <div className="mb-4">
+                    <div className="text-sm font-medium mb-2">운동 선택:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {workoutsForSelectedDate.map((workout, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => selectWorkoutByIndex(idx)}
+                          className={`
+                            px-3 py-1 text-xs rounded-full 
+                            ${selectedWorkoutIndex === idx 
+                              ? 'bg-blue-500 text-white' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}
+                          `}
+                        >
+                          {idx + 1}: {workout.mainExercise?.name || '운동'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="primary">
@@ -882,7 +889,7 @@ const WorkoutGraph: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* 보조 운동 정보 표시 - 더 자세하게 표시 */}
+                  {/* 보조 운동 정보 표시 (선택된 상세 정보에서만 표시) */}
                   {selectedWorkout.accessoryExercises && selectedWorkout.accessoryExercises.length > 0 && (
                     <div>
                       <h4 className="font-medium text-sm mt-3">보조 운동</h4>

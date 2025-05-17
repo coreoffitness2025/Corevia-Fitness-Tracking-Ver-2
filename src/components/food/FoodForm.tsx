@@ -5,7 +5,8 @@ import { Food } from '../../types';
 import { toast } from 'react-hot-toast';
 import { saveFoodRecord } from '../../services/foodService';
 import Card from '../common/Card';
-import { Info } from 'lucide-react';
+import { Info, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface FoodFormProps {
   onSuccess?: () => void; // 식단 저장 후 호출될 콜백
@@ -39,15 +40,12 @@ function calculateBMR(gender: 'male' | 'female', weight: number, height: number,
 const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const { currentUser, userProfile } = useAuth();
   const { addFood } = useFoodStore();
-  const [foodName, setFoodName] = useState('');
-  const [mealType, setMealType] = useState('아침');
+  const navigate = useNavigate();
   const [mealDate, setMealDate] = useState<string>(new Date().toISOString().split('T')[0]); // YYYY-MM-DD 형식
-  const [mealTime, setMealTime] = useState<string>(
-    new Date().toTimeString().split(' ')[0].substr(0, 5) // HH:MM 형식
-  );
   const [imageUrl, setImageUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [localImageFile, setLocalImageFile] = useState<File | null>(null);
   
   // 칼로리 목표 관련 상태
   const [targetCalories, setTargetCalories] = useState<number>(0);
@@ -122,18 +120,25 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
   };
 
-  // 가상의 파일 선택 처리 (실제로는 Firebase Storage 등을 사용해야 함)
+  // Nutrition Scout 페이지로 이동
+  const navigateToNutritionScout = () => {
+    navigate('/nutrition-scout');
+  };
+
+  // 파일 선택 처리 - 로컬 이미지 파일 저장
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // 로컬 파일 저장
+      setLocalImageFile(file);
+      
       // 이미지 미리보기 생성
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
           setImagePreview(reader.result);
-          // 실제로는 이미지를 서버에 업로드하고 URL을 받아와야 함
-          // 여기서는 가상으로 처리
-          setImageUrl('이미지_URL_' + Date.now());
+          // 로컬 식별자로 이미지 URL 설정
+          setImageUrl(`local_image_${Date.now()}`);
         }
       };
       reader.readAsDataURL(file);
@@ -149,11 +154,15 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     input.onchange = (e: Event) => {
       const fileInput = e.target as HTMLInputElement;
       if (fileInput.files && fileInput.files[0]) {
+        // 로컬 파일 저장
+        setLocalImageFile(fileInput.files[0]);
+        
         const reader = new FileReader();
         reader.onload = () => {
           if (typeof reader.result === 'string') {
             setImagePreview(reader.result);
-            setImageUrl('카메라_이미지_URL_' + Date.now());
+            // 로컬 식별자로 이미지 URL 설정
+            setImageUrl(`local_camera_${Date.now()}`);
           }
         };
         reader.readAsDataURL(fileInput.files[0]);
@@ -176,15 +185,23 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     }
 
     try {
-      const mealDateTime = new Date(`${mealDate}T${mealTime}`);
+      const mealDateTime = new Date(`${mealDate}T12:00:00`); // 기본 시간 정오로 설정
+      
+      // 로컬 저장소에 이미지 저장 (웹 브라우저의 IndexedDB나 localStorage를 사용할 수 있음)
+      // 실제 구현에서는 IndexedDB를 사용하는 것이 좋습니다
+      if (localImageFile && imagePreview) {
+        // 여기서는 로컬 저장소 API를 직접 구현하지 않고, 미리보기 이미지 URL을 사용합니다
+        localStorage.setItem(imageUrl, imagePreview);
+        console.log('로컬 이미지 저장됨:', imageUrl);
+      }
       
       const foodData: Omit<Food, 'id'> = {
         userId: currentUser.uid,
         date: mealDateTime,
-        name: foodName || `${mealType} 식사`,
+        name: '식사 기록', // 기본 이름 설정
         imageUrl: imageUrl,
         notes: notes || undefined,
-        type: mealType,
+        type: '식사', // 기본 타입
         // 영양소 정보는 제공하지 않음으로 기본값 설정
         calories: 0,
         protein: 0,
@@ -198,9 +215,9 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       toast.success('식단이 저장되었습니다.');
       
       // 폼 초기화
-      setFoodName('');
       setImageUrl('');
       setImagePreview(null);
+      setLocalImageFile(null);
       setNotes('');
 
       // 성공 콜백 호출
@@ -217,37 +234,48 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     <div className="max-w-2xl mx-auto p-4">
       {/* 목표 칼로리 및 영양소 가이드 */}
       <Card className="mb-6 border-l-4 border-[#4285F4]">
-        <div className="flex items-start">
-          <Info className="text-[#4285F4] mr-2 mt-1 flex-shrink-0" size={20} />
-          <div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">영양소 목표</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 dark:bg-[#4285F4]/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
-                <span className="block text-lg font-bold text-[#4285F4] dark:text-sky-400">{targetCalories} kcal</span>
+        <div className="flex items-start justify-between">
+          <div className="flex items-start">
+            <Info className="text-[#4285F4] mr-2 mt-1 flex-shrink-0" size={20} />
+            <div>
+              <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">영양소 목표</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-blue-50 dark:bg-[#4285F4]/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
+                  <span className="block text-lg font-bold text-[#4285F4] dark:text-sky-400">{targetCalories} kcal</span>
+                </div>
+                
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
+                  <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
+                </div>
+                
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
+                  <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
+                </div>
+                
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
+                  <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
+                </div>
               </div>
               
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{proteinTarget}g</span>
+              <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
+                <p className="mt-1">💡 단백질은 근육 합성과 유지를 돕고, 적절한 탄수화물은 에너지를 공급하며, 지방은 호르몬 생성을 지원합니다.</p>
               </div>
-              
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{carbsTarget}g</span>
-              </div>
-              
-              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{fatTarget}g</span>
-              </div>
-            </div>
-            
-            <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-              <p>식사별 목표: 아침 <strong>{Math.round(targetCalories * 0.3)}kcal</strong>, 점심 <strong>{Math.round(targetCalories * 0.4)}kcal</strong>, 저녁 <strong>{Math.round(targetCalories * 0.3)}kcal</strong></p>
-              <p className="mt-1">💡 단백질은 근육 합성과 유지를 돕고, 적절한 탄수화물은 에너지를 공급하며, 지방은 호르몬 생성을 지원합니다.</p>
             </div>
           </div>
+          
+          {/* Nutrition Scout 버튼 */}
+          <button
+            onClick={navigateToNutritionScout}
+            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md shadow-sm flex items-center transition-all"
+          >
+            <span>영양 분석</span>
+            <ArrowRight size={16} className="ml-2" />
+          </button>
         </div>
       </Card>
 
@@ -256,77 +284,20 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="mealType"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              식사 종류
-            </label>
-            <select
-              id="mealType"
-              value={mealType}
-              onChange={(e) => setMealType(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="아침">아침</option>
-              <option value="점심">점심</option>
-              <option value="저녁">저녁</option>
-              <option value="간식">간식</option>
-            </select>
-          </div>
-          
-          <div>
-            <label
-              htmlFor="foodName"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              음식 이름 (선택사항)
-            </label>
-            <input
-              type="text"
-              id="foodName"
-              value={foodName}
-              onChange={(e) => setFoodName(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="예: 닭가슴살 샐러드"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="mealDate"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              날짜
-            </label>
-            <input
-              type="date"
-              id="mealDate"
-              value={mealDate}
-              onChange={(e) => setMealDate(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-          
-          <div>
-            <label
-              htmlFor="mealTime"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              시간
-            </label>
-            <input
-              type="time"
-              id="mealTime"
-              value={mealTime}
-              onChange={(e) => setMealTime(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
+        <div>
+          <label
+            htmlFor="mealDate"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            날짜
+          </label>
+          <input
+            type="date"
+            id="mealDate"
+            value={mealDate}
+            onChange={(e) => setMealDate(e.target.value)}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
         </div>
 
         <div className="space-y-4">
@@ -369,6 +340,12 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               />
             </div>
           )}
+          
+          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <p>
+              💡 <strong>참고:</strong> 식단 사진은 기기 내부 저장소에 저장됩니다. 기기에서 해당 파일이 삭제되거나 브라우저 데이터가 초기화되면 사진을 볼 수 없게 됩니다.
+            </p>
+          </div>
         </div>
 
         <div>
