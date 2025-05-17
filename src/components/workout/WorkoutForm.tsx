@@ -369,7 +369,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     });
   };
 
-  // 이전 보조 운동 불러오기 (메인 운동 선택 시)
+  // 메인 운동 변경 시 이전 보조 운동 자동 로드
   useEffect(() => {
     // 메인 운동이 변경될 때 해당 운동에 대한 이전 보조 운동 목록 조회
     const fetchPreviousAccessoryExercises = async () => {
@@ -408,10 +408,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             [mainExercise.name]: exercises
           }));
           
-          // 자동으로 이전에 했던 보조 운동 하나 추가 (선택 사항)
+          // 자동으로 이전에 했던 보조 운동 추가
+          // accessoryExercises가 비어있을 때만 자동으로 추가
           if (exercises.length > 0 && accessoryExercises.length === 0) {
-            // 자동 추가 로직은 주석 처리 (사용자 요구에 따라 활성화)
-            // setAccessoryExercises([exercises[0]]);
+            console.log('이전 보조 운동 자동 로드:', exercises);
+            setAccessoryExercises(exercises);
           }
         }
       } catch (error) {
@@ -907,6 +908,72 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           </CardSection>
         </Card>
         
+        {/* 준비 및 웜업 섹션 - 메인 운동 위로 이동 */}
+        <Card className="mb-6">
+          <CardSection>
+            <CardTitle>준비 및 웜업</CardTitle>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">스트레칭</h3>
+                  <Button
+                    size="sm"
+                    variant={stretchingCompleted ? 'success' : 'secondary'}
+                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
+                    icon={stretchingCompleted ? <CheckCircle size={16} /> : undefined}
+                  >
+                    {stretchingCompleted ? '완료' : '시작하기'}
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  운동 전 충분한 스트레칭으로 부상을 예방하세요.
+                </p>
+              </div>
+              
+              <div className="p-3 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">웜업</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setShowWarmupTips(!showWarmupTips)}
+                      icon={<Info size={16} />}
+                    >
+                      팁
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={warmupCompleted ? 'success' : 'secondary'}
+                      onClick={() => setWarmupCompleted(!warmupCompleted)}
+                      icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
+                    >
+                      {warmupCompleted ? '완료' : '시작하기'}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  본 운동 전 가벼운 웜업으로 몸을 준비하세요.
+                </p>
+                
+                {showWarmupTips && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                    <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
+                      {part} 운동 웜업 추천
+                    </h4>
+                    <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300">
+                      {warmupExercises[part].map((tip, i) => (
+                        <li key={i}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardSection>
+        </Card>
+        
         {/* 메인 운동 섹션 */}
         <Card className="mb-6">
           <CardSection>
@@ -983,7 +1050,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         }
                       >
                         {set.isSuccess === null
-                          ? '기록'
+                          ? '훈련 완료'
                           : set.isSuccess
                           ? '성공'
                           : '실패'}
@@ -1035,72 +1102,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   </div>
                 </div>
               ))}
-            </div>
-          </CardSection>
-        </Card>
-        
-        {/* 준비 및 웜업 섹션 */}
-        <Card className="mb-6">
-          <CardSection>
-            <CardTitle>준비 및 웜업</CardTitle>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">스트레칭</h3>
-                  <Button
-                    size="sm"
-                    variant={stretchingCompleted ? 'success' : 'secondary'}
-                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
-                    icon={stretchingCompleted ? <CheckCircle size={16} /> : undefined}
-                  >
-                    {stretchingCompleted ? '완료' : '시작하기'}
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  운동 전 충분한 스트레칭으로 부상을 예방하세요.
-                </p>
-              </div>
-              
-              <div className="p-3 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">웜업</h3>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setShowWarmupTips(!showWarmupTips)}
-                      icon={<Info size={16} />}
-                    >
-                      팁
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={warmupCompleted ? 'success' : 'secondary'}
-                      onClick={() => setWarmupCompleted(!warmupCompleted)}
-                      icon={warmupCompleted ? <CheckCircle size={16} /> : undefined}
-                    >
-                      {warmupCompleted ? '완료' : '시작하기'}
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  본 운동 전 가벼운 웜업으로 몸을 준비하세요.
-                </p>
-                
-                {showWarmupTips && (
-                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                    <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
-                      {part} 운동 웜업 추천
-                    </h4>
-                    <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300">
-                      {warmupExercises[part].map((tip, i) => (
-                        <li key={i}>{tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
             </div>
           </CardSection>
         </Card>

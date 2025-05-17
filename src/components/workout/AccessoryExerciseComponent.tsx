@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import { SetConfiguration } from '../../types';
-import { Plus, Trash, X, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Trash, X, Clock } from 'lucide-react';
 
 interface AccessoryExerciseProps {
   index: number;
@@ -119,20 +119,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     const newReps = parseInt(e.target.value) || 0;
     const newSets = [...exercise.sets];
     newSets[setIndex].reps = newReps;
-    onChange(index, { ...exercise, sets: newSets });
-  };
-
-  // 성공/실패 상태 변경
-  const toggleSetSuccess = (setIndex: number) => {
-    const newSets = [...exercise.sets];
-    if (newSets[setIndex].isSuccess === null) {
-      newSets[setIndex].isSuccess = true;
-    } else if (newSets[setIndex].isSuccess === true) {
-      newSets[setIndex].isSuccess = false;
-    } else {
-      newSets[setIndex].isSuccess = null;
-    }
-    
     onChange(index, { ...exercise, sets: newSets });
   };
 
@@ -288,32 +274,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
               <div className="flex justify-between items-center mb-2">
                 <div className="font-medium">세트 {setIndex + 1}</div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="xs"
-                    variant={
-                      set.isSuccess === null
-                        ? 'secondary'
-                        : set.isSuccess
-                        ? 'success'
-                        : 'danger'
-                    }
-                    onClick={() => toggleSetSuccess(setIndex)}
-                    className="h-8"
-                    icon={
-                      set.isSuccess === null
-                        ? '?'
-                        : set.isSuccess
-                        ? <CheckCircle size={16} />
-                        : <XCircle size={16} />
-                    }
-                  >
-                    {set.isSuccess === null
-                      ? '기록'
-                      : set.isSuccess
-                      ? '성공'
-                      : '실패'}
-                  </Button>
-                  
                   <Button
                     size="xs"
                     variant="secondary"

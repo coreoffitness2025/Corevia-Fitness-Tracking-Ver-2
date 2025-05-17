@@ -200,33 +200,55 @@ const WorkoutGraph: React.FC = () => {
             
             // 해당 날짜의 데이터가 있을 경우 추가 정보 표시
             const dateLabel = context.chart.data.labels?.[context.dataIndex] as string;
-            if (dateLabel && dateWorkoutMap[dateLabel]) {
-              const workout = dateWorkoutMap[dateLabel];
+            if (dateLabel && dateAllWorkoutsMap[dateLabel]) {
+              // 해당 날짜의 모든 운동 시도
+              const workoutsForDate = dateAllWorkoutsMap[dateLabel];
               
-              // 같은 운동 이름을 찾아 세트 정보 추출
-              if (workout.mainExercise && workout.mainExercise.name === exerciseName) {
-                const sets = workout.mainExercise.sets;
-                if (sets && sets.length > 0) {
-                  // 세트별 성공/실패 정보 추가
-                  const successCount = sets.filter(set => set.isSuccess).length;
-                  const failCount = sets.filter(set => set.isSuccess === false).length;
-                  const pendingCount = sets.filter(set => set.isSuccess === null).length;
-                  
-                  tooltipText += `\n세트 구성: ${sets.length}세트 x ${sets[0].reps}회`;
-                  tooltipText += `\n성공: ${successCount}, 실패: ${failCount}`;
-                  
-                  if (pendingCount > 0) {
-                    tooltipText += `, 미완료: ${pendingCount}`;
+              // 표시 중인 운동 이름과 일치하는 운동 찾기
+              const matchingWorkout = workoutsForDate.find(w => 
+                w.mainExercise && w.mainExercise.name === exerciseName
+              );
+              
+              if (matchingWorkout) {
+                const workout = matchingWorkout;
+                
+                // 메인 운동 정보 표시
+                if (workout.mainExercise) {
+                  const sets = workout.mainExercise.sets;
+                  if (sets && sets.length > 0) {
+                    // 세트별 성공/실패 정보 추가
+                    const successCount = sets.filter(set => set.isSuccess).length;
+                    const failCount = sets.filter(set => set.isSuccess === false).length;
+                    const pendingCount = sets.filter(set => set.isSuccess === null).length;
+                    
+                    tooltipText += `\n세트 구성: ${sets.length}세트 x ${sets[0].reps}회`;
+                    tooltipText += `\n성공: ${successCount}, 실패: ${failCount}`;
+                    
+                    if (pendingCount > 0) {
+                      tooltipText += `, 미완료: ${pendingCount}`;
+                    }
                   }
                 }
-              }
-              
-              // 보조 운동 정보 추가 (메인 운동과 동일한 경우만)
-              if (workout.mainExercise && workout.mainExercise.name === exerciseName) {
+                
+                // 보조 운동 정보 추가 - 모든 보조 운동 표시
                 if (workout.accessoryExercises && workout.accessoryExercises.length > 0) {
-                  tooltipText += '\n보조 운동:';
+                  tooltipText += '\n\n보조 운동:';
                   workout.accessoryExercises.forEach(exercise => {
-                    tooltipText += `\n- ${exercise.name}`;
+                    if (exercise.name) {
+                      let accessoryText = `\n- ${exercise.name}`;
+                      
+                      // 세트 정보가 있으면 추가
+                      if (exercise.sets && exercise.sets.length > 0) {
+                        const firstSet = exercise.sets[0];
+                        accessoryText += ` (${exercise.sets.length}세트 x ${firstSet.reps}회, ${firstSet.weight}kg)`;
+                      }
+                      // 세트 정보가 없지만 무게와 횟수가 있으면 추가
+                      else if (exercise.weight && exercise.reps) {
+                        accessoryText += ` (${exercise.weight}kg x ${exercise.reps}회)`;
+                      }
+                      
+                      tooltipText += accessoryText;
+                    }
                   });
                 }
               }
