@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useWorkoutSettings } from '../../contexts/WorkoutSettingsContext';
+import { useWorkoutSettings } from '../../hooks/useWorkoutSettings';
 import { 
   ExercisePart, 
   Session, 
@@ -86,7 +86,7 @@ type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const { userProfile, updateProfile } = useAuth();
-  const { setConfiguration } = useWorkoutSettings();
+  const { settings, isLoading: isLoadingSettings } = useWorkoutSettings();
   const [part, setPart] = useState<ExercisePart>('chest');
   const [selectedMainExercise, setSelectedMainExercise] = useState<MainExerciseType>(mainExerciseOptions.chest[0].value);
   const [mainExercise, setMainExercise] = useState({
@@ -144,7 +144,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
     console.log('[WorkoutForm] 컴포넌트 마운트, userProfile:', userProfile?.uid);
-    console.log('[WorkoutForm] 현재 Context 세트 설정:', setConfiguration);
     
     if (userProfile) {
       console.log('[WorkoutForm] 사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
@@ -170,29 +169,20 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   }, [userProfile?.uid]); // 의존성 배열에 userProfile.uid만 포함하여 로그인 시에만 실행
   
-  // 컴포넌트 마운트 직후 한 번 세트 설정 강제 적용
-  useEffect(() => {
-    // 초기 1회만 실행: 컴포넌트 마운트 시 Context에서 세트 설정 강제 적용
-    if (setConfiguration) {
-      console.log('[WorkoutForm] 컴포넌트 마운트 직후 세트 설정 강제 적용:', setConfiguration);
-      applySetConfiguration(setConfiguration);
-    }
-  }, []); // 빈 의존성 배열로 초기 1회만 실행
-  
   // 세트 설정이 변경될 때마다 적용
   useEffect(() => {
-    if (setConfiguration) {
-      console.log('[WorkoutForm] Context에서 세트 설정 변경 감지:', setConfiguration);
+    if (settings) {
+      console.log('[WorkoutForm] 세트 설정 변경 감지:', settings);
       
       // 세트 설정 적용
-      setSelectedSetConfiguration(setConfiguration.preferredSetup);
-      setCustomSets(setConfiguration.customSets);
-      setCustomReps(setConfiguration.customReps);
+      setSelectedSetConfiguration(settings.preferredSetup);
+      setCustomSets(settings.customSets);
+      setCustomReps(settings.customReps);
       
       // 세트 구성 생성 및 적용
-      applySetConfiguration(setConfiguration);
+      applySetConfiguration(settings);
     }
-  }, [setConfiguration]);
+  }, [settings]);
 
   // 부위(part) 변경 시 운동 이름만 업데이트하고, 세트 설정은 그대로 유지
   useEffect(() => {
@@ -656,26 +646,30 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     console.log('[WorkoutForm] 현재 메인 운동 세트 상태:', 
       mainExercise.sets.length, mainExercise.sets.map(s => ({ w: s.weight, r: s.reps })));
     
-    // 메인 운동의 세트 배열 업데이트 - 즉시 실행 버전
-    const updatedSets = Array.from({ length: setsCount }, (_, i) => ({
-      // 기존 세트가 있으면 무게 유지, 새 세트는 무게 0으로 설정
-      weight: i < mainExercise.sets.length ? mainExercise.sets[i].weight || 0 : 0,
-      // 모든 세트의 반복 횟수는 설정값으로 통일
-      reps: repsCount,
-      isSuccess: null as boolean | null
-    }));
-    
-    console.log('[WorkoutForm] 업데이트된 세트 배열:', updatedSets);
-    
-    // 상태 업데이트
-    setMainExercise(prev => {
-      const updated = {
-        ...prev,
-        sets: updatedSets
-      };
-      console.log('[WorkoutForm] 세트 구성 적용 완료:', updated);
-      return updated;
-    });
+    try {
+      // 메인 운동의 세트 배열 업데이트 - 즉시 실행 버전
+      const updatedSets = Array.from({ length: setsCount }, (_, i) => ({
+        // 기존 세트가 있으면 무게 유지, 새 세트는 무게 0으로 설정
+        weight: i < mainExercise.sets.length ? mainExercise.sets[i].weight || 0 : 0,
+        // 모든 세트의 반복 횟수는 설정값으로 통일
+        reps: repsCount,
+        isSuccess: null as boolean | null
+      }));
+      
+      console.log('[WorkoutForm] 업데이트된 세트 배열:', updatedSets);
+      
+      // 상태 업데이트
+      setMainExercise(prev => {
+        const updated = {
+          ...prev,
+          sets: updatedSets
+        };
+        console.log('[WorkoutForm] 세트 구성 적용 완료:', updated);
+        return updated;
+      });
+    } catch (error) {
+      console.error('[WorkoutForm] 세트 구성 적용 중 오류 발생:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

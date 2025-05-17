@@ -4,7 +4,7 @@ import Card from '../common/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { WorkoutGuideInfo } from '../../types/index';
 import { toast } from 'react-hot-toast';
-import { useWorkoutSettings } from '../../contexts/WorkoutSettingsContext';
+import { useWorkoutSettings, WorkoutSettings } from '../../hooks/useWorkoutSettings';
 
 interface WorkoutSetConfigProps {
   onConfigSaved?: () => void;
@@ -12,7 +12,8 @@ interface WorkoutSetConfigProps {
 
 const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) => {
   const { currentUser, userProfile } = useAuth();
-  const { setConfiguration: contextSetConfig, updateSetConfiguration } = useWorkoutSettings();
+  const { settings, updateSettings, isLoading, isUpdating } = useWorkoutSettings();
+  
   const [guideInfo, setGuideInfo] = useState<WorkoutGuideInfo>({
     gender: userProfile?.gender || 'male',
     age: userProfile?.age || 30,
@@ -25,16 +26,16 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       bench: userProfile?.oneRepMax?.bench || 0,
       overheadPress: userProfile?.oneRepMax?.overheadPress || 0,
     },
-    preferredSetConfig: contextSetConfig.preferredSetup,
+    preferredSetConfig: settings.preferredSetup,
   });
   
-  // Context의 setConfiguration이 변경되면 guideInfo 업데이트
+  // 설정이 변경되면 guideInfo 업데이트
   useEffect(() => {
     setGuideInfo(prev => ({
       ...prev,
-      preferredSetConfig: contextSetConfig.preferredSetup
+      preferredSetConfig: settings.preferredSetup
     }));
-  }, [contextSetConfig]);
+  }, [settings]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -62,7 +63,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
     }
   };
 
-  // 개인화 설정에 적용하는 함수 (Context 사용 버전)
+  // 개인화 설정에 적용하는 함수 (React Query 사용 버전)
   const applyToProfile = async () => {
     if (!currentUser) return;
     
@@ -100,17 +101,17 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
           customReps = 10;
       }
       
-      // 세트 구성 생성
-      const newSetConfiguration = {
+      // 새 설정 구성
+      const newSettings: WorkoutSettings = {
         preferredSetup: guideInfo.preferredSetConfig,
         customSets,
         customReps
       };
       
-      console.log('설정할 세트 구성:', newSetConfiguration);
+      console.log('설정할 세트 구성:', newSettings);
       
-      // Context의 업데이트 함수 사용 - Firebase와 로컬 상태 모두 업데이트
-      await updateSetConfiguration(newSetConfiguration);
+      // React Query 뮤테이션 사용하여 설정 업데이트
+      updateSettings(newSettings);
       
       // 경험 정보 업데이트 - 이 부분은 기존 방식 유지
       if (userProfile?.experience) {
@@ -121,7 +122,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
           }
         };
         
-        // updateProfile 함수를 직접 호출하는 대신, WorkoutSettingsContext에 추가 기능 구현 필요하다면 나중에 확장
+        // updateProfile 함수를 직접 호출하는 대신, 나중에 확장 필요
       }
       
       // 콜백 함수 호출
@@ -130,9 +131,20 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       }
     } catch (error) {
       console.error('프로필 업데이트 중 오류 발생:', error);
-      // 에러 처리는 Context에서 이미 처리됨
+      // 에러 처리는 React Query에서 이미 처리됨
     }
   };
+
+  // 로딩 상태 표시
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6">
@@ -248,8 +260,17 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       </div>
       
       <div className="flex justify-end mt-6">
-        <Button variant="primary" onClick={applyToProfile}>
-          적용하기
+        <Button 
+          variant="primary" 
+          onClick={applyToProfile}
+          disabled={isUpdating}
+        >
+          {isUpdating ? (
+            <>
+              <span className="animate-spin mr-2">⟳</span>
+              적용 중...
+            </>
+          ) : '적용하기'}
         </Button>
       </div>
     </Card>

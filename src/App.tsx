@@ -3,7 +3,7 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
-import { WorkoutSettingsProvider } from './contexts/WorkoutSettingsContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // 보호된 라우트 컴포넌트 import
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -81,14 +81,26 @@ const renderRoutes = (routes: AppRoute[]) => {
   });
 };
 
+// QueryClient 인스턴스 생성
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5분간 데이터 신선함 유지
+      cacheTime: 1000 * 60 * 60, // 1시간 캐싱
+      retry: 1, // 실패 시 1번만 재시도
+      refetchOnWindowFocus: false, // 창 포커스 시 자동 리페치 비활성화
+    },
+  },
+});
+
 // 앱 환경 설정 및 프로바이더
 const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <AuthProvider>
-      <WorkoutSettingsProvider>
+      <QueryClientProvider client={queryClient}>
         <Toaster position="top-center" />
         {children}
-      </WorkoutSettingsProvider>
+      </QueryClientProvider>
     </AuthProvider>
   );
 };
