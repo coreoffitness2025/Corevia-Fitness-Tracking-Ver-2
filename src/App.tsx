@@ -17,7 +17,6 @@ import WorkoutPage from './pages/workout/WorkoutPage';
 import FoodPage from './pages/food/FoodPage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
-import WorkoutGuidePage from './pages/workout/WorkoutGuidePage';
 
 // 플랫폼 독립적인 라우트 설정 (Web/Native 모두 사용 가능한 구조)
 export interface AppRoute {
@@ -41,7 +40,12 @@ export const appRoutes: AppRoute[] = [
   { path: '/food/*', component: FoodPage, protected: true },
   { path: '/qna', component: QnaPage, protected: true },
   { path: '/settings', component: SettingsPage, protected: true },
-  { path: '/workout/guide', component: WorkoutGuidePage, protected: true },
+  // WorkoutGuidePage 라우트 제거하고 SettingsPage로 리다이렉트
+  { 
+    path: '/workout/guide', 
+    component: () => <Navigate to="/settings" replace />, 
+    protected: true 
+  },
   
   // 404 페이지
   { path: '*', component: NotFoundPage, protected: false }
