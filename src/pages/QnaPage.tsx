@@ -262,71 +262,82 @@ const QnaPage: React.FC = () => {
         {/* 탭 콘텐츠 */}
         {activeTab === 'exercise' && (
           <div className="mt-6">
-            <div className="mb-6">
-              <input
-                type="text"
-                placeholder="운동 이름 검색..."
-                className="w-full p-2 border rounded-lg"
-                value={searchTerm}
-                onChange={handleSearchChange}
-              />
-              {showDropdown && (
-                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg">
-                  {searchResults.map(exercise => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 왼쪽: 운동 정보 */}
+              <div>
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    placeholder="운동 이름 검색..."
+                    className="w-full p-2 border rounded-lg"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                  />
+                  {showDropdown && (
+                    <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg">
+                      {searchResults.map(exercise => (
+                        <div
+                          key={exercise.id}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                          onClick={() => handleSearchSelect(exercise)}
+                        >
+                          <div className="font-medium">{exercise.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {getPartLabel(exercise.part as ExercisePart)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  {Object.entries(exercisesByPart).map(([part, _]) => (
+                    <button
+                      key={part}
+                      className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
+                        selectedPart === part
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                      onClick={() => handlePartSelect(part as ExercisePart)}
+                    >
+                      <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
+                      <span>{getPartLabel(part as ExercisePart)}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {exercisesByPart[selectedPart].map(exercise => (
                     <div
                       key={exercise.id}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                      onClick={() => handleSearchSelect(exercise)}
+                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => handleExerciseSelect(exercise)}
                     >
-                      <div className="font-medium">{exercise.name}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {getPartLabel(exercise.part as ExercisePart)}
+                      <div className="p-4">
+                        <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                            {getPartLabel(exercise.part as ExercisePart)}
+                          </span>
+                          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
+                            {exercise.level === 'beginner' ? '초급' : 
+                             exercise.level === 'intermediate' ? '중급' : '고급'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              {Object.entries(exercisesByPart).map(([part, _]) => (
-                <button
-                  key={part}
-                  className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
-                    selectedPart === part
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                  onClick={() => handlePartSelect(part as ExercisePart)}
-                >
-                  <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
-                  <span>{getPartLabel(part as ExercisePart)}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {exercisesByPart[selectedPart].map(exercise => (
-                <div
-                  key={exercise.id}
-                  className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handleExerciseSelect(exercise)}
-                >
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                        {getPartLabel(exercise.part as ExercisePart)}
-                      </span>
-                      <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
-                        {exercise.level === 'beginner' ? '초급' : 
-                         exercise.level === 'intermediate' ? '중급' : '고급'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {/* 오른쪽: 1RM 계산기와 무게 추천 */}
+              <div className="space-y-6">
+                <OneRepMaxCalculator />
+                <WorkoutWeightGuide />
+              </div>
             </div>
 
             {/* 운동 상세 모달 */}
