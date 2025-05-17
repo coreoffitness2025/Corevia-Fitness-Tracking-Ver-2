@@ -237,9 +237,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
 
     // 부위 변경 시 최근 운동 기록 가져오기
-    fetchLatestWorkout(newSelectedPart);
-    
-    // 세트는 변경하지 않음 - 기존 세트 유지
+    // 중요: 부위 변경 시에도 세트 설정은 유지하도록 수정
+    // 최근 운동 기록을 가져오되, 세트 설정을 덮어쓰지 않도록 새 플래그 사용
+    fetchLatestWorkout(newSelectedPart, undefined, true);
   }, [part]);
 
   // 선택된 메인 운동(selectedMainExercise) 변경 시 mainExercise.name 업데이트
@@ -253,7 +253,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       }));
 
       // 메인 운동 변경 시 해당 운동의 최근 기록 가져오기
-      fetchLatestWorkout(part, selectedMainExercise);
+      // 운동 변경 시에도 세트 설정은 유지
+      fetchLatestWorkout(part, selectedMainExercise, true);
     }
   }, [selectedMainExercise, part]);
 
@@ -508,7 +509,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   };
 
   // 최근 운동 기록 가져오기
-  const fetchLatestWorkout = async (exercisePart: ExercisePart, mainExerciseType?: MainExerciseType) => {
+  const fetchLatestWorkout = async (exercisePart: ExercisePart, mainExerciseType?: MainExerciseType, useCurrentSettings?: boolean) => {
     if (!userProfile) return;
 
     try {
@@ -579,11 +580,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           
           console.log(`최근 운동 성공 여부: ${allSuccess}, 이전 무게: ${lastWeight}kg, 새 무게: ${newWeight}kg`);
           
-          // 세트 수와 반복 횟수 패턴 확인
-          const setsCount = latestSession.mainExercise.sets.length;
-          const repsCount = latestSession.mainExercise.sets[0]?.reps || 0;
-          
-          // 최근 운동 이력 정보 업데이트
+          // 최근 운동 이력 정보만 업데이트 - 세트 구성은 변경하지 않음
           setLatestWorkoutInfo({
             date: latestSession.date instanceof Date 
               ? latestSession.date 
@@ -594,35 +591,58 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             allSuccess,
             exists: true,
             exerciseName: latestSession.mainExercise.name,
-            sets: setsCount,
-            reps: repsCount
+            sets: latestSession.mainExercise.sets.length,
+            reps: latestSession.mainExercise.sets[0]?.reps || 0
           });
           
-          // 메인 운동 세트 설정: 새 무게 적용 (모든 세트에 동일한 무게 적용)
-          const newSets = Array(setsCount).fill(0).map((_, index) => {
-            // 이전 코드: 첫 세트는 워밍업으로 약간 가벼운 무게 적용
-            // const weightAdjustment = index === 0 ? -2.5 : 0;
+          // 중요: 현재 선택된 세트 설정 사용 (최근 기록이 아닌 현재 설정 우선)
+          if (useCurrentSettings && settings) {
+            // 현재 설정된 세트 구성 정보 가져오기
+            const { setsCount, repsCount } = getSetConfiguration(
+              settings.preferredSetup,
+              settings.customSets, 
+              settings.customReps
+            );
             
-            // 수정된 코드: 모든 세트에 동일한 무게 적용
-            return {
-              reps: latestSession.mainExercise.sets[index]?.reps || 0,
-              weight: newWeight, // 모든 세트에 동일한 무게 적용
+            console.log(`[fetchLatestWorkout] 선택된 세트 구성을 우선 적용: ${settings.preferredSetup} - ${setsCount}세트 x ${repsCount}회`);
+            
+            // 메인 운동 세트 설정: 현재 설정된 세트 수와 반복 횟수 적용, 무게만 최근 기록에서 가져옴
+            const newSets = Array.from({ length: setsCount }, () => ({
+              reps: repsCount,
+              weight: newWeight,
               isSuccess: null
-            };
-          });
-          
-          console.log('새로운 세트 구성:', newSets);
-          
-          // 메인 운동 업데이트
-          setMainExercise(prev => {
-            console.log('메인 운동 업데이트. 이전 상태:', prev);
-            const updated = {
+            }));
+            
+            console.log('새 세트 구성 (최근 무게 + 현재 세트 설정):', newSets);
+            
+            // 메인 운동 업데이트
+            setMainExercise(prev => ({
               ...prev,
               sets: newSets
-            };
-            console.log('업데이트된 상태:', updated);
-            return updated;
-          });
+            }));
+          } else {
+            // settings가 아직 로드되지 않은 경우, 최근 운동 기록 기반으로만 설정
+            console.log('[fetchLatestWorkout] settings 없음, 최근 운동 기록만 사용');
+            
+            const setsCount = latestSession.mainExercise.sets.length;
+            
+            // 메인 운동 세트 설정: 새 무게 적용 (모든 세트에 동일한 무게 적용)
+            const newSets = Array(setsCount).fill(0).map((_, index) => {
+              return {
+                reps: latestSession.mainExercise.sets[index]?.reps || 0, 
+                weight: newWeight,
+                isSuccess: null
+              };
+            });
+            
+            console.log('새로운 세트 구성 (최근 운동 기록 기반):', newSets);
+            
+            // 메인 운동 업데이트
+            setMainExercise(prev => ({
+              ...prev,
+              sets: newSets
+            }));
+          }
         }
       } else {
         console.log('해당 운동의 이전 기록이 없습니다.');
@@ -635,6 +655,29 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           sets: 0,
           reps: 0
         });
+        
+        // 최근 기록이 없을 때 현재 세트 설정 적용
+        if (useCurrentSettings && settings) {
+          const { setsCount, repsCount } = getSetConfiguration(
+            settings.preferredSetup,
+            settings.customSets, 
+            settings.customReps
+          );
+          
+          console.log(`[fetchLatestWorkout] 기록 없음, 선택된 세트 구성 적용: ${settings.preferredSetup} - ${setsCount}세트 x ${repsCount}회`);
+          
+          // 기본 세트 구성 적용
+          const newSets = Array.from({ length: setsCount }, () => ({
+            reps: repsCount,
+            weight: 0,
+            isSuccess: null
+          }));
+          
+          setMainExercise(prev => ({
+            ...prev,
+            sets: newSets
+          }));
+        }
       }
     } catch (error) {
       console.error('최근 운동 기록 가져오기 실패:', error);
