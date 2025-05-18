@@ -56,7 +56,7 @@ const getExerciseGifUrl = (exerciseName: string): string => {
 };
 
 const WorkoutProgramDetail: React.FC<WorkoutProgramDetailProps> = ({ program, onClose }) => {
-  // YouTube URL에서 영상 ID 추출
+  // Youtube URL에서 영상 ID 추출
   const getYoutubeVideoId = (url: string | undefined) => {
     if (!url) return null;
     
