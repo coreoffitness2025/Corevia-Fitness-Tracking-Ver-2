@@ -284,28 +284,52 @@ const FoodLog: React.FC = () => {
           {formatDate(date)}
         </h3>
         
+        {/* 사진 영역 - 같은 날짜의 사진들을 행에 나란히 표시 */}
+        {hasPhotos && (
+          <div className="mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {recordsForDate.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
+                <div key={record.id} className="overflow-hidden rounded-lg">
+                  <img 
+                    src={imageCache[record.imageId!]} 
+                    alt={record.name || '식사 이미지'} 
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-2 bg-gray-100 dark:bg-gray-800">
+                    <p className="font-medium text-sm text-center">{record.name || '식사 기록'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                      {record.mealType === 'breakfast' ? '아침' : 
+                       record.mealType === 'lunch' ? '점심' : 
+                       record.mealType === 'dinner' ? '저녁' : '간식'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* 식단 정보 테이블 */}
         <div className="space-y-4">
           {recordsForDate.map((record) => (
             <Card key={record.id} className="overflow-hidden">
               <div className="p-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* 이미지 영역 */}
-                  {record.imageId && imageCache[record.imageId] && (
-                    <div className="w-full md:w-1/3 overflow-hidden rounded-lg">
-                      <img 
-                        src={imageCache[record.imageId]} 
-                        alt={record.name || '식사 이미지'} 
-                        className="w-full h-48 object-cover"
-                      />
-                    </div>
-                  )}
-                  
+                <div className="flex flex-col gap-4">
                   {/* 식사 정보 영역 */}
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium mb-2">{record.name || '식사 기록'}</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium">
+                        {record.name || '식사 기록'}
+                        <span className="ml-2 text-sm text-gray-500">
+                          {record.mealType === 'breakfast' ? '(아침)' : 
+                           record.mealType === 'lunch' ? '(점심)' : 
+                           record.mealType === 'dinner' ? '(저녁)' : '(간식)'}
+                        </span>
+                      </h3>
+                    </div>
                     
                     {record.description && (
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      <p className="text-gray-600 dark:text-gray-400 mt-2">
                         {record.description}
                       </p>
                     )}
@@ -367,6 +391,16 @@ const FoodLog: React.FC = () => {
             <div className="mt-3">
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
+              </p>
+            </div>
+            
+            {/* LocalStorage 관련 안내 */}
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
+              <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">
+                🔔 사진 저장 안내
+              </p>
+              <p className="text-blue-700 dark:text-blue-400">
+                사진은 사용자 기기의 로컬 저장소에 저장됩니다. 브라우저 캐시를 삭제하거나 다른 기기에서 접속하면 사진이 보이지 않을 수 있습니다.
               </p>
             </div>
             

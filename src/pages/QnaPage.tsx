@@ -105,6 +105,8 @@ const QnaPage: React.FC = () => {
       if (state.openNutritionScout) {
         setActiveTab('nutrition');
         setShowNutritionScout(true);
+        setShowCalculator(false);
+        setShowMealPlans(false);
         if (state.searchTerm) {
           // TODO: NutritionScout 컴포넌트에 searchTerm 전달 처리
         }
@@ -212,11 +214,26 @@ const QnaPage: React.FC = () => {
   };
 
   // 각 섹션별 표시 여부 토글 함수들
-  const toggleCalculator = () => setShowCalculator(!showCalculator);
-  const toggleNutritionScout = () => setShowNutritionScout(!showNutritionScout);
+  const toggleCalculator = () => {
+    setShowCalculator(!showCalculator);
+    setShowNutritionScout(false);
+    setShowMealPlans(false);
+  };
+  
+  const toggleNutritionScout = () => {
+    setShowNutritionScout(!showNutritionScout);
+    setShowCalculator(false);
+    setShowMealPlans(false);
+  };
+  
+  const toggleMealPlans = () => {
+    setShowMealPlans(!showMealPlans);
+    setShowCalculator(false);
+    setShowNutritionScout(false);
+  };
+  
   const toggleWeightGuide = () => setShowWeightGuide(!showWeightGuide);
   const toggle1RMCalculator = () => setShow1RMCalculator(!show1RMCalculator);
-  const toggleMealPlans = () => setShowMealPlans(!showMealPlans);
 
   return (
     <Layout>
@@ -231,7 +248,7 @@ const QnaPage: React.FC = () => {
         </div>
 
         {/* 새로운 버튼들 */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
             className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
@@ -243,7 +260,7 @@ const QnaPage: React.FC = () => {
           </button>
           
           <button
-            onClick={() => {setActiveTab('nutrition'); setShowCalculator(true); setShowNutritionScout(false);}}
+            onClick={() => {setActiveTab('nutrition'); toggleCalculator();}}
             className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -253,7 +270,7 @@ const QnaPage: React.FC = () => {
           </button>
           
           <button
-            onClick={() => {setActiveTab('nutrition'); setShowCalculator(false); setShowNutritionScout(true);}}
+            onClick={() => {setActiveTab('nutrition'); toggleNutritionScout();}}
             className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -271,7 +288,9 @@ const QnaPage: React.FC = () => {
             </svg>
             1RM 계산기
           </button>
-          
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
             className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
@@ -300,6 +319,14 @@ const QnaPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
             핸드북
+          </button>
+          
+          <button
+            onClick={() => {setActiveTab('nutrition'); toggleMealPlans();}}
+            className="p-2 bg-purple-500 text-white rounded-lg shadow hover:bg-purple-600 transition-colors flex flex-col items-center text-sm"
+          >
+            <Utensils size={20} className="mb-1" />
+            식단 예시
           </button>
         </div>
 
@@ -335,31 +362,6 @@ const QnaPage: React.FC = () => {
 
         {activeTab === 'nutrition' && (
           <div className="space-y-8">
-            {/* 영양 정보 툴 버튼 그룹 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button
-                onClick={toggleCalculator}
-                className="p-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2 transition"
-              >
-                <BarChart3 size={20} />
-                <span>칼로리 계산기</span>
-              </button>
-              <button
-                onClick={toggleNutritionScout}
-                className="p-4 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center justify-center gap-2 transition"
-              >
-                <Target size={20} />
-                <span>영양성분 검색</span>
-              </button>
-              <button
-                onClick={toggleMealPlans}
-                className="p-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center justify-center gap-2 transition"
-              >
-                <Utensils size={20} />
-                <span>식단 예시</span>
-              </button>
-            </div>
-            
             {/* 칼로리 계산기 */}
             {showCalculator && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -410,7 +412,7 @@ const QnaPage: React.FC = () => {
               </div>
             )}
             
-            {/* 기본 영양 정보 */}
+            {/* 영양 정보 안내 */}
             {!showCalculator && !showNutritionScout && !showMealPlans && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold">영양 & 식단 정보</h2>
