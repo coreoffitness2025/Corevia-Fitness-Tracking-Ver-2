@@ -272,36 +272,51 @@ const SettingsPage = () => {
           </div>
         )}
 
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {currentUser && (
+        {/* 로그아웃 버튼 */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+              계정 관리
+            </h3>
             <Button
               onClick={handleLogout}
-              variant="ghost"
+              variant="danger"
               size="md"
-              className="w-full text-left px-6 py-4 text-red-500 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
-              icon={<LogOut size={16} />}
+              icon={<LogOut size={18} />}
+              className="w-full md:w-auto"
             >
               로그아웃
             </Button>
-          )}
+          </div>
+        </div>
 
-          <a
-            href="https://corevia.com/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            개인정보 처리방침
-          </a>
-
-          <a
-            href="https://corevia.com/terms"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block px-6 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            이용약관
-          </a>
+        {/* 법적 정보 */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+              법적 정보
+            </h3>
+            <div className="space-y-3">
+              <Button
+                onClick={() => navigate('/legal/privacy')}
+                variant="text"
+                size="md"
+                icon={<FileText size={18} />}
+                className="w-full text-left justify-start"
+              >
+                개인정보처리방침
+              </Button>
+              <Button
+                onClick={() => navigate('/legal/terms')}
+                variant="text"
+                size="md"
+                icon={<FileText size={18} />}
+                className="w-full text-left justify-start"
+              >
+                이용약관
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 

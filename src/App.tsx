@@ -19,6 +19,7 @@ import FoodPage from './pages/food/FoodPage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import OneRmCalculatorPage from './pages/OneRmCalculatorPage';
+import LegalPage from './pages/LegalPage';
 
 // 플랫폼 독립적인 라우트 설정 (Web/Native 모두 사용 가능한 구조)
 export interface AppRoute {
@@ -43,6 +44,9 @@ export const appRoutes: AppRoute[] = [
   { path: '/qna', component: QnaPage, protected: true },
   { path: '/settings', component: SettingsPage, protected: true },
   { path: '/1rm-calculator', component: OneRmCalculatorPage, protected: true },
+  // 법적 정보 페이지 라우트 추가
+  { path: '/legal', component: LegalPage, protected: true },
+  { path: '/legal/:type', component: LegalPage, protected: true },
   // WorkoutGuidePage 라우트 제거하고 SettingsPage로 리다이렉트
   { 
     path: '/workout/guide', 
