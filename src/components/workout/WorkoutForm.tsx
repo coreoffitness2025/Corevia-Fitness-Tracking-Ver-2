@@ -184,29 +184,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 복합 운동 관련 상태 추가
   const [mainExercisePart, setMainExercisePart] = useState<ExercisePart>('chest');
 
-  // 저장된 운동 이력 관련 상태 추가
-  const [savedWorkoutHistory, setSavedWorkoutHistory] = useState<Array<{
-    id: string;
-    name: string;
-    mainExercise: {
-      name: string;
-      part: ExercisePart; 
-      sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
-    };
-    accessoryExercises: Array<{
-      name: string;
-      weight: number;
-      reps: number;
-      sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
-    }>;
-  }>>([]);
-
-  const [showWorkoutHistoryModal, setShowWorkoutHistoryModal] = useState(false);
-  const [selectedWorkoutHistory, setSelectedWorkoutHistory] = useState<string | null>(null);
-  const [workoutHistoryName, setWorkoutHistoryName] = useState<string>('');
-  const [isLoadingWorkoutHistory, setIsLoadingWorkoutHistory] = useState(false);
-  const [isSavingWorkoutHistory, setIsSavingWorkoutHistory] = useState(false);
-
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
     console.log('[WorkoutForm] 컴포넌트 마운트, userProfile:', userProfile?.uid);
@@ -1229,13 +1206,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const handleGlobalMainExercisePartChange = (part: ExercisePart) => {
     setMainExercisePart(part);
   };
-
-  // 컴포넌트 마운트시 운동 이력 로드
-  useEffect(() => {
-    if (userProfile?.uid) {
-      fetchWorkoutHistory();
-    }
-  }, [userProfile?.uid]);
 
   return (
     <Layout>

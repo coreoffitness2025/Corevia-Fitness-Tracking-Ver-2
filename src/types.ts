@@ -193,20 +193,15 @@ export interface LayoutProps {
 export interface Food {
   id: string;
   userId: string;
-  date: Date | string;
+  date: Date;
   name: string;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  type?: string;
   imageUrl?: string;
   notes?: string;
-  nutrients?: {
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
 }
 
 export interface WorkoutGuideInfo {
