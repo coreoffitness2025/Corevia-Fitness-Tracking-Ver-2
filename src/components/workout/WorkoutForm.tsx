@@ -982,11 +982,20 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         name: complexWorkoutName,
         date: new Date(),
         // 복합 운동의 경우 현재 메인 운동과 추가 메인 운동들을 모두 포함
+        // 복합 운동 불러오기가 아닌 실제 메인 운동만 포함
         mainExercises: part === 'complex' ? 
-          [mainExercise, ...mainExercises].filter(ex => ex.name && ex.name !== '복합 운동 불러오기') : 
+          [mainExercise, ...mainExercises].filter(ex => ex.name && ex.name.trim() !== '' && ex.name !== '복합 운동 불러오기') : 
           [mainExercise],
-        accessoryExercises: accessoryExercises
+        accessoryExercises: accessoryExercises,
+        part: 'complex' // 부위를 명시적으로 'complex'로 저장
       };
+
+      // 메인 운동이 하나도 없으면 오류 메시지 표시
+      if (complexWorkoutData.mainExercises.length === 0) {
+        toast.error('최소 하나 이상의 메인 운동이 필요합니다.');
+        setIsSavingComplexWorkout(false);
+        return;
+      }
 
       // Firestore에 저장
       await addDoc(collection(db, 'complexWorkouts'), complexWorkoutData);

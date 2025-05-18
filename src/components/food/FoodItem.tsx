@@ -21,29 +21,59 @@ const FoodItem: React.FC<FoodItemProps> = ({ food, isGridItem = false }) => {
       }
       // 로컬 저장소에서 이미지 가져오기
       else if (food.imageUrl.startsWith('local_')) {
-        const storedImage = localStorage.getItem(`food_image_${food.imageUrl}`);
-        if (storedImage) {
-          setImageSource(storedImage);
-          setImageError(false);
-        } else {
-          console.error('이미지 참조 저장됨:', food.imageUrl, '->', '로컬 스토리지에서 찾을 수 없음');
+        try {
+          // 먼저 food_image_ 접두사로 시도
+          const storedImage = localStorage.getItem(`food_image_${food.imageUrl}`);
+          if (storedImage) {
+            setImageSource(storedImage);
+            setImageError(false);
+            console.log('로컬 스토리지에서 이미지를 성공적으로 로드했습니다:', food.imageUrl);
+          } else {
+            // 접두사 없이 시도
+            const directStoredImage = localStorage.getItem(food.imageUrl);
+            if (directStoredImage) {
+              setImageSource(directStoredImage);
+              setImageError(false);
+              console.log('로컬 스토리지(직접 키)에서 이미지를 성공적으로 로드했습니다:', food.imageUrl);
+            } else {
+              console.error('이미지 참조 저장됨:', food.imageUrl, '->', '로컬 스토리지에서 찾을 수 없음');
+              // localStorage의 모든 키 목록 출력 (디버깅용)
+              console.log('사용 가능한 localStorage 키들:', Object.keys(localStorage).filter(key => key.includes('food') || key.includes('local')));
+              setImageError(true);
+            }
+          }
+        } catch (error) {
+          console.error('로컬 스토리지에서 이미지 로드 중 오류 발생:', error);
           setImageError(true);
         }
       } 
       // 파이어베이스 스토리지 URL인 경우 캐싱 방지를 위한 쿼리 파라미터 추가
       else {
-        const timestamp = new Date().getTime();
-        setImageSource(`${food.imageUrl}?t=${timestamp}`);
-        setImageError(false);
+        try {
+          const timestamp = new Date().getTime();
+          const imageUrl = food.imageUrl.includes('?') ? food.imageUrl : `${food.imageUrl}?t=${timestamp}`;
+          setImageSource(imageUrl);
+          setImageError(false);
+          console.log('Firebase Storage URL 설정:', imageUrl);
+        } catch (error) {
+          console.error('Firebase Storage URL 설정 중 오류:', error);
+          setImageError(true);
+        }
       }
     } else {
       setImageSource(null);
     }
   }, [food.imageUrl]);
 
-  // 이미지 로드 에러 처리
+  // 이미지 로드 에러 처리 개선
   const handleImageError = () => {
     console.error('이미지 로드 실패:', food.imageUrl);
+    // 로컬 이미지인 경우 로컬 스토리지에서 다시 확인
+    if (food.imageUrl && food.imageUrl.startsWith('local_')) {
+      const allKeys = Object.keys(localStorage);
+      const relevantKeys = allKeys.filter(key => key.includes(food.imageUrl));
+      console.log('관련 로컬 스토리지 키:', relevantKeys);
+    }
     setImageError(true);
   };
 

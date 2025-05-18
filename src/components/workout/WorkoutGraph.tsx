@@ -553,72 +553,91 @@ const WorkoutGraph: React.FC = () => {
     }
   };
   
-  // Firestore에서 데이터 가져오기
+  // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
-    const fetchWorkoutData = async () => {
-      if (!currentUser) {
-        setError('로그인이 필요합니다');
-        setLoading(false);
-        return;
+    loadWorkoutData();
+  }, [currentUser, selectedPeriod]);
+
+  // 부위 변경 시 해당 부위의 운동 데이터만 필터링
+  useEffect(() => {
+    if (workoutData.length > 0) {
+      console.log(`부위 변경: ${selectedPart}`);
+      
+      const filtered = workoutData.filter(workout => {
+        return workout.part === selectedPart;
+      });
+      
+      setFilteredData(filtered);
+      
+      // 선택된 운동 상세 정보 초기화
+      setSelectedWorkout(null);
+      setSelectedDate(null);
+      setWorkoutsForSelectedDate([]);
+    }
+  }, [selectedPart, workoutData]);
+  
+  // Firestore에서 데이터 가져오기
+  const loadWorkoutData = async () => {
+    if (!currentUser) {
+      setError('로그인이 필요합니다');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // 기간에 따른 날짜 범위 계산
+      const endDate = new Date();
+      let startDate = new Date();
+      
+      switch (selectedPeriod) {
+        case '1month':
+          startDate.setMonth(startDate.getMonth() - 1);
+          break;
+        case '3months':
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case '6months':
+          startDate.setMonth(startDate.getMonth() - 6);
+          break;
+        case '1year':
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+        default:
+          startDate.setMonth(startDate.getMonth() - 1);
       }
       
-      try {
-        setLoading(true);
-        
-        // 기간에 따른 날짜 범위 계산
-        const endDate = new Date();
-        let startDate = new Date();
-        
-        switch (selectedPeriod) {
-          case '1month':
-            startDate.setMonth(startDate.getMonth() - 1);
-            break;
-          case '3months':
-            startDate.setMonth(startDate.getMonth() - 3);
-            break;
-          case '6months':
-            startDate.setMonth(startDate.getMonth() - 6);
-            break;
-          case '1year':
-            startDate.setFullYear(startDate.getFullYear() - 1);
-            break;
-          default:
-            startDate.setMonth(startDate.getMonth() - 1);
-        }
-        
-        // Firestore 쿼리 구성
-        const sessionsCollection = collection(db, 'sessions');
-        const q = query(
-          sessionsCollection,
-          where('userId', '==', currentUser.uid),
-          where('date', '>=', startDate),
-          where('date', '<=', endDate),
-          orderBy('date', 'asc')
-        );
-        
-        const querySnapshot = await getDocs(q);
-        
-        // 쿼리 결과 파싱
-        const data = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          date: new Date(doc.data().date.toDate()),
-        })) as Workout[];
-        
-        setWorkoutData(data);
-        // 초기 필터 적용
-        applyFilters(data);
-        
-      } catch (error) {
-        console.error('운동 데이터 로드 오류:', error);
-        setError('운동 데이터를 불러오는 중 오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchWorkoutData();
-  }, [currentUser, selectedPeriod]);
+      // Firestore 쿼리 구성
+      const sessionsCollection = collection(db, 'sessions');
+      const q = query(
+        sessionsCollection,
+        where('userId', '==', currentUser.uid),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate),
+        orderBy('date', 'asc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      // 쿼리 결과 파싱
+      const data = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: new Date(doc.data().date.toDate()),
+      })) as Workout[];
+      
+      setWorkoutData(data);
+      // 초기 필터 적용
+      applyFilters(data);
+      
+    } catch (error) {
+      console.error('운동 데이터 로드 오류:', error);
+      setError('운동 데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // 필터링 기능
   const applyFilters = (data = workoutData) => {

@@ -248,6 +248,165 @@ const QnaPage: React.FC = () => {
     setHandbookSearchResults(results);
   };
 
+  // 운동 부위별 버튼을 추가하는 부분 수정
+  const renderExerciseByParts = () => {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+        {Object.keys(exercisesByPart).map((part) => (
+          <button
+            key={part}
+            onClick={() => {
+              setSelectedPart(part as ExercisePart);
+              setSelectedExercise(null);
+            }}
+            className={`
+              flex flex-col items-center justify-center p-4 rounded-lg transition-all
+              ${
+                selectedPart === part
+                  ? 'bg-blue-500 text-white shadow-md transform scale-105'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+              }
+            `}
+          >
+            <span className="text-2xl mb-2">{partIcons[part as ExercisePart]}</span>
+            <span className="font-medium">{getPartLabel(part as ExercisePart)}</span>
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  // 선택된 운동의 상세 정보를 렌더링하는 부분 수정
+  const renderExerciseDetails = () => {
+    if (!selectedExercise) return null;
+
+    // 유튜브 URL에서 영상 ID 추출
+    const getYoutubeVideoId = (url: string | undefined) => {
+      if (!url) return null;
+      
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      
+      return (match && match[2].length === 11) ? match[2] : null;
+    };
+
+    const videoId = getYoutubeVideoId(selectedExercise.videoUrl);
+
+    // 운동 이미지 URL 생성 (실제 gif 이미지가 있는 경우 사용)
+    const getExerciseGifUrl = (exerciseId: string) => {
+      return `/images/exercises/${exerciseId}.gif`;
+    };
+
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedExercise.name}</h2>
+          <button 
+            onClick={() => setSelectedExercise(null)}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            {getPartLabel(selectedExercise.part as ExercisePart)}
+          </span>
+          <span className="inline-block ml-2 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            {selectedExercise.level === 'beginner' ? '초급' : 
+             selectedExercise.level === 'intermediate' ? '중급' : '고급'}
+          </span>
+        </div>
+
+        <p className="text-gray-700 dark:text-gray-300 mb-4">{selectedExercise.description}</p>
+
+        {/* 운동 GIF 이미지 표시 */}
+        <div className="mb-6">
+          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+            <img 
+              src={getExerciseGifUrl(selectedExercise.id)} 
+              alt={`${selectedExercise.name} 운동 방법`} 
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/exercise-placeholder.jpg'; // 기본 이미지로 대체
+              }}
+              className="w-full object-cover"
+            />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">수행 방법</h3>
+          <ol className="list-decimal pl-5 space-y-1 text-gray-700 dark:text-gray-300">
+            {selectedExercise.instructions.map((instruction, index) => (
+              <li key={index}>{instruction}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">주요 자극 근육</h3>
+          <div className="flex flex-wrap gap-2">
+            {selectedExercise.muscles.map((muscle, index) => (
+              <span key={index} className="px-2 py-1 rounded bg-purple-100 text-purple-800 text-sm dark:bg-purple-900 dark:text-purple-200">
+                {muscle}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">필요 장비</h3>
+          <div className="flex flex-wrap gap-2">
+            {selectedExercise.equipment.map((item, index) => (
+              <span key={index} className="px-2 py-1 rounded bg-gray-100 text-gray-800 text-sm dark:bg-gray-700 dark:text-gray-300">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* 유튜브 영상 또는 링크 표시 */}
+        {videoId ? (
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">운동 영상</h3>
+            <div className="relative pt-[56.25%] bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+              <iframe 
+                className="absolute top-0 left-0 w-full h-full"
+                width="100%" 
+                height="315" 
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title={`${selectedExercise.name} 운동 영상`}
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
+            </div>
+          </div>
+        ) : selectedExercise.videoUrl ? (
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">운동 영상</h3>
+            <a 
+              href={selectedExercise.videoUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+              </svg>
+              유튜브에서 운동 영상 보기
+            </a>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
@@ -334,485 +493,72 @@ const QnaPage: React.FC = () => {
         </div>
 
         {/* 탭 콘텐츠 */}
-        {activeTab === 'exercise' && (
-          <div className="mt-6">
-            {showWeightGuide ? (
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-4">운동 무게 추천</h3>
-                <WorkoutWeightGuide />
-                <div className="mt-4 text-center">
-                  <button 
-                    onClick={() => setShowWeightGuide(false)}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
-                  >
-                    운동 검색으로 돌아가기
-                  </button>
-                </div>
-              </div>
-            ) : show1RMCalculator ? (
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-4">1RM 계산기</h3>
-                <OneRepMaxCalculator />
-                <div className="mt-4 text-center">
-                  <button 
-                    onClick={() => setShow1RMCalculator(false)}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
-                  >
-                    운동 검색으로 돌아가기
-                  </button>
-                </div>
-              </div>
-            ) : showWorkoutSets ? (
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-4">운동 프로그램</h3>
-                <div className="mb-4">
-                  <div className="grid grid-cols-1 gap-4 mb-6">
-                    <div 
-                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => setSelectedProgramType('strength')}
-                    >
-                      <div className="flex items-center">
-                        <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3 mr-4">
-                          <BarChart3 className="text-blue-600 dark:text-blue-400" size={24} />
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">스트렝스 프로그램</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">근력 증가에 초점</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div 
-                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => setSelectedProgramType('powerbuilding')}
-                    >
-                      <div className="flex items-center">
-                        <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3 mr-4">
-                          <Target className="text-purple-600 dark:text-purple-400" size={24} />
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">파워빌딩 프로그램</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">근력과 근비대 동시 발달</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div 
-                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => setSelectedProgramType('hypertrophy')}
-                    >
-                      <div className="flex items-center">
-                        <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mr-4">
-                          <Award className="text-green-600 dark:text-green-400" size={24} />
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">근비대 프로그램</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">근육 크기 증가에 초점</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div 
-                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => setSelectedProgramType('custom')}
-                    >
-                      <div className="flex items-center">
-                        <div className="rounded-full bg-amber-100 dark:bg-amber-900/30 p-3 mr-4">
-                          <Settings className="text-amber-600 dark:text-amber-400" size={24} />
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">커스텀 프로그램</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">개인형 맞춤 운동</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* 스트렝스 프로그램 */}
-                  {selectedProgramType === 'strength' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">스트렝스 프로그램 (근력 향상 중심)</h4>
-                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <strong>연구 기반:</strong> Journal of Strength and Conditioning Research에 따르면, 낮은 반복 횟수(1-6회)와 
-                          높은 무게(1RM의 80-95%)로 훈련 시 최대 근력 발달에 가장 효과적입니다. (Schoenfeld et al., 2016)
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h5 className="font-medium text-blue-600 dark:text-blue-400">5x5 프로그램 (Starting Strength 변형)</h5>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">A 데이 (월/목)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>스쿼트: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
-                            <li>벤치 프레스: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
-                            <li>바벨 로우: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">B 데이 (수/토)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>스쿼트: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
-                            <li>오버헤드 프레스: 5세트 x 5회 (세트 간 3-5분 휴식)</li>
-                            <li>데드리프트: 3세트 x 5회 (세트 간 3-5분 휴식)</li>
-                          </ul>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-                          <strong>진행 방법:</strong> 매 세션마다 무게를 2.5-5kg씩 증가시키며, 5x5를 모두 완료하지 못하면 
-                          같은 무게로 다음 세션에 다시 시도합니다. 3번 연속 실패할 경우 10% 무게를 감소시킨 후 다시 진행합니다.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 파워빌딩 프로그램 */}
-                  {selectedProgramType === 'powerbuilding' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">파워빌딩 프로그램 (근력+근비대 복합)</h4>
-                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <strong>연구 기반:</strong> Sports Medicine의 메타분석에 따르면, 다양한 운동 강도(1RM의 70-95%)와 
-                          반복 범위(3-12회)를 혼합하는 것이 근력과 근비대를 동시에 발달시키는 데 효과적입니다. (Grgic et al., 2018)
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h5 className="font-medium text-purple-600 dark:text-purple-400">PHUL 프로그램 (Power Hypertrophy Upper Lower)</h5>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">1일차: 상체 파워 (월)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>벤치 프레스: 4세트 x 3-5회 (80-85% 1RM)</li>
-                            <li>인클라인 벤치: 3세트 x 6-8회</li>
-                            <li>바벨 로우: 4세트 x 3-5회</li>
-                            <li>풀업: 3세트 x 6-8회</li>
-                            <li>오버헤드 프레스: 3세트 x 5-8회</li>
-                            <li>바벨 컬: 3세트 x 6-8회</li>
-                            <li>스컬크러셔: 3세트 x 6-8회</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">2일차: 하체 파워 (화)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>스쿼트: 4세트 x 3-5회 (80-85% 1RM)</li>
-                            <li>데드리프트: 3세트 x 3-5회</li>
-                            <li>런지: 3세트 x 8-10회</li>
-                            <li>레그 컬: 3세트 x 6-8회</li>
-                            <li>카프 레이즈: 4세트 x 8-10회</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">3일차: 상체 근비대 (목)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>덤벨 벤치 프레스: 3세트 x 8-12회</li>
-                            <li>케이블 플라이: 3세트 x 10-15회</li>
-                            <li>시티드 로우: 3세트 x 8-12회</li>
-                            <li>랫 풀다운: 3세트 x 8-12회</li>
-                            <li>덤벨 숄더 프레스: 3세트 x 8-12회</li>
-                            <li>덤벨 컬: 3세트 x 10-15회</li>
-                            <li>트라이셉스 푸시다운: 3세트 x 10-15회</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">4일차: 하체 근비대 (금)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>프론트 스쿼트: 3세트 x 8-12회</li>
-                            <li>레그 프레스: 3세트 x 10-15회</li>
-                            <li>루마니안 데드리프트: 3세트 x 8-10회</li>
-                            <li>레그 익스텐션: 3세트 x 12-15회</li>
-                            <li>레그 컬: 3세트 x 12-15회</li>
-                            <li>카프 레이즈: 4세트 x 15-20회</li>
-                            <li>캐이블 크런치: 3세트 x 15-20회</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 근비대 프로그램 */}
-                  {selectedProgramType === 'hypertrophy' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">근비대 프로그램 (근육량 증가 중심)</h4>
-                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <strong>연구 기반:</strong> Journal of Applied Physiology에 발표된 연구에 따르면, 6-12회 반복 범위와 
-                          1RM의 65-80% 무게로 훈련할 때 근비대 효과가 최대화됩니다. 또한 주당 근육그룹당 10-20세트가 최적입니다. (Schoenfeld et al., 2019)
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h5 className="font-medium text-green-600 dark:text-green-400">PPL 프로그램 (Push-Pull-Legs)</h5>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">푸시 데이 (월/목)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>벤치 프레스: 4세트 x 8-10회 (세트 간 1-2분 휴식)</li>
-                            <li>인클라인 덤벨 프레스: 3세트 x 10-12회</li>
-                            <li>케이블 플라이: 3세트 x 12-15회</li>
-                            <li>숄더 프레스: 4세트 x 8-10회</li>
-                            <li>사이드 레터럴 레이즈: 3세트 x 12-15회</li>
-                            <li>트라이셉스 푸시다운: 3세트 x 10-12회</li>
-                            <li>오버헤드 트라이셉스 익스텐션: 3세트 x 10-12회</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">풀 데이 (화/금)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>바벨 로우: 4세트 x 8-10회</li>
-                            <li>랫 풀다운: 3세트 x 10-12회</li>
-                            <li>시티드 케이블 로우: 3세트 x 12-15회</li>
-                            <li>페이스 풀: 3세트 x 15-20회</li>
-                            <li>바벨 컬: 3세트 x 8-10회</li>
-                            <li>해머 컬: 3세트 x 10-12회</li>
-                            <li>케이블 컬: 3세트 x 12-15회</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">레그 데이 (수/토)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>스쿼트: 4세트 x 8-10회</li>
-                            <li>레그 프레스: 3세트 x 10-12회</li>
-                            <li>루마니안 데드리프트: 3세트 x 8-10회</li>
-                            <li>레그 익스텐션: 3세트 x 12-15회</li>
-                            <li>레그 컬: 3세트 x 12-15회</li>
-                            <li>카프 레이즈: 4세트 x 15-20회</li>
-                            <li>캐이블 크런치: 3세트 x 15-20회</li>
-                          </ul>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-                          <strong>진행 방법:</strong> 각 세트에서 근육 피로를 느낄 때까지 수행하고, 마지막 1-2회는 거의 실패 직전까지
-                          진행합니다. 무게는 점진적으로 증가시키되, 정해진 반복 횟수를 유지할 수 있는 범위 내에서 조절합니다.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 초보자 프로그램 */}
-                  {selectedProgramType === 'beginner' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">초보자 프로그램 (근신경계 발달 중심)</h4>
-                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <strong>연구 기반:</strong> 초보자는 처음 3-6개월 동안 단순한 훈련 자극에도 신경근 적응과 근력 향상을 경험합니다.
-                          International Journal of Exercise Science에 발표된 연구에 따르면, 초보자는 복잡한 프로그램보다 
-                          기본 복합 운동을 중심으로 한 전신 루틴으로 시작하는 것이 좋습니다. (Kraemer et al., 2017)
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h5 className="font-medium text-yellow-600 dark:text-yellow-400">3일 풀바디 프로그램</h5>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">A 데이 (월/금)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>머신 체스트 프레스: 3세트 x 12-15회 (세트 간 1-2분 휴식)</li>
-                            <li>시티드 로우 머신: 3세트 x 12-15회</li>
-                            <li>레그 프레스: 3세트 x 12-15회</li>
-                            <li>레그 익스텐션: 2세트 x 12-15회</li>
-                            <li>레그 컬: 2세트 x 12-15회</li>
-                            <li>케이블 트라이셉스 푸시다운: 2세트 x 12-15회</li>
-                            <li>케이블 바이셉스 컬: 2세트 x 12-15회</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="font-medium mb-2">B 데이 (수)</p>
-                          <ul className="list-disc pl-5 space-y-2">
-                            <li>랫 풀다운: 3세트 x 12-15회</li>
-                            <li>숄더 프레스 머신: 3세트 x 12-15회</li>
-                            <li>스미스 머신 스쿼트: 3세트 x 12-15회</li>
-                            <li>시티드 레그 프레스: 3세트 x 12-15회</li>
-                            <li>사이드 레터럴 레이즈: 2세트 x 12-15회</li>
-                            <li>케이블 페이스 풀: 2세트 x 12-15회</li>
-                            <li>플랭크: 3세트 x 30초</li>
-                          </ul>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-                          <strong>진행 방법:</strong> 첫 2주는 가벼운 무게로 정확한 폼에 집중합니다. 이후 점차 무게를 증가시키되,
-                          12-15회를 완료할 수 있는 범위를 유지합니다. 4-6주 후 프리웨이트 운동을 점진적으로 도입할 수 있습니다.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 유명 프로그램 */}
-                  {selectedProgramType === 'popular' && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold mb-3 border-b pb-2">유명 프로그램 루틴</h4>
-                      
-                      <div className="space-y-6">
-                        <div>
-                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">nSuns 5/3/1</h5>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                            Jim Wendler의 5/3/1을 기반으로 한 고강도 주간 프로그램. 주요 복합 운동의 점진적 과부하에 중점을 둡니다.
-                          </p>
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="font-medium mb-2">주간 구성 (5일)</p>
-                            <ul className="list-disc pl-5 space-y-2">
-                              <li>월: 벤치 프레스 + 오버헤드 프레스 (9세트 각 운동)</li>
-                              <li>화: 스쿼트 + 서모 데드리프트 (9세트 각 운동)</li>
-                              <li>수: 오버헤드 프레스 + 인클라인 벤치 (9세트 각 운동)</li>
-                              <li>목: 데드리프트 + 프론트 스쿼트 (9세트 각 운동)</li>
-                              <li>금: 벤치 프레스 + 클로즈 그립 벤치 (9세트 각 운동)</li>
-                            </ul>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">매드카우 5x5</h5>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                            Bill Starr가 개발한 클래식 근력 프로그램으로, 복합 운동을 중심으로 주 3회 훈련합니다.
-                          </p>
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="font-medium mb-2">주간 구성 (3일)</p>
-                            <ul className="list-disc pl-5 space-y-2">
-                              <li>월: 스쿼트 5x5, 벤치 프레스 5x5, 바벨 로우 5x5</li>
-                              <li>수: 스쿼트 5x5, 오버헤드 프레스 5x5, 데드리프트 1x5</li>
-                              <li>금: 스쿼트 5x5, 벤치 프레스 5x5, 바벨 로우 5x5</li>
-                            </ul>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">텍사스 메소드</h5>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                            파워리프터 마크 리퍼토가 개발한 고강도 프로그램으로, 높은 볼륨과 고강도의 조합이 특징입니다.
-                          </p>
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="font-medium mb-2">주간 구성 (4일)</p>
-                            <ul className="list-disc pl-5 space-y-2">
-                              <li>월: 볼륨 - 스쿼트 5x5, 벤치 프레스 5x5, 액세서리</li>
-                              <li>수: 복구 - 경량 스쿼트 2x5, 오버헤드 프레스 3x5, 데드리프트 1x5</li>
-                              <li>금: 강도 - 스쿼트 1x5, 벤치 프레스 1x5 (최대 무게), 액세서리</li>
-                              <li>토: 다이나믹 - 폭발적 스쿼트 10x3, 백오프 벤치 3x5, 액세서리</li>
-                            </ul>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h5 className="font-medium text-red-600 dark:text-red-400 mb-2">GZCL 메소드</h5>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                            파워리프터 코리 그레고리가 개발한 유연한 프레임워크로, 티어 시스템으로 운동을 분류합니다.
-                          </p>
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="font-medium mb-2">티어 시스템</p>
-                            <ul className="list-disc pl-5 space-y-2">
-                              <li>T1 (메인 리프트): 1-5회 반복, 85-100% 1RM, 10-15세트</li>
-                              <li>T2 (보조 리프트): 5-10회 반복, 65-85% 1RM, 15-25세트</li>
-                              <li>T3 (고립 운동): 10+ 반복, 65% 1RM 이하, 25-50세트</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                </div>
-                <div className="mt-4 text-center">
-                  <button 
-                    onClick={() => setShowWorkoutSets(false)}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
-                  >
-                    운동 검색으로 돌아가기
-                  </button>
-                </div>
-              </div>
+        {activeTab === 'exercise' && !showWeightGuide && !show1RMCalculator && (
+          <>
+            {/* 운동 검색 폼 */}
+            <div className="mb-6">
+              <input
+                type="text"
+                placeholder="운동 이름 검색..."
+                className="w-full p-2 border rounded-lg"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+              {/* 검색 결과 드롭다운 */}
+            </div>
+            
+            {/* 운동 부위 선택 버튼 */}
+            {renderExerciseByParts()}
+            
+            {/* 선택된 운동 상세 정보 */}
+            {selectedExercise ? (
+              renderExerciseDetails()
             ) : (
-              <>
-                <div className="mb-6">
-                  <input
-                    type="text"
-                    placeholder="운동 이름 검색..."
-                    className="w-full p-2 border rounded-lg"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                  />
-                  {showDropdown && (
-                    <div className="absolute z-10 mt-1 w-full max-h-60 overflow-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg">
-                      {searchResults.map(exercise => (
-                        <div
-                          key={exercise.id}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                          onClick={() => handleSearchSelect(exercise)}
-                        >
-                          <div className="font-medium">{exercise.name}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {getPartLabel(exercise.part as ExercisePart)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                  {Object.entries(exercisesByPart).map(([part, _]) => (
-                    <button
-                      key={part}
-                      className={`flex flex-col items-center p-3 rounded-lg transition-colors ${
-                        selectedPart === part
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
-                      onClick={() => handlePartSelect(part as ExercisePart)}
-                    >
-                      <span className="text-2xl mb-1">{partIcons[part as ExercisePart]}</span>
-                      <span>{getPartLabel(part as ExercisePart)}</span>
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {exercisesByPart[selectedPart].slice(0, showAllExercises ? undefined : 4).map(exercise => (
-                    <div 
-                      key={exercise.id}
-                      className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => handleExerciseSelect(exercise)}
-                    >
-                      <div className="p-4">
-                        <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                            {getPartLabel(exercise.part as ExercisePart)}
-                          </span>
-                          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
-                            {exercise.level === 'beginner' ? '초급' : 
-                            exercise.level === 'intermediate' ? '중급' : '고급'}
-                          </span>
-                        </div>
+              /* 부위별 운동 리스트 */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {exercisesByPart[selectedPart].slice(0, showAllExercises ? undefined : 4).map(exercise => (
+                  <div 
+                    key={exercise.id}
+                    className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleExerciseSelect(exercise)}
+                  >
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                          {getPartLabel(exercise.part as ExercisePart)}
+                        </span>
+                        <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
+                          {exercise.level === 'beginner' ? '초급' : 
+                          exercise.level === 'intermediate' ? '중급' : '고급'}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-                
-                {/* 전체보기 버튼 */}
-                {exercisesByPart[selectedPart].length > 4 && (
-                  <div className="text-center mt-4 mb-6">
-                    <button 
-                      onClick={() => setShowAllExercises(!showAllExercises)}
-                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
-                    >
-                      {showAllExercises ? '간략히 보기' : '전체 보기'}
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                        {showAllExercises ? (
-                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                        ) : (
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        )}
-                      </svg>
-                    </button>
                   </div>
-                )}
-              </>
+                ))}
+              </div>
             )}
-          </div>
+            
+            {/* 전체보기 버튼 */}
+            {!selectedExercise && (
+              <div className="text-center mt-4 mb-6">
+                <button 
+                  onClick={() => setShowAllExercises(!showAllExercises)}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
+                >
+                  {showAllExercises ? '간략히 보기' : '전체 보기'}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                    {showAllExercises ? (
+                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                    ) : (
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    )}
+                  </svg>
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {activeTab === 'nutrition' && (
