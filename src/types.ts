@@ -287,3 +287,25 @@ export interface ChartDataPoint {
   weight: number;
   isSuccess: boolean;
 }
+
+export interface WorkoutProgram {
+  id: string;
+  name: string;
+  description: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  goal: 'strength' | 'hypertrophy' | 'endurance' | 'weight-loss';
+  duration: string;
+  durationType?: 'weeks' | 'days';
+  daysPerWeek: number;
+  schedule: Array<{
+    day: string;
+    exercises: Array<{
+      name: string;
+      sets: number;
+      reps: string;
+      notes?: string;
+    }>;
+  }>;
+  tips: string[];
+  videoUrl?: string;
+}
