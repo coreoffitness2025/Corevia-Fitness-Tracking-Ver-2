@@ -1,4 +1,31 @@
-// src/types/index.ts (혹은 types.ts)
+/**
+ * 모든 타입 정의 파일들을 모아서 export하는 인덱스 파일
+ */
+
+// 운동 관련 타입
+export * from './workout';
+
+// 영양 및 식단 관련 타입
+export * from './nutrition';
+
+// 사용자 관련 타입
+export * from './user';
+
+// 공통 레이아웃 타입
+export interface LayoutProps {
+  children: React.ReactNode;
+}
+
+// FAQ 타입
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  videoUrl?: string;
+  type: 'method' | 'sets';
+  part?: string;
+  category: string;
+}
 
 export type ExercisePart = 
   | 'chest' 
@@ -67,14 +94,6 @@ export interface Progress {
   successSets: number;
   sets: ExerciseSet[];
   isSuccess: boolean;
-}
-
-export interface FAQ {
-  id: string;
-  part: ExercisePart;
-  question: string;
-  answer: string;
-  videoUrl?: string;
 }
 
 export interface User {

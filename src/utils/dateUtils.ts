@@ -28,6 +28,21 @@ export const formatDateKorean = (date: Date | string): string => {
 };
 
 /**
+ * 날짜를 요일 포함하여 '2023년 5월 17일 수요일' 형식으로 변환
+ * @param date 변환할 Date 객체
+ * @returns 요일을 포함한 한국어 날짜 형식
+ */
+export const formatDateWithWeekday = (date: Date | string): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
+  });
+};
+
+/**
  * 요일 이름 배열 (일~토)
  */
 export const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
@@ -39,4 +54,28 @@ export const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
  */
 export const getDayOfWeek = (date: Date): string => {
   return weekdays[date.getDay()];
+};
+
+/**
+ * 현재 날짜를 YYYY-MM-DD 형식으로 반환
+ * @returns 오늘 날짜 문자열
+ */
+export const getTodayString = (): string => {
+  return formatDate(new Date());
+};
+
+/**
+ * 날짜가 오늘인지 확인
+ * @param date 확인할 날짜
+ * @returns 오늘이면 true, 아니면 false
+ */
+export const isToday = (date: Date | string): boolean => {
+  const today = new Date();
+  const checkDate = typeof date === 'string' ? new Date(date) : date;
+  
+  return (
+    today.getFullYear() === checkDate.getFullYear() &&
+    today.getMonth() === checkDate.getMonth() &&
+    today.getDate() === checkDate.getDate()
+  );
 }; 
