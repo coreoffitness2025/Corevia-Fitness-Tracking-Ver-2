@@ -7,11 +7,12 @@ import { fetchFoodsByDate } from '../../services/foodService';
 import FoodItem from './FoodItem';
 import NutritionSummary from './NutritionSummary';
 import Card from '../common/Card';
-import { Info, Calendar, CalendarDays } from 'lucide-react';
+import { Info, Calendar, CalendarDays, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { getFoodRecordsByDate, getFoodImage, FoodRecord } from '../../utils/indexedDB';
 
 // 활동 수준에 따른 칼로리 계수
 const activityMultipliers = {
@@ -53,6 +54,8 @@ const FoodLog: React.FC = () => {
   const [carbsTarget, setCarbsTarget] = useState<number>(0);
   const [fatTarget, setFatTarget] = useState<number>(0);
   const [showNutritionSources, setShowNutritionSources] = useState<boolean>(false);
+  const [foodRecords, setFoodRecords] = useState<FoodRecord[]>([]);
+  const [imageCache, setImageCache] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (user) {
@@ -66,6 +69,12 @@ const FoodLog: React.FC = () => {
       updateNutritionTargets(userProfile);
     }
   }, [userProfile]);
+
+  useEffect(() => {
+    if (userProfile?.uid) {
+      loadFoodData();
+    }
+  }, [userProfile?.uid, selectedDate, viewMode]);
 
   const updateNutritionTargets = (profile: any) => {
     if (!profile) return;
@@ -122,43 +131,53 @@ const FoodLog: React.FC = () => {
   };
 
   const loadFoodData = async () => {
-    if (!user) return;
+    if (!userProfile?.uid) return;
     
     setIsLoading(true);
     try {
-      let foodData: Food[] = [];
+      let records: FoodRecord[] = [];
       
       if (viewMode === 'day') {
         // 하루 데이터만 로드
-        foodData = await fetchFoodsByDate(user.uid, new Date(selectedDate));
+        records = await getFoodRecordsByDate(userProfile.uid, new Date(selectedDate));
       } else if (viewMode === 'week') {
-        // 1주일 데이터 로드
-        const startDate = new Date(selectedDate);
-        startDate.setDate(startDate.getDate() - startDate.getDay()); // 주의 시작일 (일요일)
-        
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6); // 주의 마지막일 (토요일)
-        
-        // 실제 앱에서는 범위 쿼리를 사용하여 범위 내 모든 데이터를 가져옴
-        // 여기서는 임시로 단일 날짜 데이터만 사용
-        foodData = await fetchFoodsByDate(user.uid, new Date(selectedDate));
+        // 1주일 데이터 로드 (일단 선택된 날짜만 로드하고, 추후 범위 쿼리 구현)
+        records = await getFoodRecordsByDate(userProfile.uid, new Date(selectedDate));
       } else if (viewMode === 'month') {
-        // 1개월 데이터 로드
-        const date = new Date(selectedDate);
-        const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-        const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-        
-        // 실제 앱에서는 범위 쿼리를 사용
-        // 여기서는 임시로 단일 날짜 데이터만 사용
-        foodData = await fetchFoodsByDate(user.uid, new Date(selectedDate));
+        // 1개월 데이터 로드 (일단 선택된 날짜만 로드하고, 추후 범위 쿼리 구현)
+        records = await getFoodRecordsByDate(userProfile.uid, new Date(selectedDate));
       }
       
-      setFoods(foodData);
+      setFoodRecords(records);
+      
+      // 이미지 로드
+      await loadImages(records);
     } catch (error) {
-      console.error('Error loading food records:', error);
+      console.error('식단 기록 로드 오류:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 이미지 로드 함수
+  const loadImages = async (records: FoodRecord[]) => {
+    const newImageCache: Record<string, string> = { ...imageCache };
+    
+    for (const record of records) {
+      if (record.imageId && !newImageCache[record.imageId]) {
+        try {
+          const imageBlob = await getFoodImage(record.imageId);
+          if (imageBlob) {
+            const imageUrl = URL.createObjectURL(imageBlob);
+            newImageCache[record.imageId] = imageUrl;
+          }
+        } catch (error) {
+          console.error(`이미지 로드 오류 (ID: ${record.imageId}):`, error);
+        }
+      }
+    }
+    
+    setImageCache(newImageCache);
   };
 
   const getDaysOfWeek = () => {
@@ -189,28 +208,40 @@ const FoodLog: React.FC = () => {
   };
 
   // 날짜별로 식단 그룹화
-  const groupFoodsByDate = (foods: Food[]) => {
-    const groups: Record<string, Food[]> = {};
+  const groupFoodsByDate = (records: FoodRecord[]) => {
+    const groups: Record<string, FoodRecord[]> = {};
     
-    foods.forEach(food => {
-      const dateKey = food.date instanceof Date 
-        ? food.date.toISOString().split('T')[0]
-        : new Date(food.date).toISOString().split('T')[0];
+    records.forEach(record => {
+      const dateKey = record.date instanceof Date 
+        ? record.date.toISOString().split('T')[0]
+        : new Date(record.date).toISOString().split('T')[0];
       
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
       
-      groups[dateKey].push(food);
+      groups[dateKey].push(record);
     });
     
     return groups;
   };
 
-  const foodGroups = groupFoodsByDate(foods);
+  const foodGroups = groupFoodsByDate(foodRecords);
   const dates = Object.keys(foodGroups).sort((a, b) => b.localeCompare(a));
 
-  const totalNutrition = calculateTotalNutrition(foods);
+  // 총 영양소 계산
+  const calculateTotalFromRecords = (records: FoodRecord[]) => {
+    return records.reduce((total, record) => {
+      return {
+        calories: total.calories + (record.calories || 0),
+        protein: total.protein + (record.protein || 0),
+        carbs: total.carbs + (record.carbs || 0),
+        fat: total.fat + (record.fat || 0)
+      };
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  };
+
+  const totalNutrition = calculateTotalFromRecords(foodRecords);
 
   // 이전/다음 이동 함수
   const navigatePrevious = () => {
@@ -243,89 +274,66 @@ const FoodLog: React.FC = () => {
   };
 
   // 날짜별 식단을 표시하는 함수
-  const renderFoodsByDate = (dateStr: string, foodsForDate: Food[]) => {
+  const renderFoodsByDate = (dateStr: string, recordsForDate: FoodRecord[]) => {
     const date = new Date(dateStr);
-    const hasPhotos = foodsForDate.some(food => food.imageUrl);
-    
-    // 5월 17일인지 확인
-    const is517 = date.getMonth() === 4 && date.getDate() === 17; // JavaScript에서 month는 0부터 시작하므로 5월은 4
+    const hasPhotos = recordsForDate.some(record => record.imageId);
     
     return (
-      <div key={dateStr} className="mb-8">
-        <div className="flex items-center mb-4">
-          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg mr-3">
-            <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-            {date.toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric', 
-              weekday: 'long'
-            })}
-          </h3>
-        </div>
+      <div key={dateStr} className="mb-6">
+        <h3 className="text-lg font-semibold mb-3">
+          {formatDate(date)}
+        </h3>
         
-        {/* 영양 요약 정보 - 5/17이 아닌 경우에만 표시 */}
-        {!is517 && (
-          <div className="mb-4">
-            <NutritionSummary 
-              totalNutrition={calculateTotalNutrition(foodsForDate)} 
-              targetProtein={proteinTarget}
-              targetCarbs={carbsTarget}
-              targetFat={fatTarget}
-            />
-          </div>
-        )}
-        
-        {/* 사진이 있는 경우 그리드로 표시 */}
-        {hasPhotos && (
-          <div className="mb-6">
-            <h4 className="text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">식사 사진</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {foodsForDate
-                .filter(food => food.imageUrl)
-                .map(food => (
-                  <FoodItem key={food.id} food={food} isGridItem={true} />
-                ))}
-            </div>
-          </div>
-        )}
-        
-        {/* 식사 목록 */}
-        <div>
-          <h4 className="text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">식사 목록</h4>
-          <div className="space-y-3">
-            {foodsForDate.map((food, index) => (
-              <div key={food.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3">
-                <div className="flex justify-between">
-                  <div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      식사 기록 {index + 1} ({food.date.toLocaleTimeString('ko-KR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })})
-                    </span>
-                    <h5 className="font-medium">{food.name || '식사 기록'}</h5>
-                  </div>
-                  
-                  {(food.calories > 0 || food.protein > 0 || food.carbs > 0 || food.fat > 0) && (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      <span className="bg-blue-50 dark:bg-blue-900/20 py-1 px-2 rounded-full">
-                        {food.calories > 0 ? `${food.calories}kcal` : '영양정보 있음'}
-                      </span>
+        <div className="space-y-4">
+          {recordsForDate.map((record) => (
+            <Card key={record.id} className="overflow-hidden">
+              <div className="p-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* 이미지 영역 */}
+                  {record.imageId && imageCache[record.imageId] && (
+                    <div className="w-full md:w-1/3 overflow-hidden rounded-lg">
+                      <img 
+                        src={imageCache[record.imageId]} 
+                        alt={record.name || '식사 이미지'} 
+                        className="w-full h-48 object-cover"
+                      />
                     </div>
                   )}
+                  
+                  {/* 식사 정보 영역 */}
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium mb-2">{record.name || '식사 기록'}</h3>
+                    
+                    {record.description && (
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        {record.description}
+                      </p>
+                    )}
+                    
+                    {/* 영양소 정보 */}
+                    <div className="grid grid-cols-4 gap-2 text-center mt-3">
+                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">칼로리</p>
+                        <p className="font-semibold">{record.calories || 0} kcal</p>
+                      </div>
+                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">단백질</p>
+                        <p className="font-semibold">{record.protein || 0}g</p>
+                      </div>
+                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">탄수화물</p>
+                        <p className="font-semibold">{record.carbs || 0}g</p>
+                      </div>
+                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">지방</p>
+                        <p className="font-semibold">{record.fat || 0}g</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                {food.notes && (
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 italic bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                    "{food.notes}"
-                  </p>
-                )}
               </div>
-            ))}
-          </div>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -466,12 +474,12 @@ const FoodLog: React.FC = () => {
         </div>
       ) : (
         <div>
-          {foods.length > 0 ? (
+          {foodRecords.length > 0 ? (
             <div>
               {/* 날짜별로 식단 그룹화하여 표시 */}
-              {Object.entries(groupFoodsByDate(foods))
+              {Object.entries(groupFoodsByDate(foodRecords))
                 .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // 최신순 정렬
-                .map(([dateStr, foodsForDate]) => renderFoodsByDate(dateStr, foodsForDate))
+                .map(([dateStr, recordsForDate]) => renderFoodsByDate(dateStr, recordsForDate))
               }
             </div>
           ) : (

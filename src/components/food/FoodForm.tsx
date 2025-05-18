@@ -3,11 +3,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFoodStore } from '../../stores/foodStore';
 import { Food } from '../../types';
 import { toast } from 'react-hot-toast';
-import { saveFoodRecord } from '../../services/foodService';
+import { saveFoodRecord, saveFoodImage, FoodRecord } from '../../utils/indexedDB';
 import Card from '../common/Card';
-import { Info } from 'lucide-react';
+import { Info, Camera, Upload, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
+import { v4 as uuidv4 } from 'uuid';
 
 interface FoodFormProps {
   onSuccess?: () => void; // 식단 저장 후 호출될 콜백
@@ -134,8 +135,8 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       reader.onload = () => {
         if (typeof reader.result === 'string') {
           setImagePreview(reader.result);
-          // 로컬 식별자로 이미지 URL 설정
-          setImageUrl(`local_image_${Date.now()}`);
+          // UUID 기반 이미지 ID 생성
+          setImageUrl(uuidv4());
         }
       };
       reader.readAsDataURL(file);
@@ -158,8 +159,8 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
         reader.onload = () => {
           if (typeof reader.result === 'string') {
             setImagePreview(reader.result);
-            // 로컬 식별자로 이미지 URL 설정
-            setImageUrl(`local_camera_${Date.now()}`);
+            // UUID 기반 이미지 ID 생성
+            setImageUrl(uuidv4());
           }
         };
         reader.readAsDataURL(fileInput.files[0]);
@@ -170,7 +171,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
 
   // 이미지를 저장하는 부분을 수정합니다.
   // 이미지 크기 조정 함수 추가
-  const resizeImage = (dataUrl: string, maxWidth: number = 800, maxHeight: number = 600): Promise<string> => {
+  const resizeImage = (dataUrl: string, maxWidth: number = 800, maxHeight: number = 600): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       try {
         const img = new Image();
@@ -198,9 +199,18 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           
           ctx.drawImage(img, 0, 0, width, height);
           
-          // JPEG 형식으로 출력 (품질 0.8)
-          const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          resolve(resizedDataUrl);
+          // Blob으로 변환 (품질 0.8)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error('이미지를 Blob으로 변환할 수 없습니다.'));
+              }
+            },
+            'image/jpeg', 
+            0.8
+          );
         };
         
         img.onerror = () => {
@@ -222,7 +232,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       return;
     }
 
-    if (!imageUrl) {
+    if (!imageUrl && !imagePreview) {
       toast.error('식사 사진이 필요합니다.');
       return;
     }
@@ -230,16 +240,72 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     try {
       const mealDateTime = new Date(`${mealDate}T12:00:00`); // 기본 시간 정오로 설정
       
-      // 로컬 저장소에 이미지 저장 (웹 브라우저의 IndexedDB나 localStorage를 사용할 수 있음)
-      if (localImageFile && imagePreview) {
+      // IndexedDB에 이미지 저장
+      if (imagePreview) {
         try {
           // 이미지 크기 조정 (최대 800x600, 품질 80%)
-          const resizedImage = await resizeImage(imagePreview, 800, 600);
-          console.log('이미지 크기 조정 완료. 원본 크기:', imagePreview.length, '조정 후:', resizedImage.length);
+          const resizedImageBlob = await resizeImage(imagePreview, 800, 600);
+          console.log('이미지 크기 조정 완료. 원본 크기:', imagePreview.length, '조정 후:', resizedImageBlob.size);
           
-          // 크기 조정된 이미지 저장
-          localStorage.setItem(`food_image_${imageUrl}`, resizedImage);
-          console.log('로컬 이미지 저장됨:', imageUrl);
+          // IndexedDB에 이미지 저장
+          await saveFoodImage(imageUrl, currentUser.uid, resizedImageBlob);
+          console.log('IndexedDB에 이미지 저장됨:', imageUrl);
+          
+          // 식단 기록 저장
+          const foodRecord: FoodRecord = {
+            userId: currentUser.uid,
+            name: `식사 (${new Date(mealDateTime).toLocaleDateString()})`,
+            description: notes || undefined,
+            calories: targetCalories || undefined,
+            protein: proteinTarget || undefined,
+            carbs: carbsTarget || undefined,
+            fat: fatTarget || undefined,
+            date: mealDateTime,
+            imageId: imageUrl,
+            mealType: 'lunch', // 기본값 - 향후 선택할 수 있게 개선 가능
+            createdAt: new Date()
+          };
+          
+          const recordId = await saveFoodRecord(foodRecord);
+          console.log('식단 기록 저장됨:', recordId);
+          
+          // 성공 메시지
+          toast.success('식단이 로컬에 저장되었습니다.');
+          
+          // 상태 초기화
+          setImageUrl('');
+          setImagePreview(null);
+          setLocalImageFile(null);
+          setNotes('');
+          
+          // 성공 콜백 호출
+          if (onSuccess) {
+            onSuccess();
+          }
+          
+          // 사용자에게 로컬 저장 안내
+          setTimeout(() => {
+            toast.custom((t) => (
+              <div className={`${t.visible ? 'animate-slide-in' : 'animate-slide-out'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto overflow-hidden`}>
+                <div className="p-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 text-blue-500">
+                      <AlertTriangle size={24} />
+                    </div>
+                    <div className="ml-3 w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        브라우저 로컬 저장소 안내
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        사진은 현재 기기에만 저장됩니다. 브라우저 데이터를 삭제하거나 다른 기기에서는 사진을 볼 수 없습니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ), { duration: 5000 });
+          }, 1000);
+          
         } catch (storageError) {
           console.error('이미지 저장 오류:', storageError);
           
@@ -252,40 +318,13 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             return;
           }
         }
-      }
-      
-      const foodData: Omit<Food, 'id'> = {
-        userId: currentUser.uid,
-        date: mealDateTime,
-        name: '식사 기록', // 기본 이름 설정
-        imageUrl: imageUrl,
-        notes: notes || '', // undefined 대신 빈 문자열 사용
-        type: '식사', // 기본 타입
-        // 영양소 정보는 제공하지 않음으로 기본값 설정
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-      };
-
-      const newFood = await saveFoodRecord(foodData);
-      addFood(newFood);
-
-      toast.success('식단이 저장되었습니다.');
-      
-      // 폼 초기화
-      setImageUrl('');
-      setImagePreview(null);
-      setLocalImageFile(null);
-      setNotes('');
-
-      // 성공 콜백 호출
-      if (onSuccess) {
-        onSuccess();
+      } else {
+        toast.error('이미지 데이터가 없습니다.');
+        return;
       }
     } catch (error) {
-      console.error('Error saving food:', error);
-      toast.error('식단 저장 중 오류가 발생했습니다.');
+      console.error('식단 저장 오류:', error);
+      toast.error('식단 저장에 실패했습니다.');
     }
   };
 
