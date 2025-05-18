@@ -13,6 +13,8 @@ import WorkoutProgram from '../components/workout/WorkoutProgram';
 import { Exercise, ExercisePart } from '../types';
 import { exercises } from '../data/exerciseData';
 import { BarChart3, Target, Award, Settings, Utensils, Info } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
@@ -76,6 +78,7 @@ const partIcons: Record<ExercisePart, string> = {
 const QnaPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('exercise');
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -384,7 +387,29 @@ const QnaPage: React.FC = () => {
                     ✕
                   </button>
                 </div>
-                <CalorieCalculator />
+                <CalorieCalculator 
+                  userProfile={userProfile} 
+                  onComplete={async (result) => {
+                    try {
+                      console.log('칼로리 계산 결과:', result);
+                      // 계산 결과를 상태에 저장
+                      setCalculatorResults({
+                        bmr: result.bmr,
+                        tdee: result.tdee,
+                        targetCalories: result.targetCalories,
+                        protein: result.macros.protein,
+                        carbs: result.macros.carbs,
+                        fat: result.macros.fat
+                      });
+                      toast.success('칼로리 계산이 완료되었습니다.');
+                      return Promise.resolve();
+                    } catch (error) {
+                      console.error('에러:', error);
+                      toast.error('칼로리 계산 중 오류가 발생했습니다.');
+                      return Promise.reject(error);
+                    }
+                  }}
+                />
               </div>
             )}
             

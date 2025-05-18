@@ -36,8 +36,7 @@ const exercisePartOptions = [
   { value: 'shoulder', label: '어깨',   icon: '🏋️', mainExerciseName: '오버헤드 프레스' },
   { value: 'leg',      label: '하체',   icon: '🦵', mainExerciseName: '스쿼트' },
   { value: 'biceps',   label: '이두',   icon: '💪', mainExerciseName: '덤벨 컬' },
-  { value: 'triceps',  label: '삼두',   icon: '💪', mainExerciseName: '케이블 푸시다운' },
-  { value: 'complex',  label: '복합',   icon: '🔄', mainExerciseName: '복합 운동' }
+  { value: 'triceps',  label: '삼두',   icon: '💪', mainExerciseName: '케이블 푸시다운' }
 ];
 
 // 각 부위별 메인 운동 옵션

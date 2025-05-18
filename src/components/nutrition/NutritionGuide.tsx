@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserProfile } from '../../types';
-// import CalorieCalculator from './CalorieCalculator'; // CalorieCalculator 사용하지 않음
+import CalorieCalculator from './CalorieCalculator'; // CalorieCalculator 임포트 활성화
 import FoodLog from './FoodLog';
 import Card from '../common/Card';
 import { Info } from 'lucide-react';
@@ -31,7 +31,7 @@ const calculateMacroNutrientTargetsForGuide = (targetCalories: number, weight_kg
 };
 
 const NutritionGuide = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, updateProfile } = useAuth();
   const [nutritionTargets, setNutritionTargets] = useState({
     targetCalories: 0,
     proteinTarget: 0,
@@ -42,6 +42,9 @@ const NutritionGuide = () => {
   // 식단 추천 관련 상태
   const [recommendedFoods, setRecommendedFoods] = useState<FoodRecommendation[]>([]);
   const [recommendationTitle, setRecommendationTitle] = useState<string>('');
+
+  // 칼로리 계산기 상태
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     if (userProfile?.targetCalories && userProfile?.weight) {
@@ -92,6 +95,32 @@ const NutritionGuide = () => {
     setRecommendedFoods(foods);
   };
 
+  // CalorieCalculator의 결과를 처리하는 함수
+  const handleCalorieCalculatorComplete = async (result: any) => {
+    if (!userProfile) return;
+    
+    try {
+      // 프로필에 목표 칼로리와 매크로 정보 저장
+      await updateProfile({
+        targetCalories: result.targetCalories,
+        macros: result.macros
+      });
+      
+      // 상태 업데이트
+      setNutritionTargets({
+        targetCalories: result.targetCalories,
+        proteinTarget: result.macros.protein,
+        carbsTarget: result.macros.carbs,
+        fatTarget: result.macros.fat
+      });
+      
+      // 계산기 닫기
+      setShowCalculator(false);
+    } catch (error) {
+      console.error('칼로리 정보 저장 중 오류:', error);
+    }
+  };
+
   if (!userProfile) {
     return (
       <div className="text-center py-8">
@@ -126,6 +155,17 @@ const NutritionGuide = () => {
                 <span className="block text-lg font-bold text-red-600 dark:text-red-400">{nutritionTargets.fatTarget}g</span>
               </div>
             </div>
+            
+            {/* 칼로리 계산기 토글 버튼 추가 */}
+            <div className="mt-4">
+              <button
+                onClick={() => setShowCalculator(!showCalculator)}
+                className="text-blue-500 hover:text-blue-600 underline text-sm font-medium"
+              >
+                {showCalculator ? '칼로리 계산기 닫기' : '칼로리 계산기 열기'}
+              </button>
+            </div>
+            
             {userProfile.targetCalories && (
                  <div className="mt-4 space-y-4">
                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
@@ -179,8 +219,13 @@ const NutritionGuide = () => {
         </div>
       </Card>
       
-      {/* CalorieCalculator 컴포넌트는 일단 제거하고, 필요시 별도 기능으로 다시 고려 */}
-      {/* <CalorieCalculator userProfile={userProfile} /> */}
+      {/* 칼로리 계산기 컴포넌트 활성화 */}
+      {showCalculator && (
+        <CalorieCalculator 
+          userProfile={userProfile} 
+          onComplete={handleCalorieCalculatorComplete}
+        />
+      )}
       
       <FoodLog />
     </div>
