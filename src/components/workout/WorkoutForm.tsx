@@ -34,7 +34,8 @@ const exercisePartOptions = [
   { value: 'shoulder', label: '어깨',   icon: '🏋️', mainExerciseName: '오버헤드 프레스' },
   { value: 'leg',      label: '하체',   icon: '🦵', mainExerciseName: '스쿼트' },
   { value: 'biceps',   label: '이두',   icon: '💪', mainExerciseName: '덤벨 컬' },
-  { value: 'triceps',  label: '삼두',   icon: '💪', mainExerciseName: '케이블 푸시다운' }
+  { value: 'triceps',  label: '삼두',   icon: '💪', mainExerciseName: '케이블 푸시다운' },
+  { value: 'complex',  label: '복합',   icon: '🔄', mainExerciseName: '복합 운동' }
 ];
 
 // 각 부위별 메인 운동 옵션
@@ -69,6 +70,9 @@ const mainExerciseOptions: Record<ExercisePart, {value: MainExerciseType, label:
     { value: 'cablePushdown', label: '케이블 푸시다운' },
     { value: 'overheadExtension', label: '오버헤드 익스텐션' },
     { value: 'lyingTricepsExtension', label: '라잉 트라이셉스 익스텐션' } // 'lyingExtension' -> 'lyingTricepsExtension' (일관성 및 명확성)
+  ],
+  complex: [ // 복합 운동은 비어있는 상태로 시작 - 사용자가 추가할 예정
+    { value: 'customComplex', label: '복합 운동 불러오기' }
   ]
 };
 
@@ -149,6 +153,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     reps: number;
     sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
   }>>>({});
+
+  const [savedComplexWorkouts, setSavedComplexWorkouts] = useState<Array<{
+    id: string;
+    name: string;
+    mainExercises: Array<{
+      name: string;
+      sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
+    }>;
+    accessoryExercises: Array<{
+      name: string;
+      weight: number;
+      reps: number;
+      sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
+    }>;
+  }>>([]);
+  
+  const [showComplexWorkoutModal, setShowComplexWorkoutModal] = useState(false);
+  const [selectedComplexWorkout, setSelectedComplexWorkout] = useState<string | null>(null);
+  const [complexWorkoutName, setComplexWorkoutName] = useState<string>('');
+  const [mainExercises, setMainExercises] = useState<Array<{
+    name: string;
+    sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
+  }>>([]);
+  const [isLoadingComplexWorkouts, setIsLoadingComplexWorkouts] = useState(false);
+  const [isSavingComplexWorkout, setIsSavingComplexWorkout] = useState(false);
 
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
@@ -936,6 +965,136 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
 
+  // 복합 운동 저장 기능
+  const saveComplexWorkout = async () => {
+    if (!userProfile || !complexWorkoutName.trim()) {
+      toast.error('복합 운동 이름을 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsSavingComplexWorkout(true);
+      
+      // 메인 운동 데이터와 보조 운동 데이터 준비
+      const complexWorkoutData = {
+        userId: userProfile.uid,
+        name: complexWorkoutName,
+        date: new Date(),
+        mainExercises: part === 'complex' ? 
+          [...mainExercises, mainExercise].filter(ex => ex.name !== '복합 운동 불러오기') : 
+          [mainExercise],
+        accessoryExercises: accessoryExercises
+      };
+
+      // Firestore에 저장
+      await addDoc(collection(db, 'complexWorkouts'), complexWorkoutData);
+      
+      toast.success('복합 운동이 저장되었습니다.');
+      fetchComplexWorkouts(); // 목록 새로고침
+      setComplexWorkoutName(''); // 입력 필드 초기화
+      
+    } catch (error) {
+      console.error('복합 운동 저장 중 오류 발생:', error);
+      toast.error('복합 운동 저장에 실패했습니다.');
+    } finally {
+      setIsSavingComplexWorkout(false);
+    }
+  };
+
+  // 복합 운동 목록 가져오기
+  const fetchComplexWorkouts = async () => {
+    if (!userProfile) return;
+    
+    try {
+      setIsLoadingComplexWorkouts(true);
+      const complexWorkoutsCollection = collection(db, 'complexWorkouts');
+      const q = query(complexWorkoutsCollection, where('userId', '==', userProfile.uid));
+      const snapshot = await getDocs(q);
+      
+      const workouts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data() as any
+      }));
+      
+      setSavedComplexWorkouts(workouts);
+    } catch (error) {
+      console.error('복합 운동 목록 가져오기 실패:', error);
+      toast.error('복합 운동 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoadingComplexWorkouts(false);
+    }
+  };
+
+  // 복합 운동 불러오기
+  const loadComplexWorkout = (workoutId: string) => {
+    const workout = savedComplexWorkouts.find(w => w.id === workoutId);
+    if (!workout) return;
+    
+    // 복합 운동 모드로 전환
+    setPart('complex');
+    
+    // 첫 번째 메인 운동으로 설정하고 나머지는 mainExercises에 추가
+    if (workout.mainExercises && workout.mainExercises.length > 0) {
+      const [firstMain, ...restMains] = workout.mainExercises;
+      setMainExercise(firstMain);
+      setMainExercises(restMains || []);
+    }
+    
+    // 보조 운동 설정
+    if (workout.accessoryExercises && workout.accessoryExercises.length > 0) {
+      setAccessoryExercises(workout.accessoryExercises);
+    }
+    
+    setShowComplexWorkoutModal(false);
+    toast.success(`"${workout.name}" 복합 운동을 불러왔습니다.`);
+  };
+
+  // 메인 운동 추가 (복합 운동에서만 사용)
+  const addMainExercise = () => {
+    // 기본 세트 구성을 현재 선택된 세트 구성과 일치시킴
+    const { setsCount, repsCount } = getSetConfiguration(
+      selectedSetConfiguration,
+      customSets,
+      customReps
+    );
+    
+    // 새 메인 운동 생성
+    const newExercise = {
+      name: '',
+      sets: Array.from({ length: setsCount }, () => ({
+        reps: repsCount,
+        weight: 0,
+        isSuccess: null
+      }))
+    };
+    
+    setMainExercises([...mainExercises, newExercise]);
+  };
+
+  // 메인 운동 제거
+  const removeMainExercise = (index: number) => {
+    setMainExercises(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // 메인 운동 변경
+  const handleMainExerciseChange = (index: number, updatedExercise: any) => {
+    setMainExercises(prev => {
+      const newExercises = [...prev];
+      newExercises[index] = updatedExercise;
+      return newExercises;
+    });
+  };
+
+  // 부위가 변경될 때 복합 운동 관련 상태 초기화
+  useEffect(() => {
+    if (part === 'complex') {
+      fetchComplexWorkouts();
+    } else {
+      // 복합 운동이 아닌 경우 메인 운동 배열 초기화
+      setMainExercises([]);
+    }
+  }, [part]);
+
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -946,7 +1105,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <CardSection>
             <CardTitle>운동 부위 선택</CardTitle>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {exercisePartOptions.map(option => (
                 <button
                   key={option.value}
@@ -966,6 +1125,60 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             </div>
           </CardSection>
         </Card>
+        
+        {/* 복합 운동 모달 */}
+        {showComplexWorkoutModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg">
+              <h3 className="text-xl font-bold mb-4">복합 운동 불러오기</h3>
+              
+              {isLoadingComplexWorkouts ? (
+                <div className="py-8 text-center">
+                  <div className="w-12 h-12 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p>복합 운동을 불러오는 중입니다...</p>
+                </div>
+              ) : savedComplexWorkouts.length > 0 ? (
+                <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
+                  {savedComplexWorkouts.map(workout => (
+                    <div 
+                      key={workout.id}
+                      className={`p-3 border rounded-lg cursor-pointer ${
+                        selectedComplexWorkout === workout.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
+                      }`}
+                      onClick={() => setSelectedComplexWorkout(workout.id)}
+                    >
+                      <div className="font-medium">{workout.name}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        메인 운동: {workout.mainExercises?.length || 0}개, 
+                        보조 운동: {workout.accessoryExercises?.length || 0}개
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  저장된 복합 운동이 없습니다.
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={() => setShowComplexWorkoutModal(false)}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => selectedComplexWorkout && loadComplexWorkout(selectedComplexWorkout)}
+                  disabled={!selectedComplexWorkout}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50"
+                >
+                  불러오기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* 준비 및 웜업 섹션을 간소화 */}
         <Card className="mb-6">
@@ -1018,50 +1231,48 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-1">운동 선택</label>
-                  <select
-                    value={selectedMainExercise}
-                    onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-                    className="w-full p-2 border rounded-md bg-white dark:bg-gray-700"
-                  >
-                    {mainExerciseOptions[part].map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  
-                  {/* 디버깅 버튼 추가 - 개발 모드에서만 표시 */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-2">
+                  {part === 'complex' && mainExerciseOptions.complex[0].value === 'customComplex' ? (
+                    <div className="w-full">
                       <button
-                        type="button"
-                        onClick={() => {
-                          console.log('-------------------- 디버깅 정보 --------------------');
-                          console.log('현재 메인 운동:', mainExercise.name);
-                          console.log('이전 보조 운동 맵:', previousAccessoryExercises);
-                          console.log('현재 보조 운동:', accessoryExercises);
-                          
-                          // 디버깅을 위해 강제로 이전 보조 운동 불러오기 시도
-                          if (previousAccessoryExercises[mainExercise.name]) {
-                            console.log('이 메인 운동에 대한 보조 운동 데이터가 있습니다.');
-                            console.log('데이터:', previousAccessoryExercises[mainExercise.name]);
-                            
-                            // 보조 운동이 없을 때만 설정 (기존 코드와 동일)
-                            if (accessoryExercises.length === 0) {
-                              console.log('보조 운동을 강제로 설정합니다.');
-                              setAccessoryExercises(previousAccessoryExercises[mainExercise.name]);
-                              alert('보조 운동이 자동으로 설정되었습니다.');
-                            } else {
-                              alert('이미 보조 운동이 설정되어 있습니다. 먼저 모든 보조 운동을 삭제해주세요.');
-                            }
-                          } else {
-                            alert('이 메인 운동에 대한 이전 보조 운동 데이터가 없습니다.');
-                          }
-                        }}
-                        className="text-xs bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-1 px-2 rounded-md"
+                        onClick={() => setShowComplexWorkoutModal(true)}
+                        className="w-full p-2 border rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100"
                       >
-                        보조 운동 데이터 디버깅
+                        복합 운동 불러오기
                       </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedMainExercise}
+                      onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
+                      className="w-full p-2 border rounded-md bg-white dark:bg-gray-700"
+                    >
+                      {mainExerciseOptions[part].map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  
+                  {part === 'complex' && (
+                    <div className="mt-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium">복합 운동 이름</label>
+                        <button
+                          onClick={saveComplexWorkout}
+                          disabled={isSavingComplexWorkout}
+                          className="px-3 py-1 bg-green-500 text-white text-xs rounded-lg disabled:opacity-50"
+                        >
+                          {isSavingComplexWorkout ? '저장 중...' : '복합 운동 저장'}
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={complexWorkoutName}
+                        onChange={(e) => setComplexWorkoutName(e.target.value)}
+                        placeholder="저장할 복합 운동 이름을 입력하세요"
+                        className="w-full p-2 border rounded-md"
+                      />
                     </div>
                   )}
                 </div>
@@ -1176,6 +1387,91 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 </div>
               ))}
             </div>
+            
+            {/* 복합 운동에서 추가 메인 운동 목록 */}
+            {part === 'complex' && mainExercises.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3">추가 메인 운동</h3>
+                <div className="space-y-4">
+                  {mainExercises.map((exercise, idx) => (
+                    <div key={idx} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center">
+                          <input
+                            type="text"
+                            value={exercise.name}
+                            onChange={(e) => {
+                              const updatedExercise = { ...exercise, name: e.target.value };
+                              handleMainExerciseChange(idx, updatedExercise);
+                            }}
+                            placeholder="운동 이름"
+                            className="p-2 border rounded-md mr-2"
+                          />
+                        </div>
+                        <button
+                          onClick={() => removeMainExercise(idx)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {exercise.sets.map((set, setIdx) => (
+                          <div key={setIdx} className="p-3 border rounded-lg">
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="font-medium">세트 {setIdx + 1}</div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                  무게 (kg)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={set.weight || ''}
+                                  onChange={(e) => {
+                                    const newSets = [...exercise.sets];
+                                    newSets[setIdx].weight = Number(e.target.value) || 0;
+                                    const updatedExercise = { ...exercise, sets: newSets };
+                                    handleMainExerciseChange(idx, updatedExercise);
+                                  }}
+                                  className="w-full p-2 border rounded-md"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                  횟수
+                                </label>
+                                <input
+                                  type="number"
+                                  value={set.reps || ''}
+                                  onChange={(e) => {
+                                    const newSets = [...exercise.sets];
+                                    newSets[setIdx].reps = Number(e.target.value) || 0;
+                                    const updatedExercise = { ...exercise, sets: newSets };
+                                    handleMainExerciseChange(idx, updatedExercise);
+                                  }}
+                                  className="w-full p-2 border rounded-md"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <button
+                  className="mt-3 flex items-center justify-center w-full p-2 border border-dashed rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  onClick={addMainExercise}
+                >
+                  <Plus size={18} className="mr-1" /> 메인 운동 추가
+                </button>
+              </div>
+            )}
           </CardSection>
         </Card>
         

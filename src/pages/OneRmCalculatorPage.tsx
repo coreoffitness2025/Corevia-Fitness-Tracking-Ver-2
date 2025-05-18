@@ -6,7 +6,7 @@ import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 const OneRmCalculatorPage: React.FC = () => {
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
             1RM 계산기 및 운동 무게 추천

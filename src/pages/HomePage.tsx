@@ -4,7 +4,7 @@ import Layout from '../components/common/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingSpinner, { LoadingScreen } from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
 import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -75,21 +75,6 @@ const groupFoodsByDate = (foods: Food[]) => {
   
   return grouped;
 };
-
-// LoadingScreen 컴포넌트 추가
-const LoadingScreen = () => (
-  <div className="flex flex-col justify-center items-center h-96">
-    <div className="mb-6">
-      <div className="w-16 h-16 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin"></div>
-    </div>
-    <div className="flex flex-col items-center">
-      <p className="text-lg text-gray-600 dark:text-gray-300">데이터를 불러오는 중입니다...</p>
-      <div className="mt-3 w-48 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div className="h-full bg-blue-500 animate-pulse rounded-full"></div>
-      </div>
-    </div>
-  </div>
-);
 
 const HomePage = () => {
   const { userProfile, loading: authLoading } = useAuth();
@@ -379,15 +364,20 @@ const HomePage = () => {
           <div className="space-y-4">
             {recentSessions.length > 0 ? (
               recentSessions.map((session) => (
-                <div key={session.id} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <div 
+                  key={session.id} 
+                  className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  onClick={() => navigate('/workout', { state: { activeTab: 'records' } })}
+                >
                   <div className="flex justify-between items-center mb-1">
                     <h3 className="font-semibold text-lg text-purple-600 dark:text-purple-400">
                       {session.part === 'chest' ? '가슴' :
-                       session.part === 'back' ? '등' :
-                       session.part === 'shoulder' ? '어깨' :
-                       session.part === 'leg' ? '하체' :
-                       session.part === 'biceps' ? '이두' :
-                       session.part === 'triceps' ? '삼두' : '기타'} 운동
+                        session.part === 'back' ? '등' :
+                        session.part === 'shoulder' ? '어깨' :
+                        session.part === 'leg' ? '하체' :
+                        session.part === 'biceps' ? '이두' :
+                        session.part === 'triceps' ? '삼두' :
+                        session.part === 'complex' ? '복합' : '기타'} 운동
                     </h3>
                     <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                       <CalendarDays size={14} className="mr-1" />
@@ -432,7 +422,7 @@ const HomePage = () => {
                     <div 
                       key={dateStr} 
                       className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                      onClick={() => navigate('/food')}
+                      onClick={() => navigate('/food', { state: { activeTab: 'records' } })}
                     >
                       <div className="flex justify-between items-center">
                         <h3 className="font-semibold text-lg text-orange-600 dark:text-orange-400">

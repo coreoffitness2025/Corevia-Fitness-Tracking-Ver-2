@@ -53,42 +53,44 @@ const FoodPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-          안녕하세요, {userProfile.displayName || '회원님'}!
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">{today}</p>
-      </div>
-
-      <div className="flex justify-center mb-6">
-        <div className="inline-flex rounded-md shadow-sm" role="group">
-          <button
-            type="button"
-            onClick={() => setActiveTab('input')}
-            className={`px-6 py-2 text-sm font-medium rounded-l-lg transition-colors duration-200 ${
-              activeTab === 'input'
-                ? 'bg-[#4285F4] text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-            }`}
-          >
-            식단 입력
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('records')}
-            className={`px-6 py-2 text-sm font-medium rounded-r-lg transition-colors duration-200 ${
-              activeTab === 'records'
-                ? 'bg-[#4285F4] text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-            }`}
-          >
-            식단 기록
-          </button>
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+            안녕하세요, {userProfile?.displayName || '회원님'}!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">{today}</p>
         </div>
-      </div>
 
-      <div>
-        {renderTabContent()}
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button
+              type="button"
+              onClick={() => setActiveTab('input')}
+              className={`px-6 py-2 text-sm font-medium rounded-l-lg transition-colors duration-200 ${
+                activeTab === 'input'
+                  ? 'bg-[#4285F4] text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+              }`}
+            >
+              식단 입력
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('records')}
+              className={`px-6 py-2 text-sm font-medium rounded-r-lg transition-colors duration-200 ${
+                activeTab === 'records'
+                  ? 'bg-[#4285F4] text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+              }`}
+            >
+              식단 기록
+            </button>
+          </div>
+        </div>
+
+        <div>
+          {renderTabContent()}
+        </div>
       </div>
     </Layout>
   );

@@ -332,7 +332,7 @@ const FoodLog: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       {/* 영양소 목표 및 버튼 */}
       <Card className="mb-6 border-l-4 border-blue-500">
         <div className="flex items-start">

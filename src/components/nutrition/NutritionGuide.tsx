@@ -101,7 +101,7 @@ const NutritionGuide = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* 목표 칼로리 및 영양소 가이드 UI (FoodForm.tsx 참고) */}
       <Card className="mb-6 border-l-4 border-blue-500">
         <div className="flex items-start">

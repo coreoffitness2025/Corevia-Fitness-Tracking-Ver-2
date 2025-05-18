@@ -7,7 +7,7 @@ export interface User {
 }
 
 /* ---------- 운동 타입 ---------- */
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps' | 'complex';
 
 export interface Set {
   reps: number;
@@ -29,21 +29,23 @@ export interface AccessoryExercise {
   sets?: Set[];
 }
 
-// 메인 운동 타입
+// 메인 운동 타입 (타입 안전성을 위해 union 타입으로 정의)
 export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress';
-export type BackMainExercise = 'deadlift' | 'pullUp' | 'bentOverRow' | 'barbellRow' | 'tBarRow';
+export type BackMainExercise = 'deadlift' | 'barbellRow' | 'pullUp' | 'tBarRow';
 export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull';
 export type LegMainExercise = 'squat' | 'legPress' | 'lunge';
 export type BicepsMainExercise = 'dumbbellCurl' | 'barbellCurl' | 'hammerCurl';
 export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingTricepsExtension';
+export type ComplexMainExercise = 'customComplex';
 
 export type MainExerciseType = 
   | ChestMainExercise 
   | BackMainExercise 
   | ShoulderMainExercise 
-  | LegMainExercise
-  | BicepsMainExercise
-  | TricepsMainExercise;
+  | LegMainExercise 
+  | BicepsMainExercise 
+  | TricepsMainExercise
+  | ComplexMainExercise;
 
 // 세트 설정 타입
 export type SetConfiguration = '5x5' | '10x5' | '15x5' | '6x3';
