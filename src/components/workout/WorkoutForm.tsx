@@ -23,6 +23,8 @@ import Badge from '../common/Badge';
 import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash } from 'lucide-react';
 import { getSetConfiguration } from '../../utils/workoutUtils';
 import AccessoryExerciseComponent from './AccessoryExerciseComponent';
+// 필요한 import 추가
+import ComplexWorkoutForm, { MainExerciseItem, AccessoryExerciseItem } from './ComplexWorkoutForm';
 
 interface WorkoutFormProps {
   onSuccess?: () => void; // 저장 성공 시 호출될 콜백
@@ -1227,20 +1229,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             <CardTitle>메인 운동</CardTitle>
             
             {/* 운동 선택 및 정보 */}
-            <div className="mb-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">운동 선택</label>
-                  {part === 'complex' && mainExerciseOptions.complex[0].value === 'customComplex' ? (
-                    <div className="w-full">
-                      <button
-                        onClick={() => setShowComplexWorkoutModal(true)}
-                        className="w-full p-2 border rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100"
-                      >
-                        복합 운동 불러오기
-                      </button>
-                    </div>
-                  ) : (
+            {part === 'complex' ? (
+              <ComplexWorkoutForm
+                mainExercise={mainExercise}
+                accessoryExercises={accessoryExercises}
+                setConfiguration={selectedSetConfiguration}
+                customSets={customSets}
+                customReps={customReps}
+                onWorkoutLoaded={(mainExercises, accessoryExs) => {
+                  // 첫 번째 메인 운동을 현재 메인 운동으로 설정
+                  if (mainExercises.length > 0) {
+                    setMainExercise(mainExercises[0]);
+                  }
+                  // 보조 운동 설정
+                  setAccessoryExercises(accessoryExs);
+                }}
+              />
+            ) : (
+              <div className="mb-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-1">운동 선택</label>
                     <select
                       value={selectedMainExercise}
                       onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
@@ -1252,56 +1261,34 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         </option>
                       ))}
                     </select>
-                  )}
+                  </div>
                   
-                  {part === 'complex' && (
-                    <div className="mt-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-medium">복합 운동 이름</label>
-                        <button
-                          onClick={saveComplexWorkout}
-                          disabled={isSavingComplexWorkout}
-                          className="px-3 py-1 bg-green-500 text-white text-xs rounded-lg disabled:opacity-50"
-                        >
-                          {isSavingComplexWorkout ? '저장 중...' : '복합 운동 저장'}
-                        </button>
+                  {/* 최근 운동 정보 */}
+                  {latestWorkoutInfo.exists && (
+                    <div className="flex-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        최근 {latestWorkoutInfo.exerciseName} 기록
+                      </h3>
+                      <div className="text-sm">
+                        <p className="mb-1">
+                          <span className="font-medium">{latestWorkoutInfo.date?.toLocaleDateString()}</span>
+                          <Badge
+                            variant={latestWorkoutInfo.allSuccess ? 'success' : 'danger'}
+                            size="sm"
+                            className="ml-2"
+                          >
+                            {latestWorkoutInfo.allSuccess ? '성공' : '일부 실패'}
+                          </Badge>
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          {latestWorkoutInfo.weight}kg x {latestWorkoutInfo.sets}세트 x {latestWorkoutInfo.reps}회
+                        </p>
                       </div>
-                      <input
-                        type="text"
-                        value={complexWorkoutName}
-                        onChange={(e) => setComplexWorkoutName(e.target.value)}
-                        placeholder="저장할 복합 운동 이름을 입력하세요"
-                        className="w-full p-2 border rounded-md"
-                      />
                     </div>
                   )}
                 </div>
-                
-                {/* 최근 운동 정보 */}
-                {latestWorkoutInfo.exists && (
-                  <div className="flex-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      최근 {latestWorkoutInfo.exerciseName} 기록
-                    </h3>
-                    <div className="text-sm">
-                      <p className="mb-1">
-                        <span className="font-medium">{latestWorkoutInfo.date?.toLocaleDateString()}</span>
-                        <Badge
-                          variant={latestWorkoutInfo.allSuccess ? 'success' : 'danger'}
-                          size="sm"
-                          className="ml-2"
-                        >
-                          {latestWorkoutInfo.allSuccess ? '성공' : '일부 실패'}
-                        </Badge>
-                      </p>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {latestWorkoutInfo.weight}kg x {latestWorkoutInfo.sets}세트 x {latestWorkoutInfo.reps}회
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
+            )}
             
             {/* 세트 입력 영역 */}
             <div className="space-y-3">
