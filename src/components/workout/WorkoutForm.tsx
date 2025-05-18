@@ -35,7 +35,7 @@ const exercisePartOptions = [
   { value: 'leg',      label: '하체',   icon: '🦵', mainExerciseName: '스쿼트' },
   { value: 'biceps',   label: '이두',   icon: '💪', mainExerciseName: '덤벨 컬' },
   { value: 'triceps',  label: '삼두',   icon: '💪', mainExerciseName: '케이블 푸시다운' },
-  { value: 'complex',  label: '복합',   icon: '🔄', mainExerciseName: '복합 운동' }
+  { value: 'complex',  label: '복합',   icon: '🔄', mainExerciseName: '복합 Custom' }
 ];
 
 // 각 부위별 메인 운동 옵션
@@ -179,6 +179,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   }>>([]);
   const [isLoadingComplexWorkouts, setIsLoadingComplexWorkouts] = useState(false);
   const [isSavingComplexWorkout, setIsSavingComplexWorkout] = useState(false);
+
+  // 복합 운동 관련 상태 추가
+  const [mainExercisePart, setMainExercisePart] = useState<ExercisePart>('chest');
 
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
@@ -1069,9 +1072,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       customReps
     );
     
+    // 부위별 메인 운동 이름 찾기
+    const mainExerciseNameForPart = exercisePartOptions.find(
+      opt => opt.value === mainExercisePart
+    )?.mainExerciseName || '';
+    
     // 새 메인 운동 생성
     const newExercise = {
-      name: '',
+      name: mainExerciseNameForPart, // 선택된 부위에 맞는 메인 운동 이름 사용
+      part: mainExercisePart, // 부위 정보 추가
       sets: Array.from({ length: setsCount }, () => ({
         reps: repsCount,
         weight: 0,
@@ -1103,6 +1112,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     } else {
       // 복합 운동이 아닌 경우 메인 운동 배열 초기화
       setMainExercises([]);
+    }
+    
+    // 부위에 따라 메인 운동 부위 설정 (복합 운동인 경우 초기값으로 가슴 설정)
+    if (part === 'complex') {
+      setMainExercisePart('chest');
+    } else {
+      setMainExercisePart(part as ExercisePart);
     }
   }, [part]);
 
@@ -1152,6 +1168,28 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         toast.warn('최소 한 개의 세트가 필요합니다.');
       }
     }
+  };
+
+  // 부위별 메인 운동 선택 처리 함수 추가
+  const handleMainExercisePartChange = (index: number, part: ExercisePart) => {
+    // 부위별 메인 운동 이름 찾기
+    const mainExerciseNameForPart = exercisePartOptions.find(
+      opt => opt.value === part
+    )?.mainExerciseName || '';
+    
+    // 해당 인덱스의 메인 운동 이름 업데이트
+    const updatedExercise = {
+      ...mainExercises[index],
+      name: mainExerciseNameForPart,
+      part: part
+    };
+    
+    handleMainExerciseChange(index, updatedExercise);
+  };
+
+  // mainExercisePart 상태 설정 함수 추가
+  const handleGlobalMainExercisePartChange = (part: ExercisePart) => {
+    setMainExercisePart(part);
   };
 
   return (
@@ -1472,11 +1510,58 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             {part === 'complex' && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3">추가 메인 운동</h3>
+                
+                {/* 새 메인 운동 부위 선택 UI */}
+                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <h4 className="font-medium mb-2">새 메인 운동 부위 선택</h4>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {exercisePartOptions.filter(option => option.value !== 'complex').map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleGlobalMainExercisePartChange(option.value as ExercisePart)}
+                        className={`
+                          py-2 px-3 text-center text-sm rounded-lg transition-colors
+                          ${mainExercisePart === option.value
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          }
+                        `}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span>{option.icon}</span>
+                          <span>{option.label}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
                 <div className="space-y-4">
                   {mainExercises.map((exercise, idx) => (
                     <div key={idx} className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center">
+                        {/* 부위 선택 UI 추가 */}
+                        <div className="flex-1 mr-2">
+                          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            운동 부위
+                          </label>
+                          <select
+                            value={exercise.part || 'chest'}
+                            onChange={(e) => handleMainExercisePartChange(idx, e.target.value as ExercisePart)}
+                            className="p-2 border rounded-md bg-white dark:bg-gray-700 w-full"
+                          >
+                            {exercisePartOptions.filter(option => option.value !== 'complex').map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label} ({option.mainExerciseName})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            운동 이름
+                          </label>
                           <input
                             type="text"
                             value={exercise.name}
@@ -1485,18 +1570,20 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                               handleMainExerciseChange(idx, updatedExercise);
                             }}
                             placeholder="운동 이름"
-                            className="p-2 border rounded-md mr-2"
+                            className="p-2 border rounded-md w-full"
                           />
                         </div>
+                        
                         <button
                           onClick={() => removeMainExercise(idx)}
-                          className="text-red-500 hover:text-red-600"
+                          className="ml-2 mt-6 text-red-500 hover:text-red-600"
                         >
                           <X size={18} />
                         </button>
                       </div>
                       
                       <div className="space-y-3">
+                        {/* 기존 세트 UI는 그대로 유지 */}
                         {exercise.sets.map((set, setIdx) => (
                           <div key={setIdx} className="p-3 border rounded-lg">
                             <div className="flex justify-between items-center mb-2">
@@ -1564,7 +1651,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   className="mt-3 flex items-center justify-center w-full p-2 border border-dashed rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   onClick={addMainExercise}
                 >
-                  <Plus size={18} className="mr-1" /> 메인 운동 추가
+                  <Plus size={18} className="mr-1" /> {mainExercisePart !== 'chest' ? exercisePartOptions.find(opt => opt.value === mainExercisePart)?.label + ' ' : ''}메인 운동 추가
                 </button>
               </div>
             )}
