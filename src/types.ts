@@ -7,7 +7,7 @@ export interface User {
 }
 
 /* ---------- 운동 타입 ---------- */
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps' | 'complex';
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
 
 export interface Set {
   reps: number;
@@ -36,7 +36,6 @@ export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull'
 export type LegMainExercise = 'squat' | 'legPress' | 'lunge';
 export type BicepsMainExercise = 'dumbbellCurl' | 'barbellCurl' | 'hammerCurl';
 export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingTricepsExtension';
-export type ComplexMainExercise = 'customComplex';
 
 export type MainExerciseType = 
   | ChestMainExercise 
@@ -44,8 +43,7 @@ export type MainExerciseType =
   | ShoulderMainExercise 
   | LegMainExercise 
   | BicepsMainExercise 
-  | TricepsMainExercise
-  | ComplexMainExercise;
+  | TricepsMainExercise;
 
 // 세트 설정 타입
 export type SetConfiguration = '5x5' | '10x5' | '15x5' | '6x3';
