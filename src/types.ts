@@ -7,7 +7,7 @@ export interface User {
 }
 
 /* ---------- 운동 타입 ---------- */
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps';
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps' | 'complex';
 
 export interface Set {
   reps: number;
