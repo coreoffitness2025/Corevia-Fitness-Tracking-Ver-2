@@ -1051,8 +1051,22 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     // 첫 번째 메인 운동으로 설정하고 나머지는 mainExercises에 추가
     if (workout.mainExercises && workout.mainExercises.length > 0) {
       const [firstMain, ...restMains] = workout.mainExercises;
-      setMainExercise(firstMain);
-      setMainExercises(restMains || []);
+      
+      // 첫 번째 메인 운동에 part 속성이 없으면 chest로 설정
+      const firstMainWithPart = {
+        ...firstMain,
+        part: firstMain.part || 'chest' as ExercisePart
+      };
+      
+      setMainExercise(firstMainWithPart);
+      
+      // 나머지 메인 운동에도 part 속성이 없으면 추가
+      const restMainsWithPart = restMains.map(exercise => ({
+        ...exercise,
+        part: exercise.part || 'chest' as ExercisePart
+      }));
+      
+      setMainExercises(restMainsWithPart);
     }
     
     // 보조 운동 설정

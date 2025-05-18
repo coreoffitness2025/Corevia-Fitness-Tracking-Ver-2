@@ -7,6 +7,54 @@ interface WorkoutProgramDetailProps {
   onClose: () => void;
 }
 
+// 운동 이름에 따른 GIF 이미지 경로 매핑
+const exerciseGifMap: Record<string, string> = {
+  '벤치 프레스': '/images/exercises/bench-press.gif',
+  '스쿼트': '/images/exercises/squat.gif',
+  '데드리프트': '/images/exercises/deadlift.gif',
+  '오버헤드 프레스': '/images/exercises/overhead-press.gif',
+  '바벨 로우': '/images/exercises/barbell-row.gif',
+  '풀업': '/images/exercises/pull-up.gif',
+  '밀리터리 프레스': '/images/exercises/military-press.gif',
+  '레그 프레스': '/images/exercises/leg-press.gif',
+  '인클라인 벤치 프레스': '/images/exercises/incline-bench-press.gif',
+  '인클라인 푸시업': '/images/exercises/incline-pushup.gif',
+  '가중 풀업': '/images/exercises/weighted-pullup.gif',
+  '가중 딥스': '/images/exercises/weighted-dips.gif',
+  '덤벨 로우': '/images/exercises/dumbbell-row.gif',
+  '덤벨 컬': '/images/exercises/dumbbell-curl.gif',
+  '덤벨 숄더 프레스': '/images/exercises/dumbbell-shoulder-press.gif',
+  '사이드 래터럴 레이즈': '/images/exercises/lateral-raise.gif',
+  '사이드 레터럴 레이즈': '/images/exercises/lateral-raise.gif',
+  '리어 델트 플라이': '/images/exercises/rear-delt-fly.gif',
+  '바벨 컬': '/images/exercises/barbell-curl.gif',
+  '스컬 크러셔': '/images/exercises/skull-crusher.gif',
+  '프리처 컬': '/images/exercises/preacher-curl.gif',
+  '해머 컬': '/images/exercises/hammer-curl.gif',
+  '트라이셉스 익스텐션': '/images/exercises/triceps-extension.gif',
+  '트라이셉스 푸시다운': '/images/exercises/triceps-pushdown.gif',
+  '루마니안 데드리프트': '/images/exercises/romanian-deadlift.gif',
+  '레그 익스텐션': '/images/exercises/leg-extension.gif',
+  '레그 컬': '/images/exercises/leg-curl.gif',
+  '카프 레이즈': '/images/exercises/calf-raise.gif',
+  '시티드 카프 레이즈': '/images/exercises/seated-calf-raise.gif',
+  '스탠딩 카프 레이즈': '/images/exercises/standing-calf-raise.gif',
+  '불가리안 스플릿 스쿼트': '/images/exercises/bulgarian-split-squat.gif',
+  '글루트 햄 레이즈': '/images/exercises/glute-ham-raise.gif',
+  '프론트 스쿼트': '/images/exercises/front-squat.gif',
+  '랫 풀다운': '/images/exercises/lat-pulldown.gif',
+  '시티드 로우': '/images/exercises/seated-row.gif',
+  '시티드 케이블 로우': '/images/exercises/seated-cable-row.gif',
+  '케이블 플라이': '/images/exercises/cable-fly.gif',
+  '푸시업': '/images/exercises/pushup.gif',
+  '페이스 풀': '/images/exercises/face-pull.gif'
+};
+
+// 운동 이미지 URL 가져오기
+const getExerciseGifUrl = (exerciseName: string): string => {
+  return exerciseGifMap[exerciseName] || '/images/exercises/default-exercise.gif';
+};
+
 const WorkoutProgramDetail: React.FC<WorkoutProgramDetailProps> = ({ program, onClose }) => {
   // YouTube URL에서 영상 ID 추출
   const getYoutubeVideoId = (url: string | undefined) => {
@@ -19,6 +67,55 @@ const WorkoutProgramDetail: React.FC<WorkoutProgramDetailProps> = ({ program, on
   };
 
   const videoId = getYoutubeVideoId(program.videoUrl);
+
+  // 목표에 따른 텍스트 및 클래스
+  const getGoalClass = (goal: string): string => {
+    switch (goal) {
+      case 'strength':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+      case 'hypertrophy':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+      case 'endurance':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+      case 'weight-loss':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
+  const getGoalText = (goal: string): string => {
+    switch (goal) {
+      case 'strength': return '근력 향상';
+      case 'hypertrophy': return '근비대';
+      case 'endurance': return '근지구력';
+      case 'weight-loss': return '체중 감량';
+      default: return '종합';
+    }
+  };
+
+  // 수준에 따른 텍스트 및 클래스
+  const getLevelClass = (level: string): string => {
+    switch (level) {
+      case 'beginner':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+      case 'intermediate':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+      case 'advanced':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
+  const getLevelText = (level: string): string => {
+    switch (level) {
+      case 'beginner': return '초보자';
+      case 'intermediate': return '중급자';
+      case 'advanced': return '고급자';
+      default: return '모든 수준';
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-2xl mx-auto overflow-y-auto max-h-[80vh]">
@@ -115,25 +212,41 @@ const WorkoutProgramDetail: React.FC<WorkoutProgramDetailProps> = ({ program, on
       
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white border-b pb-2">주간 운동 계획</h3>
-        <div className="space-y-4">
+        <div className="space-y-6">
           {program.schedule.map((day, dayIndex) => (
-            <div key={dayIndex} className="p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-              <h4 className="font-semibold text-gray-800 dark:text-white mb-2">{day.day}</h4>
-              {day.exercises.map((exercise, exIndex) => (
-                <div 
-                  key={exIndex} 
-                  className="pl-3 border-l-2 border-blue-400 dark:border-blue-600 ml-2 mb-2"
-                >
-                  <p className="text-gray-800 dark:text-gray-200 font-medium">
-                    {exercise.name}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {exercise.sets}세트 x {exercise.reps}회
-                    {exercise.notes && ` - ${exercise.notes}`}
-                  </p>
+            <div key={dayIndex} className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+              <h4 className="font-semibold text-gray-800 dark:text-white mb-3">{day.day}</h4>
+              {day.exercises.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {day.exercises.map((exercise, exIndex) => (
+                    <div 
+                      key={exIndex} 
+                      className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+                    >
+                      <div className="bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                        <img
+                          src={getExerciseGifUrl(exercise.name)}
+                          alt={exercise.name}
+                          className="w-full h-48 object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/images/exercises/default-exercise.gif';
+                          }}
+                        />
+                      </div>
+                      <div className="p-3">
+                        <h5 className="font-medium text-gray-800 dark:text-white mb-1">
+                          {exercise.name}
+                        </h5>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          {exercise.sets}세트 x {exercise.reps}회
+                          {exercise.notes && <span className="text-blue-600 dark:text-blue-400 ml-1">({exercise.notes})</span>}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {day.exercises.length === 0 && (
+              ) : (
                 <p className="text-gray-600 dark:text-gray-400 italic">휴식일</p>
               )}
             </div>

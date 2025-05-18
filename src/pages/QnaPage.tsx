@@ -8,6 +8,7 @@ import NutritionCalculator from '../components/nutrition/NutritionCalculator';
 import NutritionScout from '../components/nutrition/NutritionScout';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
 import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
+import WorkoutProgram from '../components/workout/WorkoutProgram';
 import { Exercise, ExercisePart } from '../types';
 import { exercises } from '../data/exerciseData';
 import { BarChart3, Target, Award, Settings } from 'lucide-react';
@@ -302,6 +303,10 @@ const QnaPage: React.FC = () => {
 
         {activeTab === 'exercise' && showWeightGuide && (
           <WorkoutWeightGuide />
+        )}
+
+        {activeTab === 'exercise' && showWorkoutSets && (
+          <WorkoutProgram />
         )}
 
         {activeTab === 'nutrition' && (

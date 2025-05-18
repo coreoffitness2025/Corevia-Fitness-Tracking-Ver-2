@@ -118,37 +118,21 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
       </div>
 
       {/* 유튜브 영상 - 고정된 비율의 컨테이너로 감싸서 흔들림 방지 */}
-      {videoId ? (
-        <div className="mb-4">
+      {videoId && (
+        <div className="mb-6">
           <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">운동 영상</h3>
-          <div className="relative" style={{ paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
-            <iframe 
-              className="absolute top-0 left-0 w-full h-full rounded-lg"
+          <div className="relative w-full pb-[56.25%] h-0 overflow-hidden rounded-lg">
+            <iframe
+              className="absolute top-0 left-0 w-full h-full"
               src={getYoutubeEmbedUrl(videoId)}
               title={`${exercise.name} 운동 영상`}
-              frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             ></iframe>
           </div>
         </div>
-      ) : exercise.videoUrl ? (
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">운동 영상</h3>
-          <a 
-            href={exercise.videoUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-            </svg>
-            유튜브에서 운동 영상 보기
-          </a>
-        </div>
-      ) : null}
+      )}
     </div>
   );
 };
