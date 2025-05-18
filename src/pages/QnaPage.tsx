@@ -4,7 +4,7 @@ import Layout from '../components/common/Layout';
 import ExerciseFaq from '../components/exercise/ExerciseFaq';
 import ExerciseSearch from '../components/exercise/ExerciseSearch';
 import ExerciseDetail from '../components/exercise/ExerciseDetail';
-import NutritionCalculator from '../components/nutrition/NutritionCalculator';
+import CalorieCalculator from '../components/nutrition/CalorieCalculator';
 import NutritionScout from '../components/nutrition/NutritionScout';
 import MealPlans from '../components/nutrition/MealPlans';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
@@ -372,7 +372,7 @@ const QnaPage: React.FC = () => {
                     ✕
                   </button>
                 </div>
-                <NutritionCalculator />
+                <CalorieCalculator />
               </div>
             )}
             
