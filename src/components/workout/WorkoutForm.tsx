@@ -175,6 +175,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [complexWorkoutName, setComplexWorkoutName] = useState<string>('');
   const [mainExercises, setMainExercises] = useState<Array<{
     name: string;
+    part: ExercisePart; // part 속성 추가
     sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }>;
   }>>([]);
   const [isLoadingComplexWorkouts, setIsLoadingComplexWorkouts] = useState(false);
@@ -732,7 +733,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             date: latestSession.date instanceof Date 
               ? latestSession.date 
               : (typeof latestSession.date === 'object' && latestSession.date
-                ? new Date(latestSession.date.seconds * 1000)
+                ? new Date((latestSession.date as any).seconds * 1000)
                 : new Date()),
             weight: lastWeight,
             allSuccess,

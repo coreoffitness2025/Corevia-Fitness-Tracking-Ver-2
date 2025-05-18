@@ -255,14 +255,22 @@ export interface WorkoutSet {
   isSuccess: boolean | null;
 }
 
+// Firestore Timestamp 인터페이스 추가
+export interface FirestoreTimestamp {
+  seconds: number;
+  nanoseconds: number;
+  toDate: () => Date;
+}
+
 export interface Workout {
   id: string;
-  date: string | Date;
+  date: string | Date | FirestoreTimestamp;
   part: ExercisePart;
   mainExercise: {
     name: string;
     sets: WorkoutSet[];
     weight?: number;
+    part?: ExercisePart; // 복합 운동에서 사용할 부위 속성 추가
   };
   accessoryExercises?: AccessoryExercise[];
   notes?: string;
