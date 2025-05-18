@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardTitle, CardSection } from '../common/Card';
-import { Utensils, ArrowRight, Search } from 'lucide-react';
+import { Utensils, ArrowRight, Search, Info } from 'lucide-react';
 
 interface MealPlan {
   id: string;
@@ -33,22 +33,22 @@ const mealPlans: MealPlan[] = [
     meals: [
       {
         name: '아침',
-        items: ['달걀 흰자 3개', '아보카도 1/2개', '시금치 1컵', '블랙커피'],
+        items: ['달걀 흰자 100g', '아보카도 70g', '시금치 100g', '블랙커피'],
         imageUrl: '/images/meals/low-carb-breakfast.jpg'
       },
       {
         name: '점심',
-        items: ['구운 닭가슴살 150g', '브로콜리 1컵', '올리브 오일 1큰술', '견과류 30g'],
+        items: ['구운 닭가슴살 150g', '브로콜리 100g', '올리브 오일 15g', '견과류 30g'],
         imageUrl: '/images/meals/low-carb-lunch.jpg'
       },
       {
         name: '저녁',
-        items: ['구운 연어 150g', '아스파라거스 1컵', '양상추 샐러드', '올리브 오일 1큰술'],
+        items: ['구운 연어 150g', '아스파라거스 100g', '양상추 100g', '올리브 오일 15g'],
         imageUrl: '/images/meals/low-carb-dinner.jpg'
       },
       {
         name: '간식',
-        items: ['단백질 쉐이크 1잔', '아몬드 10-15개'],
+        items: ['단백질 쉐이크 30g', '아몬드 20g'],
         imageUrl: '/images/meals/low-carb-snack.jpg'
       }
     ]
@@ -65,17 +65,17 @@ const mealPlans: MealPlan[] = [
     meals: [
       {
         name: '첫 식사 (12시)',
-        items: ['그릭 요거트 200g', '블루베리 1/2컵', '아몬드 1큰술', '꿀 1작은술'],
+        items: ['그릭 요거트 200g', '블루베리 75g', '아몬드 15g', '꿀 5g'],
         imageUrl: '/images/meals/if-meal1.jpg'
       },
       {
         name: '두번째 식사 (15시)',
-        items: ['현미밥 1/2공기', '닭가슴살 150g', '채소 샐러드 1컵', '올리브 오일 드레싱'],
+        items: ['현미밥 100g', '닭가슴살 150g', '채소 샐러드 100g', '올리브 오일 드레싱 15g'],
         imageUrl: '/images/meals/if-meal2.jpg'
       },
       {
         name: '마지막 식사 (19시)',
-        items: ['구운 두부 100g', '현미밥 1/2공기', '볶은 채소 믹스', '김치 1접시'],
+        items: ['구운 두부 100g', '현미밥 100g', '볶은 채소 믹스 150g', '김치 50g'],
         imageUrl: '/images/meals/if-meal3.jpg'
       }
     ]
@@ -92,27 +92,27 @@ const mealPlans: MealPlan[] = [
     meals: [
       {
         name: '아침',
-        items: ['오트밀 100g', '바나나 1개', '단백질 쉐이크 1잔', '계란 3개', '땅콩버터 1큰술'],
+        items: ['오트밀 100g', '바나나 120g', '단백질 쉐이크 30g', '계란 150g', '땅콩버터 15g'],
         imageUrl: '/images/meals/bulk-breakfast.jpg'
       },
       {
         name: '점심',
-        items: ['현미밥 1.5공기', '닭가슴살 200g', '고구마 1개', '브로콜리 1컵', '올리브 오일 1큰술'],
+        items: ['현미밥 150g', '닭가슴살 200g', '고구마 150g', '브로콜리 100g', '올리브 오일 15g'],
         imageUrl: '/images/meals/bulk-lunch.jpg'
       },
       {
         name: '저녁',
-        items: ['현미밥 1공기', '소고기 스테이크 200g', '구운 채소', '아보카도 1/2개'],
+        items: ['현미밥 100g', '소고기 스테이크 200g', '구운 채소 150g', '아보카도 70g'],
         imageUrl: '/images/meals/bulk-dinner.jpg'
       },
       {
         name: '간식 1',
-        items: ['그릭 요거트 200g', '견과류 50g', '꿀 1큰술'],
+        items: ['그릭 요거트 200g', '견과류 50g', '꿀 15g'],
         imageUrl: '/images/meals/bulk-snack1.jpg'
       },
       {
         name: '간식 2',
-        items: ['단백질 쉐이크 1잔', '바나나 1개', '오트밀 쿠키 2개'],
+        items: ['단백질 쉐이크 30g', '바나나 120g', '오트밀 쿠키 40g'],
         imageUrl: '/images/meals/bulk-snack2.jpg'
       }
     ]
@@ -129,27 +129,27 @@ const mealPlans: MealPlan[] = [
     meals: [
       {
         name: '아침',
-        items: ['달걀 5개(흰자 3개, 노른자 2개)', '오트밀 80g', '블루베리 1/2컵', '아몬드 10개'],
+        items: ['달걀 250g(흰자 150g, 노른자 100g)', '오트밀 80g', '블루베리 75g', '아몬드 15g'],
         imageUrl: '/images/meals/clean-bulk-breakfast.jpg'
       },
       {
         name: '점심',
-        items: ['닭가슴살 200g', '현미밥 1공기', '아보카도 1/2개', '브로콜리 1컵'],
+        items: ['닭가슴살 200g', '현미밥 100g', '아보카도 70g', '브로콜리 100g'],
         imageUrl: '/images/meals/clean-bulk-lunch.jpg'
       },
       {
         name: '저녁',
-        items: ['연어 200g', '고구마 1개', '아스파라거스 1컵', '올리브 오일 1큰술'],
+        items: ['연어 200g', '고구마 150g', '아스파라거스 100g', '올리브 오일 15g'],
         imageUrl: '/images/meals/clean-bulk-dinner.jpg'
       },
       {
         name: '운동 전',
-        items: ['바나나 1개', '아몬드 15개'],
+        items: ['바나나 120g', '아몬드 20g'],
         imageUrl: '/images/meals/clean-bulk-pre.jpg'
       },
       {
         name: '운동 후',
-        items: ['단백질 쉐이크 1잔', '덱스트로즈 파우더 1스쿱'],
+        items: ['단백질 쉐이크 30g', '덱스트로즈 파우더 25g'],
         imageUrl: '/images/meals/clean-bulk-post.jpg'
       }
     ]
@@ -166,22 +166,22 @@ const mealPlans: MealPlan[] = [
     meals: [
       {
         name: '아침',
-        items: ['그릭 요거트 파르페', '오트밀', '바나나', '땅콩버터'],
+        items: ['그릭 요거트 150g', '오트밀 50g', '바나나 120g', '땅콩버터 15g'],
         imageUrl: '/images/meals/quick-breakfast.jpg'
       },
       {
         name: '점심',
-        items: ['닭가슴살 샐러드 (미리 준비된 닭가슴살)', '견과류', '올리브 오일 드레싱'],
+        items: ['닭가슴살 150g', '채소 샐러드 100g', '견과류 30g', '올리브 오일 드레싱 15g'],
         imageUrl: '/images/meals/quick-lunch.jpg'
       },
       {
         name: '저녁',
-        items: ['참치 샐러드 랩', '삶은 달걀', '아보카도', '토마토'],
+        items: ['참치 100g', '통밀 또띠아 50g', '삶은 달걀 50g', '아보카도 50g', '토마토 70g'],
         imageUrl: '/images/meals/quick-dinner.jpg'
       },
       {
         name: '간식',
-        items: ['프로틴 바', '사과 1개'],
+        items: ['프로틴 바 60g', '사과 150g'],
         imageUrl: '/images/meals/quick-snack.jpg'
       }
     ]
@@ -198,23 +198,23 @@ const mealPlans: MealPlan[] = [
     meals: [
       {
         name: '아침',
-        items: ['전자레인지 계란 머그컵', '통밀 토스트', '아보카도 스프레드'],
-        imageUrl: '/images/meals/3min-breakfast.jpg'
+        items: ['전자레인지 계란찜 100g', '통밀 토스트 60g', '스트링치즈 30g', '견과류 믹스 25g'],
+        imageUrl: '/images/meals/microwave-breakfast.jpg'
       },
       {
         name: '점심',
-        items: ['냉동 닭가슴살 스테이크', '냉동 채소 믹스', '현미밥 컵'],
-        imageUrl: '/images/meals/3min-lunch.jpg'
+        items: ['전자레인지 현미밥 150g', '참치캔 100g', '냉동 채소 믹스 100g', '올리브 오일 15g'],
+        imageUrl: '/images/meals/microwave-lunch.jpg'
       },
       {
         name: '저녁',
-        items: ['전자레인지용 참치 포켓', '양상추', '발사믹 드레싱'],
-        imageUrl: '/images/meals/3min-dinner.jpg'
+        items: ['냉동 닭가슴살 150g', '냉동 고구마 150g', '냉동 브로콜리 100g', '바나나 120g'],
+        imageUrl: '/images/meals/microwave-dinner.jpg'
       },
       {
         name: '간식',
-        items: ['프로틴 쉐이크', '바나나'],
-        imageUrl: '/images/meals/3min-snack.jpg'
+        items: ['프로틴 쉐이크 30g', '우유 200g', '냉동 베리믹스 50g'],
+        imageUrl: '/images/meals/microwave-snack.jpg'
       }
     ]
   },
@@ -327,108 +327,152 @@ const mealPlans: MealPlan[] = [
 ];
 
 const MealPlans: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('diet');
+  const [selectedCategory, setSelectedCategory] = useState<string>('diet');
+  const [selectedMeal, setSelectedMeal] = useState<MealPlan | null>(null);
   const navigate = useNavigate();
 
-  // 카테고리별 식단
-  const filteredMealPlans = mealPlans.filter(plan => plan.category === activeTab);
+  const filteredMeals = mealPlans.filter(meal => meal.category === selectedCategory);
 
-  // 카테고리 탭 배열
-  const categories = [
-    { id: 'diet', label: '다이어트용', icon: '🥗' },
-    { id: 'bulk', label: '벌크업용', icon: '💪' },
-    { id: 'quickmeal', label: '간편식', icon: '⏱️' },
-    { id: 'highprotein', label: '고단백', icon: '🍗' },
-    { id: 'balanced', label: '균형 잡힌', icon: '⚖️' }
-  ];
-
-  // 식단 클릭 시 Nutrition Scout으로 이동
+  // 음식 이름을 클릭하면 영양 검색 페이지로 이동
   const handleMealClick = (mealName: string) => {
-    navigate('/qna', { state: { openNutritionScout: true, searchTerm: mealName } });
+    navigate('/qna', { 
+      state: { 
+        activeTab: 'nutrition',
+        openNutritionScout: true,
+        searchTerm: mealName 
+      } 
+    });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center mb-2">
-        <Utensils className="text-blue-500 mr-2" size={24} />
-        <h2 className="text-2xl font-bold">식단 예시</h2>
-      </div>
-
-      {/* 카테고리 탭 */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {categories.map(category => (
+    <div>
+      {/* 식단 카테고리 선택 */}
+      <div className="mb-6">
+        <div className="grid grid-cols-5 gap-2">
           <button
-            key={category.id}
-            onClick={() => setActiveTab(category.id)}
-            className={`flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-              activeTab === category.id
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
+            onClick={() => setSelectedCategory('diet')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+              selectedCategory === 'diet' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
             }`}
           >
-            <span className="mr-1">{category.icon}</span>
-            {category.label}
+            <span className="text-lg mb-1">🥗</span>
+            <span className="text-sm font-medium">다이어트</span>
           </button>
-        ))}
+          
+          <button
+            onClick={() => setSelectedCategory('bulk')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+              selectedCategory === 'bulk' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+            }`}
+          >
+            <span className="text-lg mb-1">💪</span>
+            <span className="text-sm font-medium">벌크업</span>
+          </button>
+          
+          <button
+            onClick={() => setSelectedCategory('quickmeal')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+              selectedCategory === 'quickmeal' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+            }`}
+          >
+            <span className="text-lg mb-1">⏱️</span>
+            <span className="text-sm font-medium">간편식</span>
+          </button>
+          
+          <button
+            onClick={() => setSelectedCategory('highprotein')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+              selectedCategory === 'highprotein' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+            }`}
+          >
+            <span className="text-lg mb-1">🥩</span>
+            <span className="text-sm font-medium">고단백</span>
+          </button>
+          
+          <button
+            onClick={() => setSelectedCategory('balanced')}
+            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+              selectedCategory === 'balanced' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+            }`}
+          >
+            <span className="text-lg mb-1">⚖️</span>
+            <span className="text-sm font-medium">균형식단</span>
+          </button>
+        </div>
+      </div>
+      
+      {/* 영양 정보 확인 메모 */}
+      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start">
+        <Info className="text-blue-500 mr-2 flex-shrink-0 mt-1" size={20} />
+        <div>
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            음식별 영양성분은 '음식 영양성분 확인'을 통해 탄/단/지 정보를 파악할 수 있습니다.
+            식품 이름을 클릭하면 해당 음식의 영양 정보를 검색할 수 있습니다.
+          </p>
+        </div>
       </div>
 
       {/* 식단 목록 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredMealPlans.map(plan => (
-          <Card key={plan.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <CardSection>
-              <CardTitle>{plan.title}</CardTitle>
-              <p className="text-gray-600 dark:text-gray-400 mb-3">{plan.description}</p>
+      <div className="space-y-6">
+        {filteredMeals.map(meal => (
+          <Card key={meal.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="p-4">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{meal.title}</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-3">{meal.description}</p>
               
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  <div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">칼로리</div>
-                    <div className="font-bold text-blue-600 dark:text-blue-400">{plan.calories}kcal</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">단백질</div>
-                    <div className="font-bold text-green-600 dark:text-green-400">{plan.protein}g</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">탄수화물</div>
-                    <div className="font-bold text-amber-600 dark:text-amber-400">{plan.carbs}g</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">지방</div>
-                    <div className="font-bold text-red-600 dark:text-red-400">{plan.fat}g</div>
-                  </div>
+              <div className="grid grid-cols-4 gap-3 mb-4 text-center">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">칼로리</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{meal.calories}kcal</p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">단백질</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{meal.protein}g</p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">탄수화물</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{meal.carbs}g</p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">지방</p>
+                  <p className="font-bold text-gray-800 dark:text-white">{meal.fat}g</p>
                 </div>
               </div>
-
+              
               <div className="space-y-4">
-                {plan.meals.map((meal, idx) => (
-                  <div 
-                    key={idx} 
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden cursor-pointer hover:border-blue-500 transition-colors"
-                    onClick={() => handleMealClick(meal.name + ' ' + meal.items.join(' '))}
-                  >
-                    <div className="p-3 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-medium text-gray-800 dark:text-white">{meal.name}</h4>
-                        <ul className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                          {meal.items.map((item, i) => (
-                            <li key={i}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="text-blue-500 ml-2">
-                        <div className="flex items-center text-sm">
-                          <Search size={14} className="mr-1" />
-                          <span>영양성분 검색</span>
-                          <ArrowRight size={14} className="ml-1" />
-                        </div>
-                      </div>
+                {meal.meals.map((mealItem, idx) => (
+                  <div key={idx} className="border rounded-lg overflow-hidden">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 font-medium border-b">
+                      {mealItem.name}
+                    </div>
+                    <div className="p-3">
+                      <ul className="space-y-2">
+                        {mealItem.items.map((item, itemIdx) => (
+                          <li 
+                            key={itemIdx} 
+                            className="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 cursor-pointer"
+                            onClick={() => handleMealClick(item.split(' ')[0])}
+                          >
+                            <Search size={14} className="mr-2 text-gray-500" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardSection>
+            </div>
           </Card>
         ))}
       </div>

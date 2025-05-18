@@ -12,7 +12,7 @@ import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import WorkoutProgram from '../components/workout/WorkoutProgram';
 import { Exercise, ExercisePart } from '../types';
 import { exercises } from '../data/exerciseData';
-import { BarChart3, Target, Award, Settings, Utensils } from 'lucide-react';
+import { BarChart3, Target, Award, Settings, Utensils, Info } from 'lucide-react';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
@@ -323,7 +323,7 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); toggleMealPlans();}}
-            className="p-2 bg-purple-500 text-white rounded-lg shadow hover:bg-purple-600 transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
           >
             <Utensils size={20} className="mb-1" />
             식단 예시
@@ -357,7 +357,17 @@ const QnaPage: React.FC = () => {
         )}
 
         {activeTab === 'exercise' && showWorkoutSets && (
-          <WorkoutProgram />
+          <>
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start">
+              <Info className="text-blue-500 mr-2 flex-shrink-0 mt-1" size={20} />
+              <div>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  자세한 운동 종목에 대한 정보는 운동 검색을 통해 파악 가능합니다.
+                </p>
+              </div>
+            </div>
+            <WorkoutProgram />
+          </>
         )}
 
         {activeTab === 'nutrition' && (

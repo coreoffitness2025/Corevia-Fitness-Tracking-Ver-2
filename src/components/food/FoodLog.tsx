@@ -56,6 +56,8 @@ const FoodLog: React.FC = () => {
   const [showNutritionSources, setShowNutritionSources] = useState<boolean>(false);
   const [foodRecords, setFoodRecords] = useState<FoodRecord[]>([]);
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
+  const [calendarDates, setCalendarDates] = useState<Date[]>([]);
+  const [recordsByDate, setRecordsByDate] = useState<Record<string, FoodRecord[]>>({});
 
   useEffect(() => {
     if (user) {
@@ -75,6 +77,14 @@ const FoodLog: React.FC = () => {
       loadFoodData();
     }
   }, [userProfile?.uid, selectedDate, viewMode]);
+
+  // 월별 보기일 때 달력 날짜 계산
+  useEffect(() => {
+    if (viewMode === 'month') {
+      const dates = getDatesForCalendar();
+      setCalendarDates(dates);
+    }
+  }, [viewMode, selectedDate]);
 
   const updateNutritionTargets = (profile: any) => {
     if (!profile) return;
@@ -141,11 +151,30 @@ const FoodLog: React.FC = () => {
         // 하루 데이터만 로드
         records = await getFoodRecordsByDate(userProfile.uid, new Date(selectedDate));
       } else if (viewMode === 'week') {
-        // 1주일 데이터 로드 (일단 선택된 날짜만 로드하고, 추후 범위 쿼리 구현)
-        records = await getFoodRecordsByDate(userProfile.uid, new Date(selectedDate));
+        // 1주일 데이터 로드
+        const weekDates = getDaysOfWeek();
+        for (const date of weekDates) {
+          const dateRecords = await getFoodRecordsByDate(userProfile.uid, date);
+          records = [...records, ...dateRecords];
+        }
       } else if (viewMode === 'month') {
-        // 1개월 데이터 로드 (일단 선택된 날짜만 로드하고, 추후 범위 쿼리 구현)
-        records = await getFoodRecordsByDate(userProfile.uid, new Date(selectedDate));
+        // 1개월 데이터 로드
+        const monthDates = getDatesForCalendar();
+        let allRecords: FoodRecord[] = [];
+        const recordMap: Record<string, FoodRecord[]> = {};
+        
+        for (const date of monthDates) {
+          const dateStr = date.toISOString().split('T')[0];
+          const dateRecords = await getFoodRecordsByDate(userProfile.uid, date);
+          
+          if (dateRecords.length > 0) {
+            recordMap[dateStr] = dateRecords;
+            allRecords = [...allRecords, ...dateRecords];
+          }
+        }
+        
+        setRecordsByDate(recordMap);
+        records = allRecords;
       }
       
       setFoodRecords(records);
@@ -180,9 +209,13 @@ const FoodLog: React.FC = () => {
     setImageCache(newImageCache);
   };
 
+  // 현재 선택된 날짜를 기준으로 한 주의 날짜들을 반환하는 함수
   const getDaysOfWeek = () => {
     const startDate = new Date(selectedDate);
-    startDate.setDate(startDate.getDate() - startDate.getDay()); // 주의 시작일 (일요일)
+    // 현재 날짜의 요일(0: 일요일, 1: 월요일, ...)을 구함
+    const dayOfWeek = startDate.getDay();
+    // 주의 시작일(일요일)로 설정
+    startDate.setDate(startDate.getDate() - dayOfWeek);
     
     const days = [];
     for (let i = 0; i < 7; i++) {
@@ -193,18 +226,35 @@ const FoodLog: React.FC = () => {
     return days;
   };
 
-  const getDaysOfMonth = () => {
+  // 달력 표시를 위한 날짜 배열 생성 함수
+  const getDatesForCalendar = () => {
     const date = new Date(selectedDate);
-    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const year = date.getFullYear();
+    const month = date.getMonth();
     
-    const days = [];
-    for (let i = 0; i < lastDayOfMonth.getDate(); i++) {
-      const day = new Date(firstDayOfMonth);
-      day.setDate(firstDayOfMonth.getDate() + i);
-      days.push(day);
+    // 해당 월의 첫 번째 날과 마지막 날
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // 달력 첫 번째 칸의 날짜 (이전 달의 일부 포함)
+    const firstCalendarDay = new Date(firstDay);
+    firstCalendarDay.setDate(firstCalendarDay.getDate() - firstCalendarDay.getDay());
+    
+    // 달력 마지막 칸의 날짜 (다음 달의 일부 포함)
+    const lastCalendarDay = new Date(lastDay);
+    const remainingDays = 6 - lastCalendarDay.getDay();
+    lastCalendarDay.setDate(lastCalendarDay.getDate() + remainingDays);
+    
+    // 달력에 표시할 모든 날짜 생성
+    const dates = [];
+    let currentDate = new Date(firstCalendarDay);
+    
+    while (currentDate <= lastCalendarDay) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
     }
-    return days;
+    
+    return dates;
   };
 
   // 날짜별로 식단 그룹화
@@ -228,20 +278,6 @@ const FoodLog: React.FC = () => {
 
   const foodGroups = groupFoodsByDate(foodRecords);
   const dates = Object.keys(foodGroups).sort((a, b) => b.localeCompare(a));
-
-  // 총 영양소 계산
-  const calculateTotalFromRecords = (records: FoodRecord[]) => {
-    return records.reduce((total, record) => {
-      return {
-        calories: total.calories + (record.calories || 0),
-        protein: total.protein + (record.protein || 0),
-        carbs: total.carbs + (record.carbs || 0),
-        fat: total.fat + (record.fat || 0)
-      };
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-  };
-
-  const totalNutrition = calculateTotalFromRecords(foodRecords);
 
   // 이전/다음 이동 함수
   const navigatePrevious = () => {
@@ -273,7 +309,7 @@ const FoodLog: React.FC = () => {
     navigate('/qna', { state: { activeTab: 'nutrition' } });
   };
 
-  // 날짜별 식단을 표시하는 함수
+  // 날짜별 식단을 표시하는 함수 (일별 보기)
   const renderFoodsByDate = (dateStr: string, recordsForDate: FoodRecord[]) => {
     const date = new Date(dateStr);
     const hasPhotos = recordsForDate.some(record => record.imageId);
@@ -309,7 +345,7 @@ const FoodLog: React.FC = () => {
           </div>
         )}
         
-        {/* 식단 정보 테이블 */}
+        {/* 식단 정보 테이블 - 간단한 메모만 표시 */}
         <div className="space-y-4">
           {recordsForDate.map((record) => (
             <Card key={record.id} className="overflow-hidden">
@@ -333,26 +369,6 @@ const FoodLog: React.FC = () => {
                         {record.description}
                       </p>
                     )}
-                    
-                    {/* 영양소 정보 */}
-                    <div className="grid grid-cols-4 gap-2 text-center mt-3">
-                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">칼로리</p>
-                        <p className="font-semibold">{record.calories || 0} kcal</p>
-                      </div>
-                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">단백질</p>
-                        <p className="font-semibold">{record.protein || 0}g</p>
-                      </div>
-                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">탄수화물</p>
-                        <p className="font-semibold">{record.carbs || 0}g</p>
-                      </div>
-                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">지방</p>
-                        <p className="font-semibold">{record.fat || 0}g</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -363,36 +379,170 @@ const FoodLog: React.FC = () => {
     );
   };
 
+  // 주별 보기에서 간략한 식단 표시 함수
+  const renderWeeklyView = () => {
+    const weekDays = getDaysOfWeek();
+    
+    return (
+      <div className="space-y-4">
+        {weekDays.map(day => {
+          const dateStr = day.toISOString().split('T')[0];
+          const records = foodGroups[dateStr] || [];
+          const hasPhotos = records.some(record => record.imageId);
+          
+          return (
+            <Card key={dateStr} className="overflow-hidden">
+              <div className="p-4">
+                <h3 className="text-lg font-semibold mb-2">
+                  {day.toLocaleDateString('ko-KR', { 
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </h3>
+                
+                {records.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                    식단 기록이 없습니다.
+                  </p>
+                ) : (
+                  <div>
+                    {/* 사진만 표시 - 간략하게 */}
+                    {hasPhotos && (
+                      <div className="flex overflow-x-auto space-x-3 pb-2 mb-2">
+                        {records.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
+                          <div key={record.id} className="flex-shrink-0 w-24">
+                            <img 
+                              src={imageCache[record.imageId!]} 
+                              alt={record.name || '식사 이미지'} 
+                              className="w-24 h-24 object-cover rounded-lg"
+                            />
+                            <p className="text-xs text-center mt-1 truncate">
+                              {record.mealType === 'breakfast' ? '아침' : 
+                               record.mealType === 'lunch' ? '점심' : 
+                               record.mealType === 'dinner' ? '저녁' : '간식'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* 식사 요약 정보 */}
+                    <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-2">
+                      {records.map(record => (
+                        <span key={record.id} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                          {record.mealType === 'breakfast' ? '아침' : 
+                           record.mealType === 'lunch' ? '점심' : 
+                           record.mealType === 'dinner' ? '저녁' : '간식'}
+                          {record.name && `: ${record.name}`}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 월별 보기에서 달력 형태로 표시하는 함수
+  const renderMonthlyView = () => {
+    const today = new Date();
+    const currentDate = new Date(selectedDate);
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 text-center border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-xl font-semibold">
+            {currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-7 text-center">
+          {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+            <div key={day} className="py-2 border-b border-gray-200 dark:border-gray-700 font-medium">
+              {day}
+            </div>
+          ))}
+          
+          {calendarDates.map((date, index) => {
+            const dateStr = date.toISOString().split('T')[0];
+            const records = recordsByDate[dateStr] || [];
+            const isCurrentMonth = date.getMonth() === currentMonth;
+            const isToday = date.toDateString() === today.toDateString();
+            const hasRecords = records.length > 0;
+            const hasPhotos = records.some(record => record.imageId && imageCache[record.imageId]);
+            
+            return (
+              <div 
+                key={index} 
+                className={`
+                  p-1 min-h-24 border border-gray-100 dark:border-gray-700 
+                  ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800' : ''} 
+                  ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
+                `}
+              >
+                <div className="h-full flex flex-col">
+                  <div className="text-right p-1">
+                    <span className={`text-sm rounded-full w-6 h-6 flex items-center justify-center
+                      ${isToday ? 'bg-blue-500 text-white' : ''}`}>
+                      {date.getDate()}
+                    </span>
+                  </div>
+                  
+                  {hasRecords && (
+                    <div className="flex-1 flex flex-col">
+                      {hasPhotos && (
+                        <div className="flex overflow-x-auto space-x-1 py-1">
+                          {records
+                            .filter(record => record.imageId && imageCache[record.imageId])
+                            .slice(0, 2) // 최대 2개만 표시
+                            .map((record) => (
+                              <div key={record.id} className="flex-shrink-0 w-8 h-8">
+                                <img 
+                                  src={imageCache[record.imageId!]} 
+                                  alt={record.name || '식사 이미지'} 
+                                  className="w-8 h-8 object-cover rounded-sm"
+                                />
+                              </div>
+                            ))}
+                          {records.filter(record => record.imageId && imageCache[record.imageId]).length > 2 && (
+                            <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-sm flex items-center justify-center text-xs">
+                              +{records.filter(record => record.imageId && imageCache[record.imageId]).length - 2}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="mt-auto text-xs">
+                        <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full px-1 py-0.5">
+                          기록 {records.length}개
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
-      {/* 영양소 목표 및 버튼 */}
+      {/* LocalStorage 관련 안내 */}
       <Card className="mb-6 border-l-4 border-blue-500">
-        <div className="flex items-start">
+        <div className="flex items-start p-4">
           <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
           <div>
-            <h3 className="text-lg font-semibold mb-2">1끼당 권장 섭취량(3끼 기준)</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{Math.round(proteinTarget/3)}g</span>
-              </div>
-              
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{Math.round(carbsTarget/3)}g</span>
-              </div>
-              
-              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{Math.round(fatTarget/3)}g</span>
-              </div>
-            </div>
-            
-            <div className="mt-3">
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
-              </p>
-            </div>
+            <h3 className="text-lg font-semibold mb-2">식단 기록</h3>
             
             {/* LocalStorage 관련 안내 */}
             <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
@@ -415,21 +565,7 @@ const FoodLog: React.FC = () => {
                 </svg>
                 음식별 칼로리 확인하기
               </button>
-              
-              <button
-                type="button"
-                onClick={() => setShowNutritionSources(!showNutritionSources)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                </svg>
-                주요 탄/단/지 급원 확인하기
-              </button>
             </div>
-            
-            {/* 영양소 급원 표시 영역 */}
-            {showNutritionSources && <NutritionSourcesGuide />}
           </div>
         </div>
       </Card>
@@ -508,22 +644,32 @@ const FoodLog: React.FC = () => {
         </div>
       ) : (
         <div>
-          {foodRecords.length > 0 ? (
-            <div>
-              {/* 날짜별로 식단 그룹화하여 표시 */}
-              {Object.entries(groupFoodsByDate(foodRecords))
-                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // 최신순 정렬
-                .map(([dateStr, recordsForDate]) => renderFoodsByDate(dateStr, recordsForDate))
-              }
-            </div>
-          ) : (
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
-              <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 기간에 식단 기록이 없습니다.</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                💡 <strong>참고:</strong> 식단 사진은 기기 내부 저장소에 저장됩니다. 기기에서 해당 파일이 삭제되거나 브라우저 데이터가 초기화되면 사진을 볼 수 없게 됩니다.
-              </p>
-            </div>
+          {/* 선택된 뷰 모드에 따라 다른 식단 표시 방식 적용 */}
+          {viewMode === 'day' && (
+            foodRecords.length > 0 ? (
+              <div>
+                {/* 날짜별로 식단 그룹화하여 표시 */}
+                {Object.entries(groupFoodsByDate(foodRecords))
+                  .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // 최신순 정렬
+                  .map(([dateStr, recordsForDate]) => renderFoodsByDate(dateStr, recordsForDate))
+                }
+              </div>
+            ) : (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 날짜에 식단 기록이 없습니다.</p>
+              </div>
+            )
           )}
+          
+          {viewMode === 'week' && (
+            Object.keys(foodGroups).length > 0 ? renderWeeklyView() : (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 주에 식단 기록이 없습니다.</p>
+              </div>
+            )
+          )}
+          
+          {viewMode === 'month' && renderMonthlyView()}
         </div>
       )}
     </div>
