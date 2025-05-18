@@ -3,6 +3,7 @@ import Card, { CardTitle, CardSection } from '../common/Card';
 import Button from '../common/Button';
 import WorkoutProgramDetail from './WorkoutProgramDetail';
 import { useNavigate } from 'react-router-dom';
+import { Info } from 'lucide-react';
 
 // 운동 프로그램 타입 정의
 interface WorkoutProgram {
@@ -193,21 +194,219 @@ const workoutPrograms: WorkoutProgram[] = [
       '체중 1kg당 2g 이상 단백질 섭취',
       '수면과 회복에 특히 주의'
     ]
+  },
+  {
+    id: 'beginner-endurance',
+    name: '초보자 전신 근지구력 프로그램',
+    description: '근지구력 향상과 체력 개발에 중점을 둔 초보자용 전신 운동 프로그램입니다. 고반복 저중량으로 진행합니다.',
+    level: 'beginner',
+    goal: 'endurance',
+    duration: '6주',
+    daysPerWeek: 3,
+    schedule: [
+      {
+        day: '월요일 (전신 A)',
+        exercises: [
+          { name: '고블릿 스쿼트', sets: 3, reps: '15-20' },
+          { name: '덤벨 벤치 프레스', sets: 3, reps: '15-20' },
+          { name: '케이블 로우', sets: 3, reps: '15-20' },
+          { name: '덤벨 숄더 프레스', sets: 3, reps: '15-20' },
+          { name: '플랭크', sets: 3, reps: '30-60초' }
+        ]
+      },
+      {
+        day: '수요일 (전신 B)',
+        exercises: [
+          { name: '런지', sets: 3, reps: '15-20' },
+          { name: '푸시업', sets: 3, reps: '최대 반복' },
+          { name: '래터럴 레이즈', sets: 3, reps: '15-20' },
+          { name: '덤벨 로우', sets: 3, reps: '15-20' },
+          { name: '바이셉스 컬', sets: 3, reps: '15-20' }
+        ]
+      },
+      {
+        day: '금요일 (전신 C)',
+        exercises: [
+          { name: '루마니안 데드리프트', sets: 3, reps: '15-20' },
+          { name: '인클라인 푸시업', sets: 3, reps: '최대 반복' },
+          { name: '페이스 풀', sets: 3, reps: '15-20' },
+          { name: '트라이셉스 익스텐션', sets: 3, reps: '15-20' },
+          { name: '러시안 트위스트', sets: 3, reps: '20-30' }
+        ]
+      }
+    ],
+    tips: [
+      '세트 간 30-45초 휴식 (슈퍼세트 권장)',
+      '속도 조절보다 완전한 동작 범위에 집중',
+      '주 2-3회 20-30분 유산소 운동 추가 권장',
+      '매일 5-10분 스트레칭으로 유연성 확보'
+    ]
+  },
+  {
+    id: 'weight-loss',
+    name: '체중 감량 집중 프로그램',
+    description: '체중 감량을 위한 복합 운동과 유산소 운동을 결합한 프로그램입니다. 칼로리 소모를 극대화합니다.',
+    level: 'beginner',
+    goal: 'weight-loss',
+    duration: '10주',
+    daysPerWeek: 4,
+    schedule: [
+      {
+        day: '월요일 (전신 + HIIT)',
+        exercises: [
+          { name: '덤벨 스쿼트', sets: 3, reps: '12-15' },
+          { name: '덤벨 벤치 프레스', sets: 3, reps: '12-15' },
+          { name: '케틀벨 스윙', sets: 3, reps: '15-20' },
+          { name: '마운틴 클라이머', sets: 3, reps: '30초 동안' },
+          { name: 'HIIT (30초 운동/30초 휴식)', sets: 10, reps: '총 10분', notes: '버피, 점프스쿼트, 점핑잭 등 번갈아가며' }
+        ]
+      },
+      {
+        day: '수요일 (상체 + 유산소)',
+        exercises: [
+          { name: '푸시업', sets: 3, reps: '최대 반복' },
+          { name: '덤벨 로우', sets: 3, reps: '12-15' },
+          { name: '래터럴 레이즈', sets: 3, reps: '12-15' },
+          { name: '트라이셉스 딥스', sets: 3, reps: '12-15' },
+          { name: '중강도 유산소', sets: 1, reps: '30분', notes: '조깅, 사이클링 등' }
+        ]
+      },
+      {
+        day: '금요일 (하체 + 코어)',
+        exercises: [
+          { name: '불가리안 스플릿 스쿼트', sets: 3, reps: '10-12' },
+          { name: '힙 쓰러스트', sets: 3, reps: '12-15' },
+          { name: '트레드밀 경사 걷기', sets: 1, reps: '15분' },
+          { name: '플랭크 변형', sets: 3, reps: '30초씩 세 가지 변형' },
+          { name: '러시안 트위스트', sets: 3, reps: '20-30' }
+        ]
+      },
+      {
+        day: '일요일 (순환 운동)',
+        exercises: [
+          { name: '서킷 트레이닝(30초씩, 휴식 없이)', sets: 4, reps: '총 6가지 운동', notes: '스쿼트, 푸시업, 로우, 런지, 마운틴 클라이머, 플랭크' },
+          { name: '느린 속도 유산소 운동', sets: 1, reps: '20-25분', notes: '낮은 강도로 회복 촉진' }
+        ]
+      }
+    ],
+    tips: [
+      '세트 간 휴식 30-45초로 심박수 유지',
+      '식이 조절과 병행시 더 높은 효과',
+      '매일 8000보 이상 걷기 권장',
+      '충분한 수분 섭취로 신진대사 촉진'
+    ]
+  },
+  {
+    id: 'home-workout',
+    name: '장비 최소화 홈트레이닝 프로그램',
+    description: '덤벨 한 쌍만으로 집에서 효과적으로 할 수 있는 전신 운동 프로그램입니다.',
+    level: 'beginner',
+    goal: 'hypertrophy',
+    duration: '8주',
+    daysPerWeek: 3,
+    schedule: [
+      {
+        day: '월요일 (상체 중심)',
+        exercises: [
+          { name: '덤벨 벤치 프레스', sets: 4, reps: '8-12' },
+          { name: '덤벨 로우', sets: 4, reps: '8-12' },
+          { name: '덤벨 숄더 프레스', sets: 3, reps: '10-12' },
+          { name: '덤벨 플라이', sets: 3, reps: '12-15' },
+          { name: '덤벨 컬', sets: 3, reps: '10-12' },
+          { name: '덤벨 킥백', sets: 3, reps: '12-15' }
+        ]
+      },
+      {
+        day: '수요일 (하체 중심)',
+        exercises: [
+          { name: '덤벨 고블릿 스쿼트', sets: 4, reps: '10-12' },
+          { name: '덤벨 런지', sets: 4, reps: '10-12' },
+          { name: '덤벨 RDL', sets: 3, reps: '10-12' },
+          { name: '덤벨 카프 레이즈', sets: 3, reps: '15-20' },
+          { name: '덤벨 러시안 트위스트', sets: 3, reps: '15-20' },
+          { name: '플랭크', sets: 3, reps: '30-60초' }
+        ]
+      },
+      {
+        day: '금요일 (전신)',
+        exercises: [
+          { name: '덤벨 스쿼트 투 프레스', sets: 4, reps: '10-12' },
+          { name: '덤벨 렌치로우', sets: 4, reps: '10-12' },
+          { name: '덤벨 푸시업 투 로우', sets: 3, reps: '8-10' },
+          { name: '덤벨 리버스 런지 위드 트위스트', sets: 3, reps: '8-10' },
+          { name: '덤벨 파머 캐리', sets: 3, reps: '30-40초' }
+        ]
+      }
+    ],
+    tips: [
+      '덤벨 무게는 마지막 1-2회가 힘들도록 설정',
+      '가능하면 세트 간 45-60초로 유지',
+      '동작이 어려우면 무게를 줄이고 정확한 폼에 집중',
+      '매일 간단한 스트레칭 권장'
+    ]
+  },
+  {
+    id: 'functional-training',
+    name: '기능성 체력 향상 프로그램',
+    description: '일상생활과 운동 퍼포먼스를 향상시키는 기능성 운동 중심 프로그램입니다.',
+    level: 'intermediate',
+    goal: 'endurance',
+    duration: '8주',
+    daysPerWeek: 4,
+    schedule: [
+      {
+        day: '월요일 (상체 기능성)',
+        exercises: [
+          { name: '푸시업 변형', sets: 4, reps: '각 변형 8-10회' },
+          { name: '턱걸이 또는 네거티브 턱걸이', sets: 4, reps: '최대 반복' },
+          { name: '케틀벨 클린 앤 프레스', sets: 3, reps: '8-10' },
+          { name: '배틀 로프', sets: 3, reps: '30초' },
+          { name: '터키시 겟업', sets: 3, reps: '6-8' }
+        ]
+      },
+      {
+        day: '화요일 (하체 기능성)',
+        exercises: [
+          { name: '고블릿 스쿼트', sets: 4, reps: '10-12' },
+          { name: '케틀벨 스윙', sets: 4, reps: '15-20' },
+          { name: '점프 런지', sets: 3, reps: '8-10' },
+          { name: '싱글 레그 데드리프트', sets: 3, reps: '8-10' },
+          { name: '래터럴 밴드 워크', sets: 3, reps: '15-20' }
+        ]
+      },
+      {
+        day: '목요일 (코어 & 회전)',
+        exercises: [
+          { name: '우드 초퍼', sets: 3, reps: '12-15' },
+          { name: '플랭크 로테이션', sets: 3, reps: '8-10' },
+          { name: '파이크 롤아웃', sets: 3, reps: '8-10' },
+          { name: '사이드 플랭크 위드 리치', sets: 3, reps: '8-10' },
+          { name: '버드독', sets: 3, reps: '10-12' }
+        ]
+      },
+      {
+        day: '토요일 (복합 & 민첩성)',
+        exercises: [
+          { name: '버피', sets: 3, reps: '8-12' },
+          { name: '덤벨 쓰러스터', sets: 3, reps: '12-15' },
+          { name: '래더 드릴', sets: 3, reps: '30초' },
+          { name: '메디신볼 슬램', sets: 3, reps: '10-12' },
+          { name: '점프 스쿼트', sets: 3, reps: '10-12' }
+        ]
+      }
+    ],
+    tips: [
+      '동작의 품질과 제어에 집중',
+      '세트 간 60-90초 휴식',
+      '폼이 무너지면 즉시 중단',
+      '주 2회 자신이 좋아하는 스포츠나 레크리에이션 활동 추가'
+    ]
   }
 ];
 
 const WorkoutProgram: React.FC = () => {
-  const [selectedGoal, setSelectedGoal] = useState<string>('all');
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [selectedProgram, setSelectedProgram] = useState<WorkoutProgram | null>(null);
   const navigate = useNavigate();
-
-  // 필터링된 프로그램 목록
-  const filteredPrograms = workoutPrograms.filter(program => {
-    if (selectedGoal !== 'all' && program.goal !== selectedGoal) return false;
-    if (selectedLevel !== 'all' && program.level !== selectedLevel) return false;
-    return true;
-  });
 
   // 프로그램 상세 정보 표시/닫기
   const showProgramDetail = (program: WorkoutProgram) => {
@@ -233,35 +432,14 @@ const WorkoutProgram: React.FC = () => {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold mb-4">운동 프로그램</h2>
       
-      {/* 필터 옵션 */}
-      <div className="flex flex-wrap gap-4 mb-6">
+      {/* 운동 검색 안내 메모 추가 */}
+      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start">
+        <Info className="text-blue-500 mr-2 flex-shrink-0 mt-1" size={20} />
         <div>
-          <label className="block text-sm font-medium mb-1">운동 목표</label>
-          <select 
-            value={selectedGoal}
-            onChange={(e) => setSelectedGoal(e.target.value)}
-            className="p-2 border rounded-md bg-white dark:bg-gray-700"
-          >
-            <option value="all">모든 목표</option>
-            <option value="strength">근력 향상</option>
-            <option value="hypertrophy">근비대</option>
-            <option value="endurance">근지구력</option>
-            <option value="weight-loss">체중 감량</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">운동 수준</label>
-          <select 
-            value={selectedLevel}
-            onChange={(e) => setSelectedLevel(e.target.value)}
-            className="p-2 border rounded-md bg-white dark:bg-gray-700"
-          >
-            <option value="all">모든 수준</option>
-            <option value="beginner">초보자</option>
-            <option value="intermediate">중급자</option>
-            <option value="advanced">고급자</option>
-          </select>
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            자세한 운동 정보는 상단 메뉴의 Q&A 페이지에서 운동 검색 기능을 통해 확인할 수 있습니다.
+            각 운동의 올바른 자세와 주의사항을 확인하고 안전하게 운동하세요.
+          </p>
         </div>
       </div>
 
@@ -280,11 +458,11 @@ const WorkoutProgram: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredPrograms.map(program => (
+          {workoutPrograms.map(program => (
             <Card key={program.id} className="hover:shadow-lg transition-shadow">
               <CardSection>
                 <CardTitle>{program.name}</CardTitle>
-                <div className="flex gap-2 my-2">
+                <div className="flex flex-wrap gap-2 my-2">
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     program.level === 'beginner' ? 'bg-green-100 text-green-800' :
                     program.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
@@ -299,6 +477,11 @@ const WorkoutProgram: React.FC = () => {
                   <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
                     {program.duration}
                   </span>
+                  <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                    {program.goal === 'strength' ? '근력 향상' : 
+                     program.goal === 'hypertrophy' ? '근비대' :
+                     program.goal === 'endurance' ? '근지구력' : '체중 감량'}
+                  </span>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">{program.description}</p>
                 
@@ -310,13 +493,12 @@ const WorkoutProgram: React.FC = () => {
                       {program.schedule.flatMap(day => day.exercises)
                         .slice(0, 5) // 최대 5개만 표시
                         .map((exercise, idx) => (
-                          <button
+                          <span
                             key={idx}
-                            className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                            onClick={() => navigateToExerciseSearch(exercise.name)}
+                            className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs"
                           >
                             {exercise.name}
-                          </button>
+                          </span>
                         ))}
                     </div>
                   </div>

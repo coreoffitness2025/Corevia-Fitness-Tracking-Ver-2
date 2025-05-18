@@ -458,6 +458,15 @@ const MealPlans: React.FC = () => {
                 </div>
               </div>
               <p className="text-gray-600 dark:text-gray-300 mt-2">{meal.description}</p>
+
+              {/* 통합 식단 라벨 추가 */}
+              {meal.id.endsWith('-1') && (
+                <div className="mt-2">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded-full text-xs">
+                    다양한 식단 예시 포함
+                  </span>
+                </div>
+              )}
             </div>
             
             {/* 식단 상세 정보 - 선택된 식단만 표시 */}
@@ -483,30 +492,72 @@ const MealPlans: React.FC = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {meal.meals.map((mealItem, idx) => (
-                    <div key={idx} className="border rounded-lg overflow-hidden">
-                      <div className="p-3 bg-gray-50 dark:bg-gray-800 font-medium border-b">
-                        {mealItem.name}
+                  {/* 타입 1 식단 표시 */}
+                  <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+                    <h4 className="font-medium text-lg mb-3">{meal.title} - 예시 1</h4>
+                    {meal.meals.map((mealItem, idx) => (
+                      <div key={idx} className="border rounded-lg overflow-hidden mb-3">
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 font-medium border-b">
+                          {mealItem.name}
+                        </div>
+                        <div className="p-3">
+                          <ul className="space-y-2">
+                            {mealItem.items.map((item, itemIdx) => (
+                              <li 
+                                key={itemIdx} 
+                                className="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // 버블링 방지
+                                  handleMealClick(item.split(' ')[0]);
+                                }}
+                              >
+                                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                      <div className="p-3">
-                        <ul className="space-y-2">
-                          {mealItem.items.map((item, itemIdx) => (
-                            <li 
-                              key={itemIdx} 
-                              className="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation(); // 버블링 방지
-                                handleMealClick(item.split(' ')[0]);
-                              }}
-                            >
-                              <Search size={14} className="mr-2 text-gray-500" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  
+                  {/* 타입 2 식단 표시 (meal.id가 -1로 끝나는 경우에만 표시) */}
+                  {meal.id.endsWith('-1') && (
+                    <>
+                      <h4 className="font-medium text-lg mb-3">{meal.title.replace('식단', '').trim()} - 예시 2</h4>
+                      {mealPlans
+                        .filter(m => m.id === `${meal.id.split('-')[0]}-2`)
+                        .flatMap(m => m.meals)
+                        .map((mealItem, idx) => (
+                          <div key={idx} className="border rounded-lg overflow-hidden mb-3">
+                            <div className="p-3 bg-gray-50 dark:bg-gray-800 font-medium border-b">
+                              {mealItem.name}
+                            </div>
+                            <div className="p-3">
+                              <ul className="space-y-2">
+                                {mealItem.items.map((item, itemIdx) => (
+                                  <li 
+                                    key={itemIdx} 
+                                    className="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // 버블링 방지
+                                      handleMealClick(item.split(' ')[0]);
+                                    }}
+                                  >
+                                    <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        ))}
+                    </>
+                  )}
                 </div>
               </div>
             )}

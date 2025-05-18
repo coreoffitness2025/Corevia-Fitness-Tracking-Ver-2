@@ -263,10 +263,10 @@ export default function FoodLogPage() {
       {/* 로그 표시 */}
       {viewMode === 'day' ? (
         <div className="grid grid-cols-1 gap-4">
-          {foodLogs.map((log) => (
+          {foodLogs.map((log, index) => (
             <div key={log.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600 dark:text-gray-400">{log.time}</span>
+                <span className="text-gray-600 dark:text-gray-400">식사 {index + 1}</span>
                 <button
                   onClick={() => deleteFoodLog(log.id)}
                   className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
@@ -294,15 +294,14 @@ export default function FoodLogPage() {
                     {new Date(date).toLocaleDateString('ko-KR', { 
                       year: 'numeric', 
                       month: 'long', 
-                    day: 'numeric',
-                    weekday: 'long'
+                      day: 'numeric'
                     })}
                   </h3>
                 <div className="grid grid-cols-1 gap-4">
-                  {logs.map((log) => (
+                  {logs.map((log, index) => (
                     <div key={log.id} className="border-t border-gray-200 dark:border-gray-700 pt-4">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-600 dark:text-gray-400">{log.time}</span>
+                        <span className="text-gray-600 dark:text-gray-400">식사 {index + 1}</span>
                         <button
                           onClick={() => deleteFoodLog(log.id)}
                           className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
