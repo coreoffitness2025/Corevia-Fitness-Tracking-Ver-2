@@ -1,6 +1,6 @@
 import React from 'react';
 import { WorkoutProgram } from '../../types';
-import { YouTube, Clock, Target, BarChart3, Award, BookOpen } from 'lucide-react';
+import { Youtube, Clock, Target, BarChart3, Award, BookOpen } from 'lucide-react';
 
 interface WorkoutProgramDetailProps {
   program: WorkoutProgram;
@@ -175,7 +175,7 @@ const WorkoutProgramDetail: React.FC<WorkoutProgramDetailProps> = ({ program, on
         {videoId ? (
           <div className="bg-gray-50 dark:bg-gray-700/20 p-4 rounded-lg">
             <div className="flex items-center mb-3">
-              <YouTube className="text-red-600 dark:text-red-400 mr-2" size={20} />
+              <Youtube className="text-red-600 dark:text-red-400 mr-2" size={20} />
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">프로그램 영상</h3>
             </div>
             <div className="relative pt-[56.25%] bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
@@ -194,7 +194,7 @@ const WorkoutProgramDetail: React.FC<WorkoutProgramDetailProps> = ({ program, on
         ) : program.videoUrl ? (
           <div className="bg-gray-50 dark:bg-gray-700/20 p-4 rounded-lg">
             <div className="flex items-center mb-3">
-              <YouTube className="text-red-600 dark:text-red-400 mr-2" size={20} />
+              <Youtube className="text-red-600 dark:text-red-400 mr-2" size={20} />
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">프로그램 영상</h3>
             </div>
             <a 
@@ -203,7 +203,7 @@ const WorkoutProgramDetail: React.FC<WorkoutProgramDetailProps> = ({ program, on
               rel="noopener noreferrer"
               className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mt-2"
             >
-              <YouTube size={20} className="mr-2" />
+              <Youtube size={20} className="mr-2" />
               유튜브에서 프로그램 영상 보기
             </a>
           </div>
