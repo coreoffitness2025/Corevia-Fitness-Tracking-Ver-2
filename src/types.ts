@@ -16,7 +16,7 @@ export interface Set {
 }
 
 export interface MainExercise {
-  part: ExercisePart;
+  part?: ExercisePart;
   name: string;
   weight?: number;
   sets: Set[];
