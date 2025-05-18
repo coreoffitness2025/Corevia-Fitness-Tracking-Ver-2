@@ -83,7 +83,8 @@ const warmupExercises = {
   shoulder: ['월 슬라이드 10-15회', '페이스 풀 15-20회', '밴드 외전 운동 15-20회'],
   leg: ['맨몸 스쿼트 15-20회', '카프 레이즈 20회', '랭킹 런지 10회(양쪽)'],
   biceps: ['가벼운 덤벨 컬 15-20회', '밴드 컬 15-20회', '손목 유연성 운동 10회'],
-  triceps: ['가벼운 푸시업 10-15회', '가벼운 덤벨 킥백 15-20회', '밴드 푸시다운 15-20회']
+  triceps: ['가벼운 푸시업 10-15회', '가벼운 덤벨 킥백 15-20회', '밴드 푸시다운 15-20회'],
+  complex: ['동적 스트레칭 2-3분', '가벼운 심장 활동(조깅, 점프 등) 3-5분', '관절 가동성 운동 2분']
 };
 
 // 선호하는 세트 구성에 '15x5' 추가
@@ -980,8 +981,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         userId: userProfile.uid,
         name: complexWorkoutName,
         date: new Date(),
+        // 복합 운동의 경우 현재 메인 운동과 추가 메인 운동들을 모두 포함
         mainExercises: part === 'complex' ? 
-          [...mainExercises, mainExercise].filter(ex => ex.name !== '복합 운동 불러오기') : 
+          [mainExercise, ...mainExercises].filter(ex => ex.name && ex.name !== '복합 운동 불러오기') : 
           [mainExercise],
         accessoryExercises: accessoryExercises
       };
@@ -1094,6 +1096,54 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       setMainExercises([]);
     }
   }, [part]);
+
+  // 메인 운동 세트 추가/제거 함수 (복합 운동에서 사용)
+  const addSetToMainExercise = (exerciseIndex: number = -1) => {
+    if (exerciseIndex === -1) {
+      // 현재 메인 운동에 세트 추가
+      const newSets = [...mainExercise.sets, {
+        reps: reps,
+        weight: 0,
+        isSuccess: null as boolean | null
+      }];
+      setMainExercise({...mainExercise, sets: newSets});
+    } else {
+      // 추가된 메인 운동에 세트 추가
+      const newExercises = [...mainExercises];
+      if (newExercises[exerciseIndex]) {
+        newExercises[exerciseIndex].sets = [
+          ...newExercises[exerciseIndex].sets,
+          {
+            reps: reps,
+            weight: 0,
+            isSuccess: null as boolean | null
+          }
+        ];
+        setMainExercises(newExercises);
+      }
+    }
+  };
+
+  const removeSetFromMainExercise = (setIndex: number, exerciseIndex: number = -1) => {
+    if (exerciseIndex === -1) {
+      // 현재 메인 운동의 세트 제거
+      if (mainExercise.sets.length > 1) {
+        const newSets = mainExercise.sets.filter((_, i) => i !== setIndex);
+        setMainExercise({...mainExercise, sets: newSets});
+      } else {
+        toast.warn('최소 한 개의 세트가 필요합니다.');
+      }
+    } else {
+      // 추가된 메인 운동의 세트 제거
+      const newExercises = [...mainExercises];
+      if (newExercises[exerciseIndex] && newExercises[exerciseIndex].sets.length > 1) {
+        newExercises[exerciseIndex].sets = newExercises[exerciseIndex].sets.filter((_, i) => i !== setIndex);
+        setMainExercises(newExercises);
+      } else {
+        toast.warn('최소 한 개의 세트가 필요합니다.');
+      }
+    }
+  };
 
   return (
     <Layout>
@@ -1351,6 +1401,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           ? formatTime(activeTimers[`main_${index}`].timeLeft)
                           : '휴식'}
                       </Button>
+                      
+                      {part === 'complex' && (
+                        <Button
+                          size="xs"
+                          variant="danger"
+                          onClick={() => removeSetFromMainExercise(index)}
+                          className="h-8"
+                          icon={<Trash size={16} />}
+                        >
+                          삭제
+                        </Button>
+                      )}
                     </div>
                   </div>
                   
@@ -1386,10 +1448,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   </div>
                 </div>
               ))}
+              
+              {part === 'complex' && (
+                <button
+                  className="mt-3 flex items-center justify-center w-full p-2 border border-dashed rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  onClick={() => addSetToMainExercise()}
+                >
+                  <Plus size={18} className="mr-1" /> 세트 추가
+                </button>
+              )}
             </div>
             
             {/* 복합 운동에서 추가 메인 운동 목록 */}
-            {part === 'complex' && mainExercises.length > 0 && (
+            {part === 'complex' && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3">추가 메인 운동</h3>
                 <div className="space-y-4">
@@ -1421,6 +1492,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           <div key={setIdx} className="p-3 border rounded-lg">
                             <div className="flex justify-between items-center mb-2">
                               <div className="font-medium">세트 {setIdx + 1}</div>
+                              <Button
+                                size="xs"
+                                variant="danger"
+                                onClick={() => removeSetFromMainExercise(setIdx, idx)}
+                                className="h-8"
+                                icon={<Trash size={16} />}
+                              >
+                                삭제
+                              </Button>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-4">
@@ -1459,6 +1539,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                             </div>
                           </div>
                         ))}
+                        
+                        <button
+                          className="mt-2 flex items-center justify-center w-full p-2 border border-dashed rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          onClick={() => addSetToMainExercise(idx)}
+                        >
+                          <Plus size={16} className="mr-1" /> 세트 추가
+                        </button>
                       </div>
                     </div>
                   ))}

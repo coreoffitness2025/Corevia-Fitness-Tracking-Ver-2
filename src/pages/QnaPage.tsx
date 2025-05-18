@@ -8,6 +8,7 @@ import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator
 import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import { Exercise, ExercisePart } from '../types';
 import { exercises } from '../data/exerciseData';
+import { BarChart3, Target, Award, Settings } from 'lucide-react';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
@@ -365,46 +366,66 @@ const QnaPage: React.FC = () => {
               <div className="mb-6">
                 <h3 className="text-xl font-semibold mb-4">운동 프로그램</h3>
                 <div className="mb-4">
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <button
-                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-blue-500 text-white"
+                  <div className="grid grid-cols-1 gap-4 mb-6">
+                    <div 
+                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
                       onClick={() => setSelectedProgramType('strength')}
                     >
-                      <span className="text-lg font-semibold mb-1">스트렝스 프로그램</span>
-                      <span className="text-sm">근력 증가에 초점</span>
-                    </button>
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3 mr-4">
+                          <BarChart3 className="text-blue-600 dark:text-blue-400" size={24} />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">스트렝스 프로그램</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">근력 증가에 초점</p>
+                        </div>
+                      </div>
+                    </div>
                     
-                    <button
-                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-purple-500 text-white"
+                    <div 
+                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
                       onClick={() => setSelectedProgramType('powerbuilding')}
                     >
-                      <span className="text-lg font-semibold mb-1">파워빌딩 프로그램</span>
-                      <span className="text-sm">근력과 근비대 동시 발달</span>
-                    </button>
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3 mr-4">
+                          <Target className="text-purple-600 dark:text-purple-400" size={24} />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">파워빌딩 프로그램</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">근력과 근비대 동시 발달</p>
+                        </div>
+                      </div>
+                    </div>
                     
-                    <button
-                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-green-500 text-white"
+                    <div 
+                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
                       onClick={() => setSelectedProgramType('hypertrophy')}
                     >
-                      <span className="text-lg font-semibold mb-1">근비대 프로그램</span>
-                      <span className="text-sm">근육 크기 증가에 초점</span>
-                    </button>
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3 mr-4">
+                          <Award className="text-green-600 dark:text-green-400" size={24} />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">근비대 프로그램</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">근육 크기 증가에 초점</p>
+                        </div>
+                      </div>
+                    </div>
                     
-                    <button
-                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-yellow-500 text-white"
-                      onClick={() => setSelectedProgramType('beginner')}
+                    <div 
+                      className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => setSelectedProgramType('custom')}
                     >
-                      <span className="text-lg font-semibold mb-1">초보자 프로그램</span>
-                      <span className="text-sm">근신경계 발달 중심</span>
-                    </button>
-                    
-                    <button
-                      className="flex flex-col items-center p-3 rounded-lg transition-colors bg-red-500 text-white"
-                      onClick={() => setSelectedProgramType('popular')}
-                    >
-                      <span className="text-lg font-semibold mb-1">유명 프로그램</span>
-                      <span className="text-sm">검증된 다양한 루틴</span>
-                    </button>
+                      <div className="flex items-center">
+                        <div className="rounded-full bg-amber-100 dark:bg-amber-900/30 p-3 mr-4">
+                          <Settings className="text-amber-600 dark:text-amber-400" size={24} />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white">커스텀 프로그램</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">개인형 맞춤 운동</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* 스트렝스 프로그램 */}

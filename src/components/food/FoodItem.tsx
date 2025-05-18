@@ -18,6 +18,17 @@ const FoodItem: React.FC<FoodItemProps> = ({ food, isGridItem = false }) => {
       if (food.imageUrl.startsWith('data:image')) {
         setImageSource(food.imageUrl);
         setImageError(false);
+      }
+      // 로컬 저장소에서 이미지 가져오기
+      else if (food.imageUrl.startsWith('local_')) {
+        const storedImage = localStorage.getItem(`food_image_${food.imageUrl}`);
+        if (storedImage) {
+          setImageSource(storedImage);
+          setImageError(false);
+        } else {
+          console.error('이미지 참조 저장됨:', food.imageUrl, '->', '로컬 스토리지에서 찾을 수 없음');
+          setImageError(true);
+        }
       } 
       // 파이어베이스 스토리지 URL인 경우 캐싱 방지를 위한 쿼리 파라미터 추가
       else {
