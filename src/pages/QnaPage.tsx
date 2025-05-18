@@ -6,12 +6,13 @@ import ExerciseSearch from '../components/exercise/ExerciseSearch';
 import ExerciseDetail from '../components/exercise/ExerciseDetail';
 import NutritionCalculator from '../components/nutrition/NutritionCalculator';
 import NutritionScout from '../components/nutrition/NutritionScout';
+import MealPlans from '../components/nutrition/MealPlans';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
 import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import WorkoutProgram from '../components/workout/WorkoutProgram';
 import { Exercise, ExercisePart } from '../types';
 import { exercises } from '../data/exerciseData';
-import { BarChart3, Target, Award, Settings } from 'lucide-react';
+import { BarChart3, Target, Award, Settings, Utensils } from 'lucide-react';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
@@ -85,13 +86,29 @@ const QnaPage: React.FC = () => {
   const [showWeightGuide, setShowWeightGuide] = useState<boolean>(false);
   const [show1RMCalculator, setShow1RMCalculator] = useState<boolean>(false);
   const [showWorkoutSets, setShowWorkoutSets] = useState<boolean>(false);
+  const [showMealPlans, setShowMealPlans] = useState<boolean>(false);
   const [selectedProgramType, setSelectedProgramType] = useState<string>('strength');
   
   // FoodForm 또는 FoodLog에서 전달받은 초기 탭 설정 적용
   useEffect(() => {
-    const state = location.state as { activeTab?: TabType } | null;
-    if (state && state.activeTab) {
-      setActiveTab(state.activeTab);
+    const state = location.state as { 
+      activeTab?: TabType;
+      openNutritionScout?: boolean;
+      searchTerm?: string; 
+    } | null;
+    
+    if (state) {
+      if (state.activeTab) {
+        setActiveTab(state.activeTab);
+      }
+      
+      if (state.openNutritionScout) {
+        setActiveTab('nutrition');
+        setShowNutritionScout(true);
+        if (state.searchTerm) {
+          // TODO: NutritionScout 컴포넌트에 searchTerm 전달 처리
+        }
+      }
     }
   }, [location.state]);
   
@@ -193,6 +210,13 @@ const QnaPage: React.FC = () => {
     
     setHandbookSearchResults(results);
   };
+
+  // 각 섹션별 표시 여부 토글 함수들
+  const toggleCalculator = () => setShowCalculator(!showCalculator);
+  const toggleNutritionScout = () => setShowNutritionScout(!showNutritionScout);
+  const toggleWeightGuide = () => setShowWeightGuide(!showWeightGuide);
+  const toggle1RMCalculator = () => setShow1RMCalculator(!show1RMCalculator);
+  const toggleMealPlans = () => setShowMealPlans(!showMealPlans);
 
   return (
     <Layout>
@@ -310,205 +334,134 @@ const QnaPage: React.FC = () => {
         )}
 
         {activeTab === 'nutrition' && (
-          <div className="grid grid-cols-1 gap-6">
-            {/* 목표 칼로리 계산기 표시 */}
+          <div className="space-y-8">
+            {/* 영양 정보 툴 버튼 그룹 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={toggleCalculator}
+                className="p-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2 transition"
+              >
+                <BarChart3 size={20} />
+                <span>칼로리 계산기</span>
+              </button>
+              <button
+                onClick={toggleNutritionScout}
+                className="p-4 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center justify-center gap-2 transition"
+              >
+                <Target size={20} />
+                <span>영양성분 검색</span>
+              </button>
+              <button
+                onClick={toggleMealPlans}
+                className="p-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center justify-center gap-2 transition"
+              >
+                <Utensils size={20} />
+                <span>식단 예시</span>
+              </button>
+            </div>
+            
+            {/* 칼로리 계산기 */}
             {showCalculator && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">목표 칼로리 계산기</h2>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                  <div className="space-y-4">
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">성별</label>
-                      <div className="flex gap-4">
-                        <div className="flex items-center">
-                          <input 
-                            type="radio" 
-                            id="male" 
-                            name="gender" 
-                            checked={calculatorInputs.gender === 'male'}
-                            onChange={() => handleInputChange('gender', 'male')}
-                            className="mr-2" 
-                          />
-                          <label htmlFor="male" className="text-gray-700 dark:text-gray-300">남성</label>
-                        </div>
-                        <div className="flex items-center">
-                          <input 
-                            type="radio" 
-                            id="female" 
-                            name="gender" 
-                            checked={calculatorInputs.gender === 'female'}
-                            onChange={() => handleInputChange('gender', 'female')}
-                            className="mr-2" 
-                          />
-                          <label htmlFor="female" className="text-gray-700 dark:text-gray-300">여성</label>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">나이</label>
-                        <input 
-                          type="number" 
-                          value={calculatorInputs.age || ''}
-                          onChange={(e) => handleInputChange('age', parseInt(e.target.value) || 0)}
-                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                          placeholder="25"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">체중 (kg)</label>
-                        <input 
-                          type="number" 
-                          value={calculatorInputs.weight || ''}
-                          onChange={(e) => handleInputChange('weight', parseInt(e.target.value) || 0)}
-                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                          placeholder="70"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">신장 (cm)</label>
-                        <input 
-                          type="number" 
-                          value={calculatorInputs.height || ''}
-                          onChange={(e) => handleInputChange('height', parseInt(e.target.value) || 0)}
-                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-                          placeholder="175"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-700 dark:text-gray-300 mb-2">활동 수준</label>
-                        <select 
-                          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          value={calculatorInputs.activityLevel}
-                          onChange={(e) => handleInputChange('activityLevel', parseFloat(e.target.value))}
-                        >
-                          <option value="1.2">거의 운동 안함</option>
-                          <option value="1.375">가벼운 운동 (주 1-3회)</option>
-                          <option value="1.55">보통 수준 (주 3-5회)</option>
-                          <option value="1.725">활발한 운동 (주 6-7회)</option>
-                          <option value="1.9">매우 활발함 (하루 2회)</option>
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <label className="block text-gray-700 dark:text-gray-300 mb-2">목표</label>
-                      <select 
-                        className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        value={calculatorInputs.goal}
-                        onChange={(e) => handleInputChange('goal', e.target.value as Goal)}
-                      >
-                        <option value="lose">체중 감량</option>
-                        <option value="maintain">체중 유지</option>
-                        <option value="gain">체중 증가</option>
-                      </select>
-                    </div>
-                    
-                    <button 
-                      onClick={calculateCalories}
-                      className="w-full bg-[#4285F4] text-white py-2 px-4 rounded-md hover:bg-[#3b78db] mt-4"
-                    >
-                      계산하기
-                    </button>
-                    
-                    {calculatorResults && (
-                      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                        <h3 className="font-medium text-gray-800 dark:text-white mb-2">계산 결과</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">기초 대사량 (BMR)</p>
-                            <p className="font-medium">{calculatorResults.bmr.toLocaleString()} kcal</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">활동 대사량 (TDEE)</p>
-                            <p className="font-medium">{calculatorResults.tdee.toLocaleString()} kcal</p>
-                          </div>
-                          <div className="col-span-2">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">하루 권장 칼로리</p>
-                            <p className="font-medium text-[#4285F4] dark:text-blue-400 text-lg">
-                              {calculatorResults.targetCalories.toLocaleString()} kcal
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-4 grid grid-cols-3 gap-3">
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
-                            <p className="text-xs text-gray-500">단백질</p>
-                            <p className="font-medium">{calculatorResults.protein}g</p>
-                            <p className="text-xs text-gray-400">({Math.round(calculatorResults.protein / 3)}g/끼니)</p>
-                          </div>
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
-                            <p className="text-xs text-gray-500">탄수화물</p>
-                            <p className="font-medium">{calculatorResults.carbs}g</p>
-                            <p className="text-xs text-gray-400">({Math.round(calculatorResults.carbs / 3)}g/끼니)</p>
-                          </div>
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded text-center">
-                            <p className="text-xs text-gray-500">지방</p>
-                            <p className="font-medium">{calculatorResults.fat}g</p>
-                            <p className="text-xs text-gray-400">({Math.round(calculatorResults.fat / 3)}g/끼니)</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">칼로리 계산기</h2>
+                  <button
+                    onClick={toggleCalculator}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
                 </div>
+                <NutritionCalculator />
               </div>
             )}
             
-            {/* 음식 영양성분 확인 표시 */}
+            {/* 영양성분 검색 */}
             {showNutritionScout && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">음식 영양성분 확인하기</h2>
-                <NutritionScout />
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">영양성분 검색</h2>
+                  <button
+                    onClick={toggleNutritionScout}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <NutritionScout 
+                  initialSearchTerm={(location.state as any)?.searchTerm || ""}
+                />
+              </div>
+            )}
+            
+            {/* 식단 예시 */}
+            {showMealPlans && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">식단 예시</h2>
+                  <button
+                    onClick={toggleMealPlans}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <MealPlans />
+              </div>
+            )}
+            
+            {/* 기본 영양 정보 */}
+            {!showCalculator && !showNutritionScout && !showMealPlans && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold">영양 & 식단 정보</h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  위 버튼을 클릭하여 칼로리 계산, 영양성분 검색, 혹은 다양한 식단 예시를 확인하세요.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-2">건강한 식단의 기본 원칙</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>충분한 단백질 섭취 (체중 1kg당 1.6-2g)</li>
+                      <li>다양한 과일과 채소로 비타민, 미네랄 섭취</li>
+                      <li>건강한 지방 섭취 (아보카도, 견과류, 올리브 오일)</li>
+                      <li>정제된 탄수화물보다 통곡물 위주 섭취</li>
+                      <li>충분한 수분 섭취 (하루 2L 이상)</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-2">운동 목적별 영양 섭취</h3>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li><strong>근육 증가:</strong> 칼로리 surplus (+300~500kcal), 고단백</li>
+                      <li><strong>체중 감량:</strong> 칼로리 deficit (-300~500kcal), 단백질 유지</li>
+                      <li><strong>퍼포먼스:</strong> 탄수화물 타이밍, 훈련 전후 영양 전략</li>
+                      <li><strong>건강 증진:</strong> 균형 잡힌 식단, 영양소 밀도 높은 식품</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
           </div>
         )}
 
         {activeTab === 'handbook' && (
-          <div>
-            <div className="mb-4 relative">
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">핸드북</h2>
+            <div className="mb-4">
               <input
                 type="text"
                 value={handbookSearchTerm}
-                className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="핸드북 검색..."
                 onChange={handleHandbookSearch}
-                style={{
-                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\'%3E%3C/path%3E%3C/svg%3E")',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: '10px center',
-                  backgroundSize: '20px',
-                }}
+                placeholder="질문이나 키워드를 입력하세요"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               />
-              
-              {/* 핸드북 자동완성 드롭다운 */}
-              {handbookSearchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
-                  {handbookSearchResults.map((item, index) => (
-                    <div
-                      key={index}
-                      className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => {
-                        setHandbookSearchTerm(item.title);
-                        // 검색 이벤트 발생 - FAQ 항목 자동 확장을 위해
-                        document.dispatchEvent(new CustomEvent('handbookSearch', {
-                          detail: { searchTerm: item.title }
-                        }));
-                        setHandbookSearchResults([]);
-                      }}
-                    >
-                      <div className="font-medium">{item.title}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                        {item.content}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-            <ExerciseFaq searchTerm={handbookSearchTerm} />
+            
+            <ExerciseFaq
+              searchResults={handbookSearchResults}
+              searchTerm={handbookSearchTerm}
+            />
           </div>
         )}
       </div>
