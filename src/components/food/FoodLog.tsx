@@ -316,64 +316,70 @@ const FoodLog: React.FC = () => {
     
     return (
       <div key={dateStr} className="mb-6">
-        <h3 className="text-lg font-semibold mb-3">
-          {formatDate(date)}
-        </h3>
-        
-        {/* 사진 영역 - 같은 날짜의 사진들을 행에 나란히 표시 */}
-        {hasPhotos && (
-          <div className="mb-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {recordsForDate.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
-                <div key={record.id} className="overflow-hidden rounded-lg">
-                  <img 
-                    src={imageCache[record.imageId!]} 
-                    alt={record.name || '식사 이미지'} 
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-2 bg-gray-100 dark:bg-gray-800">
-                    <p className="font-medium text-sm text-center">{record.name || '식사 기록'}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      {record.mealType === 'breakfast' ? '아침' : 
-                       record.mealType === 'lunch' ? '점심' : 
-                       record.mealType === 'dinner' ? '저녁' : '간식'}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* 식단 정보 테이블 - 간단한 메모만 표시 */}
-        <div className="space-y-4">
-          {recordsForDate.map((record) => (
-            <Card key={record.id} className="overflow-hidden">
-              <div className="p-4">
-                <div className="flex flex-col gap-4">
-                  {/* 식사 정보 영역 */}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">
-                        {record.name || '식사 기록'}
-                        <span className="ml-2 text-sm text-gray-500">
-                          {record.mealType === 'breakfast' ? '(아침)' : 
-                           record.mealType === 'lunch' ? '(점심)' : 
-                           record.mealType === 'dinner' ? '(저녁)' : '(간식)'}
-                        </span>
-                      </h3>
-                    </div>
-                    
-                    {record.description && (
-                      <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        {record.description}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4">
+            {date.toLocaleDateString('ko-KR', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+              weekday: 'long'
+            })}
+          </h3>
+          
+          {/* 사진 영역 - 같은 날짜의 사진들을 행에 나란히 표시 */}
+          {hasPhotos && (
+            <div className="mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {recordsForDate.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
+                  <div key={record.id} className="overflow-hidden rounded-lg">
+                    <img 
+                      src={imageCache[record.imageId!]} 
+                      alt={record.name || '식사 이미지'} 
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-2 bg-gray-100 dark:bg-gray-800">
+                      <p className="font-medium text-sm text-center">{record.name ? record.name : `식사 ${recordsForDate.indexOf(record) + 1}`}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                        {record.mealType === 'breakfast' ? '아침' : 
+                         record.mealType === 'lunch' ? '점심' : 
+                         record.mealType === 'dinner' ? '저녁' : '간식'}
                       </p>
-                    )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            {recordsForDate.map((record, index) => (
+              <Card key={record.id} className="overflow-hidden">
+                <div className="p-4">
+                  <div className="flex flex-col gap-4">
+                    {/* 식사 정보 영역 */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">
+                          {record.name ? record.name : `식사 ${index + 1}`}
+                          <span className="ml-2 text-sm text-gray-500">
+                            {record.mealType === 'breakfast' ? '(아침)' : 
+                             record.mealType === 'lunch' ? '(점심)' : 
+                             record.mealType === 'dinner' ? '(저녁)' : '(간식)'}
+                          </span>
+                        </h3>
+                      </div>
+                      
+                      {record.description && (
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">
+                          {record.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );

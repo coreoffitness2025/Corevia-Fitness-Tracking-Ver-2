@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardTitle, CardSection } from '../common/Card';
-import { Utensils, ArrowRight, Search, Info } from 'lucide-react';
+import { Utensils, ArrowRight, Search, Info, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MealPlan {
   id: string;
@@ -328,7 +328,7 @@ const mealPlans: MealPlan[] = [
 
 const MealPlans: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('diet');
-  const [selectedMeal, setSelectedMeal] = useState<MealPlan | null>(null);
+  const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const filteredMeals = mealPlans.filter(meal => meal.category === selectedCategory);
@@ -344,8 +344,28 @@ const MealPlans: React.FC = () => {
     });
   };
 
+  // 식단 카드 클릭 처리
+  const toggleMealDetails = (mealId: string) => {
+    if (selectedMeal === mealId) {
+      setSelectedMeal(null); // 이미 선택된 카드를 다시 클릭하면 닫기
+    } else {
+      setSelectedMeal(mealId); // 새 카드 선택
+    }
+  };
+
   return (
     <div>
+      {/* 영양 정보 확인 메모 - 상단에 표시 */}
+      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start">
+        <Info className="text-blue-500 mr-2 flex-shrink-0 mt-1" size={20} />
+        <div>
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            음식별 영양성분은 '음식 영양성분 확인'을 통해 탄/단/지 정보를 파악할 수 있습니다.
+            식품 이름을 클릭하면 해당 음식의 영양 정보를 검색할 수 있습니다.
+          </p>
+        </div>
+      </div>
+      
       {/* 식단 카테고리 선택 */}
       <div className="mb-6">
         <div className="grid grid-cols-5 gap-2">
@@ -410,69 +430,86 @@ const MealPlans: React.FC = () => {
           </button>
         </div>
       </div>
-      
-      {/* 영양 정보 확인 메모 */}
-      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start">
-        <Info className="text-blue-500 mr-2 flex-shrink-0 mt-1" size={20} />
-        <div>
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            음식별 영양성분은 '음식 영양성분 확인'을 통해 탄/단/지 정보를 파악할 수 있습니다.
-            식품 이름을 클릭하면 해당 음식의 영양 정보를 검색할 수 있습니다.
-          </p>
-        </div>
-      </div>
 
       {/* 식단 목록 */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {filteredMeals.map(meal => (
           <Card key={meal.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="p-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{meal.title}</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-3">{meal.description}</p>
-              
-              <div className="grid grid-cols-4 gap-3 mb-4 text-center">
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">칼로리</p>
-                  <p className="font-bold text-gray-800 dark:text-white">{meal.calories}kcal</p>
-                </div>
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">단백질</p>
-                  <p className="font-bold text-gray-800 dark:text-white">{meal.protein}g</p>
-                </div>
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">탄수화물</p>
-                  <p className="font-bold text-gray-800 dark:text-white">{meal.carbs}g</p>
-                </div>
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">지방</p>
-                  <p className="font-bold text-gray-800 dark:text-white">{meal.fat}g</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {meal.meals.map((mealItem, idx) => (
-                  <div key={idx} className="border rounded-lg overflow-hidden">
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 font-medium border-b">
-                      {mealItem.name}
-                    </div>
-                    <div className="p-3">
-                      <ul className="space-y-2">
-                        {mealItem.items.map((item, itemIdx) => (
-                          <li 
-                            key={itemIdx} 
-                            className="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 cursor-pointer"
-                            onClick={() => handleMealClick(item.split(' ')[0])}
-                          >
-                            <Search size={14} className="mr-2 text-gray-500" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+            <div 
+              className="p-4 cursor-pointer"
+              onClick={() => toggleMealDetails(meal.id)}
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">{meal.title}</h3>
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full text-xs">
+                      {meal.calories}kcal
+                    </span>
+                    <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full text-xs">
+                      단백질 {meal.protein}g
+                    </span>
                   </div>
-                ))}
+                  {selectedMeal === meal.id ? (
+                    <ChevronUp size={20} className="text-gray-500" />
+                  ) : (
+                    <ChevronDown size={20} className="text-gray-500" />
+                  )}
+                </div>
               </div>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">{meal.description}</p>
             </div>
+            
+            {/* 식단 상세 정보 - 선택된 식단만 표시 */}
+            {selectedMeal === meal.id && (
+              <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+                <div className="grid grid-cols-4 gap-3 mb-4 text-center">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">칼로리</p>
+                    <p className="font-bold text-gray-800 dark:text-white">{meal.calories}kcal</p>
+                  </div>
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">단백질</p>
+                    <p className="font-bold text-gray-800 dark:text-white">{meal.protein}g</p>
+                  </div>
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">탄수화물</p>
+                    <p className="font-bold text-gray-800 dark:text-white">{meal.carbs}g</p>
+                  </div>
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">지방</p>
+                    <p className="font-bold text-gray-800 dark:text-white">{meal.fat}g</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  {meal.meals.map((mealItem, idx) => (
+                    <div key={idx} className="border rounded-lg overflow-hidden">
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 font-medium border-b">
+                        {mealItem.name}
+                      </div>
+                      <div className="p-3">
+                        <ul className="space-y-2">
+                          {mealItem.items.map((item, itemIdx) => (
+                            <li 
+                              key={itemIdx} 
+                              className="flex items-center text-gray-700 dark:text-gray-300 hover:text-blue-500 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation(); // 버블링 방지
+                                handleMealClick(item.split(' ')[0]);
+                              }}
+                            >
+                              <Search size={14} className="mr-2 text-gray-500" />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </Card>
         ))}
       </div>
