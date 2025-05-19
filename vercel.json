@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/(.*\\.(js|css|png|jpg|svg|ico|json|txt|woff2?))", "destination": "/$1" },
+    { "source": "/:all*.:ext(js|css|png|jpg|svg|ico|json|txt|woff2)", "destination": "/:all*.:ext" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 } 
