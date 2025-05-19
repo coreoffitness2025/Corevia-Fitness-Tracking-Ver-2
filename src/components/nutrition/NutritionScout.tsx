@@ -241,11 +241,15 @@ const NutritionScout = () => {
     
     if (exactMatch) {
       console.log('정확한 일치 결과:', exactMatch);
-      setSearchResult(exactMatch);
+      // 코멘트 필드 제거
+      const { 코멘트, ...result } = exactMatch;
+      setSearchResult(result);
       setShowAutoComplete(false);
     } else if (partialMatch) {
       console.log('부분 일치 결과:', partialMatch);
-      setSearchResult(partialMatch);
+      // 코멘트 필드 제거
+      const { 코멘트, ...result } = partialMatch;
+      setSearchResult(result);
       setShowAutoComplete(false);
     } else {
       setSearchResult(null);
