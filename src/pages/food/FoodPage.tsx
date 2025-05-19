@@ -4,12 +4,15 @@ import Layout from '../../components/common/Layout';
 import FoodForm from '../../components/food/FoodForm';
 import FoodLog from '../../components/food/FoodLog';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useLocation } from 'react-router-dom';
 
 type FoodTab = 'input' | 'records';
 
 const FoodPage: React.FC = () => {
   const { userProfile, loading, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<FoodTab>('input');
+  const location = useLocation();
+  const initialTab = location.state?.activeTab || 'input';
+  const [activeTab, setActiveTab] = useState<FoodTab>(initialTab);
 
   const today = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric',

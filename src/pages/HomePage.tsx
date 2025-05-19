@@ -422,7 +422,7 @@ const HomePage = () => {
                     <div 
                       key={dateStr} 
                       className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                      onClick={() => navigate('/food/log')}
+                      onClick={() => navigate('/food/log', { state: { activeTab: 'records' } })}
                     >
                       <div className="flex justify-between items-center">
                         <h3 className="font-semibold text-lg text-orange-600 dark:text-orange-400">
