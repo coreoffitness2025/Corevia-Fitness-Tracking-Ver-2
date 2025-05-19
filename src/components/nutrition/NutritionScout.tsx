@@ -154,13 +154,17 @@ const NutritionScout = () => {
     try {
       // CSV 파일 URL 설정 (캐시 방지를 위한 버전 파라미터 추가)
       const csvUrl = `/nutrition_db.csv?v=${Date.now()}`;
+      console.log(`[DEBUG] 파일 로드 시도: ${csvUrl}`);
       
       // 외부 CSV 로드 시도
       const response = await fetch(csvUrl);
       
       if (!response.ok) {
+        console.error(`[DEBUG] 파일 로드 실패: 상태 코드 ${response.status}`);
         throw new Error(`HTTP 오류: ${response.status}`);
       }
+      
+      console.log(`[DEBUG] 파일 로드 성공: 상태 코드 ${response.status}`);
       
       // ArrayBuffer로 응답 받기
       const buffer = await response.arrayBuffer();
@@ -178,31 +182,36 @@ const NutritionScout = () => {
           
           // 첫 줄에 '요리명' 또는 '음식명'이 포함되어 있는지 확인
           if (csvText.includes('요리명') || csvText.includes('음식명')) {
-            console.log(`${encoding} 인코딩으로 성공적으로 디코딩했습니다.`);
+            console.log(`[DEBUG] ${encoding} 인코딩으로 성공적으로 디코딩했습니다.`);
             success = true;
             break;
           }
         } catch (error) {
-          console.warn(`${encoding} 인코딩 시도 실패:`, error);
+          console.warn(`[DEBUG] ${encoding} 인코딩 시도 실패:`, error);
         }
       }
       
       if (!success) {
+        console.error(`[DEBUG] 지원되는 인코딩으로 CSV를 읽을 수 없습니다.`);
+        console.log(`[DEBUG] 파일 내용 첫 부분: ${csvText.substring(0, 200)}`);
         throw new Error('지원되는 인코딩으로 CSV를 읽을 수 없습니다.');
       }
       
-      console.log(`CSV 데이터 수신 (첫 100자): ${csvText.substring(0, 100)}...`);
+      console.log(`[DEBUG] CSV 데이터 수신 (첫 100자): ${csvText.substring(0, 100)}...`);
       
       const data = parseCSVImproved(csvText);
       
       if (data.length > 0) {
-        console.log('CSV 로드 성공:', data.length);
+        console.log(`[DEBUG] CSV 로드 성공: ${data.length}개 항목`);
+        console.log(`[DEBUG] 첫 번째 항목:`, JSON.stringify(data[0]));
         setFoodData(data);
       } else {
+        console.error(`[DEBUG] CSV 데이터가 비어있습니다.`);
         throw new Error('CSV 데이터가 비어있습니다.');
       }
     } catch (error) {
-      console.error('CSV 로드 오류:', error);
+      console.error(`[DEBUG] CSV 로드 오류:`, error);
+      console.log(`[DEBUG] 기본 데이터 사용`);
       setFoodData(DEFAULT_FOOD_DATA);
       setLoadError(error instanceof Error ? error.message : '알 수 없는 오류');
       showToast.warning('영양 데이터베이스 로드에 실패하여 기본 데이터를 사용합니다.');
