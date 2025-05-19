@@ -162,8 +162,8 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // CSV 파일 URL 설정
-      const csvUrl = '/nutrition_db.csv';
+      // CSV 파일 URL 설정 (캐시 방지를 위한 버전 파라미터 추가)
+      const csvUrl = `/nutrition_db.csv?v=${Date.now()}`;
       
       // 외부 CSV 로드 시도
       const response = await fetch(csvUrl);
