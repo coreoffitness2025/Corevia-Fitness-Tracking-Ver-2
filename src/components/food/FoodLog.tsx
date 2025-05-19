@@ -8,7 +8,7 @@ import { fetchFoodsByDate } from '../../services/foodService';
 import FoodItem from './FoodItem';
 import NutritionSummary from './NutritionSummary';
 import Card from '../common/Card';
-import { Info, Calendar, CalendarDays, ExternalLink } from 'lucide-react';
+import { Info, Calendar, CalendarDays, ExternalLink, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
@@ -59,6 +59,8 @@ const FoodLog: React.FC = () => {
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
   const [calendarDates, setCalendarDates] = useState<Date[]>([]);
   const [recordsByDate, setRecordsByDate] = useState<Record<string, FoodRecord[]>>({});
+  const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<{url: string, record: FoodRecord, index: number} | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -310,6 +312,18 @@ const FoodLog: React.FC = () => {
     navigate('/qna', { state: { activeTab: 'nutrition' } });
   };
 
+  // 이미지 클릭 처리 함수
+  const handleImageClick = (imageUrl: string, record: FoodRecord, index: number) => {
+    setSelectedPhoto({url: imageUrl, record, index});
+    setShowPhotoModal(true);
+  };
+
+  // 모달 닫기 함수
+  const closePhotoModal = () => {
+    setShowPhotoModal(false);
+    setSelectedPhoto(null);
+  };
+
   // 날짜별 식단을 표시하는 함수 (일별 보기)
   const renderFoodsByDate = (dateStr: string, recordsForDate: FoodRecord[]) => {
     const date = new Date(dateStr);
@@ -325,8 +339,9 @@ const FoodLog: React.FC = () => {
         {hasPhotos && (
           <div className="mb-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {recordsForDate.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
-                <div key={record.id} className="overflow-hidden rounded-lg">
+              {recordsForDate.filter(record => record.imageId && imageCache[record.imageId]).map((record, idx) => (
+                <div key={record.id} className="overflow-hidden rounded-lg cursor-pointer" 
+                     onClick={() => handleImageClick(imageCache[record.imageId!], record, recordsForDate.indexOf(record) + 1)}>
                   <img 
                     src={imageCache[record.imageId!]} 
                     alt={record.name || '식사 이미지'} 
@@ -408,7 +423,8 @@ const FoodLog: React.FC = () => {
                     {hasPhotos && (
                       <div className="flex overflow-x-auto space-x-3 pb-2 mb-2">
                         {records.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
-                          <div key={record.id} className="flex-shrink-0 w-24">
+                          <div key={record.id} className="flex-shrink-0 w-24 cursor-pointer"
+                               onClick={() => handleImageClick(imageCache[record.imageId!], record, records.indexOf(record) + 1)}>
                             <img 
                               src={imageCache[record.imageId!]} 
                               alt={record.name || '식사 이미지'} 
@@ -662,6 +678,48 @@ const FoodLog: React.FC = () => {
           )}
           
           {viewMode === 'month' && renderMonthlyView()}
+        </div>
+      )}
+
+      {/* 사진 모달 */}
+      {showPhotoModal && selectedPhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
+            {/* 모달 헤더 */}
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-semibold">
+                식사 {selectedPhoto.index} 
+              </h3>
+              <button 
+                onClick={closePhotoModal} 
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* 모달 본문 */}
+            <div className="flex-1 overflow-auto">
+              <div className="p-4">
+                {/* 큰 이미지 */}
+                <img 
+                  src={selectedPhoto.url} 
+                  alt="식사 이미지" 
+                  className="w-full max-h-[60vh] object-contain rounded-lg mb-4"
+                />
+                
+                {/* 메모 */}
+                {selectedPhoto.record.description && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">메모</h4>
+                    <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                      {selectedPhoto.record.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
