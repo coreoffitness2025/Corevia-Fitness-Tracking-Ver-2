@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+// CSV 파일 직접 import
+import nutritionCsvPath from '@/assets/nutrition_db.csv';
 
 // 디버깅용 코드 제거
 // console.log('toast 객체 구조:', Object.keys(toast));
@@ -152,8 +154,8 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // CSV 파일 URL 설정 (캐시 방지를 위한 버전 파라미터 추가)
-      const csvUrl = `/nutrition_db.csv?v=${Date.now()}`;
+      // CSV 파일 URL 설정 (assets에서 직접 import)
+      const csvUrl = nutritionCsvPath;
       console.log(`[DEBUG] 파일 로드 시도: ${csvUrl}`);
       
       // 외부 CSV 로드 시도
