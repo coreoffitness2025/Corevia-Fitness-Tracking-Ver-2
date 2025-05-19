@@ -348,10 +348,7 @@ const FoodLog: React.FC = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-2 bg-gray-100 dark:bg-gray-800">
-                    <p className="font-medium text-sm text-center">{record.name || '식사 기록'} {recordsForDate.indexOf(record) + 1}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      식사 {recordsForDate.indexOf(record) + 1}
-                    </p>
+                    <p className="font-medium text-sm text-center">식사 {recordsForDate.indexOf(record) + 1}</p>
                   </div>
                 </div>
               ))}
@@ -359,34 +356,12 @@ const FoodLog: React.FC = () => {
           </div>
         )}
         
-        {/* 식단 정보 테이블 - 간단한 메모만 표시 */}
-        <div className="space-y-4">
-          {recordsForDate.map((record) => (
-            <Card key={record.id} className="overflow-hidden">
-              <div className="p-4">
-                <div className="flex flex-col gap-4">
-                  {/* 식사 정보 영역 */}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">
-                        {record.name || '식사 기록'}
-                        <span className="ml-2 text-sm text-gray-500">
-                          (식사 {recordsForDate.indexOf(record) + 1})
-                        </span>
-                      </h3>
-                    </div>
-                    
-                    {record.description && (
-                      <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        {record.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        {/* 식단 정보 테이블 삭제 */}
+        {!hasPhotos && (
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+            <p className="text-gray-500 dark:text-gray-400">식단 기록이 없습니다.</p>
+          </div>
+        )}
       </div>
     );
   };
@@ -419,8 +394,8 @@ const FoodLog: React.FC = () => {
                   </p>
                 ) : (
                   <div>
-                    {/* 사진만 표시 - 간략하게 */}
-                    {hasPhotos && (
+                    {/* 사진만 표시 */}
+                    {hasPhotos ? (
                       <div className="flex overflow-x-auto space-x-3 pb-2 mb-2">
                         {records.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
                           <div key={record.id} className="flex-shrink-0 w-24 cursor-pointer"
@@ -430,22 +405,17 @@ const FoodLog: React.FC = () => {
                               alt={record.name || '식사 이미지'} 
                               className="w-24 h-24 object-cover rounded-lg"
                             />
-                            <p className="text-xs text-center mt-1 truncate">
+                            <p className="text-xs text-center mt-1">
                               식사 {records.indexOf(record) + 1}
                             </p>
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                        사진이 없습니다.
+                      </p>
                     )}
-                    
-                    {/* 식사 요약 정보 */}
-                    <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-2">
-                      {records.map(record => (
-                        <span key={record.id} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                          식사 {records.indexOf(record) + 1}
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 )}
               </div>
@@ -684,7 +654,7 @@ const FoodLog: React.FC = () => {
       {/* 사진 모달 */}
       {showPhotoModal && selectedPhoto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="relative w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="relative w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
             {/* 모달 헤더 */}
             <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-semibold">
@@ -700,24 +670,23 @@ const FoodLog: React.FC = () => {
             
             {/* 모달 본문 */}
             <div className="flex-1 overflow-auto">
-              <div className="p-4">
+              <div className="p-4 flex justify-center">
                 {/* 큰 이미지 */}
                 <img 
                   src={selectedPhoto.url} 
                   alt="식사 이미지" 
-                  className="w-full max-h-[60vh] object-contain rounded-lg mb-4"
+                  className="w-full max-h-[70vh] object-contain rounded-lg"
                 />
-                
-                {/* 메모 */}
-                {selectedPhoto.record.description && (
-                  <div className="mt-4">
-                    <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">메모</h4>
-                    <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                      {selectedPhoto.record.description}
-                    </p>
-                  </div>
-                )}
               </div>
+              
+              {/* 메모가 있는 경우만 표시 */}
+              {selectedPhoto.record.description && (
+                <div className="px-4 pb-4">
+                  <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                    {selectedPhoto.record.description}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
