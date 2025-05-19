@@ -559,60 +559,90 @@ const NutritionScout = () => {
           
           {/* 영양소 정보 */}
           <div className="p-5">
-            {/* 탄수화물 */}
-            <div className="mb-4">
-              <div className="flex justify-between mb-1 items-center">
-                <span className="text-gray-700 dark:text-gray-300">탄수화물</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {formatNumber(searchResult['탄수화물(g/100g)'])}g/100g
+            {/* 영양소 정보를 한 행에 모두 표시 */}
+            <div className="grid grid-cols-4 gap-4">
+              {/* 칼로리 */}
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                <span className="block text-sm text-gray-700 dark:text-gray-300 mb-1">칼로리</span>
+                <span className="text-lg font-bold text-[#4285F4]">
+                  {calculateCalories(searchResult)} kcal
                 </span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                <div 
-                  className="bg-[#fbbc04] h-2.5 rounded-full" 
-                  style={{ width: `${Math.min(100, searchResult['탄수화물(g/100g)'] * 1.5)}%` }}
-                ></div>
+              
+              {/* 탄수화물 */}
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md">
+                <span className="block text-sm text-yellow-700 dark:text-yellow-300 mb-1">탄수화물</span>
+                <span className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
+                  {formatNumber(searchResult['탄수화물(g/100g)'])}g
+                </span>
+              </div>
+              
+              {/* 단백질 */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+                <span className="block text-sm text-blue-700 dark:text-blue-300 mb-1">단백질</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                  {formatNumber(searchResult['단백질(g/100g)'])}g
+                </span>
+              </div>
+              
+              {/* 지방 */}
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
+                <span className="block text-sm text-red-700 dark:text-red-300 mb-1">지방</span>
+                <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                  {formatNumber(searchResult['지방(g/100g)'] || 0)}g
+                </span>
               </div>
             </div>
             
-            {/* 단백질 */}
-            <div className="mb-4">
-              <div className="flex justify-between mb-1 items-center">
-                <span className="text-gray-700 dark:text-gray-300">단백질</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {formatNumber(searchResult['단백질(g/100g)'])}g/100g
-                </span>
+            {/* 상세 바 그래프 */}
+            <div className="mt-6">
+              {/* 탄수화물 */}
+              <div className="mb-4">
+                <div className="flex justify-between mb-1 items-center">
+                  <span className="text-gray-700 dark:text-gray-300">탄수화물</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {formatNumber(searchResult['탄수화물(g/100g)'])}g/100g
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                  <div 
+                    className="bg-[#fbbc04] h-2.5 rounded-full" 
+                    style={{ width: `${Math.min(100, searchResult['탄수화물(g/100g)'] * 1.5)}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                <div 
-                  className="bg-[#4285F4] h-2.5 rounded-full" 
-                  style={{ width: `${Math.min(100, searchResult['단백질(g/100g)'] * 4)}%` }}
-                ></div>
+              
+              {/* 단백질 */}
+              <div className="mb-4">
+                <div className="flex justify-between mb-1 items-center">
+                  <span className="text-gray-700 dark:text-gray-300">단백질</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {formatNumber(searchResult['단백질(g/100g)'])}g/100g
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                  <div 
+                    className="bg-[#4285F4] h-2.5 rounded-full" 
+                    style={{ width: `${Math.min(100, searchResult['단백질(g/100g)'] * 4)}%` }}
+                  ></div>
+                </div>
               </div>
-            </div>
-            
-            {/* 지방 */}
-            <div className="mb-4">
-              <div className="flex justify-between mb-1 items-center">
-                <span className="text-gray-700 dark:text-gray-300">지방</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {formatNumber(searchResult['지방(g/100g)'] || 0)}g/100g
-                </span>
+              
+              {/* 지방 */}
+              <div className="mb-4">
+                <div className="flex justify-between mb-1 items-center">
+                  <span className="text-gray-700 dark:text-gray-300">지방</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {formatNumber(searchResult['지방(g/100g)'] || 0)}g/100g
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                  <div 
+                    className="bg-[#ea4335] h-2.5 rounded-full" 
+                    style={{ width: `${Math.min(100, (searchResult['지방(g/100g)'] || 0) * 2)}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                <div 
-                  className="bg-[#ea4335] h-2.5 rounded-full" 
-                  style={{ width: `${Math.min(100, (searchResult['지방(g/100g)'] || 0) * 2)}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            {/* 칼로리 추정치 */}
-            <div className="flex justify-between items-center mt-6 bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-              <span className="text-gray-700 dark:text-gray-300">칼로리 추정치 (100g 기준)</span>
-              <span className="text-lg font-bold text-[#4285F4]">
-                {calculateCalories(searchResult)} kcal
-              </span>
             </div>
           </div>
         </div>
