@@ -254,7 +254,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           // 식단 기록 저장
           const foodRecord: FoodRecord = {
             userId: currentUser.uid,
-            name: `식사 (${new Date(mealDateTime).toLocaleDateString()})`,
+            name: `식사`,
             description: notes || undefined,
             calories: targetCalories || undefined,
             protein: proteinTarget || undefined,

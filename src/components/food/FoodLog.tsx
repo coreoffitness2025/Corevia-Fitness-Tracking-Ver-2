@@ -333,7 +333,7 @@ const FoodLog: React.FC = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-2 bg-gray-100 dark:bg-gray-800">
-                    <p className="font-medium text-sm text-center">{record.name || '식사 기록'}</p>
+                    <p className="font-medium text-sm text-center">{record.name || '식사 기록'} {recordsForDate.indexOf(record) + 1}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                       식사 {recordsForDate.indexOf(record) + 1}
                     </p>
@@ -427,7 +427,6 @@ const FoodLog: React.FC = () => {
                       {records.map(record => (
                         <span key={record.id} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                           식사 {records.indexOf(record) + 1}
-                          {record.name && `: ${record.name}`}
                         </span>
                       ))}
                     </div>
