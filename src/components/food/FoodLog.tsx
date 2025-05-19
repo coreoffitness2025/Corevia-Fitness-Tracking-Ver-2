@@ -335,9 +335,9 @@ const FoodLog: React.FC = () => {
                   <div className="p-2 bg-gray-100 dark:bg-gray-800">
                     <p className="font-medium text-sm text-center">{record.name || '식사 기록'}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      {record.mealType === 'breakfast' ? '아침' : 
-                       record.mealType === 'lunch' ? '점심' : 
-                       record.mealType === 'dinner' ? '저녁' : '간식'}
+                      {record.mealType === 'breakfast' ? '식사 1' : 
+                       record.mealType === 'lunch' ? '식사 2' : 
+                       record.mealType === 'dinner' ? '식사 3' : '간식'}
                     </p>
                   </div>
                 </div>
@@ -358,9 +358,9 @@ const FoodLog: React.FC = () => {
                       <h3 className="text-lg font-medium">
                         {record.name || '식사 기록'}
                         <span className="ml-2 text-sm text-gray-500">
-                          {record.mealType === 'breakfast' ? '(아침)' : 
-                           record.mealType === 'lunch' ? '(점심)' : 
-                           record.mealType === 'dinner' ? '(저녁)' : '(간식)'}
+                          {record.mealType === 'breakfast' ? '(식사 1)' : 
+                           record.mealType === 'lunch' ? '(식사 2)' : 
+                           record.mealType === 'dinner' ? '(식사 3)' : '(간식)'}
                         </span>
                       </h3>
                     </div>
@@ -419,9 +419,9 @@ const FoodLog: React.FC = () => {
                               className="w-24 h-24 object-cover rounded-lg"
                             />
                             <p className="text-xs text-center mt-1 truncate">
-                              {record.mealType === 'breakfast' ? '아침' : 
-                               record.mealType === 'lunch' ? '점심' : 
-                               record.mealType === 'dinner' ? '저녁' : '간식'}
+                              {record.mealType === 'breakfast' ? '식사 1' : 
+                               record.mealType === 'lunch' ? '식사 2' : 
+                               record.mealType === 'dinner' ? '식사 3' : '간식'}
                             </p>
                           </div>
                         ))}
@@ -432,9 +432,9 @@ const FoodLog: React.FC = () => {
                     <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-2">
                       {records.map(record => (
                         <span key={record.id} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                          {record.mealType === 'breakfast' ? '아침' : 
-                           record.mealType === 'lunch' ? '점심' : 
-                           record.mealType === 'dinner' ? '저녁' : '간식'}
+                          {record.mealType === 'breakfast' ? '식사 1' : 
+                           record.mealType === 'lunch' ? '식사 2' : 
+                           record.mealType === 'dinner' ? '식사 3' : '간식'}
                           {record.name && `: ${record.name}`}
                         </span>
                       ))}
