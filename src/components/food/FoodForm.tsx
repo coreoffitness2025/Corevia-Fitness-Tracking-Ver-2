@@ -262,7 +262,6 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             fat: fatTarget || undefined,
             date: mealDateTime,
             imageId: imageUrl,
-            mealType: 'lunch', // 기본값 - 향후 선택할 수 있게 개선 가능
             createdAt: new Date()
           };
           

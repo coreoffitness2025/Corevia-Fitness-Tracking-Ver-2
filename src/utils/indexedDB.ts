@@ -16,7 +16,7 @@ interface FoodRecord {
   fat?: number;
   date: Date;
   imageId?: string;
-  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   createdAt: Date;
 }
 
