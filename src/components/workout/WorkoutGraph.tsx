@@ -516,8 +516,8 @@ const WorkoutGraph: React.FC = () => {
         // 부위별 적절한 Y축 범위 설정
         switch (selectedPart) {
           case 'shoulder':
-            // 어깨 운동은 무게가 상대적으로 낮으므로 더 좁은 범위 설정
-            yMin = Math.max(0, minWeight - 5);
+            // 어깨 운동도 다른 운동과 동일한 범위 설정
+            yMin = Math.max(0, minWeight - 10);
             yMax = maxWeight + 10;
             break;
           case 'leg':
