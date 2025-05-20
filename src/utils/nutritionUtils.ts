@@ -42,20 +42,23 @@ export const calculateBMR = (
 export const DEFAULT_USER_PROFILE = {
   weight: 70, // kg
   goal: 'maintain' as 'loss' | 'maintain' | 'gain',
-  activityLevel: 'moderate' as 'low' | 'moderate' | 'high', // activityMultipliers의 키와 일치하도록 수정
+  activityLevel: 'moderate' as 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive',
   gender: 'male' as 'male' | 'female',
   age: 30,
   height: 175, // cm
   mealsPerDay: 3
 };
 
-// 활동 수준에 따른 칼로리 계수 (FoodLog.tsx에서 이동)
+// 활동 수준에 따른 칼로리 계수 (UserProfile 타입과 일치하도록 확장)
 export const activityMultipliers = {
-  low: 1.2,      // 거의 운동하지 않음
-  moderate: 1.5, // 주 3-5회 운동
-  high: 1.8      // 거의 매일 운동
+  sedentary: 1.2,    // 활동 거의 없음
+  light: 1.375,      // 가벼운 활동 (주 1-3일)
+  moderate: 1.55,    // 중간 활동 (주 3-5일)
+  active: 1.725,     // 활발한 활동 (주 6-7일)
+  veryActive: 1.9    // 매우 활발한 활동 (매일, 격렬한 운동 또는 육체노동)
 };
-export type ActivityLevel = keyof typeof activityMultipliers;
+// ActivityLevel 타입을 UserProfile의 activityLevel과 일치시킴
+export type ActivityLevel = keyof typeof activityMultipliers; // 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive'와 동일
 
 // 목표에 따른 칼로리 조정 (FoodLog.tsx에서 이동)
 export const goalMultipliers = {
@@ -76,7 +79,7 @@ export const calculateNutritionGoals = (user: Partial<typeof DEFAULT_USER_PROFIL
 
   bmr = calculateBMR(validatedUser.gender, validatedUser.weight, validatedUser.height, validatedUser.age);
   
-  const tdee = bmr * (activityMultipliers[validatedUser.activityLevel as ActivityLevel] || activityMultipliers.moderate);
+  const tdee = bmr * (activityMultipliers[validatedUser.activityLevel] || activityMultipliers.moderate);
   
   let targetCalories = tdee;
   if (validatedUser.goal && goalMultipliers[validatedUser.goal as FitnessGoal]) {

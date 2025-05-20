@@ -10,12 +10,8 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import { getFoodRecordsByDate, getFoodImage, FoodRecord } from '../../utils/indexedDB';
 import { 
   calculateNutritionGoals, 
-  DEFAULT_USER_PROFILE, 
-  activityMultipliers, 
-  goalMultipliers,
-  ActivityLevel,
-  FitnessGoal,
-  calculateBMR
+  DEFAULT_USER_PROFILE,
+  calculateBMR 
 } from '../../utils/nutritionUtils';
 import type { UserProfile } from '../../types';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
@@ -44,24 +40,14 @@ const FoodLog = () => {
   const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{url: string, record: FoodRecord, index: number} | null>(null);
 
-  const [foodForm_targetCalories, setFoodForm_TargetCalories] = useState<number>(0);
-  const [foodForm_proteinTarget, setFoodForm_ProteinTarget] = useState<number>(0);
-  const [foodForm_carbsTarget, setFoodForm_CarbsTarget] = useState<number>(0);
-  const [foodForm_fatTarget, setFoodForm_FatTarget] = useState<number>(0);
-
   const [nutritionGoals, setNutritionGoals] = useState(() => {
-    const initialProfile = userProfile 
-      ? { 
-          weight: userProfile.weight, 
-          goal: userProfile.fitnessGoal, 
-          activityLevel: userProfile.activityLevel, 
-          gender: userProfile.gender, 
-          age: userProfile.age, 
-          height: userProfile.height, 
-        }
-      : DEFAULT_USER_PROFILE;
-    return calculateNutritionGoals(initialProfile);
+    return calculateNutritionGoals(userProfile || DEFAULT_USER_PROFILE);
   });
+
+  const [foodForm_targetCalories, setFoodForm_TargetCalories] = useState<number>(nutritionGoals.daily.calories);
+  const [foodForm_proteinTarget, setFoodForm_ProteinTarget] = useState<number>(nutritionGoals.daily.protein);
+  const [foodForm_carbsTarget, setFoodForm_CarbsTarget] = useState<number>(nutritionGoals.daily.carbs);
+  const [foodForm_fatTarget, setFoodForm_FatTarget] = useState<number>(nutritionGoals.daily.fat);
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -71,16 +57,7 @@ const FoodLog = () => {
 
   useEffect(() => {
     if (userProfile) {
-      const profileForGoals = {
-        weight: userProfile.weight,
-        goal: userProfile.fitnessGoal,
-        activityLevel: userProfile.activityLevel,
-        gender: userProfile.gender,
-        age: userProfile.age,
-        height: userProfile.height,
-      };
-      updateNutritionTargets(userProfile);
-      const calculatedGoals = calculateNutritionGoals(profileForGoals);
+      const calculatedGoals = calculateNutritionGoals(userProfile);
       setNutritionGoals(calculatedGoals);
       setFoodForm_TargetCalories(calculatedGoals.daily.calories);
       setFoodForm_ProteinTarget(calculatedGoals.daily.protein);
@@ -102,51 +79,6 @@ const FoodLog = () => {
       setCalendarDates(dates);
     }
   }, [viewMode, selectedDate]);
-
-  const updateNutritionTargets = (profile: UserProfile | null) => {
-    if (!profile) {
-      const defaultGoals = calculateNutritionGoals(DEFAULT_USER_PROFILE);
-      setTargetCalories(defaultGoals.daily.calories);
-      setProteinTarget(defaultGoals.daily.protein);
-      setCarbsTarget(defaultGoals.daily.carbs);
-      setFatTarget(defaultGoals.daily.fat);
-      return;
-    }
-
-    let calculatedCalories = 2000;
-    if (profile.targetCalories && !isNaN(profile.targetCalories)) {
-      calculatedCalories = profile.targetCalories;
-    } else {
-      if (profile.height && profile.weight && profile.age && profile.gender && profile.activityLevel && profile.fitnessGoal) {
-        const bmr = calculateBMR(
-          profile.gender,
-          Number(profile.weight),
-          Number(profile.height),
-          Number(profile.age)
-        );
-        
-        const currentActivityLevel = profile.activityLevel as ActivityLevel;
-        const currentFitnessGoal = profile.fitnessGoal as FitnessGoal;
-        
-        const tdee = bmr * (activityMultipliers[currentActivityLevel] || activityMultipliers.moderate);
-        calculatedCalories = Math.round(tdee * (goalMultipliers[currentFitnessGoal] || goalMultipliers.maintain));
-      }
-    }
-    setTargetCalories(calculatedCalories);
-    
-    const goalsInput = {
-      weight: profile.weight,
-      goal: profile.fitnessGoal,
-      activityLevel: profile.activityLevel,
-      gender: profile.gender,
-      age: profile.age,
-      height: profile.height,
-    };
-    const goals = calculateNutritionGoals(goalsInput);
-    setProteinTarget(goals.daily.protein);
-    setCarbsTarget(goals.daily.carbs);
-    setFatTarget(goals.daily.fat); 
-  };
 
   const loadFoodData = async () => {
     if (!userProfile?.uid) return;
