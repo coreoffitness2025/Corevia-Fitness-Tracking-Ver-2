@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import Layout from '../components/common/Layout';
+import { Info } from 'lucide-react';
 
 interface FoodLog {
   id: string;
@@ -254,156 +255,43 @@ export default function FoodLogPage() {
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
           식단 기록
         </h1>
+        <div className="mt-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 rounded-r-lg">
+          <div className="flex items-start">
+            <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              사진은 현재 사용자의 로컬 저장소에 저장됩니다. 브라우저 캐시를 삭제하거나 다른 기기에서 접속하면 사진이 보이지 않을 수 있습니다.
+            </p>
+          </div>
+        </div>
         <p className="text-gray-600 dark:text-gray-400">
           음식을 사진으로 기록해보세요
         </p>
       </div>
 
-      {/* 영양소 권장량 안내 */}
-      <div className="mb-6">
-        <button 
-          onClick={() => setShowNutritionGuide(!showNutritionGuide)}
-          className="flex items-center justify-between w-full p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-2"
-        >
-          <span className="font-medium text-blue-700 dark:text-blue-300">오늘의 영양소 권장량</span>
-          <svg 
-            className={`w-5 h-5 text-blue-500 transition-transform ${showNutritionGuide ? 'rotate-180' : ''}`}
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-          </svg>
-        </button>
-        
-        {showNutritionGuide && (
-          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-3">하루 권장 섭취량</h3>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">칼로리</p>
-                <p className="text-xl font-bold">{nutritionGoals.daily.calories} kcal</p>
-              </div>
-              <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">단백질</p>
-                <p className="text-xl font-bold">{nutritionGoals.daily.protein}g</p>
-              </div>
-              <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">탄수화물</p>
-                <p className="text-xl font-bold">{nutritionGoals.daily.carbs}g</p>
-              </div>
-              <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">지방</p>
-                <p className="text-xl font-bold">{nutritionGoals.daily.fat}g</p>
-              </div>
-            </div>
-            
-            <h3 className="text-lg font-semibold mb-3">한 끼당 권장 섭취량</h3>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">칼로리</p>
-                <p className="text-xl font-bold">{nutritionGoals.perMeal.calories} kcal</p>
-              </div>
-              <div 
-                className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg cursor-pointer"
-                onClick={() => setShowSourcesModal('protein')}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-red-600 dark:text-red-400">단백질</p>
-                    <p className="text-xl font-bold">{nutritionGoals.perMeal.protein}g</p>
-                  </div>
-                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-              </div>
-              <div 
-                className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg cursor-pointer"
-                onClick={() => setShowSourcesModal('carbs')}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">탄수화물</p>
-                    <p className="text-xl font-bold">{nutritionGoals.perMeal.carbs}g</p>
-                  </div>
-                  <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-              </div>
-              <div 
-                className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg cursor-pointer"
-                onClick={() => setShowSourcesModal('fat')}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">지방</p>
-                    <p className="text-xl font-bold">{nutritionGoals.perMeal.fat}g</p>
-                  </div>
-                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-              * 영양소 정보는 체중, 키, 나이, 활동량 등에 따라 다를 수 있습니다.
-            </p>
+      <div className="mb-6 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow">
+        <div className="flex items-start mb-2">
+          <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">1끼당 권장 섭취량 (3끼 기준)</h3>
+        </div>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+            <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
+            <span className="block text-lg font-bold text-green-600 dark:text-green-400">{nutritionGoals.perMeal.protein}g</span>
           </div>
-        )}
-        
-        {/* 영양소 급원 모달 */}
-        {showSourcesModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">
-                  {showSourcesModal === 'protein' && '단백질 급원'}
-                  {showSourcesModal === 'carbs' && '탄수화물 급원'}
-                  {showSourcesModal === 'fat' && '지방 급원'}
-                </h3>
-                <button 
-                  onClick={() => setShowSourcesModal(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </div>
-              
-              <ul className="space-y-2">
-                {showSourcesModal === 'protein' && nutritionSources.protein.map((source, index) => (
-                  <li key={index} className="flex items-center p-2 bg-red-50 dark:bg-red-900/10 rounded-lg">
-                    <span className="mr-2">🥩</span> {source}
-                  </li>
-                ))}
-                
-                {showSourcesModal === 'carbs' && nutritionSources.carbs.map((source, index) => (
-                  <li key={index} className="flex items-center p-2 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg">
-                    <span className="mr-2">🍚</span> {source}
-                  </li>
-                ))}
-                
-                {showSourcesModal === 'fat' && nutritionSources.fat.map((source, index) => (
-                  <li key={index} className="flex items-center p-2 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
-                    <span className="mr-2">🥑</span> {source}
-                  </li>
-                ))}
-              </ul>
-              
-              <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                목표 영양소를 채우기 위해 이런 음식들을 섭취해보세요.
-              </p>
-            </div>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
+            <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
+            <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{nutritionGoals.perMeal.carbs}g</span>
           </div>
-        )}
+          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
+            <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
+            <span className="block text-lg font-bold text-red-600 dark:text-red-400">{nutritionGoals.perMeal.fat}g</span>
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
+        </p>
       </div>
 
-      {/* 뷰 모드 선택 */}
       <div className="flex gap-2 mb-4">
         {(['day', 'week', 'month'] as const).map((mode) => (
           <button
@@ -422,7 +310,6 @@ export default function FoodLogPage() {
         ))}
       </div>
 
-      {/* 날짜 선택 */}
       <div className="flex items-center gap-2 mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -438,10 +325,8 @@ export default function FoodLogPage() {
         />
       </div>
 
-      {/* 일별 보기일 때만 업로드 UI 표시 */}
       {viewMode === 'day' && (
         <>
-          {/* 시간 입력 */}
           <div className="flex items-center gap-2 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -457,7 +342,6 @@ export default function FoodLogPage() {
             />
           </div>
 
-          {/* 업로드 버튼 */}
           <div className="flex gap-3 mb-6">
             <label className="flex-1">
               <input
@@ -504,7 +388,6 @@ export default function FoodLogPage() {
         </>
       )}
 
-      {/* 로그 표시 */}
       {viewMode === 'day' ? (
         <div className="grid grid-cols-1 gap-4">
           {foodLogs.map((log, index) => (
