@@ -436,20 +436,20 @@ const FoodLog = () => {
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div className="bg-green-100 dark:bg-green-800/30 p-3 rounded-lg text-center shadow-sm">
                 <span className="block text-sm text-gray-600 dark:text-gray-400">단백질</span>
-                <span className="block text-xl font-bold text-green-700 dark:text-green-400">{Math.round(foodForm_proteinTarget/3)}g</span>
+                <span className="block text-xl font-bold text-green-700 dark:text-green-400">{Math.round(nutritionGoals.daily.protein / 3)}g</span>
               </div>
               <div className="bg-yellow-100 dark:bg-yellow-800/30 p-3 rounded-lg text-center shadow-sm">
                 <span className="block text-sm text-gray-600 dark:text-gray-400">탄수화물</span>
-                <span className="block text-xl font-bold text-yellow-700 dark:text-yellow-400">{Math.round(foodForm_carbsTarget/3)}g</span>
+                <span className="block text-xl font-bold text-yellow-700 dark:text-yellow-400">{Math.round(nutritionGoals.daily.carbs / 3)}g</span>
               </div>
               <div className="bg-red-100 dark:bg-red-800/30 p-3 rounded-lg text-center shadow-sm">
                 <span className="block text-sm text-gray-600 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-red-700 dark:text-red-400">{Math.round(foodForm_fatTarget/3)}g</span>
+                <span className="block text-lg font-bold text-red-700 dark:text-red-400">{Math.round(nutritionGoals.daily.fat / 3)}g</span>
               </div>
             </div>
             <div className="mt-3">
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                💡 하루 총 목표: 단백질 <strong>{foodForm_proteinTarget}g</strong>, 탄수화물 <strong>{foodForm_carbsTarget}g</strong>, 지방 <strong>{foodForm_fatTarget}g</strong>
+                💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
               </p>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
