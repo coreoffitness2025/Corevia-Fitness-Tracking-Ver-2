@@ -1497,6 +1497,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     exercise={exerciseItem} // 현재 보조 운동 데이터 전달
                     onChange={handleAccessoryExerciseChange} // 변경 사항 처리 함수
                     onRemove={removeAccessoryExercise} // 제거 함수
+                    currentExercisePart={part} // 현재 메인 운동 부위 전달
                     // onTrainingComplete={handleTrainingComplete} // AccessoryExerciseComponent 내부에서 처리하므로 제거
                     // previousExercises={previousAccessoryExercises[mainExercise.name] || []} // 새로운 선택 방식으로 대체되므로 제거
                   />

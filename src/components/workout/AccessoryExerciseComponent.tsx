@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../common/Button';
-import { ExercisePart, Set } from '../../types';
+import { ExercisePart, Set, SetConfiguration } from '../../types';
 import { Plus, Trash, X, Clock, CheckCircle, Square } from 'lucide-react';
 import { accessoryExercisePartOptions, accessoryExercisesByPart } from '../../data/accessoryExerciseData';
 import { toast } from 'react-hot-toast';
@@ -13,6 +13,7 @@ interface AccessoryExerciseProps {
   };
   onChange: (index: number, updatedExercise: AccessoryExerciseProps['exercise']) => void; 
   onRemove: (index: number) => void;
+  currentExercisePart: ExercisePart;
 }
 
 const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
@@ -20,26 +21,52 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   exercise,
   onChange,
   onRemove,
+  currentExercisePart,
 }) => {
-  const [selectedAccessoryPart, setSelectedAccessoryPart] = useState<ExercisePart | null>(null);
   const [filteredAccessoryExercises, setFilteredAccessoryExercises] = useState<typeof accessoryExercisesByPart[keyof typeof accessoryExercisesByPart]>([]);
-  const [showExerciseList, setShowExerciseList] = useState(false);
+  const setConfigOptions: Array<{ value: SetConfiguration | 'custom'; label: string }> = [
+    { value: '6x3', label: '6회 x 3세트' },
+    { value: '5x5', label: '5회 x 5세트' },
+    { value: '10x5', label: '10회 x 5세트' },
+    { value: '15x5', label: '15회 x 5세트' },
+    { value: 'custom', label: '커스텀' }
+  ];
+  const [selectedSetConfig, setSelectedSetConfig] = useState<SetConfiguration | 'custom'>('6x3');
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
-    if (selectedAccessoryPart && accessoryExercisesByPart[selectedAccessoryPart]) {
-      setFilteredAccessoryExercises(accessoryExercisesByPart[selectedAccessoryPart]);
-      setShowExerciseList(true);
+    if (currentExercisePart && accessoryExercisesByPart[currentExercisePart]) {
+      setFilteredAccessoryExercises(accessoryExercisesByPart[currentExercisePart]);
     } else {
       setFilteredAccessoryExercises([]);
-      setShowExerciseList(false);
     }
-  }, [selectedAccessoryPart]);
+  }, [currentExercisePart]);
 
-  const handleAccessoryNameSelect = (name: string) => {
-    onChange(index, { ...exercise, name });
-    setShowExerciseList(false);
+  const handleSetConfigChange = (configValue: string) => {
+    const config = configValue as SetConfiguration | 'custom';
+    setSelectedSetConfig(config);
+    
+    let newSetsArray: Set[] = [];
+    
+    if (config === 'custom') {
+      newSetsArray = [...exercise.sets];
+    } else {
+      const parts = config.split('x');
+      const repsCount = parseInt(parts[0]);
+      const setsCount = parseInt(parts[1]);
+      
+      newSetsArray = Array.from({ length: setsCount }, (_, i) => ({
+        reps: repsCount,
+        weight: exercise.sets[i]?.weight || 0,
+        isSuccess: null,
+      }));
+    }
+    onChange(index, { ...exercise, sets: newSetsArray });
+  };
+
+  const handleAccessoryNameSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(index, { ...exercise, name: event.target.value });
   };
 
   const handleSetChange = (setIndex: number, field: 'weight' | 'reps', value: number) => {
@@ -107,12 +134,18 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   }, []);
 
   const addSetToExercise = () => {
+    if (selectedSetConfig !== 'custom') {
+      setSelectedSetConfig('custom');
+    }
     const newSet: Set = { reps: 10, weight: 0, isSuccess: null };
     onChange(index, { ...exercise, sets: [...exercise.sets, newSet] });
   };
 
   const removeSetFromExercise = (setIndex: number) => {
     if (exercise.sets.length <= 1) { toast.error('최소 한 개의 세트는 유지해야 합니다.'); return; }
+    if (selectedSetConfig !== 'custom') {
+      setSelectedSetConfig('custom');
+    }
     const newSets = exercise.sets.filter((_, sIdx) => sIdx !== setIndex);
     onChange(index, { ...exercise, sets: newSets });
   };
@@ -124,36 +157,41 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         <Button variant="danger" size="sm" onClick={() => onRemove(index)} icon={<Trash size={16} />}>삭제</Button>
       </div>
       <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">운동 부위</label>
+        <label htmlFor={`accessory-exercise-name-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          운동 선택 ({currentExercisePart ? accessoryExercisePartOptions.find(p => p.value === currentExercisePart)?.label : '부위 선택 필요'})
+        </label>
+        <select
+          id={`accessory-exercise-name-${index}`}
+          value={exercise.name}
+          onChange={handleAccessoryNameSelect}
+          className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+          disabled={!currentExercisePart || filteredAccessoryExercises.length === 0}
+        >
+          <option value="">-- 운동 선택 --</option>
+          {filteredAccessoryExercises.map(ex => (
+            <option key={ex.id} value={ex.name}>{ex.name}</option>
+          ))}
+        </select>
+        {!currentExercisePart && <p className="text-xs text-red-500 mt-1">메인 운동의 부위를 먼저 선택해주세요.</p>}
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">세트 구성</label>
         <div className="flex flex-wrap gap-2">
-          {accessoryExercisePartOptions.map(partOption => (
+          {setConfigOptions.map(option => (
             <button
-              key={partOption.value}
+              key={option.value}
               type="button"
-              onClick={() => setSelectedAccessoryPart(partOption.value)}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${selectedAccessoryPart === partOption.value ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'}`}
-            ><span className="mr-1.5">{partOption.icon}</span>{partOption.label}</button>
+              onClick={() => handleSetConfigChange(option.value)}
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
+                selectedSetConfig === option.value
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+              }`}
+            >
+              {option.label}
+            </button>
           ))}
         </div>
-      </div>
-      {showExerciseList && filteredAccessoryExercises.length > 0 && (
-        <div className="mb-3 relative">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">운동 선택</label>
-          <div className="max-h-40 overflow-y-auto border rounded-md p-1 space-y-1">
-            {filteredAccessoryExercises.map(ex => (
-              <button
-                key={ex.id}
-                type="button"
-                onClick={() => handleAccessoryNameSelect(ex.name)}
-                className={`w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors duration-150 ${exercise.name === ex.name ? 'bg-blue-100 dark:bg-blue-700 text-blue-700 dark:text-blue-200' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              >{ex.name}</button>
-            ))}
-          </div>
-          <Button variant="text" size="xs" onClick={() => setShowExerciseList(false)} className="absolute top-0 right-0 mt-1 mr-1">닫기</Button>
-        </div>
-      )}
-      <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">선택된 운동: {exercise.name || "운동을 선택해주세요"}</label>
       </div>
       <div className="space-y-3">
         {exercise.sets.map((set, setIndex) => (
@@ -184,7 +222,9 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
           </div>
         ))}
       </div>
-      <Button size="sm" variant="outline" onClick={addSetToExercise} className="mt-3 w-full" icon={<Plus size={16} />}>세트 추가</Button>
+      {(selectedSetConfig === 'custom' || exercise.sets.length < 5 ) && (
+         <Button size="sm" variant="outline" onClick={addSetToExercise} className="mt-3 w-full" icon={<Plus size={16} />}>세트 추가</Button>
+      )}
     </div>
   );
 };
