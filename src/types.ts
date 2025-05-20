@@ -43,7 +43,8 @@ export type MainExerciseType =
   | ShoulderMainExercise 
   | LegMainExercise 
   | BicepsMainExercise 
-  | TricepsMainExercise;
+  | TricepsMainExercise
+  | 'customComplex';
 
 // 세트 설정 타입
 export type SetConfiguration = '5x5' | '10x5' | '15x5' | '6x3';

@@ -1,8 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Button from '../common/Button';
-import Badge from '../common/Badge';
 import { SetConfiguration } from '../../types';
-import { Plus, Trash, X, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Trash, X, Clock, CheckCircle, Square } from 'lucide-react';
+import { ExercisePart, Set } from '../../types';
+import { exercises as allExercises } from '../../data/exerciseData';
+import { toast } from 'react-hot-toast';
+
+// 운동 부위 옵션 (WorkoutForm.tsx와 유사하게)
+const exercisePartOptions: Array<{ value: ExercisePart; label: string; icon: string }> = [
+  { value: 'chest',    label: '가슴',   icon: '💪' },
+  { value: 'back',     label: '등',     icon: '🔙' },
+  { value: 'shoulder', label: '어깨',   icon: '🏋️' },
+  { value: 'leg',      label: '하체',   icon: '🦵' },
+  { value: 'biceps',   label: '이두',   icon: '💪' },
+  { value: 'triceps',  label: '삼두',   icon: '💪' },
+  // 필요에 따라 'abs', 'cardio' 등 추가
+];
 
 interface AccessoryExerciseProps {
   index: number;
@@ -45,6 +58,9 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   const [showPreviousExercises, setShowPreviousExercises] = useState(false);
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const [timerIntervals, setTimerIntervals] = useState<Record<string, NodeJS.Timeout>>({});
+  const [selectedAccessoryPart, setSelectedAccessoryPart] = useState<ExercisePart | null>(null);
+  const [filteredAccessoryExercises, setFilteredAccessoryExercises] = useState<typeof allExercises>([]);
+  const [showExerciseList, setShowExerciseList] = useState(false);
 
   // 세트 구성 변경 처리
   const handleSetConfigChange = (config: SetConfiguration | 'custom') => {
@@ -206,6 +222,67 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     };
   }, [timerIntervals]);
 
+  // 선택된 부위가 변경되면 해당 부위의 운동 목록 필터링
+  useEffect(() => {
+    if (selectedAccessoryPart) {
+      setFilteredAccessoryExercises(
+        allExercises.filter(ex => ex.part === selectedAccessoryPart)
+      );
+      setShowExerciseList(true); // 부위 선택 시 목록 바로 표시
+    } else {
+      setFilteredAccessoryExercises([]);
+      setShowExerciseList(false);
+    }
+  }, [selectedAccessoryPart]);
+
+  // 운동 이름 변경 (드롭다운 또는 버튼 그룹에서 선택 시)
+  const handleAccessoryNameSelect = (name: string) => {
+    onChange(index, { ...exercise, name });
+    setShowExerciseList(false); // 이름 선택 후 목록 숨김
+  };
+
+  // 세트의 무게 또는 횟수 변경
+  const handleSetChange = (setIndex: number, field: 'weight' | 'reps', value: number) => {
+    const newSets = exercise.sets.map((s, i) =>
+      i === setIndex ? { ...s, [field]: value } : s
+    );
+    onChange(index, { ...exercise, sets: newSets });
+  };
+  
+  // 세트 완료/실패/미완료 토글 (WorkoutForm.tsx의 handleTrainingComplete 로직 참고)
+  const handleSetStatusToggle = (setIndex: number) => {
+    const currentSet = exercise.sets[setIndex];
+    let newStatus: boolean | null = null;
+
+    if (currentSet.isSuccess === null) { // 미완료 -> 성공
+      newStatus = true;
+    } else if (currentSet.isSuccess === true) { // 성공 -> 실패
+      newStatus = false;
+    } else { // 실패 -> 미완료
+      newStatus = null;
+    }
+
+    const newSets = exercise.sets.map((s, i) =>
+      i === setIndex ? { ...s, isSuccess: newStatus } : s
+    );
+    onChange(index, { ...exercise, sets: newSets });
+  };
+
+  // 일시정지/재개 함수
+  const pauseResumeTimer = (setIndex: number) => {
+    const timerKey = `accessory_${index}_${setIndex}`;
+    setActiveTimers(prev => {
+      const currentTimer = prev[timerKey];
+      if (currentTimer) {
+        return {
+          ...prev,
+          [timerKey]: { ...currentTimer, isPaused: !currentTimer.isPaused }
+        };
+      }
+      return prev;
+    });
+  };
+
   return (
     <div className="space-y-4 mb-4">
       <div className="p-3 border rounded-lg bg-white dark:bg-gray-800">
@@ -319,7 +396,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                           ? null
                           : set.isSuccess
                           ? <CheckCircle size={16} className="text-green-500" />
-                          : <XCircle size={16} className="text-red-500" />
+                          : <Square size={16} className="text-red-500" />
                       }
                     >
                       {set.isSuccess === null
