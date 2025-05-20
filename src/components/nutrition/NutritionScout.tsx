@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import toast from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 // CSV 파일 직접 import
-import nutritionCsvPath from '@/assets/nutrition_db.csv';
+import nutritionCsvPath from '../assets/nutrition_db.csv';
+import { useLocation } from 'react-router-dom';
 
 // 디버깅용 코드 제거
 // console.log('toast 객체 구조:', Object.keys(toast));
@@ -56,7 +57,7 @@ interface NutritionData {
   '코멘트'?: string; // 코멘트 필드를 옵셔널로 처리
 }
 
-// 기본 영양소 데이터
+// 더미 데이터 사용
 const DEFAULT_FOOD_DATA: NutritionData[] = [
   {
     '요리명': '닭가슴살',
@@ -121,6 +122,7 @@ const DEFAULT_FOOD_DATA: NutritionData[] = [
 ];
 
 const NutritionScout = () => {
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [foodData, setFoodData] = useState<NutritionData[]>(DEFAULT_FOOD_DATA);
   const [searchResult, setSearchResult] = useState<NutritionData | null>(null);
@@ -135,6 +137,16 @@ const NutritionScout = () => {
   useEffect(() => {
     loadCSV();
     
+    // URL에서 검색어 파라미터 가져오기
+    const state = location.state as { searchTerm?: string } | null;
+    if (state && state.searchTerm) {
+      setSearchQuery(state.searchTerm);
+      // 약간의 지연 후 자동 검색 실행
+      setTimeout(() => {
+        handleSearch(state.searchTerm);
+      }, 500);
+    }
+    
     // 자동완성 외부 클릭 감지
     const handleClickOutside = (event: MouseEvent) => {
       if (autoCompleteRef.current && !autoCompleteRef.current.contains(event.target as Node) &&
@@ -147,7 +159,7 @@ const NutritionScout = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [location.state]);
 
   const loadCSV = async () => {
     setIsLoading(true);
@@ -222,22 +234,24 @@ const NutritionScout = () => {
     }
   };
 
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
+  const handleSearch = (searchParam?: string) => {
+    const searchTerm = searchParam || searchQuery;
+    
+    if (!searchTerm.trim()) {
       showToast.error('검색어를 입력해주세요.');
       return;
     }
     
-    const query = searchQuery.trim().toLowerCase();
+    const queryText = searchTerm.trim().toLowerCase();
     
     // 정확한 일치 검색
     const exactMatch = foodData.find(
-      item => item.요리명 && item.요리명.toLowerCase() === query
+      item => item.요리명 && item.요리명.toLowerCase() === queryText
     );
     
     // 부분 일치 검색
     const partialMatch = foodData.find(
-      item => item.요리명 && item.요리명.toLowerCase().includes(query)
+      item => item.요리명 && item.요리명.toLowerCase().includes(queryText)
     );
     
     if (exactMatch) {
@@ -447,6 +461,8 @@ const NutritionScout = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6">
+      <Toaster position="top-center" />
+      
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-[#4285F4] md:text-3xl mb-2">Nutrition Scout</h1>
         <p className="text-gray-600 dark:text-gray-400">영양정보 검색 도구</p>
@@ -468,7 +484,7 @@ const NutritionScout = () => {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             disabled={isLoading}
             className={`px-5 py-3 rounded-lg text-white font-medium text-base ${
               isLoading 

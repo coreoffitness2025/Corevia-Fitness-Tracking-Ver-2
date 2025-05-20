@@ -360,7 +360,6 @@ const MealPlans: React.FC = () => {
         <Info className="text-blue-500 mr-2 flex-shrink-0 mt-1" size={20} />
         <div>
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            음식별 영양성분은 '음식 영양성분 확인'을 통해 탄/단/지 정보를 파악할 수 있습니다.
             식품 이름을 클릭하면 해당 음식의 영양 정보를 검색할 수 있습니다.
           </p>
         </div>
@@ -463,11 +462,11 @@ const MealPlans: React.FC = () => {
             {/* 식단 상세 정보 - 선택된 식단만 표시 */}
             {selectedMeal === meal.id && (
               <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   <div>
                     <div className="mb-4">
                       <h4 className="text-lg font-medium mb-2">영양 정보</h4>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
                           <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
                           <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{meal.calories}kcal</span>
@@ -480,28 +479,11 @@ const MealPlans: React.FC = () => {
                           <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
                           <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{meal.carbs}g</span>
                         </div>
-                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center col-span-3">
+                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
                           <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
                           <span className="block text-lg font-bold text-red-600 dark:text-red-400">{meal.fat}g</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center mb-4">
-                      <button
-                        onClick={() => {
-                          const searchParams = new URLSearchParams();
-                          searchParams.set('activeTab', 'nutrition');
-                          searchParams.set('openNutritionScout', 'true');
-                          navigate(`/qna?${searchParams.toString()}`);
-                        }}
-                        className="flex items-center text-blue-500 hover:text-blue-700"
-                      >
-                        <Search size={16} className="mr-1" />
-                        <span>식재료 영양정보 찾아보기</span>
-                      </button>
                     </div>
                   </div>
                 </div>
