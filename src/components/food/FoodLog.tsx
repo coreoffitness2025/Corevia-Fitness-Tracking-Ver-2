@@ -1,46 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useFoodStore } from '../../stores/foodStore';
-import { Food } from '../../types';
-import { calculateTotalNutrition } from '../../utils/nutritionUtils';
 import { formatDate, formatDateWithWeekday, isToday } from '../../utils/dateUtils';
-import { fetchFoodsByDate } from '../../services/foodService';
-import FoodItem from './FoodItem';
-import NutritionSummary from './NutritionSummary';
 import Card from '../common/Card';
 import { Info, Calendar, CalendarDays, ExternalLink, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import NutritionSourcesGuide from './NutritionSourcesGuide';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { getFoodRecordsByDate, getFoodImage, FoodRecord } from '../../utils/indexedDB';
-
-// 활동 수준에 따른 칼로리 계수
-const activityMultipliers = {
-  low: 1.2,      // 거의 운동하지 않음
-  moderate: 1.5, // 주 3-5회 운동
-  high: 1.8      // 거의 매일 운동
-};
-
-// 목표에 따른 칼로리 조정
-const goalMultipliers = {
-  loss: 0.8,     // 체중 감량
-  maintain: 1.0, // 체중 유지
-  gain: 1.2      // 체중 증가
-};
-
-// 성별에 따른 기초 대사량 계산 (Harris-Benedict 방정식)
-function calculateBMR(gender: 'male' | 'female', weight: number, height: number, age: number) {
-  if (gender === 'male') {
-    return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
-  } else {
-    return 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
-  }
-}
+import { 
+  calculateNutritionGoals, 
+  DEFAULT_USER_PROFILE, 
+  activityMultipliers, 
+  goalMultipliers,
+  ActivityLevel,
+  FitnessGoal,
+  calculateBMR
+} from '../../utils/nutritionUtils';
+import type { UserProfile } from '../../types';
 
 type ViewMode = 'day' | 'week' | 'month';
 
-const FoodLog: React.FC = () => {
+const FoodLog = () => {
   const { user } = useAuthStore();
   const { userProfile } = useAuth();
   const { foods, setFoods } = useFoodStore();
@@ -62,18 +43,19 @@ const FoodLog: React.FC = () => {
   const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{url: string, record: FoodRecord, index: number} | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadFoodData();
-    }
-  }, [user, selectedDate, viewMode]);
-
-  // 사용자 프로필에서 목표 칼로리 가져오기
-  useEffect(() => {
-    if (userProfile) {
-      updateNutritionTargets(userProfile);
-    }
-  }, [userProfile]);
+  const [nutritionGoals, setNutritionGoals] = useState(() => {
+    const initialProfile = userProfile 
+      ? { 
+          weight: userProfile.weight, 
+          goal: userProfile.fitnessGoal, 
+          activityLevel: userProfile.activityLevel, 
+          gender: userProfile.gender, 
+          age: userProfile.age, 
+          height: userProfile.height, 
+        }
+      : DEFAULT_USER_PROFILE;
+    return calculateNutritionGoals(initialProfile);
+  });
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -81,7 +63,28 @@ const FoodLog: React.FC = () => {
     }
   }, [userProfile?.uid, selectedDate, viewMode]);
 
-  // 월별 보기일 때 달력 날짜 계산
+  useEffect(() => {
+    if (userProfile) {
+      const profileForGoals = {
+        weight: userProfile.weight,
+        goal: userProfile.fitnessGoal,
+        activityLevel: userProfile.activityLevel,
+        gender: userProfile.gender,
+        age: userProfile.age,
+        height: userProfile.height,
+      };
+      updateNutritionTargets(userProfile);
+      setNutritionGoals(calculateNutritionGoals(profileForGoals));
+    } else {
+      const defaultGoals = calculateNutritionGoals(DEFAULT_USER_PROFILE);
+      setNutritionGoals(defaultGoals);
+      setTargetCalories(defaultGoals.daily.calories);
+      setProteinTarget(defaultGoals.daily.protein);
+      setCarbsTarget(defaultGoals.daily.carbs);
+      setFatTarget(defaultGoals.daily.fat);
+    }
+  }, [userProfile]);
+
   useEffect(() => {
     if (viewMode === 'month') {
       const dates = getDatesForCalendar();
@@ -89,14 +92,20 @@ const FoodLog: React.FC = () => {
     }
   }, [viewMode, selectedDate]);
 
-  const updateNutritionTargets = (profile: any) => {
-    if (!profile) return;
+  const updateNutritionTargets = (profile: UserProfile | null) => {
+    if (!profile) {
+      const defaultGoals = calculateNutritionGoals(DEFAULT_USER_PROFILE);
+      setTargetCalories(defaultGoals.daily.calories);
+      setProteinTarget(defaultGoals.daily.protein);
+      setCarbsTarget(defaultGoals.daily.carbs);
+      setFatTarget(defaultGoals.daily.fat);
+      return;
+    }
 
-    // 이미 계산된 목표 칼로리가 있으면 사용
+    let calculatedCalories = 2000;
     if (profile.targetCalories && !isNaN(profile.targetCalories)) {
-      setTargetCalories(profile.targetCalories);
+      calculatedCalories = profile.targetCalories;
     } else {
-      // 계산된 목표 칼로리가 없으면 직접 계산
       if (profile.height && profile.weight && profile.age && profile.gender && profile.activityLevel && profile.fitnessGoal) {
         const bmr = calculateBMR(
           profile.gender,
@@ -104,43 +113,28 @@ const FoodLog: React.FC = () => {
           Number(profile.height),
           Number(profile.age)
         );
-
-        // 기본값 사용 및 타입 안전성 확보
-        const activityLevel = profile.activityLevel === 'moderate' ? 'moderate' : (profile.activityLevel || 'moderate');
-        const fitnessGoal = profile.fitnessGoal === 'maintain' ? 'maintain' : (profile.fitnessGoal || 'maintain');
-
-        // 총 일일 에너지 소비량(TDEE) 계산
-        const tdee = bmr * (activityMultipliers[activityLevel] || 1.5);
-
-        // 목표에 따른 칼로리 조정
-        const calculatedCalories = Math.round(tdee * (goalMultipliers[fitnessGoal] || 1.0));
-
-        setTargetCalories(calculatedCalories);
-      } else {
-        // 기본 목표 칼로리 설정
-        setTargetCalories(2000);
+        
+        const currentActivityLevel = profile.activityLevel as ActivityLevel;
+        const currentFitnessGoal = profile.fitnessGoal as FitnessGoal;
+        
+        const tdee = bmr * (activityMultipliers[currentActivityLevel] || activityMultipliers.moderate);
+        calculatedCalories = Math.round(tdee * (goalMultipliers[currentFitnessGoal] || goalMultipliers.maintain));
       }
     }
-
-    // 단백질, 탄수화물, 지방 목표량 계산
-    calculateMacroNutrientTargets(Number(profile.weight) || 70);
-  };
-
-  const calculateMacroNutrientTargets = (weight: number) => {
-    // 체중 1kg당 단백질 1.6g, 탄수화물과 지방은 남은 칼로리에서 분배
-    const proteinGrams = Math.round(weight * 1.6);
-    const proteinCalories = proteinGrams * 4; // 단백질 1g = 4 칼로리
-
-    const localTargetCalories = targetCalories > 0 ? targetCalories : 2000;
-    const remainingCalories = Math.max(0, localTargetCalories - proteinCalories);
-
-    // 탄수화물 45-65%, 지방 20-35% (여기서는 중간값 사용)
-    const carbsCalories = Math.max(0, remainingCalories * 0.55);
-    const fatCalories = Math.max(0, remainingCalories * 0.3);
-
-    setProteinTarget(proteinGrams);
-    setCarbsTarget(Math.round(carbsCalories / 4)); // 탄수화물 1g = 4 칼로리
-    setFatTarget(Math.round(fatCalories / 9));     // 지방 1g = 9 칼로리
+    setTargetCalories(calculatedCalories);
+    
+    const goalsInput = {
+      weight: profile.weight,
+      goal: profile.fitnessGoal,
+      activityLevel: profile.activityLevel,
+      gender: profile.gender,
+      age: profile.age,
+      height: profile.height,
+    };
+    const goals = calculateNutritionGoals(goalsInput);
+    setProteinTarget(goals.daily.protein);
+    setCarbsTarget(goals.daily.carbs);
+    setFatTarget(goals.daily.fat); 
   };
 
   const loadFoodData = async () => {
@@ -151,17 +145,14 @@ const FoodLog: React.FC = () => {
       let records: FoodRecord[] = [];
       
       if (viewMode === 'day') {
-        // 하루 데이터만 로드
         records = await getFoodRecordsByDate(userProfile.uid, new Date(selectedDate));
       } else if (viewMode === 'week') {
-        // 1주일 데이터 로드
         const weekDates = getDaysOfWeek();
         for (const date of weekDates) {
           const dateRecords = await getFoodRecordsByDate(userProfile.uid, date);
           records = [...records, ...dateRecords];
         }
       } else if (viewMode === 'month') {
-        // 1개월 데이터 로드
         const monthDates = getDatesForCalendar();
         let allRecords: FoodRecord[] = [];
         const recordMap: Record<string, FoodRecord[]> = {};
@@ -182,7 +173,6 @@ const FoodLog: React.FC = () => {
       
       setFoodRecords(records);
       
-      // 이미지 로드
       await loadImages(records);
     } catch (error) {
       console.error('식단 기록 로드 오류:', error);
@@ -191,7 +181,6 @@ const FoodLog: React.FC = () => {
     }
   };
 
-  // 이미지 로드 함수
   const loadImages = async (records: FoodRecord[]) => {
     const newImageCache: Record<string, string> = { ...imageCache };
     
@@ -212,12 +201,9 @@ const FoodLog: React.FC = () => {
     setImageCache(newImageCache);
   };
 
-  // 현재 선택된 날짜를 기준으로 한 주의 날짜들을 반환하는 함수
   const getDaysOfWeek = () => {
     const startDate = new Date(selectedDate);
-    // 현재 날짜의 요일(0: 일요일, 1: 월요일, ...)을 구함
     const dayOfWeek = startDate.getDay();
-    // 주의 시작일(일요일)로 설정
     startDate.setDate(startDate.getDate() - dayOfWeek);
     
     const days = [];
@@ -229,26 +215,21 @@ const FoodLog: React.FC = () => {
     return days;
   };
 
-  // 달력 표시를 위한 날짜 배열 생성 함수
   const getDatesForCalendar = () => {
     const date = new Date(selectedDate);
     const year = date.getFullYear();
     const month = date.getMonth();
     
-    // 해당 월의 첫 번째 날과 마지막 날
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     
-    // 달력 첫 번째 칸의 날짜 (이전 달의 일부 포함)
     const firstCalendarDay = new Date(firstDay);
     firstCalendarDay.setDate(firstCalendarDay.getDate() - firstCalendarDay.getDay());
     
-    // 달력 마지막 칸의 날짜 (다음 달의 일부 포함)
     const lastCalendarDay = new Date(lastDay);
     const remainingDays = 6 - lastCalendarDay.getDay();
     lastCalendarDay.setDate(lastCalendarDay.getDate() + remainingDays);
     
-    // 달력에 표시할 모든 날짜 생성
     const dates = [];
     let currentDate = new Date(firstCalendarDay);
     
@@ -260,7 +241,6 @@ const FoodLog: React.FC = () => {
     return dates;
   };
 
-  // 날짜별로 식단 그룹화
   const groupFoodsByDate = (records: FoodRecord[]) => {
     const groups: Record<string, FoodRecord[]> = {};
     
@@ -282,7 +262,6 @@ const FoodLog: React.FC = () => {
   const foodGroups = groupFoodsByDate(foodRecords);
   const dates = Object.keys(foodGroups).sort((a, b) => b.localeCompare(a));
 
-  // 이전/다음 이동 함수
   const navigatePrevious = () => {
     const date = new Date(selectedDate);
     if (viewMode === 'day') {
@@ -307,24 +286,20 @@ const FoodLog: React.FC = () => {
     setSelectedDate(date.toISOString().split('T')[0]);
   };
 
-  // 영양정보 페이지로 이동하는 함수
   const navigateToNutritionInfo = () => {
     navigate('/qna', { state: { activeTab: 'nutrition' } });
   };
 
-  // 이미지 클릭 처리 함수
   const handleImageClick = (imageUrl: string, record: FoodRecord, index: number) => {
     setSelectedPhoto({url: imageUrl, record, index});
     setShowPhotoModal(true);
   };
 
-  // 모달 닫기 함수
   const closePhotoModal = () => {
     setShowPhotoModal(false);
     setSelectedPhoto(null);
   };
 
-  // 날짜별 식단을 표시하는 함수 (일별 보기)
   const renderFoodsByDate = (dateStr: string, recordsForDate: FoodRecord[]) => {
     const date = new Date(dateStr);
     const hasPhotos = recordsForDate.some(record => record.imageId);
@@ -335,7 +310,6 @@ const FoodLog: React.FC = () => {
           {formatDate(date)}
         </h3>
         
-        {/* 사진 영역 - 같은 날짜의 사진들을 행에 나란히 표시 */}
         {hasPhotos && (
           <div className="mb-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -356,7 +330,6 @@ const FoodLog: React.FC = () => {
           </div>
         )}
         
-        {/* 식단 정보 테이블 삭제 */}
         {!hasPhotos && (
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
             <p className="text-gray-500 dark:text-gray-400">식단 기록이 없습니다.</p>
@@ -366,7 +339,6 @@ const FoodLog: React.FC = () => {
     );
   };
 
-  // 주별 보기에서 간략한 식단 표시 함수
   const renderWeeklyView = () => {
     const weekDays = getDaysOfWeek();
     
@@ -394,7 +366,6 @@ const FoodLog: React.FC = () => {
                   </p>
                 ) : (
                   <div>
-                    {/* 사진만 표시 */}
                     {hasPhotos ? (
                       <div className="flex overflow-x-auto space-x-3 pb-2 mb-2">
                         {records.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
@@ -426,7 +397,6 @@ const FoodLog: React.FC = () => {
     );
   };
 
-  // 월별 보기에서 달력 형태로 표시하는 함수
   const renderMonthlyView = () => {
     const today = new Date();
     const currentDate = new Date(selectedDate);
@@ -479,7 +449,7 @@ const FoodLog: React.FC = () => {
                         <div className="flex overflow-x-auto space-x-1 py-1">
                           {records
                             .filter(record => record.imageId && imageCache[record.imageId])
-                            .slice(0, 2) // 최대 2개만 표시
+                            .slice(0, 2)
                             .map((record) => (
                               <div key={record.id} className="flex-shrink-0 w-8 h-8">
                                 <img 
@@ -515,50 +485,62 @@ const FoodLog: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* LocalStorage 관련 안내 */}
-      <Card className="mb-6 border-l-4 border-blue-500">
+      <Card className="mb-6">
         <div className="flex items-start p-4">
-          <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
+          <Info className="text-blue-500 mr-3 mt-1 flex-shrink-0" size={24} />
           <div>
-            <h3 className="text-lg font-semibold mb-2">식단 기록</h3>
-            
-            {/* LocalStorage 관련 안내 */}
-            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
-              <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">
-                🔔 사진 저장 안내
-              </p>
-              <p className="text-blue-700 dark:text-blue-400">
-                사진은 사용자 기기의 로컬 저장소에 저장됩니다. 브라우저 캐시를 삭제하거나 다른 기기에서 접속하면 사진이 보이지 않을 수 있습니다.
-              </p>
+            <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량 (3끼 기준)</h3>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="bg-green-50 dark:bg-green-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-300">단백질</span>
+                <span className="block text-xl font-bold text-green-700 dark:text-green-400">{nutritionGoals.perMeal.protein}g</span>
+              </div>
+              <div className="bg-yellow-50 dark:bg-yellow-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-300">탄수화물</span>
+                <span className="block text-xl font-bold text-yellow-700 dark:text-yellow-400">{nutritionGoals.perMeal.carbs}g</span>
+              </div>
+              <div className="bg-red-50 dark:bg-red-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-300">지방</span>
+                <span className="block text-lg font-bold text-red-700 dark:text-red-400">{nutritionGoals.perMeal.fat}g</span>
+              </div>
             </div>
-            
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
+            </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={navigateToNutritionInfo}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                </svg>
-                식재료 영양정보 찾아보기
+                <ExternalLink size={18} className="mr-2" />
+                음식별 칼로리 확인하기
               </button>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* 뷰 컨트롤 */}
+      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 rounded-r-lg text-sm">
+        <div className="flex items-start">
+          <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+          <p className="text-blue-700 dark:text-blue-300">
+            사진은 현재 사용자의 로컬 저장소에 저장됩니다. 브라우저 캐시를 삭제하거나 다른 기기에서 접속하면 사진이 보이지 않을 수 있습니다.
+          </p>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0">
         <div className="flex items-center">
           <button 
             onClick={navigatePrevious}
             className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="이전"
           >
             &lt;
           </button>
           
-          <span className="mx-4 font-medium">
+          <span className="mx-4 font-medium text-center w-48 md:w-auto">
             {viewMode === 'day' && new Date(selectedDate).toLocaleDateString('ko-KR', { 
               year: 'numeric', 
               month: 'long', 
@@ -576,6 +558,7 @@ const FoodLog: React.FC = () => {
           <button 
             onClick={navigateNext}
             className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="다음"
           >
             &gt;
           </button>
@@ -584,51 +567,48 @@ const FoodLog: React.FC = () => {
         <div className="flex space-x-2">
           <button
             onClick={() => setViewMode('day')}
-            className={`flex items-center px-3 py-1 rounded ${
+            className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               viewMode === 'day' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             }`}
           >
-            <Calendar size={16} className="mr-1" /> 일별
+            <Calendar size={16} className="mr-1.5" /> 일별
           </button>
           <button
             onClick={() => setViewMode('week')}
-            className={`flex items-center px-3 py-1 rounded ${
+            className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               viewMode === 'week' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             }`}
           >
-            <Calendar size={16} className="mr-1" /> 주별
+            <Calendar size={16} className="mr-1.5" /> 주별
           </button>
           <button
             onClick={() => setViewMode('month')}
-            className={`flex items-center px-3 py-1 rounded ${
+            className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               viewMode === 'month' 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                ? 'bg-blue-600 text-white shadow-sm' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             }`}
           >
-            <CalendarDays size={16} className="mr-1" /> 월별
+            <CalendarDays size={16} className="mr-1.5" /> 월별
           </button>
         </div>
       </div>
       
-      {/* 식단 기록 */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner size="lg" showText={true} text="식단 기록을 불러오는 중입니다..." />
         </div>
       ) : (
         <div>
-          {/* 선택된 뷰 모드에 따라 다른 식단 표시 방식 적용 */}
           {viewMode === 'day' && (
             foodRecords.length > 0 ? (
               <div>
-                {/* 날짜별로 식단 그룹화하여 표시 */}
                 {Object.entries(groupFoodsByDate(foodRecords))
-                  .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // 최신순 정렬
+                  .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
                   .map(([dateStr, recordsForDate]) => renderFoodsByDate(dateStr, recordsForDate))
                 }
               </div>
@@ -651,11 +631,9 @@ const FoodLog: React.FC = () => {
         </div>
       )}
 
-      {/* 사진 모달 */}
       {showPhotoModal && selectedPhoto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
           <div className="relative w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
-            {/* 모달 헤더 */}
             <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-semibold">
                 식사 {selectedPhoto.index} 
@@ -667,19 +645,14 @@ const FoodLog: React.FC = () => {
                 <X size={24} />
               </button>
             </div>
-            
-            {/* 모달 본문 */}
             <div className="flex-1 overflow-auto">
               <div className="p-4 flex justify-center">
-                {/* 큰 이미지 */}
                 <img 
                   src={selectedPhoto.url} 
                   alt="식사 이미지" 
                   className="w-full max-h-[70vh] object-contain rounded-lg"
                 />
               </div>
-              
-              {/* 메모가 있는 경우만 표시 */}
               {selectedPhoto.record.description && (
                 <div className="px-4 pb-4">
                   <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
