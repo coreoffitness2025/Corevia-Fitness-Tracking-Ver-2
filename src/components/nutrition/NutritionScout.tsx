@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast, Toaster } from 'react-hot-toast';
-// CSV 파일 직접 import
-import nutritionCsvPath from '../assets/nutrition_db.csv';
+// CSV 파일 import 삭제
 import { useLocation } from 'react-router-dom';
 
 // 디버깅용 코드 제거
@@ -166,8 +165,8 @@ const NutritionScout = () => {
     setLoadError(null);
     
     try {
-      // CSV 파일 URL 설정 (assets에서 직접 import)
-      const csvUrl = nutritionCsvPath;
+      // CSV 파일 URL 설정 (public 폴더의 파일을 직접 URL로 참조)
+      const csvUrl = '/nutrition_db.csv';
       console.log(`[DEBUG] 파일 로드 시도: ${csvUrl}`);
       
       // 외부 CSV 로드 시도
