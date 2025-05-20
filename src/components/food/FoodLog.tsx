@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { formatDate, formatDateWithWeekday, isToday } from '../../utils/dateUtils';
 import Card from '../common/Card';
-import { Info, Calendar, CalendarDays, ExternalLink, X } from 'lucide-react';
+import { Info, Calendar, CalendarDays, ExternalLink, X, Plus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -18,6 +18,7 @@ import {
   calculateBMR
 } from '../../utils/nutritionUtils';
 import type { UserProfile } from '../../types';
+import NutritionSourcesGuide from './NutritionSourcesGuide';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -42,6 +43,11 @@ const FoodLog = () => {
   const [recordsByDate, setRecordsByDate] = useState<Record<string, FoodRecord[]>>({});
   const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{url: string, record: FoodRecord, index: number} | null>(null);
+
+  const [foodForm_targetCalories, setFoodForm_TargetCalories] = useState<number>(0);
+  const [foodForm_proteinTarget, setFoodForm_ProteinTarget] = useState<number>(0);
+  const [foodForm_carbsTarget, setFoodForm_CarbsTarget] = useState<number>(0);
+  const [foodForm_fatTarget, setFoodForm_FatTarget] = useState<number>(0);
 
   const [nutritionGoals, setNutritionGoals] = useState(() => {
     const initialProfile = userProfile 
@@ -74,14 +80,19 @@ const FoodLog = () => {
         height: userProfile.height,
       };
       updateNutritionTargets(userProfile);
-      setNutritionGoals(calculateNutritionGoals(profileForGoals));
+      const calculatedGoals = calculateNutritionGoals(profileForGoals);
+      setNutritionGoals(calculatedGoals);
+      setFoodForm_TargetCalories(calculatedGoals.daily.calories);
+      setFoodForm_ProteinTarget(calculatedGoals.daily.protein);
+      setFoodForm_CarbsTarget(calculatedGoals.daily.carbs);
+      setFoodForm_FatTarget(calculatedGoals.daily.fat);
     } else {
       const defaultGoals = calculateNutritionGoals(DEFAULT_USER_PROFILE);
       setNutritionGoals(defaultGoals);
-      setTargetCalories(defaultGoals.daily.calories);
-      setProteinTarget(defaultGoals.daily.protein);
-      setCarbsTarget(defaultGoals.daily.carbs);
-      setFatTarget(defaultGoals.daily.fat);
+      setFoodForm_TargetCalories(defaultGoals.daily.calories);
+      setFoodForm_ProteinTarget(defaultGoals.daily.protein);
+      setFoodForm_CarbsTarget(defaultGoals.daily.carbs);
+      setFoodForm_FatTarget(defaultGoals.daily.fat);
     }
   }, [userProfile]);
 
@@ -485,28 +496,30 @@ const FoodLog = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Card className="mb-6">
+      <Card className="mb-6 border-l-4 border-blue-500 dark:border-blue-400">
         <div className="flex items-start p-4">
-          <Info className="text-blue-500 mr-3 mt-1 flex-shrink-0" size={24} />
+          <Info className="text-blue-500 dark:text-blue-400 mr-3 mt-1 flex-shrink-0" size={24} />
           <div>
-            <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량 (3끼 기준)</h3>
+            <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량(3끼 기준)</h3>
             <div className="grid grid-cols-3 gap-3 mb-3">
-              <div className="bg-green-50 dark:bg-green-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-300">단백질</span>
-                <span className="block text-xl font-bold text-green-700 dark:text-green-400">{nutritionGoals.perMeal.protein}g</span>
+              <div className="bg-green-100 dark:bg-green-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-400">단백질</span>
+                <span className="block text-xl font-bold text-green-700 dark:text-green-400">{Math.round(foodForm_proteinTarget/3)}g</span>
               </div>
-              <div className="bg-yellow-50 dark:bg-yellow-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-300">탄수화물</span>
-                <span className="block text-xl font-bold text-yellow-700 dark:text-yellow-400">{nutritionGoals.perMeal.carbs}g</span>
+              <div className="bg-yellow-100 dark:bg-yellow-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-400">탄수화물</span>
+                <span className="block text-xl font-bold text-yellow-700 dark:text-yellow-400">{Math.round(foodForm_carbsTarget/3)}g</span>
               </div>
-              <div className="bg-red-50 dark:bg-red-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-300">지방</span>
-                <span className="block text-lg font-bold text-red-700 dark:text-red-400">{nutritionGoals.perMeal.fat}g</span>
+              <div className="bg-red-100 dark:bg-red-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-400">지방</span>
+                <span className="block text-lg font-bold text-red-700 dark:text-red-400">{Math.round(foodForm_fatTarget/3)}g</span>
               </div>
             </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
-            </p>
+            <div className="mt-3">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                💡 하루 총 목표: 단백질 <strong>{foodForm_proteinTarget}g</strong>, 탄수화물 <strong>{foodForm_carbsTarget}g</strong>, 지방 <strong>{foodForm_fatTarget}g</strong>
+              </p>
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -516,7 +529,16 @@ const FoodLog = () => {
                 <ExternalLink size={18} className="mr-2" />
                 음식별 칼로리 확인하기
               </button>
+              <button
+                type="button"
+                onClick={() => setShowNutritionSources(!showNutritionSources)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Plus size={18} className="mr-2" />
+                주요 탄/단/지 급원 확인하기
+              </button>
             </div>
+            {showNutritionSources && <NutritionSourcesGuide />}
           </div>
         </div>
       </Card>
@@ -609,8 +631,7 @@ const FoodLog = () => {
               <div>
                 {Object.entries(groupFoodsByDate(foodRecords))
                   .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-                  .map(([dateStr, recordsForDate]) => renderFoodsByDate(dateStr, recordsForDate))
-                }
+                  .map(([dateStr, recordsForDate]) => renderFoodsByDate(dateStr, recordsForDate))}
               </div>
             ) : (
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
