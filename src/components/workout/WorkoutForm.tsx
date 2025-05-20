@@ -20,7 +20,7 @@ import Layout from '../common/Layout';
 import Card, { CardTitle, CardSection } from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
-import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash } from 'lucide-react';
+import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square } from 'lucide-react';
 import { getSetConfiguration } from '../../utils/workoutUtils';
 import AccessoryExerciseComponent from './AccessoryExerciseComponent';
 // 필요한 import 추가
@@ -327,7 +327,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (!activeTimers[timerKey]) {
       // 타이머 시작
       const newTimers = { ...activeTimers };
-      newTimers[timerKey] = { timeLeft: 60, isPaused: false };
+      newTimers[timerKey] = { timeLeft: 120, isPaused: false }; // 휴식 시간을 120초(2분)로 변경
       setActiveTimers(newTimers);
       
       timerRefs.current[timerKey] = setInterval(() => {
@@ -1249,17 +1249,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1">운동 선택</label>
-                    <select
-                      value={selectedMainExercise}
-                      onChange={(e) => setSelectedMainExercise(e.target.value as MainExerciseType)}
-                      className="w-full p-2 border rounded-md bg-white dark:bg-gray-700"
-                    >
-                      {mainExerciseOptions[part].map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    {/* 기존 select 드롭다운을 버튼 형태로 변경 */}
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {mainExerciseOptions[part] && mainExerciseOptions[part].length > 0 ? (
+                        mainExerciseOptions[part].map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setSelectedMainExercise(option.value as MainExerciseType)}
+                            className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
+                              selectedMainExercise === option.value
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">선택 가능한 운동이 없습니다.</p>
+                      )}
+                    </div>
                   </div>
                   
                   {/* 최근 운동 정보 */}
@@ -1298,32 +1308,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     <div className="flex items-center gap-2">
                       <Button
                         size="xs"
-                        variant={
-                          set.isSuccess === null
-                            ? 'secondary'
-                            : set.isSuccess
-                            ? 'success'
-                            : 'danger'
-                        }
+                        variant="icon" // 아이콘 버튼으로 명시적 스타일링을 위해 variant 변경 또는 className으로 직접 제어
                         onClick={() => handleTrainingComplete(index, true)}
-                        className={`h-8 ${
-                          set.isSuccess === null 
-                          ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                          : ''
+                        className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors duration-200 ${ // 크기 및 정렬
+                          set.isSuccess === true
+                            ? 'bg-green-500 text-white hover:bg-green-600' // 성공
+                            : set.isSuccess === false
+                            ? 'bg-red-500 text-white hover:bg-red-600' // 실패
+                            : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500' // 미완료 (네모)
                         }`}
-                        icon={
-                          set.isSuccess === null
-                            ? null
-                            : set.isSuccess
-                            ? <CheckCircle size={16} />
-                            : <XCircle size={16} />
-                        }
+                        aria-label={set.isSuccess === null ? "세트 미완료" : set.isSuccess ? "세트 성공" : "세트 실패"} // 접근성
                       >
-                        {set.isSuccess === null
-                          ? '완료'
-                          : set.isSuccess
-                          ? '성공'
-                          : '실패'}
+                        {set.isSuccess === true ? (
+                          <CheckCircle size={18} />
+                        ) : set.isSuccess === false ? (
+                          <XCircle size={18} /> 
+                        ) : (
+                          <Square size={18} /> // 초기 상태 (네모)
+                        )}
                       </Button>
                       
                       <Button
