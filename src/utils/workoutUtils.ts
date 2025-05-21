@@ -53,8 +53,12 @@ export const getSetConfiguration = (configType: string, customSets: number = 5, 
 /**
  * 날짜 형식 변환 (차트 표시용)
  */
-export const formatShortDate = (date: Date) => {
-  return `${date.getMonth() + 1}/${date.getDate()}`;
+export const formatShortDate = (date: Date): string => {
+  // YY/MM/DD 형식으로 변경
+  const year = String(date.getFullYear()).slice(-2);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}/${month}/${day}`;
 };
 
 /**

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../common/Button';
 import { ExercisePart, Set, SetConfiguration } from '../../types';
-import { Plus, Trash, X, Clock, CheckCircle, Square } from 'lucide-react';
+import { Plus, Trash, X, Clock, CheckCircle, Square, Play, Pause } from 'lucide-react';
 import { accessoryExercisePartOptions, accessoryExercisesByPart } from '../../data/accessoryExerciseData';
 import { toast } from 'react-hot-toast';
+import { getSetConfiguration, getPartLabel } from '../../utils/workoutUtils';
 
 interface AccessoryExerciseProps {
   index: number;
@@ -50,11 +51,11 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     let newSetsArray: Set[] = [];
     
     if (config === 'custom') {
-      newSetsArray = [...exercise.sets];
+      newSetsArray = exercise.sets.length > 0 ? [...exercise.sets] : [{ reps: 10, weight: 0, isSuccess: null }];
     } else {
-      const parts = config.split('x');
-      const repsCount = parseInt(parts[0]);
-      const setsCount = parseInt(parts[1]);
+      const configParts = config.split('x');
+      const repsCount = parseInt(configParts[0]);
+      const setsCount = parseInt(configParts[1]);
       
       newSetsArray = Array.from({ length: setsCount }, (_, i) => ({
         reps: repsCount,
@@ -76,16 +77,64 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     onChange(index, { ...exercise, sets: newSets });
   };
   
-  const handleSetStatusToggle = (setIndex: number) => {
-    const currentSet = exercise.sets[setIndex];
-    let newStatus: boolean | null = null;
-    if (currentSet.isSuccess === null) newStatus = true;
-    else if (currentSet.isSuccess === true) newStatus = false;
-    else newStatus = null;
-    const newSets = exercise.sets.map((s, i) =>
-      i === setIndex ? { ...s, isSuccess: newStatus } : s
-    );
+  const handleAccessorySetCompletionAndTimer = (setIndex: number) => {
+    const newSets = [...exercise.sets];
+    const currentSet = newSets[setIndex];
+    const timerKey = `accessory_${index}_${setIndex}`;
+
+    if (currentSet.isSuccess === null) { 
+      currentSet.isSuccess = true;
+      if (!activeTimers[timerKey] && !Object.keys(activeTimers).some(key => activeTimers[key])) {
+        startAccessoryTimer(timerKey, 120); 
+      }
+      const { repsCount: targetReps } = getSetConfiguration(selectedSetConfig === 'custom' ? `${currentSet.reps}x${newSets.length}` as any : selectedSetConfig, newSets.length, currentSet.reps);
+      if (currentSet.reps < targetReps) {
+         // currentSet.isSuccess = false; //  옵션: 목표 미달시 자동 실패 처리 
+      }
+
+    } else if (currentSet.isSuccess === true) { 
+      currentSet.isSuccess = false;
+      clearAccessoryTimer(timerKey);
+    } else { 
+      currentSet.isSuccess = null;
+      clearAccessoryTimer(timerKey);
+    }
     onChange(index, { ...exercise, sets: newSets });
+  };
+
+  const startAccessoryTimer = (timerKey: string, duration: number) => {
+    clearAccessoryTimer(timerKey);
+    setActiveTimers(prev => ({ ...prev, [timerKey]: { timeLeft: duration, isPaused: false } }));
+    timerRefs.current[timerKey] = setInterval(() => {
+      setActiveTimers(prev => {
+        const current = prev[timerKey];
+        if (current && !current.isPaused) {
+          if (current.timeLeft <= 1) {
+            clearAccessoryTimer(timerKey);
+            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰' });
+            return { ...prev, [timerKey]: undefined }; 
+          }
+          return { ...prev, [timerKey]: { ...current, timeLeft: current.timeLeft - 1 } };
+        }
+        return prev;
+      });
+    }, 1000);
+  };
+
+  const togglePauseAccessoryTimer = (timerKey: string) => {
+    setActiveTimers(prev => {
+      const current = prev[timerKey];
+      if (current) return { ...prev, [timerKey]: { ...current, isPaused: !current.isPaused } };
+      return prev;
+    });
+  };
+
+  const clearAccessoryTimer = (timerKey: string) => {
+    if (timerRefs.current[timerKey]) {
+      clearInterval(timerRefs.current[timerKey]);
+      delete timerRefs.current[timerKey];
+    }
+    setActiveTimers(prev => { const newState = {...prev}; delete newState[timerKey]; return newState; });
   };
 
   const formatTime = (seconds: number) => {
@@ -94,58 +143,24 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const toggleTimer = (setIndex: number) => {
-    const timerKey = `accessory_${index}_${setIndex}`;
-    if (timerRefs.current[timerKey]) {
-      clearInterval(timerRefs.current[timerKey]);
-      delete timerRefs.current[timerKey];
-      setActiveTimers(prev => { const updated = { ...prev }; delete updated[timerKey]; return updated; });
-      return;
-    }
-    setActiveTimers(prev => ({ ...prev, [timerKey]: { timeLeft: 120, isPaused: false } }));
-    timerRefs.current[timerKey] = setInterval(() => {
-      setActiveTimers(prev => {
-        const currentTimer = prev[timerKey];
-        if (currentTimer && !currentTimer.isPaused) {
-          if (currentTimer.timeLeft <= 1) {
-            clearInterval(timerRefs.current[timerKey]!);
-            delete timerRefs.current[timerKey];
-            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰' });
-            const updated = { ...prev }; delete updated[timerKey]; return updated;
-          }
-          return { ...prev, [timerKey]: { ...currentTimer, timeLeft: currentTimer.timeLeft - 1 } };
-        }
-        return prev;
-      });
-    }, 1000);
-  };
-  
-  const pauseResumeTimer = (setIndex: number) => {
-    const timerKey = `accessory_${index}_${setIndex}`;
-    setActiveTimers(prev => {
-      const currentTimer = prev[timerKey];
-      if (currentTimer) return { ...prev, [timerKey]: { ...currentTimer, isPaused: !currentTimer.isPaused } };
-      return prev;
-    });
-  };
-
   useEffect(() => {
     return () => { Object.values(timerRefs.current).forEach(intervalId => { if (intervalId) clearInterval(intervalId); }); };
   }, []);
 
   const addSetToExercise = () => {
     if (selectedSetConfig !== 'custom') {
-      setSelectedSetConfig('custom');
+      toast.error('커스텀 모드에서만 세트를 추가할 수 있습니다.');
+      return;
     }
     const newSet: Set = { reps: 10, weight: 0, isSuccess: null };
     onChange(index, { ...exercise, sets: [...exercise.sets, newSet] });
   };
 
   const removeSetFromExercise = (setIndex: number) => {
-    if (exercise.sets.length <= 1) { toast.error('최소 한 개의 세트는 유지해야 합니다.'); return; }
     if (selectedSetConfig !== 'custom') {
-      setSelectedSetConfig('custom');
+      return;
     }
+    if (exercise.sets.length <= 1) { toast.error('최소 한 개의 세트는 유지해야 합니다.'); return; }
     const newSets = exercise.sets.filter((_, sIdx) => sIdx !== setIndex);
     onChange(index, { ...exercise, sets: newSets });
   };
@@ -158,7 +173,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
       </div>
       <div className="mb-3">
         <label htmlFor={`accessory-exercise-name-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          운동 선택 ({currentExercisePart ? accessoryExercisePartOptions.find(p => p.value === currentExercisePart)?.label : '부위 선택 필요'})
+          운동 선택 ({currentExercisePart ? getPartLabel(currentExercisePart) : '부위 먼저'})
         </label>
         <select
           id={`accessory-exercise-name-${index}`}
@@ -198,31 +213,49 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
           <div key={setIndex} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
             <div className="flex justify-between items-center mb-2">
               <div className="font-medium text-gray-800 dark:text-gray-200">세트 {setIndex + 1}</div>
-              <div className="flex items-center gap-2">
-                <Button size="xs" variant="icon" onClick={() => handleSetStatusToggle(setIndex)}
-                  className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors duration-200 ${set.isSuccess === true ? 'bg-green-500 text-white hover:bg-green-600' : set.isSuccess === false ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'}`}
-                  aria-label={set.isSuccess === null ? "세트 미완료" : set.isSuccess ? "세트 성공" : "세트 실패"}
-                >{set.isSuccess === true ? <CheckCircle size={18} /> : set.isSuccess === false ? <CheckCircle size={18} /> : <Square size={18} />}</Button>
-                <Button size="xs" variant="secondary" onClick={() => activeTimers[`accessory_${index}_${setIndex}`] ? pauseResumeTimer(setIndex) : toggleTimer(setIndex)}
-                  className="h-8 min-w-[60px] px-2" icon={activeTimers[`accessory_${index}_${setIndex}`] && !activeTimers[`accessory_${index}_${setIndex}`].isPaused ? undefined : <Clock size={16} />}
-                >{activeTimers[`accessory_${index}_${setIndex}`] ? `${formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)} ${activeTimers[`accessory_${index}_${setIndex}`].isPaused ? '(||)' : '(▶)'}` : '휴식'}</Button>
-                <Button size="xs" variant="danger" onClick={() => removeSetFromExercise(setIndex)} className="h-8 w-8" icon={<X size={16} />} aria-label="세트 삭제" />
-              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr] gap-3 items-end">
               <div>
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">무게 (kg)</label>
-                <input type="number" value={set.weight || ''} onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))} className="w-full md:w-2/3 p-2 border rounded-md text-sm" />
+                <input type="number" value={set.weight || ''} onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm" />
               </div>
               <div>
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">횟수</label>
-                <input type="number" value={set.reps || ''} onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))} className="w-full md:w-2/3 p-2 border rounded-md text-sm" />
+                <input type="number" value={set.reps || ''} onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm" />
+              </div>
+              <div className="flex flex-col items-center space-y-1">
+                <Button
+                  size="sm"
+                  variant="icon"
+                  onClick={() => handleAccessorySetCompletionAndTimer(setIndex)}
+                  className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${
+                    set.isSuccess === true ? 'bg-green-500 text-white hover:bg-green-600' :
+                    set.isSuccess === false ? 'bg-red-500 text-white hover:bg-red-600' :
+                    'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
+                  }`}
+                  aria-label={set.isSuccess === null ? "세트 미완료" : set.isSuccess ? "세트 성공" : "세트 실패"}
+                >
+                  {set.isSuccess === true ? <CheckCircle size={20} /> : set.isSuccess === false ? <X size={20} /> : <Square size={20} />}
+                </Button>
+                {activeTimers[`accessory_${index}_${setIndex}`] && (
+                  <div className="flex items-center text-xs mt-1">
+                    <span className={`font-semibold ${activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? 'text-gray-500' : 'text-blue-600 animate-pulse'}`}>
+                        {formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}
+                    </span>
+                    <button onClick={() => togglePauseAccessoryTimer(`accessory_${index}_${setIndex}`)} className="p-0.5 ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none">
+                      {activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? <Play size={12} /> : <Pause size={12} />}
+                    </button>
+                  </div>
+                )}
+                {selectedSetConfig === 'custom' && (
+                    <Button size="xs" variant="danger" onClick={() => removeSetFromExercise(setIndex)} className="mt-1 h-7 w-7" icon={<X size={14} />} aria-label="세트 삭제" />
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
-      {(selectedSetConfig === 'custom' || exercise.sets.length < 5 ) && (
+      {selectedSetConfig === 'custom' && (
          <Button size="sm" variant="outline" onClick={addSetToExercise} className="mt-3 w-full" icon={<Plus size={16} />}>세트 추가</Button>
       )}
     </div>

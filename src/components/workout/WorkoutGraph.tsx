@@ -17,12 +17,12 @@ import { db } from '../../firebase/firebaseConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import Card from '../common/Card';
-import { ExercisePart, Workout } from '../../types';
+import { ExercisePart, Workout, FirestoreTimestamp } from '../../types';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { X } from 'lucide-react';
 import Badge from '../common/Badge';
 // 유틸리티 함수 import
-import { getPartLabel, getPartColor, formatShortDate } from '../../utils/workoutUtils';
+import { getPartLabel, getPartColor, formatShortDate, parseFirestoreDate } from '../../utils/workoutUtils';
 
 // Chart.js 컴포넌트 등록
 ChartJS.register(
@@ -174,26 +174,25 @@ const WorkoutGraph: React.FC = () => {
     plugins: {
       legend: {
         display: true,
-        position: 'top',
+        position: 'top' as const,
         labels: {
           usePointStyle: true,
           padding: 15
         }
       },
       tooltip: {
-        mode: 'index',
+        mode: 'index' as const,
         intersect: false,
         callbacks: {
           title: (tooltipItems) => {
-            return tooltipItems[0].label || '';
+            return tooltipItems[0]?.label || '';
           },
-          label: (context) => {
+          label: (context): string | void => {
             const label = context.dataset.label || '';
             const value = context.raw as number;
             
-            if (value === null) return null;
+            if (value === null || value === undefined) return;
             
-            // 라벨에서 운동 이름과 세트 구성 추출
             const labelMatch = label.match(/^(.+) \((.+)\)$/);
             const exerciseName = labelMatch ? labelMatch[1] : label;
             const setConfig = labelMatch ? labelMatch[2] : '';
@@ -203,40 +202,22 @@ const WorkoutGraph: React.FC = () => {
               tooltipText += ` (${setConfig})`;
             }
             
-            // 해당 날짜의 데이터가 있을 경우 추가 정보 표시 (보조 운동 정보 제외)
             const dateLabel = context.chart.data.labels?.[context.dataIndex] as string;
             if (dateLabel && dateAllWorkoutsMap[dateLabel]) {
-              // 해당 날짜의 모든 운동 시도
               const workoutsForDate = dateAllWorkoutsMap[dateLabel];
-              
-              // 표시 중인 운동 이름과 일치하는 운동 찾기
               const matchingWorkout = workoutsForDate.find(w => 
                 w.mainExercise && w.mainExercise.name === exerciseName
               );
-              
-              if (matchingWorkout) {
-                const workout = matchingWorkout;
-                
-                // 메인 운동 정보 표시
-                if (workout.mainExercise) {
-                  const sets = workout.mainExercise.sets;
-                  if (sets && sets.length > 0) {
-                    // 세트별 성공/실패 정보 추가
-                    const successCount = sets.filter(set => set.isSuccess).length;
-                    const failCount = sets.filter(set => set.isSuccess === false).length;
-                    const pendingCount = sets.filter(set => set.isSuccess === null).length;
-                    
-                    tooltipText += `\n세트 구성: ${sets.length}세트 x ${sets[0].reps}회`;
-                    tooltipText += `\n성공: ${successCount}, 실패: ${failCount}`;
-                    
-                    if (pendingCount > 0) {
-                      tooltipText += `, 미완료: ${pendingCount}`;
-                    }
-                  }
-                }
+              if (matchingWorkout?.mainExercise?.sets) {
+                const sets = matchingWorkout.mainExercise.sets;
+                const successCount = sets.filter(set => set.isSuccess).length;
+                const failCount = sets.filter(set => set.isSuccess === false).length;
+                const pendingCount = sets.filter(set => set.isSuccess === null).length;
+                tooltipText += `\n세트 구성: ${sets.length}세트 x ${sets[0]?.reps || '-'}회`;
+                tooltipText += `\n성공: ${successCount}, 실패: ${failCount}`;
+                if (pendingCount > 0) tooltipText += `, 미완료: ${pendingCount}`;
               }
             }
-            
             return tooltipText;
           }
         }
@@ -250,24 +231,20 @@ const WorkoutGraph: React.FC = () => {
           text: '무게 (kg)'
         },
         ticks: {
-          stepSize: 5 // 5kg 단위로 눈금 표시
+          stepSize: 5
         },
-        // 최소 무게에서 10kg 정도 밑에서 시작하도록 설정
-        min: (context) => {
-          const minValue = context.chart.data.datasets.reduce((min, dataset) => {
-            const dataValues = dataset.data.filter((val): val is number => typeof val === 'number' && val !== null);
+        min: (context: any): number => {
+          const minValue = context.chart.data.datasets.reduce((min: number, dataset: any) => {
+            const dataValues = dataset.data.filter((val: any): val is number => typeof val === 'number' && val !== null);
             return dataValues.length > 0 ? Math.min(min, Math.min(...dataValues)) : min;
           }, Infinity);
-          
           return minValue !== Infinity ? Math.max(0, minValue - 10) : 0;
         },
-        // 최대 무게에서 10kg 정도 위에서 끝나도록 설정
-        max: (context) => {
-          const maxValue = context.chart.data.datasets.reduce((max, dataset) => {
-            const dataValues = dataset.data.filter((val): val is number => typeof val === 'number' && val !== null);
+        max: (context: any): number => {
+          const maxValue = context.chart.data.datasets.reduce((max: number, dataset: any) => {
+            const dataValues = dataset.data.filter((val: any): val is number => typeof val === 'number' && val !== null);
             return dataValues.length > 0 ? Math.max(max, Math.max(...dataValues)) : max;
           }, -Infinity);
-          
           return maxValue !== -Infinity ? maxValue + 10 : 100;
         }
       },
@@ -279,46 +256,39 @@ const WorkoutGraph: React.FC = () => {
       }
     },
     interaction: {
-      mode: 'nearest',
-      axis: 'x',
+      mode: 'nearest' as const,
+      axis: 'x' as const,
       intersect: false
     },
     elements: {
       line: {
         segment: {
-          borderColor: (ctx) => {
-            const index1 = ctx.p0.parsed.x;
-            const index2 = ctx.p1.parsed.x;
-            const dataset = ctx.p0.dataset;
-            
+          borderColor: (ctx: any) => {
+            if (!ctx.p0 || !ctx.p1 || !ctx.p0.dataset) return undefined;
+            const index1 = ctx.p0.parsed?.x;
+            const index2 = ctx.p1.parsed?.x;
+            const dataset = ctx.chart.data.datasets[ctx.p0.datasetIndex];
+            if (index1 === undefined || index2 === undefined || !dataset) return undefined;
             for (let i = index1 + 1; i < index2; i++) {
-              if (dataset.data[i] === null) {
-                return 'transparent';
-              }
+              if (dataset.data[i] === null) return 'transparent';
             }
-            
-            return dataset.borderColor;
+            return (dataset as any).borderColor;
           }
         }
       }
     },
     onClick: (event, elements, chart) => {
-      if (elements.length === 0) return;
-      
+      if (elements.length === 0 || !elements[0]) return;
       const clickedElement = elements[0];
       const dataIndex = clickedElement.index;
       const dateLabel = chart.data.labels?.[dataIndex] as string;
-      
       if (dateLabel) {
-        // 클릭한 날짜의 모든 운동 목록
         const workoutsForDate = dateAllWorkoutsMap[dateLabel] || [];
-        
         if (workoutsForDate.length > 0) {
-          // 선택된 날짜 및 해당 날짜의 운동 목록 설정
           setSelectedDate(dateLabel);
           setWorkoutsForSelectedDate(workoutsForDate);
-          setSelectedWorkoutIndex(0); // 첫 번째 운동으로 초기화
-          setSelectedWorkout(workoutsForDate[0]); // 첫 번째 운동 선택
+          setSelectedWorkoutIndex(0);
+          setSelectedWorkout(workoutsForDate[0]);
         }
       }
     }
@@ -337,7 +307,7 @@ const WorkoutGraph: React.FC = () => {
       }
       
       const newDateWorkoutMap: Record<string, Workout> = {};
-      const newDateAllWorkoutsMap: Record<string, Workout[]> = {}; // 변수명 수정
+      const newDateAllWorkoutsMap: Record<string, Workout[]> = {};
       const allDates: string[] = [];
       const exerciseConfigData: Record<string, Record<string, Record<string, number>>> = {};
       let minWeight = Infinity;
@@ -345,7 +315,8 @@ const WorkoutGraph: React.FC = () => {
 
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
-        const dateStr = formatShortDate(new Date(workout.date));
+        const dateObj = parseFirestoreDate(workout.date as unknown as FirestoreTimestamp | Date | string);
+        const dateStr = formatShortDate(dateObj);
         allDates.push(dateStr);
         const workoutKey = `${dateStr}-${workout.mainExercise.name}`;
         newDateWorkoutMap[workoutKey] = workout;
@@ -366,7 +337,7 @@ const WorkoutGraph: React.FC = () => {
           exerciseConfigData[exerciseName] = { '5x5': {}, '6x3': {}, '10x5': {}, '15x5': {} };
         }
         
-        let currentMaxWorkoutWeight = 0; // 변수명 변경
+        let currentMaxWorkoutWeight = 0;
         sets.forEach(set => {
           if (set.weight > currentMaxWorkoutWeight) currentMaxWorkoutWeight = set.weight;
           if (set.weight > 0) {
@@ -389,7 +360,7 @@ const WorkoutGraph: React.FC = () => {
       setDateWorkoutMap(newDateWorkoutMap);
       setDateAllWorkoutsMap(newDateAllWorkoutsMap);
       
-      const uniqueDates = [...new Set(allDates)].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      const uniqueDates = [...new Set(allDates)].sort((a, b) => new Date(a.split('/').map((s,i) => i === 0 ? '20'+s : s).join('/')).getTime() - new Date(b.split('/').map((s,i) => i === 0 ? '20'+s : s).join('/')).getTime());
       const datasets: any[] = [];
       const configColors = { '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } };
 
@@ -414,7 +385,7 @@ const WorkoutGraph: React.FC = () => {
       
       console.log(`[WorkoutGraph] prepareChartData - 최종 계산된 minWeight: ${minWeight}, maxWeight: ${maxWeight} (어깨 부위: ${selectedPart === 'shoulder'})`);
       
-      let yMin = 0, yMax = 100; // 기본 y축 범위
+      let yMin = 0, yMax = 100;
       if (minWeight !== Infinity && maxWeight !== -Infinity) {
           switch (selectedPart) {
             case 'shoulder': yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10; break;
@@ -427,8 +398,11 @@ const WorkoutGraph: React.FC = () => {
       }
 
       const finalChartData = { labels: uniqueDates, datasets };
-      // chartOptions는 외부에서 정의된 것을 사용, 내부에서 직접 수정하지 않도록 주의
-      // 필요하다면 setChartOptions와 같은 함수를 통해 업데이트
+      if (chartOptions.scales?.y) {
+        chartOptions.scales.y.min = yMin;
+        chartOptions.scales.y.max = yMax;
+      }
+
       setChartData(finalChartData);
 
     } catch (error) { console.error('[WorkoutGraph] prepareChartData 오류:', error); }
@@ -484,12 +458,12 @@ const WorkoutGraph: React.FC = () => {
       console.log('[WorkoutGraph] loadWorkoutData - Firestore 쿼리 날짜 범위:', startDate.toLocaleDateString(), '~', endDate.toLocaleDateString());
       
       const sessionsCollection = collection(db, 'sessions');
-      const q = query(sessionsCollection, where('userId', '==', currentUser.uid), where('date', '>=', startDate), where('date', '<=', endDate), orderBy('date', 'asc')); // Firestore 쿼리 확인
+      const q = query(sessionsCollection, where('userId', '==', currentUser.uid), where('date', '>=', startDate), where('date', '<=', endDate), orderBy('date', 'asc'));
       const querySnapshot = await getDocs(q);
       const data = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        date: new Date(doc.data().date.toDate()), // Firestore Timestamp를 Date 객체로 변환
+        date: parseFirestoreDate(doc.data().date as unknown as FirestoreTimestamp | Date | string),
       })) as Workout[];
       
       console.log('[WorkoutGraph] loadWorkoutData - Firestore에서 가져온 데이터 (workoutData 첫 5개):\n', JSON.stringify(data.slice(0, 5).map(d => ({...d, date: d.date.toISOString()})), null, 2));
@@ -576,10 +550,14 @@ const WorkoutGraph: React.FC = () => {
   
   // 부위 변경 핸들러
   const handlePartChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const part = e.target.value;
+    const part = e.target.value as ExercisePart;
     setSelectedPart(part);
-    // 부위 변경 시 운동 선택 초기화
-    setSelectedExercise('all');
+    // 부위 변경 시 운동 선택 초기화 (해당 부위의 첫 번째 운동 또는 'all')
+    if (exerciseOptions[part] && exerciseOptions[part].length > 0) {
+      setSelectedExercise(exerciseOptions[part][0].value);
+    } else {
+      setSelectedExercise('all');
+    }
   };
   
   // 이전/다음 운동으로 이동하는 함수
@@ -748,9 +726,7 @@ const WorkoutGraph: React.FC = () => {
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               <Badge variant="primary">
-                {typeof selectedWorkout.date === 'string' 
-                  ? new Date(selectedWorkout.date).toLocaleDateString() 
-                  : selectedWorkout.date.toLocaleDateString()}
+                {selectedWorkout.date ? parseFirestoreDate(selectedWorkout.date as unknown as FirestoreTimestamp | Date | string).toLocaleDateString() : '날짜 정보 없음'}
               </Badge>
               <Badge variant="secondary">{getPartLabel(selectedWorkout.part)}</Badge>
               <Badge variant={selectedWorkout.isAllSuccess ? 'success' : 'danger'}>

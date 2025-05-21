@@ -20,7 +20,7 @@ import Layout from '../common/Layout';
 import Card, { CardTitle, CardSection } from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
-import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square } from 'lucide-react';
+import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square, Play, Pause } from 'lucide-react';
 import { getSetConfiguration } from '../../utils/workoutUtils';
 import AccessoryExerciseComponent from './AccessoryExerciseComponent';
 // 필요한 import 추가
@@ -322,44 +322,90 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const toggleTimer = (exerciseIndex: number = -1, setIndex: number) => {
-    const timerKey = exerciseIndex === -1 ? `main_${setIndex}` : `accessory_${exerciseIndex}_${setIndex}`;
-    
-    if (!activeTimers[timerKey]) {
-      // 타이머 시작
-      const newTimers = { ...activeTimers };
-      newTimers[timerKey] = { timeLeft: 120, isPaused: false }; // 휴식 시간을 120초(2분)로 변경
-      setActiveTimers(newTimers);
-      
-      timerRefs.current[timerKey] = setInterval(() => {
-        setActiveTimers((prev: typeof activeTimers) => { // prev 타입 명시
-          const updated = { ...prev };
-          if (updated[timerKey] && !updated[timerKey].isPaused) {
-            updated[timerKey].timeLeft -= 1;
-            
-            if (updated[timerKey].timeLeft <= 0) {
-              clearInterval(timerRefs.current[timerKey]);
-              toast.success('휴식 시간이 끝났습니다!', { position: 'top-center' });
-              delete updated[timerKey];
-              return updated;
+  // 훈련 완료 및 타이머 시작/일시정지/재개 통합 함수
+  const handleSetCompletionAndTimer = (setIndex: number, isMainExercise: boolean, accessoryIndex?: number) => {
+    if (isMainExercise) {
+      const newSets = [...mainExercise.sets];
+      const currentSet = newSets[setIndex];
+      const timerKey = `main_${setIndex}`;
+
+      // 1. 세트 상태 토글 (미완료 -> 성공 -> 실패 -> 미완료)
+      if (currentSet.isSuccess === null) { // 미완료 -> 성공
+        currentSet.isSuccess = true;
+        // 성공 시 타이머 시작 (기존 타이머가 없거나, 다른 세트의 타이머가 아닌 경우)
+        if (!activeTimers[timerKey] && !Object.keys(activeTimers).some(key => activeTimers[key])) {
+          startTimer(timerKey, 120); // 2분 타이머 시작
+        }
+        // 1RM 계산 등 성공 시 로직
+        const { repsCount: targetReps } = getSetConfiguration(selectedSetConfiguration, customSets, customReps);
+        const currentReps = currentSet.reps;
+        if (currentReps >= targetReps) { // 성공으로 간주할 조건 (예: 목표 횟수 달성)
+            const weight = currentSet.weight;
+            const reps = currentSet.reps;
+            if (weight > 0 && reps > 0 && reps < 37) {
+                const estimatedOneRM = Math.round(weight * (36 / (37 - reps)));
+                updateOneRMIfHigher(selectedMainExercise, estimatedOneRM);
             }
-          }
-          return updated;
-        });
-      }, 1000);
-    } else if (activeTimers[timerKey].isPaused) {
-      // 타이머 재개
-      setActiveTimers((prev: typeof activeTimers) => ({ // prev 타입 명시
-        ...prev,
-        [timerKey]: { ...prev[timerKey], isPaused: false }
-      }));
-    } else {
-      // 타이머 일시정지
-      setActiveTimers((prev: typeof activeTimers) => ({ // prev 타입 명시
-        ...prev,
-        [timerKey]: { ...prev[timerKey], isPaused: true }
-      }));
+        } else {
+            currentSet.isSuccess = false; // 목표 미달 시 실패 처리
+        }
+
+      } else if (currentSet.isSuccess === true) { // 성공 -> 실패
+        currentSet.isSuccess = false;
+        clearTimer(timerKey); // 타이머 중지
+      } else { // 실패 -> 미완료 (isSuccess === false)
+        currentSet.isSuccess = null;
+        clearTimer(timerKey); // 타이머 중지
+      }
+      setMainExercise(prev => ({ ...prev, sets: newSets }));
+
+    } else if (accessoryIndex !== undefined) {
+      // 보조 운동 로직은 AccessoryExerciseComponent에서 유사하게 처리
     }
+  };
+
+  // 타이머 시작 함수
+  const startTimer = (timerKey: string, duration: number) => {
+    clearTimer(timerKey); // 기존 타이머가 있다면 정리
+    setActiveTimers(prev => ({ ...prev, [timerKey]: { timeLeft: duration, isPaused: false } }));
+    timerRefs.current[timerKey] = setInterval(() => {
+      setActiveTimers(prev => {
+        const current = prev[timerKey];
+        if (current && !current.isPaused) {
+          if (current.timeLeft <= 1) {
+            clearTimer(timerKey);
+            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰' });
+            return { ...prev, [timerKey]: undefined }; // 타이머 정보 제거
+          }
+          return { ...prev, [timerKey]: { ...current, timeLeft: current.timeLeft - 1 } };
+        }
+        return prev;
+      });
+    }, 1000);
+  };
+
+  // 타이머 일시정지/재개 함수
+  const togglePauseTimer = (timerKey: string) => {
+    setActiveTimers(prev => {
+      const current = prev[timerKey];
+      if (current) {
+        return { ...prev, [timerKey]: { ...current, isPaused: !current.isPaused } };
+      }
+      return prev;
+    });
+  };
+
+  // 타이머 초기화 함수
+  const clearTimer = (timerKey: string) => {
+    if (timerRefs.current[timerKey]) {
+      clearInterval(timerRefs.current[timerKey]);
+      delete timerRefs.current[timerKey];
+    }
+    setActiveTimers(prev => {
+        const newState = {...prev};
+        delete newState[timerKey];
+        return newState;
+    });
   };
 
   // 보조 운동 추가
@@ -1302,75 +1348,69 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             
             {/* 세트 입력 영역 */}
             <div className="space-y-3">
-              {mainExercise.sets.map((set: { weight: number; reps: number; isSuccess: boolean | null }, index: number) => ( // set, index 타입 명시
-                <div key={index} className="p-3 border rounded-lg">
+              {mainExercise.sets.map((set, index) => (
+                <div key={index} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
                   <div className="flex justify-between items-center mb-2">
-                    <div className="font-medium">세트 {index + 1}</div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="xs"
-                        variant="icon" // 아이콘 버튼으로 명시적 스타일링을 위해 variant 변경 또는 className으로 직접 제어
-                        onClick={() => handleTrainingComplete(index, true)}
-                        className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors duration-200 ${ // 크기 및 정렬
-                          set.isSuccess === true
-                            ? 'bg-green-500 text-white hover:bg-green-600' // 성공
-                            : set.isSuccess === false
-                            ? 'bg-red-500 text-white hover:bg-red-600' // 실패 (빨간색 배경)
-                            : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500' // 미완료 (네모)
-                        }`}
-                        aria-label={set.isSuccess === null ? "세트 미완료" : set.isSuccess ? "세트 성공" : "세트 실패"} // 접근성
-                      >
-                        {set.isSuccess === true ? (
-                          <CheckCircle size={18} />
-                        ) : set.isSuccess === false ? (
-                          <CheckCircle size={18} /> // 실패 시에도 체크 아이콘 (색상으로 구분)
-                        ) : (
-                          <Square size={18} /> // 초기 상태 (네모)
-                        )}
-                      </Button>
-                      
-                      <Button
-                        size="xs"
-                        variant="secondary"
-                        onClick={() => toggleTimer(-1, index)}
-                        className="h-8"
-                        icon={<Clock size={16} />}
-                      >
-                        {activeTimers[`main_${index}`]
-                          ? formatTime(activeTimers[`main_${index}`].timeLeft)
-                          : '휴식'}
-                      </Button>
-                    </div>
+                    <div className="font-medium text-gray-800 dark:text-gray-200">세트 {index + 1}</div>
+                    {/* 이 부분은 새로운 UI 구조에서는 제거되거나 다른 용도로 사용될 수 있음 */}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr] gap-3 items-end"> {/* md 이상에서 3번째 컬럼은 버튼용으로 작게 */} 
                     <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        무게 (kg)
-                      </label>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">무게 (kg)</label>
                       <input
                         type="number"
                         value={set.weight || ''}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // e 타입 명시
+                        onChange={(e) => {
                           const newSets = [...mainExercise.sets];
                           newSets[index].weight = Number(e.target.value) || 0;
                           setMainExercise({ ...mainExercise, sets: newSets });
                         }}
-                        className="w-full md:w-2/3 p-2 border rounded-md" // 너비 조절 (md 이상에서 2/3)
+                        className="w-full p-2 border rounded-md" 
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        횟수
-                      </label>
+                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">횟수</label>
                       <input
                         type="number"
                         value={set.reps || ''}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // e 타입 명시
-                          handleRepsChange(Number(e.target.value) || 0, index, true);
-                        }}
-                        className="w-full md:w-2/3 p-2 border rounded-md" // 너비 조절 (md 이상에서 2/3)
+                        onChange={(e) => handleRepsChange(Number(e.target.value) || 0, index, true)}
+                        className="w-full p-2 border rounded-md"
                       />
+                    </div>
+                    {/* 완료/타이머 버튼 영역 (한 행의 마지막 컬럼) */} 
+                    <div className="flex flex-col items-center space-y-1"> {/* 버튼과 타이머 텍스트를 세로로 배열 */} 
+                      <Button
+                        size="sm"
+                        variant="icon" 
+                        onClick={() => handleSetCompletionAndTimer(index, true)}
+                        className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${ 
+                          set.isSuccess === true
+                            ? 'bg-green-500 text-white hover:bg-green-600'
+                            : set.isSuccess === false
+                            ? 'bg-red-500 text-white hover:bg-red-600'
+                            : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
+                        }`}
+                        aria-label={set.isSuccess === null ? "세트 미완료" : set.isSuccess ? "세트 성공" : "세트 실패"}
+                      >
+                        {set.isSuccess === true ? <CheckCircle size={20} /> :
+                         set.isSuccess === false ? <XCircle size={20} /> : // 실패 시 X 아이콘으로 변경
+                         <Square size={20} />}
+                      </Button>
+                      {activeTimers[`main_${index}`] && (
+                        <div className="flex items-center text-xs">
+                          <span className={`font-semibold ${activeTimers[`main_${index}`]?.isPaused ? 'text-gray-500' : 'text-blue-600 animate-pulse'}`}>
+                              {formatTime(activeTimers[`main_${index}`].timeLeft)}
+                          </span>
+                          <button 
+                            onClick={() => togglePauseTimer(`main_${index}`)} 
+                            className="p-0.5 ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
+                            aria-label={activeTimers[`main_${index}`]?.isPaused ? "타이머 재개" : "타이머 일시정지"}
+                          >
+                            {activeTimers[`main_${index}`]?.isPaused ? <Play size={12} className="text-gray-600 dark:text-gray-400"/> : <Pause size={12} className="text-blue-600 dark:text-blue-400"/>}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
