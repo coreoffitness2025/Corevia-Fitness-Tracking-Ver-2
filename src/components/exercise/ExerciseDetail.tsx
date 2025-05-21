@@ -32,9 +32,9 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  // 유튜브 영상 임베드 URL 생성 (한글 자막 자동 설정)
+  // 유튜브 영상 임베드 URL 생성 (한글 자막 자동 설정 및 추가 옵션)
   const getYoutubeEmbedUrl = (videoId: string): string => {
-    return `https://www.youtube.com/embed/${videoId}?cc_load_policy=1&cc_lang_pref=ko`;
+    return `https://www.youtube.com/embed/${videoId}?cc_load_policy=1&cc_lang_pref=ko&modestbranding=1&iv_load_policy=3`;
   };
 
   // 운동 GIF 이미지 URL 생성
