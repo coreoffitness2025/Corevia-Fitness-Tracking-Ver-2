@@ -327,230 +327,111 @@ const WorkoutGraph: React.FC = () => {
   // 차트 데이터 준비
   const prepareChartData = (data: Workout[]) => {
     try {
+      console.log(`[WorkoutGraph] prepareChartData - 시작, 전달된 데이터 ${data.length}개`);
       if (!data || data.length === 0) {
-        setChartData({
-          labels: [],
-          datasets: []
-        });
-        setDateWorkoutMap({});
-        return;
+        setChartData({ labels: [], datasets: [] }); setDateWorkoutMap({}); setDateAllWorkoutsMap({}); return;
+      }
+      if (selectedPart === 'shoulder') {
+          const specificShoulderRecord = data.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
+          console.log("[WorkoutGraph] prepareChartData - '어깨' 데이터 입력 시 102.5kg 기록:", specificShoulderRecord ? JSON.stringify({...specificShoulderRecord, date: specificShoulderRecord.date.toISOString()}, null, 2) : "없음");
       }
       
-      // 날짜별 운동 데이터 맵 생성
       const newDateWorkoutMap: Record<string, Workout> = {};
-      
-      // 날짜별 모든 운동 기록을 저장하는 맵
-      const dateAllWorkoutsMap: Record<string, Workout[]> = {};
-      
-      // 중복 제거 및 정렬된 날짜 배열 준비
+      const newDateAllWorkoutsMap: Record<string, Workout[]> = {}; // 변수명 수정
       const allDates: string[] = [];
-      
-      // 운동 종류별, 세트 구성별로 데이터 구성
-      // 구조: { 운동이름: { 세트구성: { 날짜: 무게 } } }
       const exerciseConfigData: Record<string, Record<string, Record<string, number>>> = {};
-      
-      // 무게의 최소/최대값을 추적하기 위한 변수
       let minWeight = Infinity;
       let maxWeight = -Infinity;
-      
+
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
-        
         const dateStr = formatShortDate(new Date(workout.date));
         allDates.push(dateStr);
-        
-        // 날짜별 운동 기록 저장 (클릭 이벤트용)
-        // 각 고유한 운동 기록을 날짜+운동이름의 조합으로 저장
         const workoutKey = `${dateStr}-${workout.mainExercise.name}`;
         newDateWorkoutMap[workoutKey] = workout;
+        if (!newDateAllWorkoutsMap[dateStr]) newDateAllWorkoutsMap[dateStr] = [];
+        newDateAllWorkoutsMap[dateStr].push(workout);
+        if (!newDateWorkoutMap[dateStr]) newDateWorkoutMap[dateStr] = workout;
         
-        // 날짜별 모든 운동 기록 저장
-        if (!dateAllWorkoutsMap[dateStr]) {
-          dateAllWorkoutsMap[dateStr] = [];
-        }
-        dateAllWorkoutsMap[dateStr].push(workout);
-        
-        // 기본 날짜별 맵에도 추가 (호환성 유지)
-        if (!newDateWorkoutMap[dateStr]) {
-          newDateWorkoutMap[dateStr] = workout;
-        }
-        
-        // 운동 이름 가져오기
         const exerciseName = workout.mainExercise.name;
-        
-        // 세트 구성 확인
         const sets = workout.mainExercise.sets;
         let setConfig = '';
-        
-        if (sets.length === 5 && sets.every(set => set.reps === 5)) {
-          setConfig = '5x5';
-        } else if (sets.length === 3 && sets.every(set => set.reps === 6)) {
-          setConfig = '6x3';
-        } else if (sets.length === 5 && sets.every(set => set.reps === 10)) {
-          setConfig = '10x5';
-        } else if (sets.length === 5 && sets.every(set => set.reps === 15)) {
-          setConfig = '15x5';
-        } else {
-          // 표준 세트 구성이 아닌 경우 건너뛰기
-          return;
-        }
-        
-        // 운동 별 데이터 초기화 (존재하지 않을 경우)
+        if (sets.length === 5 && sets.every(set => set.reps === 5)) setConfig = '5x5';
+        else if (sets.length === 3 && sets.every(set => set.reps === 6)) setConfig = '6x3';
+        else if (sets.length === 5 && sets.every(set => set.reps === 10)) setConfig = '10x5';
+        else if (sets.length === 5 && sets.every(set => set.reps === 15)) setConfig = '15x5';
+        else return;
+
         if (!exerciseConfigData[exerciseName]) {
-          exerciseConfigData[exerciseName] = {
-            '5x5': {},
-            '6x3': {},
-            '10x5': {},
-            '15x5': {}
-          };
+          exerciseConfigData[exerciseName] = { '5x5': {}, '6x3': {}, '10x5': {}, '15x5': {} };
         }
         
-        // 세트 중 최대 무게 찾기 (성공/실패 관계 없이)
-        let maxWorkoutWeight = 0;
+        let currentMaxWorkoutWeight = 0; // 변수명 변경
         sets.forEach(set => {
-          // 모든 세트의 무게 데이터 (성공, 실패 모두 포함)
-          if (set.weight > maxWorkoutWeight) {
-            maxWorkoutWeight = set.weight;
-          }
-          
-          // 전체 최소/최대 무게 업데이트
+          if (set.weight > currentMaxWorkoutWeight) currentMaxWorkoutWeight = set.weight;
           if (set.weight > 0) {
             minWeight = Math.min(minWeight, set.weight);
             maxWeight = Math.max(maxWeight, set.weight);
           }
         });
-        
-        // 세트 구성별 데이터에 저장
-        if (maxWorkoutWeight > 0) {
-          exerciseConfigData[exerciseName][setConfig][dateStr] = maxWorkoutWeight;
+
+        if (workout.part === 'shoulder' && exerciseName === '오버헤드 프레스') {
+             console.log(`[WorkoutGraph] prepareChartData (forEach) - 어깨 '오버헤드 프레스' 처리 중 (${dateStr}, ${setConfig}): currentMaxWorkoutWeight = ${currentMaxWorkoutWeight}, 현재까지 minWeight = ${minWeight}, maxWeight = ${maxWeight}`);
+        }
+        if (currentMaxWorkoutWeight > 0) {
+          exerciseConfigData[exerciseName][setConfig][dateStr] = currentMaxWorkoutWeight;
+          if (workout.part === 'shoulder' && exerciseName === '오버헤드 프레스') {
+             console.log(`[WorkoutGraph] prepareChartData - exerciseConfigData 저장: ['${exerciseName}']['${setConfig}']['${dateStr}'] = ${currentMaxWorkoutWeight}`);
+          }
         }
       });
       
-      // 날짜별 운동 데이터 맵 업데이트
       setDateWorkoutMap(newDateWorkoutMap);
+      setDateAllWorkoutsMap(newDateAllWorkoutsMap);
       
-      // 날짜별 모든 운동 기록 맵 업데이트
-      setDateAllWorkoutsMap(dateAllWorkoutsMap);
-      
-      // 중복 제거 및 정렬된 날짜 배열
-      const uniqueDates = [...new Set(allDates)].sort((a, b) => {
-        const dateA = new Date(a);
-        const dateB = new Date(b);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      // 세트 구성별 색상 정의
-      const configColors = {
-        '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, // 보라색
-        '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, // 파란색
-        '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, // 빨간색
-        '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } // 초록색
-      };
-      
-      // 데이터셋 생성
+      const uniqueDates = [...new Set(allDates)].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
       const datasets: any[] = [];
-      
-      // 각 운동과 세트 구성에 대한 데이터셋 생성
+      const configColors = { '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } };
+
       Object.entries(exerciseConfigData).forEach(([exerciseName, configData]) => {
-        // 운동별 포인트 스타일 결정
-        const pointStyle = exercisePointStyles[exerciseName] || 'circle'; // 기본값은 원형
-        
-        // 각 세트 구성별 데이터셋 생성
+        const pointStyle = exercisePointStyles[exerciseName] || 'circle';
         Object.entries(configData).forEach(([config, dateData]) => {
-          // 데이터가 없으면 건너뛰기
           if (Object.keys(dateData).length === 0) return;
-          
           const configColor = configColors[config as keyof typeof configColors];
-          
-          // 운동별 구분된 ID 생성
           const datasetId = `${exerciseName}-${config}`;
-          
-          // 포인트 스타일 결정 - 벤치 프레스(6x3)은 항상 삼각형으로 표시
           let pointStyleValue = pointStyle;
+          if (exerciseName === '벤치 프레스' && config === '6x3') pointStyleValue = 'triangle';
+          else if (exerciseName === '데드리프트') pointStyleValue = 'triangle';
           
-          // 특정 운동 및 세트 구성 조합에 특별한 포인트 스타일 적용
-          if (exerciseName === '벤치 프레스' && config === '6x3') {
-            pointStyleValue = 'triangle';
-            console.log(`벤치 프레스(6x3) 포인트 스타일 설정됨: triangle`);
-          } else if (exerciseName === '데드리프트') {
-            pointStyleValue = 'triangle';
+          const dataForChart = uniqueDates.map(date => dateData[date] || null);
+          if (exerciseName === '오버헤드 프레스' && selectedPart === 'shoulder') {
+            console.log(`[WorkoutGraph] prepareChartData - 어깨 운동 데이터셋 생성 중 (${config}): uniqueDates = `, uniqueDates.join(','), `\n  dateData = `, JSON.stringify(dateData), `\n  dataForChart = `, dataForChart.join(','));
           }
-          
-          console.log(`데이터셋 생성: ${exerciseName} (${config}) - 포인트 스타일: ${pointStyleValue}, 데이터 수: ${Object.keys(dateData).length}`);
-          
-          datasets.push({
-            label: `${exerciseName} (${config})`,
-            data: uniqueDates.map(date => dateData[date] || null),
-            borderColor: configColor.border,
-            backgroundColor: configColor.background,
-            tension: 0.2,
-            pointRadius: 6,
-            pointStyle: pointStyleValue,
-            pointBackgroundColor: uniqueDates.map(date => 
-              dateData[date] ? configColor.border : 'transparent'
-            ),
-            pointBorderColor: uniqueDates.map(date => 
-              dateData[date] ? configColor.border : 'transparent'
-            ),
-            pointHoverRadius: 8,
-            pointHoverBackgroundColor: configColor.background,
-            pointHitRadius: 10,
-            id: datasetId, // 데이터셋 고유 ID
-            spanGaps: false // 데이터 없는 부분은 선으로 연결하지 않음
-          });
+
+          datasets.push({ data: dataForChart, pointStyle: pointStyleValue, label: `${exerciseName} (${config})`, borderColor: configColor.border, backgroundColor: configColor.background, tension: 0.2, pointRadius: 6, pointBackgroundColor: uniqueDates.map(date => dateData[date] ? configColor.border : 'transparent'), pointBorderColor: uniqueDates.map(date => dateData[date] ? configColor.border : 'transparent'), pointHoverRadius: 8, pointHoverBackgroundColor: configColor.background, pointHitRadius: 10, id: datasetId, spanGaps: false });
         });
       });
       
-      // 차트 데이터 설정
-      const chartData = {
-        labels: uniqueDates,
-        datasets: datasets
-      };
+      console.log(`[WorkoutGraph] prepareChartData - 최종 계산된 minWeight: ${minWeight}, maxWeight: ${maxWeight} (어깨 부위: ${selectedPart === 'shoulder'})`);
       
-      // 최소/최대 무게에 따라 Y축 범위 계산
+      let yMin = 0, yMax = 100; // 기본 y축 범위
       if (minWeight !== Infinity && maxWeight !== -Infinity) {
-        // 부위별로 다른 Y축 범위 설정
-        let yMin = 0;
-        let yMax = 0;
-        
-        // 부위별 적절한 Y축 범위 설정
-        switch (selectedPart) {
-          case 'shoulder':
-            // 어깨 운동도 다른 운동과 동일한 범위 설정
-            yMin = Math.max(0, minWeight - 10);
-            yMax = maxWeight + 10;
-            break;
-          case 'leg':
-            // 하체 운동은 무게가 높으므로 더 넓은 범위 설정
-            yMin = Math.max(0, minWeight - 20);
-            yMax = maxWeight + 20;
-            break;
-          default:
-            // 기본 범위 설정
-            yMin = Math.max(0, minWeight - 10);
-            yMax = maxWeight + 10;
-        }
-        
-        console.log(`부위: ${selectedPart}, 무게 범위: ${minWeight}kg ~ ${maxWeight}kg, Y축 설정: ${yMin}kg ~ ${yMax}kg`);
-        
-        // 차트 옵션 업데이트
-        chartOptions.scales = {
-          ...chartOptions.scales,
-          y: {
-            ...chartOptions.scales?.y,
-            min: yMin,
-            max: yMax,
-            ticks: {
-              stepSize: 5  // 5kg 단위로 눈금 표시
-            }
+          switch (selectedPart) {
+            case 'shoulder': yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10; break;
+            case 'leg': yMin = Math.max(0, minWeight - 20); yMax = maxWeight + 20; break;
+            default: yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10;
           }
-        };
+          console.log(`[WorkoutGraph] Y축 범위 설정 - 부위: ${selectedPart}, 계산된 min: ${yMin}, max: ${yMax}`);
+      } else {
+           console.log(`[WorkoutGraph] Y축 범위 기본값 사용 (minWeight 또는 maxWeight Infinity)`);
       }
-      
-      setChartData(chartData);
-    } catch (error) {
-      console.error('차트 데이터 변환 오류:', error);
-    }
+
+      const finalChartData = { labels: uniqueDates, datasets };
+      // chartOptions는 외부에서 정의된 것을 사용, 내부에서 직접 수정하지 않도록 주의
+      // 필요하다면 setChartOptions와 같은 함수를 통해 업데이트
+      setChartData(finalChartData);
+
+    } catch (error) { console.error('[WorkoutGraph] prepareChartData 오류:', error); }
   };
   
   // 컴포넌트 마운트 시 데이터 로드
@@ -591,77 +472,63 @@ const WorkoutGraph: React.FC = () => {
       const endDate = new Date();
       let startDate = new Date();
       
+      console.log('[WorkoutGraph] loadWorkoutData - selectedPeriod:', selectedPeriod);
+
       switch (selectedPeriod) {
-        case '1month':
-          startDate.setMonth(startDate.getMonth() - 1);
-          break;
-        case '3months':
-          startDate.setMonth(startDate.getMonth() - 3);
-          break;
-        case '6months':
-          startDate.setMonth(startDate.getMonth() - 6);
-          break;
-        case '1year':
-          startDate.setFullYear(startDate.getFullYear() - 1);
-          break;
-        default:
-          startDate.setMonth(startDate.getMonth() - 1);
+        case '1month': startDate.setMonth(startDate.getMonth() - 1); break;
+        case '3months': startDate.setMonth(startDate.getMonth() - 3); break;
+        case '6months': startDate.setMonth(startDate.getMonth() - 6); break;
+        case '1year': startDate.setFullYear(startDate.getFullYear() - 1); break;
+        default: startDate.setMonth(startDate.getMonth() - 1);
       }
+      console.log('[WorkoutGraph] loadWorkoutData - Firestore 쿼리 날짜 범위:', startDate.toLocaleDateString(), '~', endDate.toLocaleDateString());
       
-      // Firestore 쿼리 구성
       const sessionsCollection = collection(db, 'sessions');
-      const q = query(
-        sessionsCollection,
-        where('userId', '==', currentUser.uid),
-        where('date', '>=', startDate),
-        where('date', '<=', endDate),
-        orderBy('date', 'asc')
-      );
-      
+      const q = query(sessionsCollection, where('userId', '==', currentUser.uid), where('date', '>=', startDate), where('date', '<=', endDate), orderBy('date', 'asc')); // Firestore 쿼리 확인
       const querySnapshot = await getDocs(q);
-      
-      // 쿼리 결과 파싱
       const data = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        date: new Date(doc.data().date.toDate()),
+        date: new Date(doc.data().date.toDate()), // Firestore Timestamp를 Date 객체로 변환
       })) as Workout[];
       
+      console.log('[WorkoutGraph] loadWorkoutData - Firestore에서 가져온 데이터 (workoutData 첫 5개):\n', JSON.stringify(data.slice(0, 5).map(d => ({...d, date: d.date.toISOString()})), null, 2));
+      const shoulderDataLoaded = data.filter(w => w.part === 'shoulder');
+      console.log(`[WorkoutGraph] loadWorkoutData - Firestore 데이터 중 '어깨' 기록 ${shoulderDataLoaded.length}개`);
+      const specificShoulderRecordLoaded = shoulderDataLoaded.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
+      console.log("[WorkoutGraph] loadWorkoutData - Firestore '어깨' 중 102.5kg 기록:", specificShoulderRecordLoaded ? JSON.stringify({...specificShoulderRecordLoaded, date: specificShoulderRecordLoaded.date.toISOString()},null,2) : "없음");
+
       setWorkoutData(data);
-      // 초기 필터 적용
       applyFilters(data);
-      
-    } catch (error) {
-      console.error('운동 데이터 로드 오류:', error);
-      setError('운동 데이터를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { console.error('[WorkoutGraph] loadWorkoutData 오류:', error); setError('운동 데이터를 불러오는 중 오류가 발생했습니다.'); } finally { setLoading(false); }
   };
   
   // 필터링 기능
-  const applyFilters = (data = workoutData) => {
+  const applyFilters = (dataToFilter = workoutData) => {
     try {
-      let filtered = [...data];
-      
-      // 부위 필터링 - 선택된 부위만 정확히 포함하도록 수정
+      let filtered = [...dataToFilter];
+      console.log(`[WorkoutGraph] applyFilters - 시작, 데이터 ${filtered.length}개, 선택된 부위: ${selectedPart}, 운동: ${selectedExercise}, 세트구성: ${selectedSetConfig}`);
+
       filtered = filtered.filter(item => item.part === selectedPart);
-      
-      // 운동 종류 필터링
+      console.log(`[WorkoutGraph] applyFilters - 부위 필터링 후 (${selectedPart}): ${filtered.length}개`);
+      if (selectedPart === 'shoulder') {
+        const specificShoulderRecord = filtered.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
+        console.log("[WorkoutGraph] applyFilters - '어깨' 부위 필터링 후 102.5kg 기록:", specificShoulderRecord ? JSON.stringify({...specificShoulderRecord, date: specificShoulderRecord.date.toISOString()},null,2) : "없음");
+      }
+
       if (selectedExercise !== 'all') {
         filtered = filtered.filter(item => 
           item.mainExercise && item.mainExercise.name.includes(
-            exerciseOptions[selectedPart].find(opt => opt.value === selectedExercise)?.label || ''
+            exerciseOptions[selectedPart]?.find(opt => opt.value === selectedExercise)?.label || ''
           )
         );
       }
-      
-      // 이 부분을 추가하여 데이터 검증 (디버깅용)
-      console.log(`필터링 결과 (${selectedPart}): `, filtered.length, '개의 데이터');
-      console.log(`필터링 전 전체 데이터:`, data.length, '개');
-      console.log(`필터링된 운동 이름들:`, filtered.map(w => w.mainExercise?.name).join(', '));
-      
-      // 세트 구성 필터링 (실제 세트 구성에 따라 필터링)
+      console.log(`[WorkoutGraph] applyFilters - 운동 종류 필터링 후 (${selectedExercise}): ${filtered.length}개`);
+       if (selectedPart === 'shoulder') {
+        const specificShoulderRecord = filtered.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
+        console.log("[WorkoutGraph] applyFilters - '어깨' 운동종류 필터링 후 102.5kg 기록:", specificShoulderRecord ? JSON.stringify({...specificShoulderRecord, date: specificShoulderRecord.date.toISOString()},null,2) : "없음");
+      }
+
       if (selectedSetConfig !== 'all') {
         filtered = filtered.filter(item => {
           if (!item.mainExercise || !item.mainExercise.sets || item.mainExercise.sets.length === 0) {
@@ -684,34 +551,22 @@ const WorkoutGraph: React.FC = () => {
           return false;
         });
       }
+      console.log(`[WorkoutGraph] applyFilters - 세트 구성 필터링 후 (${selectedSetConfig}): ${filtered.length}개`);
+       if (selectedPart === 'shoulder') {
+        const specificShoulderRecord = filtered.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
+        console.log("[WorkoutGraph] applyFilters - '어깨' 세트구성 필터링 후 102.5kg 기록:", specificShoulderRecord ? JSON.stringify({...specificShoulderRecord, date: specificShoulderRecord.date.toISOString()},null,2) : "없음");
+      }
+
+      setFilteredData(filtered);
       
-      // 같은 날짜에 여러 운동이 있을 경우 모두 유지
-      const uniqueWorkouts: Workout[] = [];
-      const workoutKeys = new Set<string>();
-      
-      filtered.forEach(workout => {
-        const key = `${workout.date}-${workout.mainExercise?.name || ''}`;
-        if (!workoutKeys.has(key)) {
-          workoutKeys.add(key);
-          uniqueWorkouts.push(workout);
-        }
-      });
-      
-      setFilteredData(uniqueWorkouts);
-      
-      // 차트 데이터 변환 - 부위별 데이터만 사용하도록 수정
       if (filtered.length > 0) {
         prepareChartData(filtered);
       } else {
-        // 데이터가 없을 경우 빈 차트 데이터 설정
-        setChartData({
-          labels: [],
-          datasets: []
-        });
+        setChartData({ labels: [], datasets: [] }); 
+        setDateWorkoutMap({}); 
+        setDateAllWorkoutsMap({});
       }
-    } catch (error) {
-      console.error('필터 적용 오류:', error);
-    }
+    } catch (error) { console.error('[WorkoutGraph] applyFilters 오류:', error); }
   };
   
   // 필터 변경 시 데이터 재필터링
