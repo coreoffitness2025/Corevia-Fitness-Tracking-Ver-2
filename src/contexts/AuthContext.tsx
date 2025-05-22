@@ -3,6 +3,14 @@ import { User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, getUserProfile, updateUserProfile as updateFirebaseProfile } from '../firebase/firebaseConfig';
 import { UserProfile, UserSettings } from '../types';
+import { 
+  calculateBMR, 
+  calculateNutritionGoals,
+  activityMultipliers, 
+  goalMultipliers,
+  ActivityLevel,
+  FitnessGoal
+} from '../utils/nutritionUtils';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -78,45 +86,6 @@ const deepMerge = (target: any, source: any) => {
   return output;
 };
 
-// 목표 칼로리 계산 함수
-const calculateTargetCalories = (
-  height: number,
-  weight: number,
-  age: number,
-  gender: 'male' | 'female',
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive',
-  fitnessGoal: 'lose' | 'maintain' | 'gain'
-): number => {
-  // 기초 대사량(BMR) 계산 - 해리스-베네딕트 공식
-  let bmr = 0;
-  if (gender === 'male') {
-    bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
-  } else {
-    bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
-  }
-  
-  // 활동 계수
-  const activityFactors = {
-    sedentary: 1.2,    // 거의 운동 안함
-    light: 1.375,      // 가벼운 운동 (주 1-3회)
-    moderate: 1.55,    // 중간 정도 운동 (주 3-5회)
-    active: 1.725,     // 활발한 운동 (주 6-7회)
-    veryActive: 1.9    // 매우 활발한 운동 (하루 2회 이상)
-  };
-  
-  // 일일 필요 칼로리 (TDEE)
-  const tdee = bmr * activityFactors[activityLevel];
-  
-  // 목표에 따른 조정
-  const goalFactors = {
-    lose: 0.8,        // 체중 감량 (20% 적게)
-    maintain: 1.0,     // 체중 유지
-    gain: 1.15         // 체중 증가 (15% 많게)
-  };
-  
-  return Math.round(tdee * goalFactors[fitnessGoal]);
-};
-
 // 개인화 필요 여부 확인 함수
 const checkPersonalizationNeeded = async (uid: string) => {
   try {
@@ -156,6 +125,25 @@ const removeUndefined = (obj: any): any => {
   }
   
   return result;
+};
+
+// 목표 칼로리 계산 함수를 nutritionUtils의 것을 활용하도록 수정 또는 대체
+const calculateTargetCaloriesInContext = (
+  height: number,
+  weight: number,
+  age: number,
+  gender: 'male' | 'female',
+  activityLevel: ActivityLevel, // 타입 변경
+  fitnessGoal: FitnessGoal      // 타입 변경
+): number => {
+  const bmr = calculateBMR(gender, weight, height, age); // nutritionUtils의 calculateBMR 사용
+  const tdee = bmr * (activityMultipliers[activityLevel] || activityMultipliers.moderate); // nutritionUtils의 activityMultipliers 사용
+  
+  let targetCalories = tdee;
+  if (goalMultipliers[fitnessGoal]) { // nutritionUtils의 goalMultipliers 사용
+    targetCalories = tdee * goalMultipliers[fitnessGoal];
+  }
+  return Math.round(targetCalories);
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -263,37 +251,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (currentUser.email) updatedProfile.email = currentUser.email;
       if (currentUser.photoURL) updatedProfile.photoURL = currentUser.photoURL;
       
-      // 키, 몸무게, 활동 수준 등에 따라 목표 칼로리 계산
+      // 목표 칼로리 계산 로직 수정
       if (profile.height || profile.weight || profile.activityLevel || profile.gender || profile.age || profile.fitnessGoal) {
-        // 모든 값이 유효한지 확인하고 기본값 제공
-        const height = Number(updatedProfile.height) || 170;
-        const weight = Number(updatedProfile.weight) || 70;
-        const age = Number(updatedProfile.age) || 25;
-        const gender = updatedProfile.gender || 'male';
-        const activityLevel = updatedProfile.activityLevel || 'moderate';
-        const fitnessGoal = updatedProfile.fitnessGoal || 'maintain';
+        const height = Number(updatedProfile.height) || defaultProfile.height;
+        const weight = Number(updatedProfile.weight) || defaultProfile.weight;
+        const age = Number(updatedProfile.age) || defaultProfile.age;
+        const gender = updatedProfile.gender || defaultProfile.gender;
+        // activityLevel과 fitnessGoal은 UserProfile 타입에 이미 ActivityLevel, FitnessGoal로 정의되어 있어야 함
+        const activityLevelValue = updatedProfile.activityLevel || defaultProfile.activityLevel;
+        const fitnessGoalValue = updatedProfile.fitnessGoal || defaultProfile.fitnessGoal;
         
         try {
-          const targetCalories = calculateTargetCalories(
+          // 수정된 calculateTargetCaloriesInContext 함수 사용
+          const targetCalories = calculateTargetCaloriesInContext(
             height,
             weight,
             age,
             gender,
-            activityLevel,
-            fitnessGoal
+            activityLevelValue,
+            fitnessGoalValue
           );
           
-          // targetCalories가 NaN인지 확인
           if (!isNaN(targetCalories) && targetCalories > 0) {
-            // 사용자가 직접 설정한 칼로리가 있으면 그 값을 우선함
             if (!profile.targetCalories) {
               updatedProfile.targetCalories = targetCalories;
             }
-          } else {
-            console.warn('목표 칼로리 계산 결과가 유효하지 않습니다:', targetCalories);
           }
         } catch (err) {
-          console.error('목표 칼로리 계산 중 오류:', err);
+          console.error('목표 칼로리 계산 중 오류 (AuthContext):', err);
         }
       }
       
@@ -333,13 +318,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
-      // 현재 설정과 새 데이터 병합
       const updatedSettings: UserSettings = {
         ...(userSettings || defaultSettings),
         ...settings
       };
       
-      // Firestore 업데이트
       await updateDoc(doc(db, 'userSettings', currentUser.uid), settings);
       
       setUserSettings(updatedSettings);

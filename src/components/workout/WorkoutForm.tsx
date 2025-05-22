@@ -1329,17 +1329,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1">운동 선택</label>
-                    {/* 기존 select 드롭다운을 버튼 형태로 변경 */}
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {(mainExerciseOptions[part as ExercisePart] && mainExerciseOptions[part as ExercisePart].length > 0) ? ( // 타입 단언
-                        mainExerciseOptions[part as ExercisePart].map((option: { value: MainExerciseType; label: string; }) => ( // option 타입 명시
+                      {(mainExerciseOptions[part as ExercisePart] && mainExerciseOptions[part as ExercisePart].length > 0) ? (
+                        mainExerciseOptions[part as ExercisePart].map((option: { value: MainExerciseType; label: string; }) => ( 
                           <button
                             key={option.value}
                             type="button"
                             onClick={() => setSelectedMainExercise(option.value as MainExerciseType)}
                             className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
                               selectedMainExercise === option.value
-                                ? 'bg-blue-600 text-white shadow-md'
+                                ? 'bg-primary-400 text-white shadow-md' // 활성 버튼 색상 변경 (primary-400)
                                 : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
                             }`}
                           >

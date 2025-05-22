@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Exercise, ExercisePart } from '../../types';
 
 interface ExerciseDetailProps {
@@ -7,6 +7,9 @@ interface ExerciseDetailProps {
 }
 
 const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) => {
+  const iframeContainerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   // 운동 부위 레이블
   const getPartLabel = (part: ExercisePart): string => {
     const labels: { [key in ExercisePart]: string } = {
@@ -34,7 +37,7 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
 
   // 유튜브 영상 임베드 URL 생성 (한글 자막 자동 설정 및 추가 옵션)
   const getYoutubeEmbedUrl = (videoId: string): string => {
-    return `https://www.youtube.com/embed/${videoId}?cc_load_policy=1&cc_lang_pref=ko&modestbranding=1&iv_load_policy=3`;
+    return `https://www.youtube.com/embed/${videoId}?cc_load_policy=1&cc_lang_pref=ko&modestbranding=1&iv_load_policy=3&playsinline=1`;
   };
 
   // 운동 GIF 이미지 URL 생성
@@ -44,6 +47,34 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
 
   // 비디오 ID 가져오기
   const videoId = getYoutubeVideoId(exercise.videoUrl);
+
+  useEffect(() => {
+    console.log('[ExerciseDetail] Mounted. Exercise:', exercise.name);
+    if (videoId) {
+      console.log('[ExerciseDetail] videoId to load:', videoId);
+    } else {
+      console.log('[ExerciseDetail] No videoId found for url:', exercise.videoUrl);
+    }
+
+    const qnaPageContainer = document.querySelector('.container'); 
+    if (qnaPageContainer) {
+      console.log('[ExerciseDetail] QnaPage container size on mount:', qnaPageContainer.clientWidth, qnaPageContainer.clientHeight);
+    }
+    
+    return () => {
+      console.log('[ExerciseDetail] Unmounted. Exercise:', exercise.name);
+    };
+  }, [exercise.name, exercise.videoUrl, videoId]);
+
+  const handleIframeLoad = () => {
+    console.log('[ExerciseDetail] iframe LOADED for videoId:', videoId);
+    if (iframeRef.current) {
+      console.log('[ExerciseDetail] iframe dimensions on load:', iframeRef.current.offsetWidth, iframeRef.current.offsetHeight);
+    }
+    if (iframeContainerRef.current) {
+      console.log('[ExerciseDetail] iframe PARENT container dimensions on load:', iframeContainerRef.current.offsetWidth, iframeContainerRef.current.offsetHeight);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-4 max-w-4xl mx-auto">
@@ -121,14 +152,16 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
       {videoId && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">운동 영상</h3>
-          <div className="relative w-full pb-[56.25%] h-0 overflow-hidden rounded-lg">
+          <div ref={iframeContainerRef} className="relative w-full pb-[56.25%] h-0 overflow-hidden rounded-lg shadow-lg">
             <iframe
+              ref={iframeRef}
               className="absolute top-0 left-0 w-full h-full"
               src={getYoutubeEmbedUrl(videoId)}
               title={`${exercise.name} 운동 영상`}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              onLoad={handleIframeLoad}
             ></iframe>
           </div>
         </div>

@@ -416,18 +416,18 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             식사 사진
           </label>
           
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Button 
               type="button"
               onClick={handleCameraCapture}
               variant="primary" 
-              fullWidth
+              className="w-full sm:w-auto sm:flex-1 max-w-xs mx-auto"
+              icon={<Camera size={18} className="inline mr-2" />}
             >
-              <Camera size={18} className="inline mr-2" />
               카메라로 촬영
             </Button>
             
-            <label className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-400 border border-transparent rounded-md shadow-sm hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 cursor-pointer text-center">
+            <label className="w-full sm:w-auto sm:flex-1 max-w-xs mx-auto px-4 py-2 text-sm font-medium text-white bg-primary-400 border border-transparent rounded-md shadow-sm hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 cursor-pointer text-center flex items-center justify-center">
               <Upload size={18} className="inline mr-2" />
               앨범에서 선택
               <input

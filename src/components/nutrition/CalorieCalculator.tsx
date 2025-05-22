@@ -213,10 +213,10 @@ const CalorieCalculator = ({ userProfile, onComplete }: CalorieCalculatorProps) 
                   key={option.value}
                   onClick={() => handleInputChange('goal', option.value)}
                   className={`p-3 rounded-lg cursor-pointer text-center ${
-                    calculatorInputs.goal === option.value ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500' : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+                    calculatorInputs.goal === option.value ? 'bg-primary-50 dark:bg-primary-900/20 border-2 border-primary-500' : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
                   }`}
                 >
-                  <div className="font-medium">{option.label}</div>
+                  <div className="font-medium text-gray-800 dark:text-gray-100">{option.label}</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">{option.description}</div>
                 </div>
               ))}

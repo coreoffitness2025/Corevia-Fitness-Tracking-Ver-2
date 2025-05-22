@@ -193,7 +193,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
               onClick={() => handleSetConfigChange(option.value)}
               className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
                 selectedSetConfig === option.value
-                  ? 'bg-blue-600 text-white shadow-md'
+                  ? 'bg-primary-400 text-white shadow-md'
                   : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
               }`}
             >
