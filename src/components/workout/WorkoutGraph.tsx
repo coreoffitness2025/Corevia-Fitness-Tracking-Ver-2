@@ -374,17 +374,13 @@ const WorkoutGraph: React.FC = () => {
           
           let pointStyleValue = basePointStyleFromMap; 
 
-          // 이미지에 맞게 조건부로 pointStyle 수정 (디버깅 및 임시 조치)
-          if (exerciseName === '벤치 프레스') {
-            if (config === '10x5') {
-              pointStyleValue = 'triangle'; 
-            } else if (config === '5x5' || config === '6x3') {
-              pointStyleValue = 'circle'; // 또는 다른 기본 모양
-            }
-            // 원래 로직: 6x3일 때만 triangle, 나머지는 exercisePointStyles['벤치 프레스'] (triangle) 이었음.
-          } else if (exerciseName === '데드리프트') {
+          // "벤치 프레스"에 대한 특정 조건부 pointStyle 변경 로직 제거.
+          // exercisePointStyles에 정의된 값을 사용하도록 함.
+          // (만약 데드리프트 등 다른 운동에 특정 스타일을 강제하고 싶다면 해당 로직은 유지)
+          if (exerciseName === '데드리프트') { // 예시: 데드리프트는 항상 triangle
             pointStyleValue = 'triangle';
           }
+          // 다른 운동들에 대한 특별한 pointStyle 설정이 필요하면 여기에 추가
           
           if (exerciseName.includes('벤치 프레스')) {
             console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), PointStyle: ${pointStyleValue}`);

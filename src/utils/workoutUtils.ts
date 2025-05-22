@@ -20,23 +20,31 @@ export const getPartLabel = (part: ExercisePart | 'all'): string => {
 /**
  * 운동 부위에 따른 색상 클래스 반환
  */
-export const getPartColor = (part: ExercisePart, isSuccess: boolean = true): string => {
-  const successColors: Record<ExercisePart, string> = {
-    chest:    'bg-part-chest text-primary-600 dark:bg-part-chest dark:bg-opacity-50 dark:text-primary-200 border-primary-200 dark:border-primary-700',
-    back:     'bg-part-back text-secondary-600 dark:bg-part-back dark:bg-opacity-50 dark:text-secondary-200 border-secondary-200 dark:border-secondary-700',
-    shoulder: 'bg-part-shoulder text-yellow-600 dark:bg-part-shoulder dark:bg-opacity-50 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700',
-    leg:      'bg-part-leg text-success-600 dark:bg-part-leg dark:bg-opacity-50 dark:text-success-200 border-success-200 dark:border-success-700',
-    biceps:   'bg-part-biceps text-danger-600 dark:bg-part-biceps dark:bg-opacity-50 dark:text-danger-200 border-danger-200 dark:border-danger-700',
-    triceps:  'bg-part-triceps text-indigo-600 dark:bg-part-triceps dark:bg-opacity-50 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700',
-    complex:  'bg-part-complex text-gray-600 dark:bg-part-complex dark:bg-opacity-50 dark:text-gray-200 border-gray-200 dark:border-gray-700',
+export const getPartColor = (part: ExercisePart, isSuccess: boolean | null): string => {
+  // 각 부위별 고정 배경색 (tailwind.config.js의 정의를 따름)
+  const partBgColors: Record<ExercisePart, string> = {
+    chest:    'bg-part-chest',
+    back:     'bg-part-back',
+    shoulder: 'bg-part-shoulder',
+    leg:      'bg-part-leg',
+    biceps:   'bg-part-biceps',
+    triceps:  'bg-part-triceps',
+    complex:  'bg-part-complex',
   };
+  const currentBgClass = partBgColors[part] || 'bg-gray-100'; // 기본 배경: gray-100
 
-  const failureColor = 'bg-danger-50 text-danger-600 dark:bg-danger-800/30 dark:text-danger-300 border-danger-200 dark:border-danger-700';
-
-  if (isSuccess) {
-    return successColors[part] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border-gray-300';
+  // 성공/실패에 따른 텍스트 색상
+  let textColorClass = 'text-gray-700 dark:text-gray-300'; // 기본 텍스트: 어두운 회색 / 밝은 회색
+  if (isSuccess === true) {
+    textColorClass = 'text-success-600 dark:text-success-400'; // 성공 시: 초록색 계열
+  } else if (isSuccess === false) {
+    textColorClass = 'text-danger-600 dark:text-danger-400';   // 실패 시: 빨간색 계열
   }
-  return failureColor;
+
+  // 보더는 연한 회색으로 통일 (또는 제거)
+  const borderColorClass = 'border border-gray-300 dark:border-gray-600'; 
+
+  return `${currentBgClass} ${textColorClass} ${borderColorClass}`;
 };
 
 /**
