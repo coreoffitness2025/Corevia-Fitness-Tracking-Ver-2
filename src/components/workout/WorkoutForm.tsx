@@ -1378,71 +1378,82 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </div>
             )}
             
-            {/* 세트 입력 영역 */}
-            <div className="space-y-3">
-              {mainExercise.sets.map((set, index) => (
-                <div key={index} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="font-medium text-gray-800 dark:text-gray-200">세트 {index + 1}</div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr] gap-3 items-end">
-                    <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">무게 (kg)</label>
-                      <input
-                        type="number"
-                        value={set.weight || ''}
-                        onChange={(e) => {
-                          const newSets = [...mainExercise.sets];
-                          newSets[index].weight = Number(e.target.value) || 0;
-                          setMainExercise({ ...mainExercise, sets: newSets });
-                        }}
-                        className="w-full p-2 border rounded-md"
-                      />
+            {/* 세트 입력 영역 수정 */}
+            {selectedMainExercise && (
+              <div className="space-y-3 mt-4">
+                {mainExercise.sets.map((set, index) => (
+                  <div key={index} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50 relative">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="font-medium text-gray-800 dark:text-gray-200">세트 {index + 1}</div>
+                      {/* 메인 운동 세트 삭제 버튼은 일반적으로 제공하지 않거나, 특정 조건(예: 커스텀 모드)에서만 제공 */}
                     </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">횟수</label>
-                      <input
-                        type="number"
-                        value={set.reps || ''}
-                        onChange={(e) => handleRepsChange(Number(e.target.value) || 0, index, true)}
-                        className="w-full p-2 border rounded-md"
-                      />
-                    </div>
-                    <div className="flex flex-col items-center space-y-1">
+                    <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto_auto] gap-3 items-end">
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">무게 (kg)</label>
+                        <input
+                          type="number"
+                          value={set.weight || ''}
+                          onChange={(e) => {
+                            const newSets = [...mainExercise.sets];
+                            newSets[index].weight = Number(e.target.value) || 0;
+                            setMainExercise({ ...mainExercise, sets: newSets });
+                          }}
+                          placeholder="0"
+                          className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">횟수</label>
+                        <input
+                          type="number"
+                          value={set.reps || ''}
+                          onChange={(e) => handleRepsChange(Number(e.target.value) || 0, index, true)}
+                          placeholder="0"
+                          className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400"
+                        />
+                      </div>
+                      <div className="flex flex-col items-center space-y-1">
+                        <Button
+                          size="sm"
+                          variant="icon"
+                          onClick={() => handleSetCompletionAndTimer(index, true)}
+                          className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${
+                            set.isSuccess === true
+                              ? 'bg-success-500 text-white hover:bg-success-600'
+                              : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
+                          }`}
+                          aria-label={set.isSuccess === true ? "세트 성공" : "세트 미완료"}
+                        >
+                          {set.isSuccess === true ? <CheckCircle size={20} /> : <Square size={20} />}
+                        </Button>
+                        {activeTimers[`main_${index}`] && (
+                          <div className="flex items-center text-xs mt-1">
+                            <span className={`font-semibold ${activeTimers[`main_${index}`]?.isPaused ? 'text-gray-500' : 'text-primary-600 animate-pulse'}`}>
+                                {formatTime(activeTimers[`main_${index}`].timeLeft)}
+                            </span>
+                            <button 
+                              onClick={() => togglePauseTimer(`main_${index}`)} 
+                              className="p-0.5 ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
+                              aria-label={activeTimers[`main_${index}`]?.isPaused ? "타이머 재개" : "타이머 일시정지"}
+                            >
+                              {activeTimers[`main_${index}`]?.isPaused ? <Play size={12} /> : <Pause size={12} className="text-primary-600 dark:text-primary-400"/>}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <Button
                         size="sm"
-                        variant="icon"
-                        onClick={() => handleSetCompletionAndTimer(index, true)}
-                        className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${
-                          set.isSuccess === true
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            // 실패 상태를 UI에서 표현하지 않으므로 관련 스타일 제거
-                            : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
-                        }`}
-                        aria-label={set.isSuccess === true ? "세트 성공" : "세트 미완료"}
+                        variant="outline"
+                        onClick={() => startTimer(`main_${index}`, 120)} 
+                        className="h-10"
                       >
-                        {/* 실패 아이콘(XCircle) 제거, 성공(CheckCircle) 또는 미완료(Square)만 표시 */}
-                        {set.isSuccess === true ? <CheckCircle size={20} /> : <Square size={20} />}
+                        휴식
                       </Button>
-                      {activeTimers[`main_${index}`] && (
-                        <div className="flex items-center text-xs mt-1">
-                          <span className={`font-semibold ${activeTimers[`main_${index}`]?.isPaused ? 'text-gray-500' : 'text-blue-600 animate-pulse'}`}>
-                              {formatTime(activeTimers[`main_${index}`].timeLeft)}
-                          </span>
-                          <button 
-                            onClick={() => togglePauseTimer(`main_${index}`)} 
-                            className="p-0.5 ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
-                            aria-label={activeTimers[`main_${index}`]?.isPaused ? "타이머 재개" : "타이머 일시정지"}
-                          >
-                            {activeTimers[`main_${index}`]?.isPaused ? <Play size={12} className="text-gray-600 dark:text-gray-400"/> : <Pause size={12} className="text-blue-600 dark:text-blue-400"/>}
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             
             {/* 복합 운동에서 추가 메인 운동 목록 */} 
             {part === 'complex' && mainExercises.length > 0 && (

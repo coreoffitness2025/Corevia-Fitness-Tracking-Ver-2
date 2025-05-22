@@ -35,13 +35,21 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   const [selectedSetConfig, setSelectedSetConfig] = useState<SetConfiguration | 'custom'>('6x3');
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+  const alarmRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    try {
+      alarmRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3');
+    } catch (error) {
+      console.error('[Accessory] 알람 사운드 로드 실패:', error);
+    }
+
     if (currentExercisePart && accessoryExercisesByPart[currentExercisePart]) {
       setFilteredAccessoryExercises(accessoryExercisesByPart[currentExercisePart]);
     } else {
       setFilteredAccessoryExercises([]);
     }
+    return () => { Object.values(timerRefs.current).forEach(intervalId => { if (intervalId) clearInterval(intervalId); }); };
   }, [currentExercisePart]);
 
   const handleSetConfigChange = (configValue: string) => {
@@ -82,14 +90,13 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     const currentSet = newSets[setIndex];
     const timerKey = `accessory_${index}_${setIndex}`;
 
-    if (currentSet.isSuccess === null) { // 미완료 -> 성공
+    if (currentSet.isSuccess === null) {
       currentSet.isSuccess = true;
       const isAnyTimerActive = Object.values(activeTimers).some(timer => timer && timer.timeLeft > 0 && !timer.isPaused);
       if (!isAnyTimerActive) {
         startAccessoryTimer(timerKey, 120);
       }
-      // 보조운동의 경우, 목표 횟수 달성 여부로 자동 실패 처리하는 로직은 일단 제외 (사용자가 직접 토글)
-    } else { // 성공(true) -> 미완료(null)
+    } else {
       currentSet.isSuccess = null;
       clearAccessoryTimer(timerKey);
     }
@@ -99,16 +106,32 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   const startAccessoryTimer = (timerKey: string, duration: number) => {
     clearAccessoryTimer(timerKey);
     setActiveTimers(prev => ({ ...prev, [timerKey]: { timeLeft: duration, isPaused: false } }));
+    toast.success('휴식 타이머가 시작되었습니다.', {
+      icon: '⏱️',
+      duration: 2000,
+      position: 'top-center'
+    });
     timerRefs.current[timerKey] = setInterval(() => {
       setActiveTimers(prev => {
-        const current = prev[timerKey];
-        if (current && !current.isPaused) {
-          if (current.timeLeft <= 1) {
+        const currentTimerState = prev[timerKey];
+        if (currentTimerState && !currentTimerState.isPaused) {
+          if (currentTimerState.timeLeft <= 1) {
             clearAccessoryTimer(timerKey);
-            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰' });
-            return { ...prev, [timerKey]: undefined }; 
+            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰', duration: 5000 });
+            
+            if (alarmRef.current) {
+              alarmRef.current.play().catch(err => {
+                console.error('[Accessory] 알람 재생 실패:', err);
+                if ('vibrate' in navigator) {
+                  navigator.vibrate([200, 100, 200, 100, 200]);
+                }
+              });
+            }
+            const newState = {...prev};
+            delete newState[timerKey];
+            return newState;
           }
-          return { ...prev, [timerKey]: { ...current, timeLeft: current.timeLeft - 1 } };
+          return { ...prev, [timerKey]: { ...currentTimerState, timeLeft: currentTimerState.timeLeft - 1 } };
         }
         return prev;
       });
@@ -136,10 +159,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
-
-  useEffect(() => {
-    return () => { Object.values(timerRefs.current).forEach(intervalId => { if (intervalId) clearInterval(intervalId); }); };
-  }, []);
 
   const addSetToExercise = () => {
     if (selectedSetConfig !== 'custom') {
@@ -173,7 +192,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
           id={`accessory-exercise-name-${index}`}
           value={exercise.name}
           onChange={handleAccessoryNameSelect}
-          className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-primary-400 focus:border-primary-400"
           disabled={!currentExercisePart || filteredAccessoryExercises.length === 0}
         >
           <option value="">-- 운동 선택 --</option>
@@ -221,11 +240,11 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto] gap-3 items-end">
               <div>
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">무게 (kg)</label>
-                <input type="number" value={set.weight || ''} onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm" />
+                <input type="number" value={set.weight || ''} onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400" />
               </div>
               <div>
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">횟수</label>
-                <input type="number" value={set.reps || ''} onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm" />
+                <input type="number" value={set.reps || ''} onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400" />
               </div>
               <div className="flex flex-col items-center space-y-1">
                 <Button
@@ -242,11 +261,11 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 </Button>
                 {activeTimers[`accessory_${index}_${setIndex}`] && (
                   <div className="flex items-center text-xs mt-1">
-                    <span className={`font-semibold ${activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? 'text-gray-500' : 'text-blue-600 animate-pulse'}`}>
+                    <span className={`font-semibold ${activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? 'text-gray-500' : 'text-primary-600 animate-pulse'}`}>
                         {formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}
                     </span>
                     <button onClick={() => togglePauseAccessoryTimer(`accessory_${index}_${setIndex}`)} className="p-0.5 ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none">
-                      {activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? <Play size={12} /> : <Pause size={12} />}
+                      {activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? <Play size={12} /> : <Pause size={12} className="text-primary-600 dark:text-primary-400"/>}
                     </button>
                   </div>
                 )}
