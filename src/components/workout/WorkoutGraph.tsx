@@ -231,7 +231,7 @@ const WorkoutGraph: React.FC = () => {
     },
     scales: {
       y: {
-        beginAtZero: false,
+        beginAtZero: false, 
         title: {
           display: true,
           text: '무게 (kg)'
@@ -318,6 +318,9 @@ const WorkoutGraph: React.FC = () => {
       const allDates: string[] = [];
       const exerciseConfigData: Record<string, Record<string, Record<string, number>>> = {};
 
+      let minWeight = Infinity;
+      let maxWeight = -Infinity;
+
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
         const dateObj = parseFirestoreDate(workout.date as unknown as FirestoreTimestamp | Date | string);
@@ -345,6 +348,10 @@ const WorkoutGraph: React.FC = () => {
         let currentMaxWorkoutWeight = 0;
         sets.forEach(set => {
           if (set.weight > currentMaxWorkoutWeight) currentMaxWorkoutWeight = set.weight;
+          if (set.weight > 0) {
+            minWeight = Math.min(minWeight, set.weight);
+            maxWeight = Math.max(maxWeight, set.weight);
+          }
         });
 
         if (workout.part === 'shoulder' && exerciseName === '오버헤드 프레스') {
@@ -407,7 +414,31 @@ const WorkoutGraph: React.FC = () => {
         });
       });
       
+      console.log(`[WorkoutGraph] prepareChartData - 최종 계산된 minWeight: ${minWeight}, maxWeight: ${maxWeight} (어깨 부위: ${selectedPart === 'shoulder'})`);
+      
+      let yMin = 0, yMax = 100; // 기본값
+      if (minWeight !== Infinity && maxWeight !== -Infinity) {
+          switch (selectedPart) {
+            case 'shoulder': yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10; break;
+            case 'leg': yMin = Math.max(0, minWeight - 20); yMax = maxWeight + 20; break;
+            default: yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10;
+          }
+          console.log(`[WorkoutGraph] Y축 범위 설정 - 부위: ${selectedPart}, 계산된 min: ${yMin}, max: ${yMax}`);
+      } else {
+           console.log(`[WorkoutGraph] Y축 범위 기본값 사용 (minWeight 또는 maxWeight Infinity)`);
+      }
+
       const finalChartData = { labels: uniqueDates, datasets };
+
+      // chartOptions에 직접 min/max 설정하는 로직 복원
+      if (chartOptions.scales?.y) {
+        chartOptions.scales.y.min = yMin;
+        chartOptions.scales.y.max = yMax;
+      } else {
+        // scales.y가 없을 경우를 대비 (이론상으론 항상 존재)
+        chartOptions.scales = { ...chartOptions.scales, y: { min: yMin, max: yMax } };
+      }
+
       setChartData(finalChartData);
 
     } catch (error) { console.error('[WorkoutGraph] prepareChartData 오류:', error); }

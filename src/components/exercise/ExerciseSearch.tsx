@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Exercise, ExercisePart } from '../../types';
 import { exercises } from '../../data/exerciseData';
+import { Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User as UserLucide, Bike } from 'lucide-react';
+import Button from '../common/Button';
 
 interface ExerciseSearchProps {
   onSelectExercise: (exercise: Exercise) => void;
@@ -17,19 +19,31 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
   biceps: exercises.filter(exercise => exercise.part === 'biceps'),
   triceps: exercises.filter(exercise => exercise.part === 'triceps'),
   abs: exercises.filter(exercise => exercise.part === 'abs'),
-  cardio: exercises.filter(exercise => exercise.part === 'cardio')
+  cardio: exercises.filter(exercise => exercise.part === 'cardio'),
+  // complex는 보통 운동 검색 대상에서 제외되거나 별도 처리
 };
 
 // 운동 부위별 아이콘 매핑
-const partIcons: Record<ExercisePart, string> = {
-  chest: '💪',
-  back: '🔙',
-  shoulder: '🏋️',
-  leg: '🦵',
-  biceps: '💪',
-  triceps: '💪',
-  abs: '🧘',
-  cardio: '🏃'
+const partIcons: Record<ExercisePart, React.ReactNode> = {
+  chest: <Heart size={24} className="mb-1" />,
+  back: <ArrowBigUpDash size={24} className="mb-1" />,
+  shoulder: <MoveHorizontal size={24} className="mb-1" />,
+  leg: <Footprints size={24} className="mb-1" />,
+  biceps: <Grip size={24} className="mb-1" />,
+  triceps: <ArrowUp size={24} className="mb-1" />,
+  abs: <UserLucide size={24} className="mb-1" />,
+  cardio: <Bike size={24} className="mb-1" />,
+  complex: <UserLucide size={24} className="mb-1" /> // 예비 아이콘
+};
+
+// partTextColor 헬퍼 함수 (tailwind.config.js의 색상 계열과 일치시킬 것)
+const partTextColor = (part: ExercisePart): string => {
+  const colorMap: Record<string, string> = { // key를 ExercisePart로 변경하거나, string 유지 시 타입 단언 주의
+    chest: 'primary', back: 'secondary', shoulder: 'yellow', 
+    leg: 'success', biceps: 'danger', triceps: 'indigo', 
+    abs: 'gray', cardio: 'blue', complex: 'gray'
+  };
+  return colorMap[part] || 'gray';
 };
 
 const ExerciseSearch: React.FC<ExerciseSearchProps> = ({ 
@@ -51,16 +65,10 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   // 부위 레이블 가져오기
   const getPartLabel = (part: ExercisePart): string => {
     const labels: { [key in ExercisePart]: string } = {
-      chest: '가슴',
-      back: '등',
-      shoulder: '어깨',
-      leg: '하체',
-      biceps: '이두',
-      triceps: '삼두',
-      abs: '복근',
-      cardio: '유산소'
+      chest: '가슴', back: '등', shoulder: '어깨', leg: '하체',
+      biceps: '이두', triceps: '삼두', abs: '복근', cardio: '유산소', complex: '복합'
     };
-    return labels[part];
+    return labels[part] || part;
   };
 
   // 검색어 변경 시 검색 결과 업데이트
@@ -113,21 +121,21 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   const renderExerciseByParts = () => {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-        {Object.keys(exercisesByPart).map((part) => (
+        {(Object.keys(exercisesByPart) as ExercisePart[]).filter(p => p !== 'complex').map((partKey) => (
           <button
-            key={part}
-            onClick={() => handlePartSelect(part as ExercisePart)}
+            key={partKey}
+            onClick={() => handlePartSelect(partKey)}
             className={`
               flex flex-col items-center justify-center p-4 rounded-lg transition-all
               ${
-                internalSelectedPart === part
-                  ? 'bg-blue-500 text-white shadow-md transform scale-105'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                internalSelectedPart === partKey
+                  ? 'bg-primary-400 text-white shadow-md transform scale-105'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }
             `}
           >
-            <span className="text-2xl mb-2">{partIcons[part as ExercisePart]}</span>
-            <span className="font-medium">{getPartLabel(part as ExercisePart)}</span>
+            {partIcons[partKey]}
+            <span className="font-medium">{getPartLabel(partKey)}</span>
           </button>
         ))}
       </div>
@@ -141,7 +149,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
         <input
           type="text"
           placeholder="운동 이름 검색..."
-          className="w-full p-2 border rounded-lg"
+          className="w-full p-2 border rounded-lg focus:border-primary-500 focus:ring-primary-500"
           value={searchTerm}
           onChange={handleSearchChange}
         />
@@ -169,7 +177,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
       
       {/* 부위별 운동 리스트 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {exercisesByPart[internalSelectedPart].slice(0, showAllExercises ? undefined : 4).map(exercise => (
+        {exercisesByPart[internalSelectedPart]?.slice(0, showAllExercises ? undefined : 4).map(exercise => (
           <div 
             key={exercise.id}
             className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
@@ -177,12 +185,12 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
           >
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{exercise.description}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{exercise.description}</p>
               <div className="flex flex-wrap gap-2">
-                <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                <span className={`inline-block bg-part-${exercise.part as ExercisePart} bg-opacity-20 dark:bg-opacity-30 text-${partTextColor(exercise.part as ExercisePart)}-700 dark:text-${partTextColor(exercise.part as ExercisePart)}-200 text-xs px-2 py-1 rounded-full`}>
                   {getPartLabel(exercise.part as ExercisePart)}
                 </span>
-                <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
+                <span className="inline-block bg-success-100 text-success-700 text-xs px-2 py-1 rounded-full dark:bg-success-900 dark:text-success-300">
                   {exercise.level === 'beginner' ? '초급' : 
                   exercise.level === 'intermediate' ? '중급' : '고급'}
                 </span>
@@ -194,19 +202,16 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
       
       {/* 전체보기 버튼 */}
       <div className="text-center mt-4 mb-6">
-        <button 
-          onClick={() => setShowAllExercises(!showAllExercises)}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600"
-        >
-          {showAllExercises ? '간략히 보기' : '전체 보기'}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-            {showAllExercises ? (
-              <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-            ) : (
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            )}
-          </svg>
-        </button>
+        {exercisesByPart[internalSelectedPart]?.length > 4 && (
+            <Button 
+              variant="primary"
+              onClick={() => setShowAllExercises(!showAllExercises)}
+              iconPosition="right"
+              icon={showAllExercises ? <ChevronUp size={18}/> : <ChevronDown size={18}/>}
+            >
+              {showAllExercises ? '간략히 보기' : '전체 보기'}
+            </Button>
+        )}
       </div>
     </div>
   );
