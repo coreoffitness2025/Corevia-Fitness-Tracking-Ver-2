@@ -22,16 +22,16 @@ export const getPartLabel = (part: ExercisePart | 'all'): string => {
  */
 export const getPartColor = (part: ExercisePart, isSuccess: boolean = true): string => {
   const successColors: Record<ExercisePart, string> = {
-    chest:    'bg-part-chest text-primary-700 dark:bg-part-chest dark:bg-opacity-70 dark:text-primary-100 border-primary-300',
-    back:     'bg-part-back text-secondary-700 dark:bg-part-back dark:bg-opacity-70 dark:text-secondary-100 border-secondary-300',
-    shoulder: 'bg-part-shoulder text-yellow-700 dark:bg-part-shoulder dark:bg-opacity-70 dark:text-yellow-100 border-yellow-300',
-    leg:      'bg-part-leg text-success-700 dark:bg-part-leg dark:bg-opacity-70 dark:text-success-100 border-success-300',
-    biceps:   'bg-part-biceps text-danger-700 dark:bg-part-biceps dark:bg-opacity-70 dark:text-danger-100 border-danger-300',
-    triceps:  'bg-part-triceps text-indigo-700 dark:bg-part-triceps dark:bg-opacity-70 dark:text-indigo-100 border-indigo-300',
-    complex:  'bg-part-complex text-gray-700 dark:bg-part-complex dark:bg-opacity-70 dark:text-gray-100 border-gray-300',
+    chest:    'bg-part-chest text-primary-600 dark:bg-part-chest dark:bg-opacity-50 dark:text-primary-200 border-primary-200 dark:border-primary-700',
+    back:     'bg-part-back text-secondary-600 dark:bg-part-back dark:bg-opacity-50 dark:text-secondary-200 border-secondary-200 dark:border-secondary-700',
+    shoulder: 'bg-part-shoulder text-yellow-600 dark:bg-part-shoulder dark:bg-opacity-50 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700',
+    leg:      'bg-part-leg text-success-600 dark:bg-part-leg dark:bg-opacity-50 dark:text-success-200 border-success-200 dark:border-success-700',
+    biceps:   'bg-part-biceps text-danger-600 dark:bg-part-biceps dark:bg-opacity-50 dark:text-danger-200 border-danger-200 dark:border-danger-700',
+    triceps:  'bg-part-triceps text-indigo-600 dark:bg-part-triceps dark:bg-opacity-50 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700',
+    complex:  'bg-part-complex text-gray-600 dark:bg-part-complex dark:bg-opacity-50 dark:text-gray-200 border-gray-200 dark:border-gray-700',
   };
 
-  const failureColor = 'bg-danger-100 text-danger-700 dark:bg-danger-700/30 dark:text-danger-200 border-danger-300';
+  const failureColor = 'bg-danger-50 text-danger-600 dark:bg-danger-800/30 dark:text-danger-300 border-danger-200 dark:border-danger-700';
 
   if (isSuccess) {
     return successColors[part] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border-gray-300';

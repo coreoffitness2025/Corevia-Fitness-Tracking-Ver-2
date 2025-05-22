@@ -1385,10 +1385,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   <div key={index} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50 relative">
                     <div className="flex justify-between items-center mb-2">
                       <div className="font-medium text-gray-800 dark:text-gray-200">세트 {index + 1}</div>
-                      {/* 메인 운동 세트 삭제 버튼은 일반적으로 제공하지 않거나, 특정 조건(예: 커스텀 모드)에서만 제공 */}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto_auto] gap-3 items-end">
-                      <div>
+                    {/* 무게, 횟수, 완료 체크를 flex로 간결하게 배치 */}
+                    <div className="flex items-end gap-3"> 
+                      <div className="flex-1">
                         <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">무게 (kg)</label>
                         <input
                           type="number"
@@ -1402,7 +1402,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400"
                         />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">횟수</label>
                         <input
                           type="number"
@@ -1412,6 +1412,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400"
                         />
                       </div>
+                      {/* 완료 체크 버튼 및 타이머 */}
                       <div className="flex flex-col items-center space-y-1">
                         <Button
                           size="sm"
@@ -1441,14 +1442,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           </div>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => startTimer(`main_${index}`, 120)} 
-                        className="h-10"
-                      >
-                        휴식
-                      </Button>
+                      {/* 개별 휴식 버튼 제거 */}
                     </div>
                   </div>
                 ))}

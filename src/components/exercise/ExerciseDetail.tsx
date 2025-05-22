@@ -41,10 +41,12 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
     return `https://www.youtube.com/embed/${videoId}?cc_load_policy=1&cc_lang_pref=ko&modestbranding=1&iv_load_policy=3&playsinline=1`;
   };
 
-  // 운동 GIF 이미지 URL 생성
+  // GIF 관련 함수는 주석 처리 또는 삭제
+  /*
   const getExerciseGifUrl = (exerciseId: string): string => {
     return `/images/exercises/${exerciseId}.gif`;
   };
+  */
 
   // 비디오 ID 가져오기
   const videoId = getYoutubeVideoId(exercise.videoUrl);
@@ -62,7 +64,7 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
       console.log('[ExerciseDetail] QnaPage container size on mount:', qnaPageContainer.clientWidth, qnaPageContainer.clientHeight);
     }
     if (gifContainerRef.current) {
-      console.log('[ExerciseDetail] GIF container height on mount:', gifContainerRef.current.offsetHeight);
+      // console.log('[ExerciseDetail] GIF container height on mount:', gifContainerRef.current.offsetHeight);
     }
     
     return () => {
@@ -106,7 +108,8 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
 
       <p className="text-gray-700 dark:text-gray-300 mb-4">{exercise.description}</p>
 
-      {/* 운동 GIF 이미지 표시 */}
+      {/* 운동 GIF 이미지 표시 부분 주석 처리 */}
+      {/*
       <div className="mb-6">
         <div 
           ref={gifContainerRef} 
@@ -123,6 +126,7 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
           />
         </div>
       </div>
+      */}
 
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">수행 방법</h3>
