@@ -502,7 +502,19 @@ const WorkoutGraph: React.FC = () => {
         date: parseFirestoreDate(doc.data().date as unknown as FirestoreTimestamp | Date | string),
       })) as Workout[];
       
-      console.log('[WorkoutGraph] loadWorkoutData - Firestore에서 가져온 데이터 (workoutData 첫 5개):\n', JSON.stringify(data.slice(0, 5).map(d => ({...d, date: 안전한_날짜_문자열_변환(d.date)}))), null, 2));
+      console.log(
+        '[WorkoutGraph] loadWorkoutData - Firestore에서 가져온 데이터 (workoutData 첫 5개):\n',
+        JSON.stringify(
+          data.slice(0, 5).map(d => {
+            return {
+              ...d,
+              date: 안전한_날짜_문자열_변환(d.date)
+            };
+          }),
+          null,
+          2
+        )
+      );
       const shoulderDataLoaded = data.filter(w => w.part === 'shoulder');
       console.log(`[WorkoutGraph] loadWorkoutData - Firestore 데이터 중 '어깨' 기록 ${shoulderDataLoaded.length}개`);
       const specificShoulderRecordLoaded = shoulderDataLoaded.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
