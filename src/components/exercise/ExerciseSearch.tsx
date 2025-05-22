@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Exercise, ExercisePart } from '../../types';
 import { exercises } from '../../data/exerciseData';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, User as UserLucide, Zap, Bike, Heart, ArrowBigUpDash, MoveHorizontal, Footprints } from 'lucide-react';
 import Button from '../common/Button';
 
 interface ExerciseSearchProps {
@@ -23,17 +23,17 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
   // complex는 보통 운동 검색 대상에서 제외되거나 별도 처리
 };
 
-// partIcons를 원래 이모지 형태로 복원
-const partIcons: Record<ExercisePart, string> = {
-  chest: '💪',
-  back: '🔙',
-  shoulder: '🏋️',
-  leg: '🦵',
-  biceps: '💪',
-  triceps: '💪',
-  abs: '🧘',
-  cardio: '🏃',
-  complex: '⚙️' // 복합 운동 아이콘 예시 (이전 정의에 없었다면 추가 또는 제거)
+// partIcons 수정
+const partIcons: Record<ExercisePart, React.ReactNode> = {
+  chest: <UserLucide size={24} className="mb-1" />, // 또는 <Heart />
+  back: <span className="text-2xl mb-1">🔙</span>,
+  shoulder: <span className="text-2xl mb-1">🏋️</span>,
+  leg: <span className="text-2xl mb-1">🦵</span>,
+  biceps: <span className="text-2xl mb-1">💪</span>,
+  triceps: <Zap size={24} className="mb-1" />,
+  abs: <span className="text-2xl mb-1">🧘</span>,
+  cardio: <Bike size={24} className="mb-1" />,
+  complex: <UserLucide size={24} className="mb-1" /> // 복합 운동 아이콘
 };
 
 const ExerciseSearch: React.FC<ExerciseSearchProps> = ({ 
@@ -124,7 +124,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               }
             `}
           >
-            <span className="text-2xl mb-2">{partIcons[partKey]}</span>
+            {partIcons[partKey]} {/* 아이콘을 ReactNode로 직접 렌더링 */}
             <span className="font-medium">{getPartLabel(partKey)}</span>
           </button>
         ))}

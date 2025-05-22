@@ -7,7 +7,7 @@ export interface User {
 }
 
 /* ---------- 운동 타입 ---------- */
-export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps' | 'complex';
+export type ExercisePart = 'chest' | 'back' | 'shoulder' | 'leg' | 'biceps' | 'triceps' | 'complex' | 'abs' | 'cardio';
 
 export interface Set {
   reps: number;
@@ -167,6 +167,8 @@ export interface Exercise {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   instructions: string[];
   videoUrl?: string;
+  part: ExercisePart;
+  level: string;
 }
 
 export interface WorkoutSession {

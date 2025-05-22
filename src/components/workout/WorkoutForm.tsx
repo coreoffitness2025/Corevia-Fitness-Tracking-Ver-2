@@ -20,7 +20,7 @@ import Layout from '../common/Layout';
 import Card, { CardTitle, CardSection } from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
-import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square, Play, Pause, Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User, Bike, Camera, Upload } from 'lucide-react';
+import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square, Play, Pause, Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User, Zap, Camera, Upload } from 'lucide-react';
 import { getSetConfiguration } from '../../utils/workoutUtils';
 import AccessoryExerciseComponent from './AccessoryExerciseComponent';
 // 필요한 import 추가
@@ -32,12 +32,12 @@ interface WorkoutFormProps {
 }
 
 const exercisePartOptions = [
-  { value: 'chest',    label: '가슴',   icon: <Heart size={24} className="mx-auto mb-1" />, mainExerciseName: '벤치 프레스' },
-  { value: 'back',     label: '등',     icon: <ArrowBigUpDash size={24} className="mx-auto mb-1" />, mainExerciseName: '데드리프트' },
-  { value: 'shoulder', label: '어깨',   icon: <MoveHorizontal size={24} className="mx-auto mb-1" />, mainExerciseName: '오버헤드 프레스' },
-  { value: 'leg',      label: '하체',   icon: <Footprints size={24} className="mx-auto mb-1" />, mainExerciseName: '스쿼트' },
-  { value: 'biceps',   label: '이두',   icon: <Grip size={24} className="mx-auto mb-1" />, mainExerciseName: '덤벨 컬' },
-  { value: 'triceps',  label: '삼두',   icon: <ArrowUp size={24} className="mx-auto mb-1" />, mainExerciseName: '케이블 푸시다운' }
+  { value: 'chest',    label: '가슴',   icon: <User size={24} className="mx-auto mb-1" />, mainExerciseName: '벤치 프레스' },
+  { value: 'back',     label: '등',     icon: <span className="text-2xl mx-auto mb-1">🔙</span>, mainExerciseName: '데드리프트' },
+  { value: 'shoulder', label: '어깨',   icon: <span className="text-2xl mx-auto mb-1">🏋️</span>, mainExerciseName: '오버헤드 프레스' },
+  { value: 'leg',      label: '하체',   icon: <span className="text-2xl mx-auto mb-1">🦵</span>, mainExerciseName: '스쿼트' },
+  { value: 'biceps',   label: '이두',   icon: <span className="text-2xl mx-auto mb-1">💪</span>, mainExerciseName: '덤벨 컬' },
+  { value: 'triceps',  label: '삼두',   icon: <Zap size={24} className="mx-auto mb-1" />, mainExerciseName: '케이블 푸시다운' }
 ];
 
 // 각 부위별 메인 운동 옵션

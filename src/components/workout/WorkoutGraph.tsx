@@ -231,7 +231,6 @@ const WorkoutGraph: React.FC = () => {
     },
     scales: {
       y: {
-        beginAtZero: false, 
         title: {
           display: true,
           text: '무게 (kg)'
@@ -319,6 +318,7 @@ const WorkoutGraph: React.FC = () => {
       const exerciseConfigData: Record<string, Record<string, Record<string, number>>> = {};
       let minWeight = Infinity;
       let maxWeight = -Infinity;
+      let hasValidData = false;
 
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
@@ -350,6 +350,7 @@ const WorkoutGraph: React.FC = () => {
           if (set.weight > 0) {
             minWeight = Math.min(minWeight, set.weight);
             maxWeight = Math.max(maxWeight, set.weight);
+            hasValidData = true;
           }
         });
 
@@ -423,27 +424,39 @@ const WorkoutGraph: React.FC = () => {
       
       console.log(`[WorkoutGraph] prepareChartData - 최종 계산된 minWeight: ${minWeight}, maxWeight: ${maxWeight} (어깨 부위: ${selectedPart === 'shoulder'})`);
       
-      let yMin = 0, yMax = 100;
-      if (minWeight !== Infinity && maxWeight !== -Infinity) {
-          switch (selectedPart) {
-            case 'shoulder': yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10; break;
-            case 'leg': yMin = Math.max(0, minWeight - 20); yMax = maxWeight + 20; break;
-            default: yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10;
-          }
-          console.log(`[WorkoutGraph] Y축 범위 설정 - 부위: ${selectedPart}, 계산된 min: ${yMin}, max: ${yMax}`);
+      let yMin, yMax;
+      if (hasValidData) {
+        const padding = selectedPart === 'leg' ? 20 : 10; // 하체는 범위 여유를 더 줌
+        yMin = Math.max(0, minWeight - padding); // 0 이하로 내려가지 않도록
+        yMax = maxWeight + padding;
+        if (yMin === yMax) { // 모든 데이터 포인트가 같을 경우
+          yMin = Math.max(0, yMin - 5);
+          yMax = yMax + 5;
+        }
+        console.log(`[WorkoutGraph] Y축 범위 동적 설정 - 부위: ${selectedPart}, 계산된 min: ${yMin}, max: ${yMax}`);
       } else {
-           console.log(`[WorkoutGraph] Y축 범위 기본값 사용 (minWeight 또는 maxWeight Infinity)`);
+        // 유효한 데이터가 없을 경우 기본 범위 (예: 0-100)
+        yMin = 0;
+        yMax = 100;
+        console.log(`[WorkoutGraph] Y축 범위 기본값 사용 (유효 데이터 없음)`);
       }
 
       const finalChartData = { labels: uniqueDates, datasets };
 
-      // chartOptions에 직접 min/max 설정하는 로직 복원
+      // chartOptions에 직접 min/max 설정 (이전 버전 로직을 참고하여 복원)
+      // 차트 객체가 생성된 후 옵션을 업데이트하는 것이 더 안정적일 수 있으나,
+      // 여기서는 옵션 객체를 직접 수정하는 방식으로 우선 시도합니다.
       if (chartOptions.scales?.y) {
         chartOptions.scales.y.min = yMin;
         chartOptions.scales.y.max = yMax;
       } else {
-        // scales.y가 없을 경우를 대비 (이론상으론 항상 존재)
         chartOptions.scales = { ...chartOptions.scales, y: { min: yMin, max: yMax } };
+      }
+      // beginAtZero를 false로 명시하여, min값이 0보다 클 때 0에서 시작하지 않도록 보장
+      if (chartOptions.scales?.y && yMin > 0) {
+        chartOptions.scales.y.beginAtZero = false;
+      } else if (chartOptions.scales?.y) {
+        chartOptions.scales.y.beginAtZero = true; // 최소값이 0이거나 데이터가 없을 경우 0에서 시작
       }
 
       setChartData(finalChartData);
