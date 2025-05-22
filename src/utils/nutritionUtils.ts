@@ -41,8 +41,8 @@ export const calculateBMR = (
 // 사용자 기본 정보 (FoodLog.tsx에서 이동)
 export const DEFAULT_USER_PROFILE = {
   weight: 70, // kg
-  goal: 'maintain' as 'loss' | 'maintain' | 'gain',
-  activityLevel: 'moderate' as 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive',
+  fitnessGoal: 'maintain' as FitnessGoal,
+  activityLevel: 'moderate' as ActivityLevel,
   gender: 'male' as 'male' | 'female',
   age: 30,
   height: 175, // cm
@@ -82,8 +82,8 @@ export const calculateNutritionGoals = (user: Partial<typeof DEFAULT_USER_PROFIL
   const tdee = bmr * (activityMultipliers[validatedUser.activityLevel] || activityMultipliers.moderate);
   
   let targetCalories = tdee;
-  if (validatedUser.goal && goalMultipliers[validatedUser.goal as FitnessGoal]) {
-    targetCalories = tdee * goalMultipliers[validatedUser.goal as FitnessGoal];
+  if (validatedUser.fitnessGoal && goalMultipliers[validatedUser.fitnessGoal as FitnessGoal]) {
+    targetCalories = tdee * goalMultipliers[validatedUser.fitnessGoal as FitnessGoal];
   } else {
     targetCalories = tdee * goalMultipliers.maintain;
   }

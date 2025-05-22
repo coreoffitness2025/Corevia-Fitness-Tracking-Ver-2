@@ -9,6 +9,7 @@ interface ExerciseDetailProps {
 const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) => {
   const iframeContainerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const gifContainerRef = useRef<HTMLDivElement>(null);
 
   // 운동 부위 레이블
   const getPartLabel = (part: ExercisePart): string => {
@@ -60,6 +61,9 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
     if (qnaPageContainer) {
       console.log('[ExerciseDetail] QnaPage container size on mount:', qnaPageContainer.clientWidth, qnaPageContainer.clientHeight);
     }
+    if (gifContainerRef.current) {
+      console.log('[ExerciseDetail] GIF container height on mount:', gifContainerRef.current.offsetHeight);
+    }
     
     return () => {
       console.log('[ExerciseDetail] Unmounted. Exercise:', exercise.name);
@@ -104,15 +108,18 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
 
       {/* 운동 GIF 이미지 표시 */}
       <div className="mb-6">
-        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+        <div 
+          ref={gifContainerRef} 
+          className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden h-64 min-h-64 flex items-center justify-center"
+        >
           <img 
             src={getExerciseGifUrl(exercise.id)} 
             alt={`${exercise.name} 운동 방법`} 
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = '/images/exercise-placeholder.jpg'; // 기본 이미지로 대체
+              target.src = '/images/exercise-placeholder.jpg';
             }}
-            className="w-full object-cover"
+            className="w-auto max-w-full h-auto max-h-full object-contain"
           />
         </div>
       </div>
