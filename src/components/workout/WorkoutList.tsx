@@ -11,7 +11,7 @@ import { db } from '../../firebase/firebaseConfig';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 // 유틸리티 함수 import
-import { getPartLabel, getPartColor, generateCalendarDays } from '../../utils/workoutUtils';
+import { getPartLabel, getPartColor, generateCalendarDays, parseFirestoreDate } from '../../utils/workoutUtils';
 
 const WorkoutList: React.FC = () => {
   const navigate = useNavigate();
@@ -168,8 +168,8 @@ const WorkoutList: React.FC = () => {
   // 날짜별 운동 기록 그룹화
   useEffect(() => {
     const groupedWorkouts = sessions.reduce<DateWorkoutMap>((acc, session) => {
-      // date가 Date 객체인 경우 문자열로 변환
-      const dateStr = formatDate(typeof session.date === 'string' ? new Date(session.date) : session.date);
+      const dateObj = parseFirestoreDate(session.date as any);
+      const dateStr = formatDate(dateObj);
       if (!acc[dateStr]) {
         acc[dateStr] = [];
       }
@@ -237,7 +237,7 @@ const WorkoutList: React.FC = () => {
     
     try {
       const canvas = await html2canvas(workoutStampRef.current, {
-        backgroundColor: '#ffffff',
+        background: '#ffffff',
         scale: 2,
         logging: false,
         allowTaint: true,
@@ -258,7 +258,7 @@ const WorkoutList: React.FC = () => {
     try {
       // 운동 정보 캡처
       const infoCanvas = await html2canvas(workoutStampRef.current, {
-        backgroundColor: null, // 투명 배경
+        background: null,
         scale: 2,
         logging: false,
         allowTaint: true,
@@ -467,14 +467,13 @@ const WorkoutList: React.FC = () => {
             const dayWorkouts = workoutsByDate[dateStr] || [];
             const hasWorkout = dayWorkouts.length > 0;
             
-            // 부위 운동 확인 및 성공 여부 체크
             let isAllSuccess = false;
             let exercisePart = '';
             
             if (hasWorkout) {
-              const workout = dayWorkouts[0]; // 첫 번째 운동 기록
+              const workout = dayWorkouts[0];
               isAllSuccess = workout.isAllSuccess;
-              exercisePart = workout.part || ''; // 운동 부위
+              exercisePart = workout.part || '';
             }
             
             return (
@@ -483,27 +482,23 @@ const WorkoutList: React.FC = () => {
                 onClick={() => setSelectedDate(dateStr)}
                 className={`relative p-2 min-h-[80px] text-center cursor-pointer border rounded-lg
                   ${isCurrentMonth ? 'hover:bg-gray-100 dark:hover:bg-gray-700' : 'opacity-40'}
-                  ${isToday ? 'border-blue-500' : 'border-transparent'}
-                  ${isSelected ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                  ${isToday ? 'border-primary-500' : 'border-transparent'}
+                  ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : ''}
+                `}
               >
                 <span className={`text-sm ${
-                  day.getDay() === 0 ? 'text-red-500' : 
-                  day.getDay() === 6 ? 'text-blue-500' : 
+                  day.getDay() === 0 ? 'text-danger-500' :
+                  day.getDay() === 6 ? 'text-primary-500' :
                   'text-gray-700 dark:text-gray-300'
                 }`}>
                   {day.getDate()}
                 </span>
                 
-                {/* 운동 마커 - 부위와 성공/실패 여부 표시 */}
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
                     <div 
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        isAllSuccess 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-red-500 text-white'
-                      }`}
-                      title={`${exercisePart} 운동 - ${isAllSuccess ? '성공' : '실패'}`}
+                      className={`text-xs px-2 py-1 rounded-full ${getPartColor(exercisePart as ExercisePart, isAllSuccess)}`}
+                      title={`${getPartLabel(exercisePart as ExercisePart)} 운동 - ${isAllSuccess ? '성공' : '실패'}`}
                     >
                       {getPartLabel(exercisePart as ExercisePart)}
                     </div>
@@ -583,7 +578,7 @@ const WorkoutList: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-600 dark:text-gray-400 text-sm">
-                    {new Date(workout.date).toLocaleTimeString('ko-KR', { 
+                    {parseFirestoreDate(workout.date as any).toLocaleTimeString('ko-KR', { 
                       hour: '2-digit', 
                       minute: '2-digit' 
                     })}
