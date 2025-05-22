@@ -45,20 +45,22 @@ const mainExerciseOptions: Record<ExercisePart, {value: MainExerciseType, label:
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
     { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' },
+    { value: 'chestPress', label: '체스트 프레스 머신' } // 체스트 프레스 머신 추가
   ],
   back: [
     { value: 'barbellRow', label: '바벨로우' }, 
     { value: 'deadlift', label: '데드리프트' },
-    { value: 'tBarRow', label: '티바로우' }    
+    { value: 'tBarRow', label: '티바로우' },
+    { value: 'pullUp', label: '턱걸이 (풀업)' } // 턱걸이 추가 (이름은 풀업으로 통일)
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
-    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' },
+    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' }, 
   ],
   leg: [
     { value: 'squat', label: '스쿼트' },
     { value: 'legPress', label: '레그 프레스' },
-    { value: 'romanianDeadlift', label: '루마니안 데드리프트' },
+    { value: 'romanianDeadlift', label: '루마니안 데드리프트' }, 
   ],
   biceps: [
     { value: 'dumbbellCurl', label: '덤벨 컬' },
@@ -73,8 +75,8 @@ const mainExerciseOptions: Record<ExercisePart, {value: MainExerciseType, label:
   complex: [ 
     { value: 'customComplex', label: '복합 운동 불러오기' }
   ],
-  abs: [], // abs 키 추가
-  cardio: [] // cardio 키 추가
+  abs: [], 
+  cardio: [] 
 };
 
 // 웜업 세트 추천 운동
