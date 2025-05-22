@@ -377,6 +377,10 @@ const WorkoutGraph: React.FC = () => {
       };
 
       Object.entries(exerciseConfigData).forEach(([exerciseName, configData]) => {
+        // exercise 객체를 찾아서 part 정보를 가져오기 (data 배열을 참조)
+        const originalWorkoutEntry = data.find(w => w.mainExercise?.name === exerciseName);
+        const exercisePart = originalWorkoutEntry?.part;
+
         const basePointStyleFromMap = exercisePointStyles[exerciseName] || 'circle'; 
         Object.entries(configData).forEach(([config, dateData]) => {
           if (Object.keys(dateData).length === 0) return;
@@ -385,16 +389,15 @@ const WorkoutGraph: React.FC = () => {
           
           let pointStyleValue = basePointStyleFromMap;
 
-          // "벤치 프레스"인 경우 항상 'triangle'을 사용하도록 수정
-          if (exerciseName === '벤치 프레스') {
+          if (exerciseName === '벤치 프레스' || exerciseName === '데드리프트') {
             pointStyleValue = 'triangle';
-          } else if (exerciseName === '데드리프트') { // 데드리프트는 예시로 triangle 유지
+          } else if (exercisePart === 'leg') { // 하체 부위 운동은 모두 triangle로 설정
             pointStyleValue = 'triangle';
           }
-          // 다른 운동 스타일에 대한 조건은 여기에 추가
+          // 다른 운동 스타일에 대한 특정 조건이 있다면 여기에 추가
           
-          if (exerciseName.includes('벤치 프레스')) {
-            console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), PointStyle: ${pointStyleValue}`);
+          if (exerciseName.includes('벤치 프레스') || exercisePart === 'leg') {
+            console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), Part: ${exercisePart}, PointStyle: ${pointStyleValue}`);
           }
 
           const dataForChart = uniqueDates.map(date => dateData[date] || null);
