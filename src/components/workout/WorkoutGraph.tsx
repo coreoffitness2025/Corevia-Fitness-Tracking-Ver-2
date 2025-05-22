@@ -369,7 +369,12 @@ const WorkoutGraph: React.FC = () => {
       
       const uniqueDates = [...new Set(allDates)].sort((a, b) => new Date(a.split('/').map((s,i) => i === 0 ? '20'+s : s).join('/')).getTime() - new Date(b.split('/').map((s,i) => i === 0 ? '20'+s : s).join('/')).getTime());
       const datasets: any[] = [];
-      const configColors = { '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } };
+      const configColors = { 
+        '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, 
+        '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, 
+        '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, 
+        '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } 
+      };
 
       Object.entries(exerciseConfigData).forEach(([exerciseName, configData]) => {
         const basePointStyleFromMap = exercisePointStyles[exerciseName] || 'circle'; 
@@ -378,15 +383,15 @@ const WorkoutGraph: React.FC = () => {
           const configColor = configColors[config as keyof typeof configColors];
           const datasetId = `${exerciseName}-${config}`;
           
-          let pointStyleValue = basePointStyleFromMap; 
+          let pointStyleValue = basePointStyleFromMap;
 
-          if (exerciseName === '데드리프트') {
+          // "벤치 프레스"인 경우 항상 'triangle'을 사용하도록 수정
+          if (exerciseName === '벤치 프레스') {
             pointStyleValue = 'triangle';
-          } else if (exerciseName === '벤치 프레스' && config === '10x5') {
-             pointStyleValue = 'triangle';
-          } else if (exerciseName === '벤치 프레스') {
-             pointStyleValue = 'circle';
+          } else if (exerciseName === '데드리프트') { // 데드리프트는 예시로 triangle 유지
+            pointStyleValue = 'triangle';
           }
+          // 다른 운동 스타일에 대한 조건은 여기에 추가
           
           if (exerciseName.includes('벤치 프레스')) {
             console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), PointStyle: ${pointStyleValue}`);
