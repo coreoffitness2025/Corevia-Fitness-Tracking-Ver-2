@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Exercise, ExercisePart } from '../../types';
 import { exercises } from '../../data/exerciseData';
-import { Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User as UserLucide, Bike } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import Button from '../common/Button';
 
 interface ExerciseSearchProps {
@@ -23,27 +23,17 @@ const exercisesByPart: Record<ExercisePart, Exercise[]> = {
   // complex는 보통 운동 검색 대상에서 제외되거나 별도 처리
 };
 
-// 운동 부위별 아이콘 매핑
-const partIcons: Record<ExercisePart, React.ReactNode> = {
-  chest: <Heart size={24} className="mb-1" />,
-  back: <ArrowBigUpDash size={24} className="mb-1" />,
-  shoulder: <MoveHorizontal size={24} className="mb-1" />,
-  leg: <Footprints size={24} className="mb-1" />,
-  biceps: <Grip size={24} className="mb-1" />,
-  triceps: <ArrowUp size={24} className="mb-1" />,
-  abs: <UserLucide size={24} className="mb-1" />,
-  cardio: <Bike size={24} className="mb-1" />,
-  complex: <UserLucide size={24} className="mb-1" /> // 예비 아이콘
-};
-
-// partTextColor 헬퍼 함수 (tailwind.config.js의 색상 계열과 일치시킬 것)
-const partTextColor = (part: ExercisePart): string => {
-  const colorMap: Record<string, string> = { // key를 ExercisePart로 변경하거나, string 유지 시 타입 단언 주의
-    chest: 'primary', back: 'secondary', shoulder: 'yellow', 
-    leg: 'success', biceps: 'danger', triceps: 'indigo', 
-    abs: 'gray', cardio: 'blue', complex: 'gray'
-  };
-  return colorMap[part] || 'gray';
+// partIcons를 원래 이모지 형태로 복원
+const partIcons: Record<ExercisePart, string> = {
+  chest: '💪',
+  back: '🔙',
+  shoulder: '🏋️',
+  leg: '🦵',
+  biceps: '💪',
+  triceps: '💪',
+  abs: '🧘',
+  cardio: '🏃',
+  complex: '⚙️' // 복합 운동 아이콘 예시 (이전 정의에 없었다면 추가 또는 제거)
 };
 
 const ExerciseSearch: React.FC<ExerciseSearchProps> = ({ 
@@ -117,7 +107,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
     }
   };
 
-  // 운동 부위별 버튼 렌더링
+  // 운동 부위별 버튼 렌더링 (아이콘 및 스타일 복원)
   const renderExerciseByParts = () => {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
@@ -134,7 +124,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               }
             `}
           >
-            {partIcons[partKey]}
+            <span className="text-2xl mb-2">{partIcons[partKey]}</span>
             <span className="font-medium">{getPartLabel(partKey)}</span>
           </button>
         ))}
@@ -187,10 +177,10 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{exercise.description}</p>
               <div className="flex flex-wrap gap-2">
-                <span className={`inline-block bg-part-${exercise.part as ExercisePart} bg-opacity-20 dark:bg-opacity-30 text-${partTextColor(exercise.part as ExercisePart)}-700 dark:text-${partTextColor(exercise.part as ExercisePart)}-200 text-xs px-2 py-1 rounded-full`}>
+                <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-300">
                   {getPartLabel(exercise.part as ExercisePart)}
                 </span>
-                <span className="inline-block bg-success-100 text-success-700 text-xs px-2 py-1 rounded-full dark:bg-success-900 dark:text-success-300">
+                <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-300">
                   {exercise.level === 'beginner' ? '초급' : 
                   exercise.level === 'intermediate' ? '중급' : '고급'}
                 </span>

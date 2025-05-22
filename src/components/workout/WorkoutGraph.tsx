@@ -317,7 +317,6 @@ const WorkoutGraph: React.FC = () => {
       const newDateAllWorkoutsMap: Record<string, Workout[]> = {};
       const allDates: string[] = [];
       const exerciseConfigData: Record<string, Record<string, Record<string, number>>> = {};
-
       let minWeight = Infinity;
       let maxWeight = -Infinity;
 
@@ -381,13 +380,13 @@ const WorkoutGraph: React.FC = () => {
           
           let pointStyleValue = basePointStyleFromMap; 
 
-          // "벤치 프레스"에 대한 특정 조건부 pointStyle 변경 로직 제거.
-          // exercisePointStyles에 정의된 값을 사용하도록 함.
-          // (만약 데드리프트 등 다른 운동에 특정 스타일을 강제하고 싶다면 해당 로직은 유지)
-          if (exerciseName === '데드리프트') { // 예시: 데드리프트는 항상 triangle
+          if (exerciseName === '데드리프트') {
             pointStyleValue = 'triangle';
+          } else if (exerciseName === '벤치 프레스' && config === '10x5') {
+             pointStyleValue = 'triangle';
+          } else if (exerciseName === '벤치 프레스') {
+             pointStyleValue = 'circle';
           }
-          // 다른 운동들에 대한 특별한 pointStyle 설정이 필요하면 여기에 추가
           
           if (exerciseName.includes('벤치 프레스')) {
             console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), PointStyle: ${pointStyleValue}`);
@@ -416,7 +415,7 @@ const WorkoutGraph: React.FC = () => {
       
       console.log(`[WorkoutGraph] prepareChartData - 최종 계산된 minWeight: ${minWeight}, maxWeight: ${maxWeight} (어깨 부위: ${selectedPart === 'shoulder'})`);
       
-      let yMin = 0, yMax = 100; // 기본값
+      let yMin = 0, yMax = 100;
       if (minWeight !== Infinity && maxWeight !== -Infinity) {
           switch (selectedPart) {
             case 'shoulder': yMin = Math.max(0, minWeight - 10); yMax = maxWeight + 10; break;
