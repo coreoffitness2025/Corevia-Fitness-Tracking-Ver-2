@@ -32,53 +32,49 @@ interface WorkoutFormProps {
 }
 
 const exercisePartOptions = [
-  { value: 'chest',    label: '가슴',   icon: <User size={24} className="mx-auto mb-1" />, mainExerciseName: '벤치 프레스' },
-  { value: 'back',     label: '등',     icon: <span className="text-2xl mx-auto mb-1">🔙</span>, mainExerciseName: '데드리프트' },
-  { value: 'shoulder', label: '어깨',   icon: <span className="text-2xl mx-auto mb-1">🏋️</span>, mainExerciseName: '오버헤드 프레스' },
-  { value: 'leg',      label: '하체',   icon: <span className="text-2xl mx-auto mb-1">🦵</span>, mainExerciseName: '스쿼트' },
-  { value: 'biceps',   label: '이두',   icon: <span className="text-2xl mx-auto mb-1">💪</span>, mainExerciseName: '덤벨 컬' },
-  { value: 'triceps',  label: '삼두',   icon: <Zap size={24} className="mx-auto mb-1" />, mainExerciseName: '케이블 푸시다운' }
+  { value: 'chest',    label: '가슴',   icon: <span className="text-3xl mx-auto mb-1">👕</span>, mainExerciseName: '벤치 프레스' }, 
+  { value: 'back',     label: '등',     icon: <span className="text-3xl mx-auto mb-1">🔙</span>, mainExerciseName: '데드리프트' },
+  { value: 'shoulder', label: '어깨',   icon: <span className="text-3xl mx-auto mb-1">🏋️</span>, mainExerciseName: '오버헤드 프레스' },
+  { value: 'leg',      label: '하체',   icon: <span className="text-3xl mx-auto mb-1">🦵</span>, mainExerciseName: '스쿼트' },
+  { value: 'biceps',   label: '이두',   icon: <span className="text-3xl mx-auto mb-1">💪</span>, mainExerciseName: '덤벨 컬' },
+  { value: 'triceps',  label: '삼두',   icon: <span className="text-3xl mx-auto mb-1">💪</span>, mainExerciseName: '케이블 푸시다운' }
 ];
 
 // 각 부위별 메인 운동 옵션
 const mainExerciseOptions: Record<ExercisePart, {value: MainExerciseType, label: string}[]> = {
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
-    { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' }, // 추가
-    // { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' }, 
-    // { value: 'declineBenchPress', label: '디클라인 벤치 프레스' } 
+    { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' },
   ],
   back: [
     { value: 'barbellRow', label: '바벨로우' }, 
     { value: 'deadlift', label: '데드리프트' },
     { value: 'tBarRow', label: '티바로우' }    
-    // { value: 'pullUp', label: '턱걸이' }, 
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
-    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' }, // 추가
-    // { value: 'lateralRaise', label: '레터럴 레이즈' }, 
-    // { value: 'facePull', label: '페이스 풀' } 
+    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' },
   ],
   leg: [
     { value: 'squat', label: '스쿼트' },
     { value: 'legPress', label: '레그 프레스' },
-    { value: 'romanianDeadlift', label: '루마니안 데드리프트' }, // 추가
-    // { value: 'lungue', label: '런지' } 
+    { value: 'romanianDeadlift', label: '루마니안 데드리프트' },
   ],
-  biceps: [ // 이두는 기존 유지
+  biceps: [
     { value: 'dumbbellCurl', label: '덤벨 컬' },
     { value: 'barbellCurl', label: '바벨 컬' },
     { value: 'hammerCurl', label: '해머 컬' }
   ],
-  triceps: [ // 삼두는 기존 유지
+  triceps: [
     { value: 'cablePushdown', label: '케이블 푸시다운' },
     { value: 'overheadExtension', label: '오버헤드 익스텐션' },
-    { value: 'lyingTricepsExtension', label: '라잉 트라이셉스 익스텐션' } // 'lyingExtension' -> 'lyingTricepsExtension' (일관성 및 명확성)
+    { value: 'lyingTricepsExtension', label: '라잉 트라이셉스 익스텐션' }
   ],
-  complex: [ // 복합 운동은 비어있는 상태로 시작 - 사용자가 추가할 예정
+  complex: [ 
     { value: 'customComplex', label: '복합 운동 불러오기' }
-  ]
+  ],
+  abs: [], // abs 키 추가
+  cardio: [] // cardio 키 추가
 };
 
 // 웜업 세트 추천 운동
@@ -1193,13 +1189,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   onClick={() => setPart(option.value as ExercisePart)}
                   className={`
                     flex flex-col items-center justify-center p-4 rounded-lg transition-all
-                    ${part === option.value
-                      ? 'bg-primary-400 text-white shadow-md transform scale-105' // 활성 시 primary-400 사용
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                    ${
+                      part === option.value
+                        ? 'bg-primary-400 text-white shadow-md transform scale-105' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
                 >
-                  {option.icon} {/* 아이콘 직접 렌더링 */}
+                  {option.icon} 
                   <span className="font-medium mt-1">{option.label}</span>
                 </button>
               ))}

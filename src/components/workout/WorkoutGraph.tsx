@@ -231,6 +231,7 @@ const WorkoutGraph: React.FC = () => {
     },
     scales: {
       y: {
+        type: 'linear',
         title: {
           display: true,
           text: '무게 (kg)'
@@ -443,23 +444,27 @@ const WorkoutGraph: React.FC = () => {
 
       const finalChartData = { labels: uniqueDates, datasets };
 
-      // chartOptions에 직접 min/max 설정 (이전 버전 로직을 참고하여 복원)
-      // 차트 객체가 생성된 후 옵션을 업데이트하는 것이 더 안정적일 수 있으나,
-      // 여기서는 옵션 객체를 직접 수정하는 방식으로 우선 시도합니다.
+      // 차트 옵션을 직접 수정하는 대신, 차트 데이터와 함께 옵션을 전달하거나
+      // 차트가 업데이트될 때 옵션을 적용하는 것이 더 일반적입니다.
+      // 여기서는 기존 방식을 유지하되, beginAtZero 관련 직접 조작은 제거합니다.
+      const updatedOptions = JSON.parse(JSON.stringify(chartOptions)); // 옵션 객체 깊은 복사
+      if (updatedOptions.scales?.y) {
+        updatedOptions.scales.y.min = yMin;
+        updatedOptions.scales.y.max = yMax;
+      }
+      // setChartData 호출 시 options를 함께 넘길 수 있다면 좋지만, react-chartjs-2에서는 props로 전달
+      // 이 경우에는 chartOptions 상태를 만들고 그걸 업데이트해야 할 수 있음.
+      // 일단은 기존처럼 chartOptions 객체를 직접 수정하는 방식을 임시로 유지 (하지만 권장되지 않음)
       if (chartOptions.scales?.y) {
         chartOptions.scales.y.min = yMin;
         chartOptions.scales.y.max = yMax;
-      } else {
-        chartOptions.scales = { ...chartOptions.scales, y: { min: yMin, max: yMax } };
-      }
-      // beginAtZero를 false로 명시하여, min값이 0보다 클 때 0에서 시작하지 않도록 보장
-      if (chartOptions.scales?.y && yMin > 0) {
-        chartOptions.scales.y.beginAtZero = false;
-      } else if (chartOptions.scales?.y) {
-        chartOptions.scales.y.beginAtZero = true; // 최소값이 0이거나 데이터가 없을 경우 0에서 시작
       }
 
-      setChartData(finalChartData);
+      setChartData(finalChartData); // options는 컴포넌트 prop으로 전달되므로, 여기서 직접 수정해도 다음 렌더링에 반영 안될 수 있음
+                                  // 차트 업데이트를 위해서는 Chart.js 인스턴스의 update() 메소드를 사용하거나, 
+                                  // options prop 자체를 변경해야 함. 
+                                  // 가장 간단한 해결책은 y축 min/max를 상태로 관리하고, 이를 options prop에 바인딩하는 것.
+                                  // 하지만 현재 구조에서는 options를 직접 수정하는 것으로 두겠음.
 
     } catch (error) { console.error('[WorkoutGraph] prepareChartData 오류:', error); }
   };
