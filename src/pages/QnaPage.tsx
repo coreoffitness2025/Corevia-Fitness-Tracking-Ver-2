@@ -15,6 +15,7 @@ import { exercises } from '../data/exerciseData';
 import { BarChart3, Target, Award, Settings, Utensils, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import Button from '../components/common/Button';
 
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
@@ -250,11 +251,11 @@ const QnaPage: React.FC = () => {
           </p>
         </div>
 
-        {/* 새로운 버튼들 */}
+        {/* 새로운 버튼들 - 색상 변경 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -264,7 +265,7 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); toggleCalculator();}}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -274,7 +275,7 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); toggleNutritionScout();}}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -284,7 +285,7 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('exercise'); setShow1RMCalculator(true); setShowWeightGuide(false); setShowWorkoutSets(false);}}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -296,7 +297,7 @@ const QnaPage: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -306,7 +307,7 @@ const QnaPage: React.FC = () => {
 
           <button
             onClick={() => {setActiveTab('exercise'); setShowWorkoutSets(true); setShowWeightGuide(false); setShow1RMCalculator(false);}}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -316,7 +317,7 @@ const QnaPage: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('handbook')}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -326,7 +327,7 @@ const QnaPage: React.FC = () => {
           
           <button
             onClick={() => {setActiveTab('nutrition'); toggleMealPlans();}}
-            className="p-2 bg-[#4285F4] text-white rounded-lg shadow hover:bg-[#3b78db] transition-colors flex flex-col items-center text-sm"
+            className="p-2 bg-primary-400 text-white rounded-lg shadow hover:bg-primary-500 transition-colors flex flex-col items-center text-sm"
           >
             <Utensils size={20} className="mb-1" />
             식단 예시
@@ -361,10 +362,10 @@ const QnaPage: React.FC = () => {
 
         {activeTab === 'exercise' && showWorkoutSets && (
           <>
-            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start">
-              <Info className="text-blue-500 mr-2 flex-shrink-0 mt-1" size={20} />
+            <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex items-start">
+              <Info className="text-primary-500 mr-2 flex-shrink-0 mt-1" size={20} />
               <div>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+                <p className="text-sm text-primary-700 dark:text-primary-300">
                   자세한 운동 종목에 대한 정보는 운동 검색을 통해 파악 가능합니다.
                 </p>
               </div>
@@ -456,7 +457,7 @@ const QnaPage: React.FC = () => {
                 </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                  <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+                  <div className="bg-success-50 dark:bg-success-900/20 p-6 rounded-lg">
                     <h3 className="text-lg font-semibold mb-2">건강한 식단의 기본 원칙</h3>
                     <ul className="list-disc pl-5 space-y-1">
                       <li>충분한 단백질 섭취 (체중 1kg당 1.6-2g)</li>
@@ -467,7 +468,7 @@ const QnaPage: React.FC = () => {
                     </ul>
                   </div>
                   
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+                  <div className="bg-primary-50 dark:bg-primary-900/20 p-6 rounded-lg">
                     <h3 className="text-lg font-semibold mb-2">운동 목적별 영양 섭취</h3>
                     <ul className="list-disc pl-5 space-y-1">
                       <li><strong>근육 증가:</strong> 칼로리 surplus (+300~500kcal), 고단백</li>
@@ -491,7 +492,7 @@ const QnaPage: React.FC = () => {
                 value={handbookSearchTerm}
                 onChange={handleHandbookSearch}
                 placeholder="질문이나 키워드를 입력하세요"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             

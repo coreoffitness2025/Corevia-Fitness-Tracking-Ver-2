@@ -3,31 +3,42 @@ import { ExercisePart } from '../types';
 /**
  * 운동 부위에 따른 레이블 반환
  */
-export const getPartLabel = (part: ExercisePart): string => {
-  const labels: { [key in ExercisePart]: string } = {
+export const getPartLabel = (part: ExercisePart | 'all'): string => {
+  const labels: { [key in ExercisePart | 'all']?: string } = {
     chest: '가슴',
     back: '등',
     shoulder: '어깨',
     leg: '하체',
     biceps: '이두',
-    triceps: '삼두'
+    triceps: '삼두',
+    complex: '복합',
+    all: '전체'
   };
-  return labels[part];
+  return labels[part] || part.toString();
 };
 
 /**
  * 운동 부위에 따른 색상 클래스 반환
  */
 export const getPartColor = (part: ExercisePart, isSuccess: boolean = true): string => {
-  const baseColors = {
-    chest: isSuccess ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-400',
-    back: isSuccess ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-400',
-    leg: isSuccess ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-orange-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-400',
-    shoulder: isSuccess ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-purple-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-400',
-    biceps: isSuccess ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-pink-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-400',
-    triceps: isSuccess ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-400'
+  // tailwind.config.js에 정의된 색상을 사용하도록 수정
+  // 성공 시 각 부위별 전용 색상, 실패 시 통일된 danger 색상 사용
+  const successColors: Record<ExercisePart, string> = {
+    chest:    'bg-part-chest text-blue-800 dark:bg-opacity-30 dark:text-part-chest border-part-chest',
+    back:     'bg-part-back text-cyan-800 dark:bg-opacity-30 dark:text-part-back border-part-back',
+    shoulder: 'bg-part-shoulder text-yellow-800 dark:bg-opacity-30 dark:text-part-shoulder border-part-shoulder',
+    leg:      'bg-part-leg text-green-800 dark:bg-opacity-30 dark:text-part-leg border-part-leg',
+    biceps:   'bg-part-biceps text-rose-800 dark:bg-opacity-30 dark:text-part-biceps border-part-biceps',
+    triceps:  'bg-part-triceps text-indigo-800 dark:bg-opacity-30 dark:text-part-triceps border-part-triceps',
+    complex:  'bg-part-complex text-gray-800 dark:bg-opacity-30 dark:text-part-complex border-part-complex',
   };
-  return baseColors[part] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+
+  const failureColor = 'bg-danger-200 text-danger-700 dark:bg-opacity-30 dark:text-danger-300 border-danger-300';
+
+  if (isSuccess) {
+    return successColors[part] || 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300 border-gray-400'; // 기본값
+  }
+  return failureColor;
 };
 
 /**

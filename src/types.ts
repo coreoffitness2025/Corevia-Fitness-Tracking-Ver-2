@@ -30,10 +30,10 @@ export interface AccessoryExercise {
 }
 
 // 메인 운동 타입 (타입 안전성을 위해 union 타입으로 정의)
-export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress';
+export type ChestMainExercise = 'benchPress' | 'inclineBenchPress' | 'declineBenchPress' | 'dumbbellBenchPress';
 export type BackMainExercise = 'deadlift' | 'barbellRow' | 'pullUp' | 'tBarRow';
-export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull';
-export type LegMainExercise = 'squat' | 'legPress' | 'lunge';
+export type ShoulderMainExercise = 'overheadPress' | 'lateralRaise' | 'facePull' | 'dumbbellShoulderPress';
+export type LegMainExercise = 'squat' | 'legPress' | 'lunge' | 'romanianDeadlift';
 export type BicepsMainExercise = 'dumbbellCurl' | 'barbellCurl' | 'hammerCurl';
 export type TricepsMainExercise = 'cablePushdown' | 'overheadExtension' | 'lyingTricepsExtension';
 

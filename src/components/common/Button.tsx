@@ -56,7 +56,7 @@ export const getButtonStyles = (
 
   // 변형 스타일
   const variantClasses = {
-    primary: 'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800',
+    primary: 'bg-primary-400 text-white hover:bg-primary-500 active:bg-primary-600',
     secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 active:bg-secondary-700',
     outline: 'border-2 border-blue-500 bg-white text-black hover:bg-gray-50 dark:bg-gray-800 dark:border-blue-400 dark:text-white dark:hover:bg-gray-700',
     text: 'text-primary-600 hover:bg-gray-100 dark:text-primary-400 dark:hover:bg-gray-800',

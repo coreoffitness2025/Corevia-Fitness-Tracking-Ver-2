@@ -9,6 +9,7 @@ import { Info, Camera, Upload, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
 import { v4 as uuidv4 } from 'uuid';
+import Button from '../common/Button';
 
 interface FoodFormProps {
   onSuccess?: () => void; // 식단 저장 후 호출될 콜백
@@ -335,59 +336,55 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   return (
     <div className="max-w-2xl mx-auto p-4">
       {/* 목표 칼로리 및 영양소 가이드 */}
-      <Card className="mb-6 border-l-4 border-[#4285F4]">
-        <div className="flex items-start">
-          <Info className="text-[#4285F4] mr-2 mt-1 flex-shrink-0" size={20} />
+      <Card className="mb-6 border-l-4 border-primary-400">
+        <div className="flex items-start p-4">
+          <Info className="text-primary-400 mr-3 mt-1 flex-shrink-0" size={24} />
           <div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">1끼당 권장 섭취량(3끼 기준)</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-                <span className="block text-lg font-bold text-green-600 dark:text-green-400">{Math.round(proteinTarget/3)}g</span>
+            <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량(3끼 기준)</h3>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="bg-success-50 dark:bg-success-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-400">단백질</span>
+                <span className="block text-xl font-bold text-success-700 dark:text-success-400">{Math.round(proteinTarget/3)}g</span>
               </div>
-              
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-                <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{Math.round(carbsTarget/3)}g</span>
+              <div className="bg-warning-50 dark:bg-warning-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-400">탄수화물</span>
+                <span className="block text-xl font-bold text-warning-700 dark:text-warning-400">{Math.round(carbsTarget/3)}g</span>
               </div>
-              
-              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
-                <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-red-600 dark:text-red-400">{Math.round(fatTarget/3)}g</span>
+              <div className="bg-danger-50 dark:bg-danger-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm text-gray-600 dark:text-gray-400">지방</span>
+                <span className="block text-lg font-bold text-danger-700 dark:text-danger-400">{Math.round(fatTarget/3)}g</span>
               </div>
             </div>
             
-            <div className="mt-3">
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            <div className="mt-3 space-y-1">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                💡 해당 권장 섭취량은 개인 설정의 목표 칼로리 기반으로 산출되었습니다.
               </p>
             </div>
             
             <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={navigateToNutritionInfo}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                </svg>
+                <Info size={16} className="mr-1" />
                 음식별 칼로리 확인하기
-              </button>
+              </Button>
               
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => setShowNutritionSources(!showNutritionSources)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                </svg>
+                <Info size={16} className="mr-1" />
                 주요 탄/단/지 급원 확인하기
-              </button>
+              </Button>
             </div>
             
-            {/* 영양소 급원 표시 영역 */}
             {showNutritionSources && <NutritionSourcesGuide />}
           </div>
         </div>
@@ -410,7 +407,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             id="mealDate"
             value={mealDate}
             onChange={(e) => setMealDate(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
 
@@ -420,21 +417,18 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           </label>
           
           <div className="flex gap-4">
-            <button
+            <Button 
               type="button"
               onClick={handleCameraCapture}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#4285F4] border border-transparent rounded-md shadow-sm hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]"
+              variant="primary" 
+              fullWidth
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-              </svg>
+              <Camera size={18} className="inline mr-2" />
               카메라로 촬영
-            </button>
+            </Button>
             
-            <label className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#4285F4] border border-transparent rounded-md shadow-sm hover:bg-[#3b78db] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4] cursor-pointer text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4V5h12v10z" clipRule="evenodd" />
-              </svg>
+            <label className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-400 border border-transparent rounded-md shadow-sm hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 cursor-pointer text-center">
+              <Upload size={18} className="inline mr-2" />
               앨범에서 선택
               <input
                 type="file"
@@ -474,23 +468,20 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="이 식사에 대한 메모를 남겨보세요"
           />
         </div>
 
         <div className="flex justify-end space-x-4">
-          <button
+          <Button
             type="submit"
             disabled={!imageUrl}
-            className={`px-6 py-2 text-sm font-medium text-white rounded-md shadow-sm transition-colors duration-200 ${
-              imageUrl 
-                ? 'bg-[#4285F4] hover:bg-[#3b78db] focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4]' 
-                : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-            }`}
+            variant={imageUrl ? 'success' : 'default'}
+            className={!imageUrl ? 'cursor-not-allowed' : ''}
           >
             저장
-          </button>
+          </Button>
         </div>
       </form>
     </div>

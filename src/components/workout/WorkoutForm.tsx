@@ -44,24 +44,27 @@ const exercisePartOptions = [
 const mainExerciseOptions: Record<ExercisePart, {value: MainExerciseType, label: string}[]> = {
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
-    // { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' }, // 주석 처리
-    // { value: 'declineBenchPress', label: '디클라인 벤치 프레스' } // 주석 처리
+    { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' }, // 추가
+    // { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' }, 
+    // { value: 'declineBenchPress', label: '디클라인 벤치 프레스' } 
   ],
   back: [
-    { value: 'barbellRow', label: '바벨로우' }, // 'bentOverRow' 대신 또는 추가 (types.ts에 BackMainExercise 업데이트 필요할 수 있음)
+    { value: 'barbellRow', label: '바벨로우' }, 
     { value: 'deadlift', label: '데드리프트' },
-    { value: 'tBarRow', label: '티바로우' }    // 신규 (types.ts에 BackMainExercise 업데이트 필요할 수 있음)
-    // { value: 'pullUp', label: '턱걸이' }, // 주석 처리
+    { value: 'tBarRow', label: '티바로우' }    
+    // { value: 'pullUp', label: '턱걸이' }, 
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
-    // { value: 'lateralRaise', label: '레터럴 레이즈' }, // 주석 처리
-    // { value: 'facePull', label: '페이스 풀' } // 주석 처리
+    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' }, // 추가
+    // { value: 'lateralRaise', label: '레터럴 레이즈' }, 
+    // { value: 'facePull', label: '페이스 풀' } 
   ],
   leg: [
     { value: 'squat', label: '스쿼트' },
     { value: 'legPress', label: '레그 프레스' },
-    // { value: 'lungue', label: '런지' } // 'lungue' -> 'lunge' 오타 수정 및 주석 처리
+    { value: 'romanianDeadlift', label: '루마니안 데드리프트' }, // 추가
+    // { value: 'lungue', label: '런지' } 
   ],
   biceps: [ // 이두는 기존 유지
     { value: 'dumbbellCurl', label: '덤벨 컬' },
@@ -116,6 +119,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 타이머 관련 상태
   const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
   const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
+  const alarmRef = useRef<HTMLAudioElement | null>(null); // 알람 참조 추가
 
   // 웜업 팁 표시 상태
   const [showWarmupTips, setShowWarmupTips] = useState(false);
@@ -184,6 +188,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
     console.log('[WorkoutForm] 컴포넌트 마운트, userProfile:', userProfile?.uid);
+    
+    // 알람 사운드 요소 생성
+    try {
+      alarmRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3');
+    } catch (error) {
+      console.error('알람 사운드 로드 실패:', error);
+    }
     
     if (userProfile) {
       console.log('[WorkoutForm] 사용자 프로필 로드됨, 운동 설정 적용:', userProfile);
@@ -329,17 +340,22 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       const currentSet = newSets[setIndex];
       const timerKey = `main_${setIndex}`;
 
-      // 1. 세트 상태 토글 (미완료 -> 성공 -> 실패 -> 미완료)
+      // 1. 세트 상태 토글 (미완료 -> 성공 -> 미완료)
       if (currentSet.isSuccess === null) { // 미완료 -> 성공
         currentSet.isSuccess = true;
-        // 성공 시 타이머 시작 (기존 타이머가 없거나, 다른 세트의 타이머가 아닌 경우)
-        if (!activeTimers[timerKey] && !Object.keys(activeTimers).some(key => activeTimers[key])) {
-          startTimer(timerKey, 120); // 2분 타이머 시작
+        
+        // 성공 시 타이머 시작 (다른 활성 타이머가 없을 경우에만)
+        // Object.values(activeTimers)는 activeTimers의 값들로 이루어진 배열을 반환합니다.
+        // 여기서 timer가 undefined일 수 있는 이유는 clearTimer에서 timer 정보를 삭제할 때 undefined를 할당할 수 있기 때문입니다.
+        const isAnyTimerActive = Object.values(activeTimers).some(timer => timer && timer.timeLeft > 0 && !timer.isPaused);
+
+        if (!isAnyTimerActive) { 
+            startTimer(timerKey, 120); 
         }
-        // 1RM 계산 등 성공 시 로직
+        
         const { repsCount: targetReps } = getSetConfiguration(selectedSetConfiguration, customSets, customReps);
         const currentReps = currentSet.reps;
-        if (currentReps >= targetReps) { // 성공으로 간주할 조건 (예: 목표 횟수 달성)
+        if (currentReps >= targetReps) { 
             const weight = currentSet.weight;
             const reps = currentSet.reps;
             if (weight > 0 && reps > 0 && reps < 37) {
@@ -347,20 +363,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 updateOneRMIfHigher(selectedMainExercise, estimatedOneRM);
             }
         } else {
-            currentSet.isSuccess = false; // 목표 미달 시 실패 처리
+            // 목표 미달 시 성공으로 처리하지 않음 (사용자가 직접 실패로 변경하거나, 현재는 성공 상태로 유지)
+            // currentSet.isSuccess = false; // 필요하다면 주석 해제
         }
 
-      } else if (currentSet.isSuccess === true) { // 성공 -> 실패
-        currentSet.isSuccess = false;
-        clearTimer(timerKey); // 타이머 중지
-      } else { // 실패 -> 미완료 (isSuccess === false)
+      } else { // 성공(true) 또는 실패(false, 현재 로직에서는 false 상태가 없음) -> 미완료(null)
         currentSet.isSuccess = null;
-        clearTimer(timerKey); // 타이머 중지
+        clearTimer(timerKey); 
       }
       setMainExercise(prev => ({ ...prev, sets: newSets }));
 
     } else if (accessoryIndex !== undefined) {
-      // 보조 운동 로직은 AccessoryExerciseComponent에서 유사하게 처리
+      // 보조 운동 로직은 AccessoryExerciseComponent에서 처리
     }
   };
 
@@ -368,16 +382,35 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const startTimer = (timerKey: string, duration: number) => {
     clearTimer(timerKey); // 기존 타이머가 있다면 정리
     setActiveTimers(prev => ({ ...prev, [timerKey]: { timeLeft: duration, isPaused: false } }));
+    toast.success('휴식 타이머가 시작되었습니다.', { // 타이머 시작 시 토스트 메시지 추가 (WorkoutPage_Root 참고)
+      icon: '⏱️',
+      duration: 2000,
+      position: 'top-center'
+    });
     timerRefs.current[timerKey] = setInterval(() => {
       setActiveTimers(prev => {
-        const current = prev[timerKey];
-        if (current && !current.isPaused) {
-          if (current.timeLeft <= 1) {
-            clearTimer(timerKey);
-            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰' });
-            return { ...prev, [timerKey]: undefined }; // 타이머 정보 제거
+        const currentTimerState = prev[timerKey];
+        if (currentTimerState && !currentTimerState.isPaused) {
+          if (currentTimerState.timeLeft <= 1) {
+            clearTimer(timerKey); // clearTimer가 이미 내부에서 setActiveTimers를 호출하여 해당 키를 제거함
+            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰', duration: 5000 });
+            
+            if (alarmRef.current) {
+              alarmRef.current.play().catch(err => {
+                console.error('알람 재생 실패:', err);
+                if ('vibrate' in navigator) {
+                  navigator.vibrate([200, 100, 200, 100, 200]);
+                }
+              });
+            }
+            // 여기서 [timerKey]: undefined 대신 clearTimer에서 처리하도록 했으므로 추가적인 상태 변경 불필요
+            // 명시적으로 prev에서 해당 키를 제거하려면 아래와 같이 할 수 있으나, clearTimer에서 이미 처리중
+            // const newState = { ...prev };
+            // delete newState[timerKey];
+            // return newState;
+            return prev; // clearTimer가 호출되므로 prev를 그대로 반환하거나, clearTimer 내부 로직과 중복되지 않게 조정
           }
-          return { ...prev, [timerKey]: { ...current, timeLeft: current.timeLeft - 1 } };
+          return { ...prev, [timerKey]: { ...currentTimerState, timeLeft: currentTimerState.timeLeft - 1 } };
         }
         return prev;
       });
@@ -1352,10 +1385,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 <div key={index} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
                   <div className="flex justify-between items-center mb-2">
                     <div className="font-medium text-gray-800 dark:text-gray-200">세트 {index + 1}</div>
-                    {/* 이 부분은 새로운 UI 구조에서는 제거되거나 다른 용도로 사용될 수 있음 */}
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr] gap-3 items-end"> {/* md 이상에서 3번째 컬럼은 버튼용으로 작게 */} 
+                  <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr] gap-3 items-end">
                     <div>
                       <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">무게 (kg)</label>
                       <input
@@ -1366,7 +1397,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           newSets[index].weight = Number(e.target.value) || 0;
                           setMainExercise({ ...mainExercise, sets: newSets });
                         }}
-                        className="w-full p-2 border rounded-md" 
+                        className="w-full p-2 border rounded-md"
                       />
                     </div>
                     <div>
@@ -1378,27 +1409,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         className="w-full p-2 border rounded-md"
                       />
                     </div>
-                    {/* 완료/타이머 버튼 영역 (한 행의 마지막 컬럼) */} 
-                    <div className="flex flex-col items-center space-y-1"> {/* 버튼과 타이머 텍스트를 세로로 배열 */} 
+                    <div className="flex flex-col items-center space-y-1">
                       <Button
                         size="sm"
-                        variant="icon" 
+                        variant="icon"
                         onClick={() => handleSetCompletionAndTimer(index, true)}
-                        className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${ 
+                        className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${
                           set.isSuccess === true
                             ? 'bg-green-500 text-white hover:bg-green-600'
-                            : set.isSuccess === false
-                            ? 'bg-red-500 text-white hover:bg-red-600'
+                            // 실패 상태를 UI에서 표현하지 않으므로 관련 스타일 제거
                             : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
                         }`}
-                        aria-label={set.isSuccess === null ? "세트 미완료" : set.isSuccess ? "세트 성공" : "세트 실패"}
+                        aria-label={set.isSuccess === true ? "세트 성공" : "세트 미완료"}
                       >
-                        {set.isSuccess === true ? <CheckCircle size={20} /> :
-                         set.isSuccess === false ? <XCircle size={20} /> : // 실패 시 X 아이콘으로 변경
-                         <Square size={20} />}
+                        {/* 실패 아이콘(XCircle) 제거, 성공(CheckCircle) 또는 미완료(Square)만 표시 */}
+                        {set.isSuccess === true ? <CheckCircle size={20} /> : <Square size={20} />}
                       </Button>
                       {activeTimers[`main_${index}`] && (
-                        <div className="flex items-center text-xs">
+                        <div className="flex items-center text-xs mt-1">
                           <span className={`font-semibold ${activeTimers[`main_${index}`]?.isPaused ? 'text-gray-500' : 'text-blue-600 animate-pulse'}`}>
                               {formatTime(activeTimers[`main_${index}`].timeLeft)}
                           </span>

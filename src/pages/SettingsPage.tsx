@@ -4,83 +4,106 @@ import Layout from '../components/common/Layout';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
-import { UserProfile } from '../types';
+import { UserProfile, UserSettings } from '../types';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { LogOut, Settings, FileText, Info } from 'lucide-react';
 import WorkoutSetConfig from '../components/settings/WorkoutSetConfig';
+import { toast } from 'react-hot-toast';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { currentUser, userProfile: authUserProfile, logout, updateProfile } = useAuth();
-  const [userSettings, setUserSettings] = useState<Partial<UserProfile> | null>(null);
+  const { 
+    currentUser, 
+    userProfile: authUserProfile, 
+    userSettings: authUserSettings,
+    logout, 
+    updateProfile, 
+    updateSettings
+  } = useAuth();
+  
+  const [userProfile, setUserProfileState] = useState<Partial<UserProfile> | null>(null);
+  const [currentSettings, setCurrentSettings] = useState<UserSettings | null>(authUserSettings);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    if (authUserProfile) {
+      setUserProfileState(authUserProfile);
+    }
+    if (authUserSettings) {
+      setCurrentSettings(authUserSettings);
+    }
+    setIsLoading(false); 
+  }, [authUserProfile, authUserSettings]);
+
+  const handleAppSettingChange = async (key: keyof UserSettings, value: any) => {
+    if (!currentSettings) return;
+    const newAppSettings = { ...currentSettings, [key]: value };
+    try {
+      await updateSettings(newAppSettings);
+      setCurrentSettings(newAppSettings);
+      toast.success('설정이 저장되었습니다.');
+    } catch (error) {
+      toast.error('설정 저장에 실패했습니다.');
+      console.error('앱 설정 저장 실패:', error);
+    }
+  };
+
+  const handleNotificationSettingChange = async (key: keyof UserSettings['notifications'], value: boolean) => {
+    if (!currentSettings) return;
+    const newNotifications = { ...currentSettings.notifications, [key]: value };
+    const newAppSettings = { ...currentSettings, notifications: newNotifications };
+    try {
+      await updateSettings(newAppSettings);
+      setCurrentSettings(newAppSettings);
+      toast.success('알림 설정이 저장되었습니다.');
+    } catch (error) {
+      toast.error('알림 설정 저장에 실패했습니다.');
+    }
+  };
+
+  const handleUnitSettingChange = async (key: keyof UserSettings['units'], value: 'kg' | 'lbs' | 'cm' | 'ft') => {
+    if (!currentSettings) return;
+    const newUnits = { ...currentSettings.units, [key]: value };
+    const newAppSettings = { ...currentSettings, units: newUnits };
+    try {
+      await updateSettings(newAppSettings);
+      setCurrentSettings(newAppSettings);
+      toast.success('단위 설정이 저장되었습니다.');
+    } catch (error) {
+      toast.error('단위 설정 저장에 실패했습니다.');
+    }
+  };
+  
+  const handleSavePersonalization = async (profileDataToSave: Partial<UserProfile>) => {
+    try {
       if (currentUser?.uid) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          if (userDoc.exists()) {
-            setUserSettings(userDoc.data() as Partial<UserProfile>);
-          } else if (authUserProfile) {
-            // 파이어스토어에 문서가 없지만 AuthContext에 userProfile이 있는 경우
-            setUserSettings(authUserProfile);
-          }
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-        } finally {
-          setIsLoading(false);
-        }
+        await updateProfile(profileDataToSave);
+        setIsPersonalizationModalOpen(false);
+        toast.success('개인 정보가 성공적으로 저장되었습니다.');
       } else {
-        // 로딩 상태 해제
-        setIsLoading(false);
+        toast.error('로그인 후 설정을 저장할 수 있습니다.');
       }
-    };
-
-    fetchUserProfile();
-  }, [currentUser, authUserProfile]);
-
+    } catch (error) {
+      console.error('Error saving personalization settings:', error);
+      toast.error('개인 정보 저장 중 오류가 발생했습니다.');
+    }
+  };
+  
   const handleLogout = async () => {
     try {
       await logout();
       navigate('/login');
     } catch (error) {
       console.error('로그아웃 중 오류가 발생했습니다:', error);
+      toast.error('로그아웃 중 오류가 발생했습니다.');
     }
   };
 
-  // 개인화 설정 저장 핸들러
-  const handleSavePersonalization = async (profile: Partial<UserProfile>) => {
-    try {
-      console.log('개인화 설정 저장 시도:', profile);
-      
-      // 로그인한 사용자인 경우 파이어스토어에 저장
-      if (currentUser?.uid) {
-        // context의 updateProfile 사용 (이것이 AuthContext 내부에서 Firestore 업데이트 처리)
-        await updateProfile(profile);
-        console.log('개인화 설정 저장 성공');
-        
-        // 로컬 상태 업데이트
-        setUserSettings(prev => ({...prev, ...profile}));
-        setIsPersonalizationModalOpen(false);
-        
-        // 성공 메시지
-        alert('설정이 성공적으로 저장되었습니다.');
-      } else {
-        console.error('로그인된 사용자가 없습니다.');
-        alert('로그인 후 설정을 저장할 수 있습니다.');
-      }
-    } catch (error) {
-      console.error('Error saving personalization settings:', error);
-      alert('설정을 저장하는 중 오류가 발생했습니다.');
-    }
-  };
-
-  // 전체 로딩 중이면 로딩 표시
   if (isLoading) {
     return (
       <Layout>
@@ -90,57 +113,13 @@ const SettingsPage = () => {
       </Layout>
     );
   }
-
-  // 메인 운동 이름 가져오기
-  const getMainExerciseName = (key: string | undefined) => {
-    if (!key) return '설정되지 않음';
-    
-    const exerciseNames: Record<string, string> = {
-      // 가슴 운동
-      'benchPress': '벤치 프레스',
-      'inclineBenchPress': '인클라인 벤치 프레스',
-      'declineBenchPress': '디클라인 벤치 프레스',
-      // 등 운동
-      'deadlift': '데드리프트',
-      'pullUp': '턱걸이',
-      'bentOverRow': '벤트오버 로우',
-      // 어깨 운동
-      'overheadPress': '오버헤드 프레스',
-      'lateralRaise': '레터럴 레이즈',
-      'facePull': '페이스 풀',
-      // 하체 운동
-      'squat': '스쿼트',
-      'legPress': '레그 프레스',
-      'lungue': '런지',
-      // 이두 운동
-      'dumbbellCurl': '덤벨 컬',
-      'barbelCurl': '바벨 컬',
-      'hammerCurl': '해머 컬',
-      // 삼두 운동
-      'cablePushdown': '케이블 푸시다운',
-      'overheadExtension': '오버헤드 익스텐션',
-      'lyingExtension': '라잉 익스텐션'
-    };
-    
-    return exerciseNames[key] || key;
+  
+  const displaySettings = currentSettings || {
+    darkMode: false,
+    notifications: { workoutReminder: true, mealReminder: true, progressUpdate: true },
+    units: { weight: 'kg', height: 'cm' },
+    language: 'ko'
   };
-
-  // 세트 구성 설명 가져오기
-  const getSetConfigDescription = (config: string | undefined) => {
-    if (!config) return '설정되지 않음';
-    
-    const configDesc: Record<string, string> = {
-      '5x5': '5세트 5회 (강도: 중상)',
-      '10x5': '10세트 5회 (강도: 상)',
-      '6x5': '6세트 5회 (강도: 중)',
-      'custom': '커스텀 설정'
-    };
-    
-    return configDesc[config] || config;
-  };
-
-  // 사용자 프로필 데이터 (AuthContext의 userProfile과 파이어스토어에서 불러온 데이터 병합)
-  const userProfile = userSettings || authUserProfile;
 
   return (
     <Layout>
@@ -174,7 +153,6 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* 개인화 설정 정보 표시 */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
@@ -191,7 +169,6 @@ const SettingsPage = () => {
           
           {!isLoading && userProfile && (
             <div className="space-y-4">
-              {/* 신체 정보 */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                   <p className="text-sm text-gray-500 dark:text-gray-400">신장</p>
@@ -207,7 +184,6 @@ const SettingsPage = () => {
                 </div>
               </div>
               
-              {/* 목표 및 활동 수준 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                   <p className="text-sm text-gray-500 dark:text-gray-400">피트니스 목표</p>
@@ -231,7 +207,6 @@ const SettingsPage = () => {
                 </div>
               </div>
               
-              {/* 목표 칼로리 정보 */}
               {userProfile.targetCalories !== undefined && (
                 <div>
                   <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
@@ -251,7 +226,6 @@ const SettingsPage = () => {
           )}
         </div>
         
-        {/* 운동 세트 설정 섹션 추가 */}
         {!isLoading && userProfile && (
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="mb-4">
@@ -267,12 +241,102 @@ const SettingsPage = () => {
               </p>
             </div>
             
-            {/* WorkoutSetConfig 컴포넌트 추가 */}
             <WorkoutSetConfig />
           </div>
         )}
 
-        {/* 로그아웃 버튼 */}
+        {!isLoading && (
+          <>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                테마 설정
+              </h3>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700 dark:text-gray-300">다크 모드</span>
+                <button
+                  onClick={() => handleAppSettingChange('darkMode', !displaySettings.darkMode)}
+                  className={`px-4 py-2 rounded font-medium transition-colors duration-150 ease-in-out ${
+                    displaySettings.darkMode 
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200'
+                  }`}
+                >
+                  {displaySettings.darkMode ? '켜짐' : '꺼짐'}
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                알림 설정
+              </h3>
+              <div className="space-y-4">
+                {[
+                  { key: 'workoutReminder', label: '운동 알림' },
+                  { key: 'mealReminder', label: '식사 알림' },
+                  { key: 'progressUpdate', label: '진행 상황 알림' },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between">
+                    <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
+                    <button
+                      onClick={() => handleNotificationSettingChange(item.key as keyof UserSettings['notifications'], !displaySettings.notifications[item.key as keyof UserSettings['notifications']])}
+                      className={`px-4 py-2 rounded font-medium transition-colors duration-150 ease-in-out ${
+                        displaySettings.notifications[item.key as keyof UserSettings['notifications']] 
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
+                          : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200'
+                      }`}
+                    >
+                      {displaySettings.notifications[item.key as keyof UserSettings['notifications']] ? '켜짐' : '꺼짐'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                언어 설정
+              </h3>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700 dark:text-gray-300">언어</span>
+                <select
+                  value={displaySettings.language}
+                  onChange={(e) => handleAppSettingChange('language', e.target.value as 'ko' | 'en')}
+                  className="block w-auto px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100"
+                >
+                  <option value="ko">한국어</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                단위 설정
+              </h3>
+              <div className="space-y-4">
+                {[
+                  { key: 'weight', label: '무게 단위', options: [{value: 'kg', label: 'kg'}, {value: 'lbs', label: 'lbs'}] },
+                  { key: 'height', label: '키 단위', options: [{value: 'cm', label: 'cm'}, {value: 'ft', label: 'ft'}] },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between">
+                    <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
+                    <select
+                      value={displaySettings.units[item.key as keyof UserSettings['units']]}
+                      onChange={(e) => handleUnitSettingChange(item.key as keyof UserSettings['units'], e.target.value as any)}
+                      className="block w-auto px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100"
+                    >
+                      {item.options.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
@@ -290,7 +354,6 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* 법적 정보 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
@@ -332,7 +395,6 @@ const SettingsPage = () => {
         </div>
       </div>
       
-      {/* 개인화 모달 */}
       <PersonalizationModal
         isOpen={isPersonalizationModalOpen}
         onClose={() => setIsPersonalizationModalOpen(false)}

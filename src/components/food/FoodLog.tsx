@@ -15,6 +15,7 @@ import {
 } from '../../utils/nutritionUtils';
 import type { UserProfile } from '../../types';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
+import Button from '../common/Button';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -341,16 +342,16 @@ const FoodLog = () => {
   };
 
   const renderMonthlyView = () => {
-    const today = new Date();
-    const currentDate = new Date(selectedDate);
-    const currentMonth = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
+    const todayCal = new Date();
+    const currentDateCal = new Date(selectedDate);
+    const currentMonth = currentDateCal.getMonth();
+    const currentYear = currentDateCal.getFullYear();
     
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className="p-4 text-center border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-xl font-semibold">
-            {currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+            {currentDateCal.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
           </h3>
         </div>
         
@@ -365,7 +366,7 @@ const FoodLog = () => {
             const dateStr = date.toISOString().split('T')[0];
             const records = recordsByDate[dateStr] || [];
             const isCurrentMonth = date.getMonth() === currentMonth;
-            const isToday = date.toDateString() === today.toDateString();
+            const isTodayCal = date.toDateString() === todayCal.toDateString();
             const hasRecords = records.length > 0;
             const hasPhotos = records.some(record => record.imageId && imageCache[record.imageId]);
             
@@ -375,13 +376,13 @@ const FoodLog = () => {
                 className={`
                   p-1 min-h-24 border border-gray-100 dark:border-gray-700 
                   ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800' : ''} 
-                  ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
+                  ${isTodayCal ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
                 `}
               >
                 <div className="h-full flex flex-col">
                   <div className="text-right p-1">
                     <span className={`text-sm rounded-full w-6 h-6 flex items-center justify-center
-                      ${isToday ? 'bg-blue-500 text-white' : ''}`}>
+                      ${isTodayCal ? 'bg-primary-400 text-white' : ''}`}>
                       {date.getDate()}
                     </span>
                   </div>
@@ -411,7 +412,7 @@ const FoodLog = () => {
                       )}
                       
                       <div className="mt-auto text-xs">
-                        <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full px-1 py-0.5">
+                        <span className="bg-info-100 dark:bg-info-900/30 text-info-700 dark:text-info-300 rounded-full px-1 py-0.5">
                           기록 {records.length}개
                         </span>
                       </div>
@@ -428,57 +429,10 @@ const FoodLog = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Card className="mb-6 border-l-4 border-blue-500 dark:border-blue-400">
-        <div className="flex items-start p-4">
-          <Info className="text-blue-500 dark:text-blue-400 mr-3 mt-1 flex-shrink-0" size={24} />
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량(3끼 기준)</h3>
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <div className="bg-green-100 dark:bg-green-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-400">단백질</span>
-                <span className="block text-xl font-bold text-green-700 dark:text-green-400">{Math.round(nutritionGoals.daily.protein / 3)}g</span>
-              </div>
-              <div className="bg-yellow-100 dark:bg-yellow-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-400">탄수화물</span>
-                <span className="block text-xl font-bold text-yellow-700 dark:text-yellow-400">{Math.round(nutritionGoals.daily.carbs / 3)}g</span>
-              </div>
-              <div className="bg-red-100 dark:bg-red-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-red-700 dark:text-red-400">{Math.round(nutritionGoals.daily.fat / 3)}g</span>
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
-              </p>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={navigateToNutritionInfo}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <ExternalLink size={18} className="mr-2" />
-                음식별 칼로리 확인하기
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowNutritionSources(!showNutritionSources)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Plus size={18} className="mr-2" />
-                주요 탄/단/지 급원 확인하기
-              </button>
-            </div>
-            {showNutritionSources && <NutritionSourcesGuide />}
-          </div>
-        </div>
-      </Card>
-
-      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 rounded-r-lg text-sm">
+      <div className="mb-3 p-3 bg-primary-50 dark:bg-primary-900/30 border-l-4 border-primary-400 rounded-r-lg text-sm">
         <div className="flex items-start">
-          <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-          <p className="text-blue-700 dark:text-blue-300">
+          <Info className="h-5 w-5 text-primary-500 mr-2 flex-shrink-0 mt-0.5" />
+          <p className="text-primary-700 dark:text-primary-300">
             사진은 현재 사용자의 로컬 저장소에 저장됩니다. 브라우저 캐시를 삭제하거나 다른 기기에서 접속하면 사진이 보이지 않을 수 있습니다.
           </p>
         </div>
@@ -488,7 +442,7 @@ const FoodLog = () => {
         <div className="flex items-center">
           <button 
             onClick={navigatePrevious}
-            className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
             aria-label="이전"
           >
             &lt;
@@ -511,7 +465,7 @@ const FoodLog = () => {
           
           <button 
             onClick={navigateNext}
-            className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
             aria-label="다음"
           >
             &gt;
@@ -519,36 +473,30 @@ const FoodLog = () => {
         </div>
         
         <div className="flex space-x-2">
-          <button
+          <Button
+            size="sm"
+            variant={viewMode === 'day' ? 'primary' : 'default'}
             onClick={() => setViewMode('day')}
-            className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === 'day' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-            }`}
+            icon={<Calendar size={16}  />}
           >
-            <Calendar size={16} className="mr-1.5" /> 일별
-          </button>
-          <button
+            일별
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'week' ? 'primary' : 'default'}
             onClick={() => setViewMode('week')}
-            className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === 'week' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-            }`}
+            icon={<Calendar size={16} />}
           >
-            <Calendar size={16} className="mr-1.5" /> 주별
-          </button>
-          <button
+            주별
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'month' ? 'primary' : 'default'}
             onClick={() => setViewMode('month')}
-            className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              viewMode === 'month' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-            }`}
+            icon={<CalendarDays size={16} />}
           >
-            <CalendarDays size={16} className="mr-1.5" /> 월별
-          </button>
+            월별
+          </Button>
         </div>
       </div>
       
@@ -566,7 +514,7 @@ const FoodLog = () => {
                   .map(([dateStr, recordsForDate]) => renderFoodsByDate(dateStr, recordsForDate))}
               </div>
             ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+              <div className="bg-light-bg dark:bg-gray-700 rounded-lg p-8 text-center">
                 <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 날짜에 식단 기록이 없습니다.</p>
               </div>
             )
@@ -574,7 +522,7 @@ const FoodLog = () => {
           
           {viewMode === 'week' && (
             Object.keys(foodGroups).length > 0 ? renderWeeklyView() : (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+              <div className="bg-light-bg dark:bg-gray-700 rounded-lg p-8 text-center">
                 <p className="text-gray-500 dark:text-gray-400 mb-4">선택한 주에 식단 기록이 없습니다.</p>
               </div>
             )

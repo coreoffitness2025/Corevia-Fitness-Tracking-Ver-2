@@ -9,6 +9,7 @@ import { UserProfile } from '../types';
 import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutSettings } from '../hooks/useWorkoutSettings';
+import Button from '../components/common/Button';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -187,7 +188,7 @@ const HomePage = () => {
   return (
     <Layout>
       {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-md" role="alert">
+        <div className="bg-danger-100 border-l-4 border-danger-500 text-danger-700 p-4 mb-6 rounded-md shadow-md" role="alert">
           <div className="flex">
             <div className="py-1"><Activity size={20} className="mr-3" /></div>
             <div>
@@ -199,11 +200,11 @@ const HomePage = () => {
       )}
 
       {/* 환영 메시지 및 날짜 */} 
-      <div className="mb-8 p-6 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 rounded-lg shadow-lg text-white">
+      <div className="mb-8 p-6 bg-gradient-to-r from-primary-400 to-primary-600 dark:from-primary-500 dark:to-primary-700 rounded-lg shadow-lg text-white">
         <h1 className="text-3xl font-bold mb-1">
           안녕하세요, {userProfile.displayName || '회원님'}!
         </h1>
-        <p className="text-blue-100 dark:text-blue-200 text-lg">
+        <p className="text-primary-100 dark:text-primary-200 text-lg">
           오늘도 건강한 하루 보내세요. Corevia가 함께합니다.
         </p>
       </div>
@@ -212,7 +213,7 @@ const HomePage = () => {
         {/* 프로필 정보 카드 */} 
         <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center mb-4">
-            <UserCircle size={28} className="text-blue-500 mr-3" />
+            <UserCircle size={28} className="text-primary-500 mr-3" />
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">내 프로필</h2>
           </div>
           <div className="space-y-3 text-sm">
@@ -247,14 +248,14 @@ const HomePage = () => {
         {/* 일일 목표 영양소 카드 */} 
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center mb-4">
-            <Target size={28} className="text-green-500 mr-3" />
+            <Target size={28} className="text-success-500 mr-3" />
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">일일 목표</h2>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+          <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-3">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">목표 칼로리</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <p className="text-2xl font-bold text-success-600 dark:text-success-400">
                   {userProfile?.targetCalories && !isNaN(userProfile.targetCalories) ? `${userProfile.targetCalories} kcal` : '미설정'}
                 </p>
               </div>
@@ -264,18 +265,18 @@ const HomePage = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-center bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
-                <p className="text-sm text-green-700 dark:text-green-300 font-semibold">단백질</p>
+              <div className="text-center bg-success-50 dark:bg-success-900/30 p-3 rounded-md">
+                <p className="text-sm text-success-700 dark:text-success-300 font-semibold">단백질</p>
                 <p className="text-lg font-bold text-gray-800 dark:text-white">{nutrients.protein}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.proteinPerMeal}g/끼니)</p>
               </div>
-              <div className="text-center bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-md">
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold">탄수화물</p>
+              <div className="text-center bg-warning-50 dark:bg-warning-900/30 p-3 rounded-md">
+                <p className="text-sm text-warning-700 dark:text-warning-300 font-semibold">탄수화물</p>
                 <p className="text-lg font-bold text-gray-800 dark:text-white">{nutrients.carbs}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.carbsPerMeal}g/끼니)</p>
               </div>
-              <div className="text-center bg-red-50 dark:bg-red-900/30 p-3 rounded-md">
-                <p className="text-sm text-red-700 dark:text-red-300 font-semibold">지방</p>
+              <div className="text-center bg-danger-50 dark:bg-danger-900/30 p-3 rounded-md">
+                <p className="text-sm text-danger-700 dark:text-danger-300 font-semibold">지방</p>
                 <p className="text-lg font-bold text-gray-800 dark:text-white">{nutrients.fat}g</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">({nutrients.fatPerMeal}g/끼니)</p>
               </div>
@@ -287,13 +288,13 @@ const HomePage = () => {
       {/* 선호하는 세트 구성 표시 섹션 */}
       <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
         <div className="flex items-center mb-4">
-          <Settings size={28} className="text-blue-500 mr-3" />
+          <Settings size={28} className="text-primary-500 mr-3" />
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">메인 운동 세트 설정</h2>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+        <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
-              <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+              <h3 className="text-lg font-semibold text-primary-600 dark:text-primary-400">
                 현재 선호 세트 구성: {workoutSettings?.preferredSetup || '10x5'}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -306,18 +307,20 @@ const HomePage = () => {
             <div className="flex items-center mt-4 md:mt-0">
               <div className="mx-4 text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400">세트 수</p>
-                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{workoutSettings?.customSets || 5}</p>
+                <p className="text-xl font-bold text-primary-600 dark:text-primary-400">{workoutSettings?.customSets || 5}</p>
               </div>
               <div className="mx-4 text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400">반복 횟수</p>
-                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{workoutSettings?.customReps || 10}</p>
+                <p className="text-xl font-bold text-primary-600 dark:text-primary-400">{workoutSettings?.customReps || 10}</p>
               </div>
-              <button 
+              <Button 
+                variant="outline"
+                size="sm"
                 onClick={() => navigate('/settings')}
-                className="ml-6 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 text-blue-700 dark:text-blue-200 py-2 px-4 rounded-lg text-sm transition-colors duration-300"
+                className="ml-6"
               >
                 변경하기
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -326,29 +329,29 @@ const HomePage = () => {
       {/* 예상 1RM 표시 섹션 */}
       <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
         <div className="flex items-center mb-4">
-          <Weight size={28} className="text-indigo-500 mr-3" />
+          <Weight size={28} className="text-secondary-500 mr-3" />
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">현재 예상 1RM</h2>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+        <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">스쿼트</p>
-              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.squat || 0} kg</p>
+              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.squat || 0} kg</p>
             </div>
             
             <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">데드리프트</p>
-              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.deadlift || 0} kg</p>
+              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.deadlift || 0} kg</p>
             </div>
             
             <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">벤치프레스</p>
-              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.bench || 0} kg</p>
+              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.bench || 0} kg</p>
             </div>
             
             <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">오버헤드프레스</p>
-              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{userProfile?.oneRepMax?.overheadPress || 0} kg</p>
+              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.overheadPress || 0} kg</p>
             </div>
           </div>
         </div>
@@ -358,7 +361,7 @@ const HomePage = () => {
         {/* 최근 운동 기록 카드 */} 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center mb-4">
-            <TrendingUp size={28} className="text-purple-500 mr-3" />
+            <TrendingUp size={28} className="text-primary-500 mr-3" />
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">최근 운동</h2>
           </div>
           <div className="space-y-4">
@@ -366,11 +369,11 @@ const HomePage = () => {
               recentSessions.map((session) => (
                 <div 
                   key={session.id} 
-                  className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className="p-4 bg-light-bg dark:bg-gray-700/50 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   onClick={() => navigate('/workout', { state: { activeTab: 'records' } })}
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <h3 className="font-semibold text-lg text-purple-600 dark:text-purple-400">
+                    <h3 className="font-semibold text-lg text-primary-600 dark:text-primary-400">
                       {session.part === 'chest' ? '가슴' :
                         session.part === 'back' ? '등' :
                         session.part === 'shoulder' ? '어깨' :
@@ -406,7 +409,7 @@ const HomePage = () => {
         {/* 최근 식단 카드 */} 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center mb-4">
-            <Utensils size={28} className="text-orange-500 mr-3" />
+            <Utensils size={28} className="text-warning-500 mr-3" />
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">최근 식단</h2>
           </div>
           <div className="space-y-4">
@@ -421,11 +424,11 @@ const HomePage = () => {
                   return (
                     <div 
                       key={dateStr} 
-                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                      onClick={() => navigate('/food/log', { state: { activeTab: 'records' } })}
+                      className="p-4 bg-light-bg dark:bg-gray-700/50 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => navigate('/food', { state: { activeTab: 'records' } })}
                     >
                       <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-lg text-orange-600 dark:text-orange-400">
+                        <h3 className="font-semibold text-lg text-warning-600 dark:text-warning-400">
                           {dateObj.toLocaleDateString('ko-KR', { 
                             year: 'numeric', 
                             month: 'long', 
@@ -441,7 +444,7 @@ const HomePage = () => {
                       
                       {photoCount > 0 && (
                         <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                          <span className="bg-orange-100 dark:bg-orange-800/40 text-orange-800 dark:text-orange-200 py-1 px-2 rounded-full text-xs">
+                          <span className="bg-warning-100 dark:bg-warning-800/40 text-warning-800 dark:text-warning-200 py-1 px-2 rounded-full text-xs">
                             사진 {photoCount}개 저장됨
                           </span>
                         </p>

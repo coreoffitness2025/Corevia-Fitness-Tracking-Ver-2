@@ -82,20 +82,14 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     const currentSet = newSets[setIndex];
     const timerKey = `accessory_${index}_${setIndex}`;
 
-    if (currentSet.isSuccess === null) { 
+    if (currentSet.isSuccess === null) { // 미완료 -> 성공
       currentSet.isSuccess = true;
-      if (!activeTimers[timerKey] && !Object.keys(activeTimers).some(key => activeTimers[key])) {
-        startAccessoryTimer(timerKey, 120); 
+      const isAnyTimerActive = Object.values(activeTimers).some(timer => timer && timer.timeLeft > 0 && !timer.isPaused);
+      if (!isAnyTimerActive) {
+        startAccessoryTimer(timerKey, 120);
       }
-      const { repsCount: targetReps } = getSetConfiguration(selectedSetConfig === 'custom' ? `${currentSet.reps}x${newSets.length}` as any : selectedSetConfig, newSets.length, currentSet.reps);
-      if (currentSet.reps < targetReps) {
-         // currentSet.isSuccess = false; //  옵션: 목표 미달시 자동 실패 처리 
-      }
-
-    } else if (currentSet.isSuccess === true) { 
-      currentSet.isSuccess = false;
-      clearAccessoryTimer(timerKey);
-    } else { 
+      // 보조운동의 경우, 목표 횟수 달성 여부로 자동 실패 처리하는 로직은 일단 제외 (사용자가 직접 토글)
+    } else { // 성공(true) -> 미완료(null)
       currentSet.isSuccess = null;
       clearAccessoryTimer(timerKey);
     }
@@ -210,11 +204,21 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
       </div>
       <div className="space-y-3">
         {exercise.sets.map((set, setIndex) => (
-          <div key={setIndex} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
+          <div key={setIndex} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50 relative">
+            {selectedSetConfig === 'custom' && (
+                <Button 
+                    size="xs" 
+                    variant="danger" 
+                    onClick={() => removeSetFromExercise(setIndex)} 
+                    className="absolute top-1 right-1 h-7 w-7 p-1"
+                    icon={<X size={14} />} 
+                    aria-label="세트 삭제" 
+                />
+            )}
             <div className="flex justify-between items-center mb-2">
               <div className="font-medium text-gray-800 dark:text-gray-200">세트 {setIndex + 1}</div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr] gap-3 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto] gap-3 items-end">
               <div>
                 <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">무게 (kg)</label>
                 <input type="number" value={set.weight || ''} onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm" />
@@ -230,12 +234,11 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                   onClick={() => handleAccessorySetCompletionAndTimer(setIndex)}
                   className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${
                     set.isSuccess === true ? 'bg-green-500 text-white hover:bg-green-600' :
-                    set.isSuccess === false ? 'bg-red-500 text-white hover:bg-red-600' :
                     'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
                   }`}
-                  aria-label={set.isSuccess === null ? "세트 미완료" : set.isSuccess ? "세트 성공" : "세트 실패"}
+                  aria-label={set.isSuccess === true ? "세트 성공" : "세트 미완료"}
                 >
-                  {set.isSuccess === true ? <CheckCircle size={20} /> : set.isSuccess === false ? <X size={20} /> : <Square size={20} />}
+                  {set.isSuccess === true ? <CheckCircle size={20} /> : <Square size={20} />}
                 </Button>
                 {activeTimers[`accessory_${index}_${setIndex}`] && (
                   <div className="flex items-center text-xs mt-1">
@@ -246,9 +249,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                       {activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? <Play size={12} /> : <Pause size={12} />}
                     </button>
                   </div>
-                )}
-                {selectedSetConfig === 'custom' && (
-                    <Button size="xs" variant="danger" onClick={() => removeSetFromExercise(setIndex)} className="mt-1 h-7 w-7" icon={<X size={14} />} aria-label="세트 삭제" />
                 )}
               </div>
             </div>

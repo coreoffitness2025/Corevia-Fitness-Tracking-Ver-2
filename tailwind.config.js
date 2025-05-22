@@ -83,7 +83,16 @@ export default {
           700: '#374151',
           800: '#1f2937',
           900: '#111827',
-        }
+        },
+        'part-chest':    '#a6c7fa',
+        'part-back':     '#bae6fd',
+        'part-shoulder': '#fde68a',
+        'part-leg':      '#a7f3d0',
+        'part-biceps':   '#fecdd3',
+        'part-triceps':  '#c7d2fe',
+        'part-complex':  '#e5e7eb',
+        'light-bg': '#f3f4f6',
+        'sky-bg': '#f0f9ff',
       },
       boxShadow: {
         'card': '0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',

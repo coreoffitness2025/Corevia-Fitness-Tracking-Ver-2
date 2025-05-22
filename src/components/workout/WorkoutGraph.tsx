@@ -49,6 +49,7 @@ const partOptions = [
 const exerciseOptions: Record<string, { value: string; label: string }[]> = {
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
+    { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' },
     { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
     { value: 'declineBenchPress', label: '디클라인 벤치 프레스' },
     { value: 'cableFly', label: '케이블 플라이' },
@@ -64,6 +65,7 @@ const exerciseOptions: Record<string, { value: string; label: string }[]> = {
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
+    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' },
     { value: 'lateralRaise', label: '레터럴 레이즈' },
     { value: 'frontRaise', label: '프론트 레이즈' },
     { value: 'facePull', label: '페이스 풀' },
@@ -72,6 +74,7 @@ const exerciseOptions: Record<string, { value: string; label: string }[]> = {
   leg: [
     { value: 'squat', label: '스쿼트' },
     { value: 'legPress', label: '레그 프레스' },
+    { value: 'romanianDeadlift', label: '루마니안 데드리프트' },
     { value: 'lunges', label: '런지' },
     { value: 'legExtension', label: '레그 익스텐션' },
     { value: 'legCurl', label: '레그 컬' }
@@ -136,7 +139,10 @@ const exercisePointStyles: Record<string, string> = {
   // 삼두 운동
   '케이블 푸시다운': 'triangle',
   '오버헤드 익스텐션': 'circle',
-  '라잉 트라이셉스 익스텐션': 'rect'
+  '라잉 트라이셉스 익스텐션': 'rect',
+  '덤벨 벤치 프레스': 'star',
+  '덤벨 숄더 프레스': 'crossRot',
+  '루마니안 데드리프트': 'dash'
 };
 
 const WorkoutGraph: React.FC = () => {
