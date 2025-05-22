@@ -13,7 +13,7 @@ export interface LayoutProps {
 export const getLayoutStyles = (isDarkMode: boolean) => {
   return {
     container: `min-h-screen bg-gradient-to-b from-primary-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300`,
-    content: `max-w-4xl mx-auto px-4 py-8 animate-fadeIn`,
+    content: `max-w-4xl mx-auto px-4 py-8`,
     topBar: `fixed top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-400 to-secondary-400 z-50`,
   };
 };
