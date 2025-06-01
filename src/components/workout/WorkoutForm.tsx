@@ -20,7 +20,7 @@ import Layout from '../common/Layout';
 import Card, { CardTitle, CardSection } from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
-import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square, Play, Pause, Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User, Zap, Camera, Upload } from 'lucide-react';
+import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square, Play, Pause, Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User, Zap, Camera, Upload, Timer, History, Settings2, ChevronsUpDown } from 'lucide-react'; // Timer, History, Settings2, ChevronsUpDown 아이콘 추가
 import { getSetConfiguration } from '../../utils/workoutUtils';
 import AccessoryExerciseComponent from './AccessoryExerciseComponent';
 // 필요한 import 추가
@@ -32,12 +32,12 @@ interface WorkoutFormProps {
 }
 
 const exercisePartOptions = [
-  { value: 'chest',    label: '가슴',   icon: <span className="text-3xl mx-auto mb-1">👕</span>, mainExerciseName: '벤치 프레스' }, 
-  { value: 'back',     label: '등',     icon: <span className="text-3xl mx-auto mb-1">🔙</span>, mainExerciseName: '데드리프트' },
-  { value: 'shoulder', label: '어깨',   icon: <span className="text-3xl mx-auto mb-1">🏋️</span>, mainExerciseName: '오버헤드 프레스' },
-  { value: 'leg',      label: '하체',   icon: <span className="text-3xl mx-auto mb-1">🦵</span>, mainExerciseName: '스쿼트' },
-  { value: 'biceps',   label: '이두',   icon: <span className="text-3xl mx-auto mb-1">💪</span>, mainExerciseName: '덤벨 컬' },
-  { value: 'triceps',  label: '삼두',   icon: <span className="text-3xl mx-auto mb-1">💪</span>, mainExerciseName: '케이블 푸시다운' }
+  { value: 'chest',    label: '가슴',   mainExerciseName: '벤치 프레스' },
+  { value: 'back',     label: '등',     mainExerciseName: '데드리프트' },
+  { value: 'shoulder', label: '어깨',   mainExerciseName: '오버헤드 프레스' },
+  { value: 'leg',      label: '하체',   mainExerciseName: '스쿼트' },
+  { value: 'biceps',   label: '이두',   mainExerciseName: '덤벨 컬' },
+  { value: 'triceps',  label: '삼두',   mainExerciseName: '케이블 푸시다운' }
 ];
 
 // 각 부위별 메인 운동 옵션
@@ -114,10 +114,22 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [stretchingCompleted, setStretchingCompleted] = useState(false);
   const [warmupCompleted, setWarmupCompleted] = useState(false);
 
-  // 타이머 관련 상태
-  const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
-  const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
-  const alarmRef = useRef<HTMLAudioElement | null>(null); // 알람 참조 추가
+  // 통합 타이머 상태
+  const [globalTimer, setGlobalTimer] = useState<{
+    sectionId: string | null; // 어떤 운동 섹션에 연결된 타이머인지 (예: 'main', 'accessory_0')
+    timeLeft: number;         // 남은 시간 (초)
+    initialTime: number;      // 초기 설정 시간 (초)
+    isPaused: boolean;
+    isRunning: boolean;       // 타이머가 실제로 setInterval로 실행 중인지
+  }>({
+    sectionId: null,
+    timeLeft: 120, 
+    initialTime: 120,
+    isPaused: true,
+    isRunning: false,
+  });
+  const globalTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const alarmRef = useRef<HTMLAudioElement | null>(null);
 
   // 웜업 팁 표시 상태
   const [showWarmupTips, setShowWarmupTips] = useState(false);
@@ -325,7 +337,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setIsFormValid(isMainExerciseValid && areAccessoryExercisesValid);
   }, [mainExercise, accessoryExercises]);
 
-  const formatTime = (seconds: number) => {
+  const formatTimeGlobal = (seconds: number) => { // formatTime 함수를 WorkoutForm 스코프로 이동하고 이름 변경
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -336,20 +348,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
       const currentSet = newSets[setIndex];
-      const timerKey = `main_${setIndex}`;
 
       // 1. 세트 상태 토글 (미완료 -> 성공 -> 미완료)
       if (currentSet.isSuccess === null) { // 미완료 -> 성공
         currentSet.isSuccess = true;
-        
-        // 성공 시 타이머 시작 (다른 활성 타이머가 없을 경우에만)
-        // Object.values(activeTimers)는 activeTimers의 값들로 이루어진 배열을 반환합니다.
-        // 여기서 timer가 undefined일 수 있는 이유는 clearTimer에서 timer 정보를 삭제할 때 undefined를 할당할 수 있기 때문입니다.
-        const isAnyTimerActive = Object.values(activeTimers).some(timer => timer && timer.timeLeft > 0 && !timer.isPaused);
-
-        if (!isAnyTimerActive) { 
-            startTimer(timerKey, 120); 
-        }
         
         const { repsCount: targetReps } = getSetConfiguration(selectedSetConfiguration, customSets, customReps);
         const currentReps = currentSet.reps;
@@ -367,78 +369,102 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
       } else { // 성공(true) 또는 실패(false, 현재 로직에서는 false 상태가 없음) -> 미완료(null)
         currentSet.isSuccess = null;
-        clearTimer(timerKey); 
       }
       setMainExercise(prev => ({ ...prev, sets: newSets }));
 
     } else if (accessoryIndex !== undefined) {
-      // 보조 운동 로직은 AccessoryExerciseComponent에서 처리
+      // 보조 운동 로직은 AccessoryExerciseComponent에서 처리 (타이머 연동 없음)
+      const newExercises = [...accessoryExercises];
+      // 보조 운동 세트 완료 처리 (AccessoryExerciseComponent 내부 또는 여기서 직접)
+      if (newExercises[accessoryIndex] && newExercises[accessoryIndex].sets[setIndex]) {
+        const currentAccessorySet = newExercises[accessoryIndex].sets[setIndex];
+        if (currentAccessorySet.isSuccess === null) {
+          currentAccessorySet.isSuccess = true;
+        } else {
+          currentAccessorySet.isSuccess = null;
+        }
+        setAccessoryExercises(newExercises);
+      }
     }
   };
 
-  // 타이머 시작 함수
-  const startTimer = (timerKey: string, duration: number) => {
-    clearTimer(timerKey); // 기존 타이머가 있다면 정리
-    setActiveTimers(prev => ({ ...prev, [timerKey]: { timeLeft: duration, isPaused: false } }));
-    toast.success('휴식 타이머가 시작되었습니다.', { // 타이머 시작 시 토스트 메시지 추가 (WorkoutPage_Root 참고)
+  // 통합 타이머 로직 함수들
+  const startGlobalTimer = (sectionId: string) => {
+    if (globalTimerRef.current) {
+      clearInterval(globalTimerRef.current);
+    }
+    setGlobalTimer(prev => ({
+      ...prev,
+      sectionId,
+      timeLeft: prev.initialTime, // 초기 설정 시간으로 리셋
+      isPaused: false,
+      isRunning: true,
+    }));
+
+    toast.success(`${sectionId === 'main' ? '메인 운동' : 보통 운동 이름이나 ID를 표시} 휴식 타이머 시작`, {
       icon: '⏱️',
       duration: 2000,
-      position: 'top-center'
+      position: 'top-center',
     });
-    timerRefs.current[timerKey] = setInterval(() => {
-      setActiveTimers(prev => {
-        const currentTimerState = prev[timerKey];
-        if (currentTimerState && !currentTimerState.isPaused) {
-          if (currentTimerState.timeLeft <= 1) {
-            clearTimer(timerKey); // clearTimer가 이미 내부에서 setActiveTimers를 호출하여 해당 키를 제거함
-            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰', duration: 5000 });
-            
-            if (alarmRef.current) {
-              alarmRef.current.play().catch(err => {
-                console.error('알람 재생 실패:', err);
-                if ('vibrate' in navigator) {
-                  navigator.vibrate([200, 100, 200, 100, 200]);
-                }
-              });
-            }
-            // 여기서 [timerKey]: undefined 대신 clearTimer에서 처리하도록 했으므로 추가적인 상태 변경 불필요
-            // 명시적으로 prev에서 해당 키를 제거하려면 아래와 같이 할 수 있으나, clearTimer에서 이미 처리중
-            // const newState = { ...prev };
-            // delete newState[timerKey];
-            // return newState;
-            return prev; // clearTimer가 호출되므로 prev를 그대로 반환하거나, clearTimer 내부 로직과 중복되지 않게 조정
-          }
-          return { ...prev, [timerKey]: { ...currentTimerState, timeLeft: currentTimerState.timeLeft - 1 } };
+
+    globalTimerRef.current = setInterval(() => {
+      setGlobalTimer(prev => {
+        if (prev.isPaused || !prev.isRunning) {
+          if (globalTimerRef.current) clearInterval(globalTimerRef.current);
+          return { ...prev, isRunning: false };
         }
-        return prev;
+        if (prev.timeLeft <= 1) {
+          if (globalTimerRef.current) clearInterval(globalTimerRef.current);
+          toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰', duration: 5000 });
+          if (alarmRef.current) {
+            alarmRef.current.play().catch(err => {
+              console.error('알람 재생 실패:', err);
+              if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
+            });
+          }
+          return { ...prev, sectionId: null, timeLeft: prev.initialTime, isPaused: true, isRunning: false };
+        }
+        return { ...prev, timeLeft: prev.timeLeft - 1 };
       });
     }, 1000);
   };
 
-  // 타이머 일시정지/재개 함수
-  const togglePauseTimer = (timerKey: string) => {
-    setActiveTimers(prev => {
-      const current = prev[timerKey];
-      if (current) {
-        return { ...prev, [timerKey]: { ...current, isPaused: !current.isPaused } };
+  const togglePauseGlobalTimer = () => {
+    setGlobalTimer(prev => {
+      if (!prev.isRunning && prev.sectionId) { // 멈춘 타이머 재시작 (현재 섹션 유지)
+        startGlobalTimer(prev.sectionId);
+        return prev; // startGlobalTimer가 상태를 업데이트하므로 여기서는 이전 상태 반환
       }
-      return prev;
+      return { ...prev, isPaused: !prev.isPaused };
     });
   };
 
-  // 타이머 초기화 함수
-  const clearTimer = (timerKey: string) => {
-    if (timerRefs.current[timerKey]) {
-      clearInterval(timerRefs.current[timerKey]);
-      delete timerRefs.current[timerKey];
+  const resetGlobalTimer = () => {
+    if (globalTimerRef.current) {
+      clearInterval(globalTimerRef.current);
     }
-    setActiveTimers(prev => {
-        const newState = {...prev};
-        delete newState[timerKey];
-        return newState;
-    });
+    setGlobalTimer(prev => ({
+      ...prev,
+      sectionId: null, // 연결된 섹션 해제
+      timeLeft: prev.initialTime,
+      isPaused: true,
+      isRunning: false,
+    }));
   };
 
+  const adjustGlobalTimer = (amount: number) => {
+    setGlobalTimer(prev => {
+      const newInitialTime = Math.max(10, prev.initialTime + amount); // 최소 10초
+      // 타이머가 실행 중이 아닐 때만 initialTime 변경 시 timeLeft도 함께 변경
+      const newTimeLeft = !prev.isRunning ? newInitialTime : prev.timeLeft; 
+      return {
+        ...prev,
+        initialTime: newInitialTime,
+        timeLeft: newTimeLeft,
+      };
+    });
+  };
+  
   // 보조 운동 추가
   const addAccessoryExercise = () => {
     // 기본 세트 구성을 현재 선택된 세트 구성과 일치시킴
@@ -1179,27 +1205,66 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">운동 기록</h1>
         
+        {/* 통합 타이머 UI (예시: 화면 하단 고정) */}
+        {globalTimer.sectionId && (
+          <div className="fixed bottom-0 left-0 right-0 bg-gray-800 text-white p-4 shadow-lg z-50 flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="font-semibold mr-2">
+                {globalTimer.sectionId === 'main' ? '메인 운동' : 
+                 globalTimer.sectionId.startsWith('accessory_') ? 
+                   `${accessoryExercises[parseInt(globalTimer.sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(globalTimer.sectionId.split('_')[1])+1}` 
+                   : '휴식'} 휴식 중:
+              </span>
+              <span className="text-2xl font-bold tabular-nums">
+                {formatTimeGlobal(globalTimer.timeLeft)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="icon" size="sm" onClick={() => adjustGlobalTimer(-10)} aria-label="시간 10초 줄이기">
+                <ChevronDown size={20} />
+              </Button>
+              <Button variant="icon" size="sm" onClick={() => adjustGlobalTimer(10)} aria-label="시간 10초 늘리기">
+                <ChevronUp size={20} />
+              </Button>
+              <Button 
+                variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"} 
+                size="sm" 
+                onClick={togglePauseGlobalTimer}
+                icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={18} /> : <Pause size={18} />}
+              >
+                {globalTimer.isPaused || !globalTimer.isRunning ? (globalTimer.timeLeft === globalTimer.initialTime ? '시작' : '재개') : '일시정지'}
+              </Button>
+              <Button variant="danger" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={18} />}>
+                초기화
+              </Button>
+            </div>
+          </div>
+        )}
+        
         {/* 부위 선택 섹션 */}
         <Card className="mb-6">
           <CardSection>
             <CardTitle>운동 부위 선택</CardTitle>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {exercisePartOptions.map(option => (
                 <button
                   key={option.value}
-                  onClick={() => setPart(option.value as ExercisePart)}
+                  onClick={() => {
+                    setPart(option.value as ExercisePart);
+                    fetchLatestWorkout(option.value as ExercisePart, undefined, true); 
+                  }}
                   className={`
-                    flex flex-col items-center justify-center p-4 rounded-lg transition-all
-                    ${
+                    flex flex-col items-center justify-center p-3 rounded-lg transition-all text-sm
+                    ${ // 높이 조절을 위해 p-4에서 p-3으로 변경, 텍스트 크기 sm -> text-sm
                       part === option.value
-                        ? 'bg-primary-400 text-white shadow-md transform scale-105' 
+                        ? 'bg-primary-400 text-white shadow-md transform scale-105'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
                 >
-                  {option.icon} 
-                  <span className="font-medium mt-1">{option.label}</span>
+                  {/* 아이콘 제거 */}
+                  <span className="font-medium">{option.label}</span>
                 </button>
               ))}
             </div>
@@ -1304,7 +1369,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         {/* 메인 운동 섹션 */}
         <Card className="mb-6">
           <CardSection>
-            <CardTitle>메인 운동</CardTitle>
+            <div className="flex justify-between items-center mb-4">
+              <CardTitle>메인 운동</CardTitle>
+              {globalTimer.sectionId !== 'main' && !globalTimer.isRunning && (
+                 <Button size="sm" variant="outline" onClick={() => startGlobalTimer('main')} icon={<Timer size={16}/>}>
+                   휴식 시작 ({formatTimeGlobal(globalTimer.initialTime)})
+                 </Button>
+              )}
+              {globalTimer.sectionId === 'main' && globalTimer.isRunning && (
+                <Button size="sm" variant="danger" onClick={resetGlobalTimer} icon={<X size={16}/>}>
+                  타이머 중지
+                </Button>
+              )}
+            </div>
             
             {/* 운동 선택 및 정보 */}
             {part === 'complex' ? (
@@ -1426,20 +1503,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         >
                           {set.isSuccess === true ? <CheckCircle size={20} /> : <Square size={20} />}
                         </Button>
-                        {activeTimers[`main_${index}`] && (
-                          <div className="flex items-center text-xs mt-1">
-                            <span className={`font-semibold ${activeTimers[`main_${index}`]?.isPaused ? 'text-gray-500' : 'text-primary-600 animate-pulse'}`}>
-                                {formatTime(activeTimers[`main_${index}`].timeLeft)}
-                            </span>
-                            <button 
-                              onClick={() => togglePauseTimer(`main_${index}`)} 
-                              className="p-0.5 ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
-                              aria-label={activeTimers[`main_${index}`]?.isPaused ? "타이머 재개" : "타이머 일시정지"}
-                            >
-                              {activeTimers[`main_${index}`]?.isPaused ? <Play size={12} /> : <Pause size={12} className="text-primary-600 dark:text-primary-400"/>}
-                            </button>
-                          </div>
-                        )}
+                        {/* 기존 세트별 타이머 UI 제거 */}
                       </div>
                       {/* 개별 휴식 버튼 제거 */}
                     </div>
@@ -1569,8 +1633,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     onChange={handleAccessoryExerciseChange} // 변경 사항 처리 함수
                     onRemove={removeAccessoryExercise} // 제거 함수
                     currentExercisePart={part} // 현재 메인 운동 부위 전달
-                    // onTrainingComplete={handleTrainingComplete} // AccessoryExerciseComponent 내부에서 처리하므로 제거
-                    // previousExercises={previousAccessoryExercises[mainExercise.name] || []} // 새로운 선택 방식으로 대체되므로 제거
+                    // 전역 타이머 관련 props 전달
+                    globalTimer={globalTimer}
+                    startGlobalTimer={startGlobalTimer}
+                    resetGlobalTimer={resetGlobalTimer}
+                    formatTime={formatTimeGlobal} // 변경된 이름의 함수 전달
                   />
                 ))}
               </div>

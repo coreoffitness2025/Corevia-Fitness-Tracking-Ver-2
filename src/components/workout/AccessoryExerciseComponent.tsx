@@ -15,6 +15,16 @@ interface AccessoryExerciseProps {
   onChange: (index: number, updatedExercise: AccessoryExerciseProps['exercise']) => void; 
   onRemove: (index: number) => void;
   currentExercisePart: ExercisePart;
+  globalTimer: {
+    sectionId: string | null;
+    timeLeft: number;
+    initialTime: number;
+    isPaused: boolean;
+    isRunning: boolean;
+  };
+  startGlobalTimer: (sectionId: string) => void;
+  resetGlobalTimer: () => void;
+  formatTime: (seconds: number) => string;
 }
 
 const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
@@ -23,6 +33,10 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   onChange,
   onRemove,
   currentExercisePart,
+  globalTimer,
+  startGlobalTimer,
+  resetGlobalTimer,
+  formatTime,
 }) => {
   const [filteredAccessoryExercises, setFilteredAccessoryExercises] = useState<typeof accessoryExercisesByPart[keyof typeof accessoryExercisesByPart]>([]);
   const setConfigOptions: Array<{ value: SetConfiguration | 'custom'; label: string }> = [
@@ -33,23 +47,15 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     { value: 'custom', label: '커스텀' }
   ];
   const [selectedSetConfig, setSelectedSetConfig] = useState<SetConfiguration | 'custom'>('6x3');
-  const [activeTimers, setActiveTimers] = useState<Record<string, { timeLeft: number; isPaused: boolean }>>({});
-  const timerRefs = useRef<Record<string, NodeJS.Timeout>>({});
-  const alarmRef = useRef<HTMLAudioElement | null>(null);
+
+  const componentSectionId = `accessory_${index}`;
 
   useEffect(() => {
-    try {
-      alarmRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3');
-    } catch (error) {
-      console.error('[Accessory] 알람 사운드 로드 실패:', error);
-    }
-
     if (currentExercisePart && accessoryExercisesByPart[currentExercisePart]) {
       setFilteredAccessoryExercises(accessoryExercisesByPart[currentExercisePart]);
     } else {
       setFilteredAccessoryExercises([]);
     }
-    return () => { Object.values(timerRefs.current).forEach(intervalId => { if (intervalId) clearInterval(intervalId); }); };
   }, [currentExercisePart]);
 
   const handleSetConfigChange = (configValue: string) => {
@@ -85,79 +91,16 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     onChange(index, { ...exercise, sets: newSets });
   };
   
-  const handleAccessorySetCompletionAndTimer = (setIndex: number) => {
+  const handleAccessorySetCompletion = (setIndex: number) => {
     const newSets = [...exercise.sets];
     const currentSet = newSets[setIndex];
-    const timerKey = `accessory_${index}_${setIndex}`;
 
     if (currentSet.isSuccess === null) {
       currentSet.isSuccess = true;
-      const isAnyTimerActive = Object.values(activeTimers).some(timer => timer && timer.timeLeft > 0 && !timer.isPaused);
-      if (!isAnyTimerActive) {
-        startAccessoryTimer(timerKey, 120);
-      }
     } else {
       currentSet.isSuccess = null;
-      clearAccessoryTimer(timerKey);
     }
     onChange(index, { ...exercise, sets: newSets });
-  };
-
-  const startAccessoryTimer = (timerKey: string, duration: number) => {
-    clearAccessoryTimer(timerKey);
-    setActiveTimers(prev => ({ ...prev, [timerKey]: { timeLeft: duration, isPaused: false } }));
-    toast.success('휴식 타이머가 시작되었습니다.', {
-      icon: '⏱️',
-      duration: 2000,
-      position: 'top-center'
-    });
-    timerRefs.current[timerKey] = setInterval(() => {
-      setActiveTimers(prev => {
-        const currentTimerState = prev[timerKey];
-        if (currentTimerState && !currentTimerState.isPaused) {
-          if (currentTimerState.timeLeft <= 1) {
-            clearAccessoryTimer(timerKey);
-            toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰', duration: 5000 });
-            
-            if (alarmRef.current) {
-              alarmRef.current.play().catch(err => {
-                console.error('[Accessory] 알람 재생 실패:', err);
-                if ('vibrate' in navigator) {
-                  navigator.vibrate([200, 100, 200, 100, 200]);
-                }
-              });
-            }
-            const newState = {...prev};
-            delete newState[timerKey];
-            return newState;
-          }
-          return { ...prev, [timerKey]: { ...currentTimerState, timeLeft: currentTimerState.timeLeft - 1 } };
-        }
-        return prev;
-      });
-    }, 1000);
-  };
-
-  const togglePauseAccessoryTimer = (timerKey: string) => {
-    setActiveTimers(prev => {
-      const current = prev[timerKey];
-      if (current) return { ...prev, [timerKey]: { ...current, isPaused: !current.isPaused } };
-      return prev;
-    });
-  };
-
-  const clearAccessoryTimer = (timerKey: string) => {
-    if (timerRefs.current[timerKey]) {
-      clearInterval(timerRefs.current[timerKey]);
-      delete timerRefs.current[timerKey];
-    }
-    setActiveTimers(prev => { const newState = {...prev}; delete newState[timerKey]; return newState; });
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   const addSetToExercise = () => {
@@ -181,8 +124,20 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   return (
     <div className="border rounded-lg p-4 mb-4 bg-white dark:bg-gray-800 shadow">
       <div className="flex justify-between items-center mb-3">
-        <h4 className="text-lg font-semibold">보조 운동 {index + 1}</h4>
-        <Button variant="danger" size="sm" onClick={() => onRemove(index)} icon={<Trash size={16} />}>삭제</Button>
+        <h4 className="text-lg font-semibold">{exercise.name || `보조 운동 ${index + 1}`}</h4>
+        <div className="flex items-center gap-2">
+          {globalTimer.sectionId !== componentSectionId && (!globalTimer.isRunning || globalTimer.sectionId !== componentSectionId) && (
+            <Button size="xs" variant="outline" onClick={() => startGlobalTimer(componentSectionId)} icon={<Play size={14}/>} className="py-1 px-2 text-xs">
+              휴식 ({formatTime(globalTimer.initialTime)})
+            </Button>
+          )}
+          {globalTimer.sectionId === componentSectionId && globalTimer.isRunning && (
+            <Button size="xs" variant="danger" onClick={resetGlobalTimer} icon={<X size={14}/>} className="py-1 px-2 text-xs">
+              중지
+            </Button>
+          )}
+          <Button variant="danger" size="sm" onClick={() => onRemove(index)} icon={<Trash size={16} />}>삭제</Button>
+        </div>
       </div>
       <div className="mb-3">
         <label htmlFor={`accessory-exercise-name-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -250,7 +205,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 <Button
                   size="sm"
                   variant="icon"
-                  onClick={() => handleAccessorySetCompletionAndTimer(setIndex)}
+                  onClick={() => handleAccessorySetCompletion(setIndex)}
                   className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${
                     set.isSuccess === true ? 'bg-green-500 text-white hover:bg-green-600' :
                     'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
@@ -259,16 +214,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 >
                   {set.isSuccess === true ? <CheckCircle size={20} /> : <Square size={20} />}
                 </Button>
-                {activeTimers[`accessory_${index}_${setIndex}`] && (
-                  <div className="flex items-center text-xs mt-1">
-                    <span className={`font-semibold ${activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? 'text-gray-500' : 'text-primary-600 animate-pulse'}`}>
-                        {formatTime(activeTimers[`accessory_${index}_${setIndex}`].timeLeft)}
-                    </span>
-                    <button onClick={() => togglePauseAccessoryTimer(`accessory_${index}_${setIndex}`)} className="p-0.5 ml-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none">
-                      {activeTimers[`accessory_${index}_${setIndex}`]?.isPaused ? <Play size={12} /> : <Pause size={12} className="text-primary-600 dark:text-primary-400"/>}
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>

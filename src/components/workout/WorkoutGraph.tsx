@@ -175,7 +175,7 @@ const WorkoutGraph: React.FC = () => {
   });
   
   // 차트 옵션
-  const chartOptions: ChartOptions<'line'> = {
+  const initialChartOptions: ChartOptions<'line'> = {
     responsive: true,
     plugins: {
       legend: {
@@ -286,6 +286,8 @@ const WorkoutGraph: React.FC = () => {
     }
   };
   
+  const [dynamicChartOptions, setDynamicChartOptions] = useState<ChartOptions<'line'>>(initialChartOptions);
+
   const 안전한_날짜_문자열_변환 = (dateValue: string | Date | FirestoreTimestamp): string => {
     if (dateValue instanceof Date) {
       return dateValue.toISOString();
@@ -427,11 +429,11 @@ const WorkoutGraph: React.FC = () => {
       
       let yMin, yMax;
       if (hasValidData) {
-        const padding = selectedPart === 'leg' ? 20 : 10; // 하체는 범위 여유를 더 줌
+        const padding = 10; // 모든 부위에 동일한 padding 값 적용
         yMin = Math.max(0, minWeight - padding); // 0 이하로 내려가지 않도록
         yMax = maxWeight + padding;
         if (yMin === yMax) { // 모든 데이터 포인트가 같을 경우
-          yMin = Math.max(0, yMin - 5);
+          yMin = Math.max(0, yMin - 5); // yMin이 음수가 되지 않도록 보장
           yMax = yMax + 5;
         }
         console.log(`[WorkoutGraph] Y축 범위 동적 설정 - 부위: ${selectedPart}, 계산된 min: ${yMin}, max: ${yMax}`);
@@ -447,18 +449,12 @@ const WorkoutGraph: React.FC = () => {
       // 차트 옵션을 직접 수정하는 대신, 차트 데이터와 함께 옵션을 전달하거나
       // 차트가 업데이트될 때 옵션을 적용하는 것이 더 일반적입니다.
       // 여기서는 기존 방식을 유지하되, beginAtZero 관련 직접 조작은 제거합니다.
-      const updatedOptions = JSON.parse(JSON.stringify(chartOptions)); // 옵션 객체 깊은 복사
+      const updatedOptions = JSON.parse(JSON.stringify(initialChartOptions)); // 옵션 객체 깊은 복사
       if (updatedOptions.scales?.y) {
         updatedOptions.scales.y.min = yMin;
         updatedOptions.scales.y.max = yMax;
       }
-      // setChartData 호출 시 options를 함께 넘길 수 있다면 좋지만, react-chartjs-2에서는 props로 전달
-      // 이 경우에는 chartOptions 상태를 만들고 그걸 업데이트해야 할 수 있음.
-      // 일단은 기존처럼 chartOptions 객체를 직접 수정하는 방식을 임시로 유지 (하지만 권장되지 않음)
-      if (chartOptions.scales?.y) {
-        chartOptions.scales.y.min = yMin;
-        chartOptions.scales.y.max = yMax;
-      }
+      setDynamicChartOptions(updatedOptions); // 상태를 통해 옵션 업데이트
 
       setChartData(finalChartData); // options는 컴포넌트 prop으로 전달되므로, 여기서 직접 수정해도 다음 렌더링에 반영 안될 수 있음
                                   // 차트 업데이트를 위해서는 Chart.js 인스턴스의 update() 메소드를 사용하거나, 
@@ -735,7 +731,7 @@ const WorkoutGraph: React.FC = () => {
         <div>
           {filteredData.length > 0 ? (
             <div className="h-120">
-              <Line options={chartOptions} data={chartData} />
+              <Line options={dynamicChartOptions} data={chartData} />
             </div>
           ) : (
             <div className="h-64 flex items-center justify-center">

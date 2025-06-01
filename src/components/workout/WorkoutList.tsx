@@ -238,6 +238,7 @@ const WorkoutList: React.FC = () => {
     try {
       const canvas = await html2canvas(workoutStampRef.current, {
         background: '#ffffff',
+        // @ts-ignore
         scale: 2,
         logging: false,
         allowTaint: true,
@@ -258,7 +259,8 @@ const WorkoutList: React.FC = () => {
     try {
       // 운동 정보 캡처
       const infoCanvas = await html2canvas(workoutStampRef.current, {
-        background: null,
+        background: 'transparent',
+        // @ts-ignore
         scale: 2,
         logging: false,
         allowTaint: true,
@@ -487,9 +489,7 @@ const WorkoutList: React.FC = () => {
                 `}
               >
                 <span className={`text-sm ${
-                  day.getDay() === 0 ? 'text-danger-500' :
-                  day.getDay() === 6 ? 'text-primary-500' :
-                  'text-gray-700 dark:text-gray-300'
+                  isCurrentMonth ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'
                 }`}>
                   {day.getDate()}
                 </span>
@@ -497,10 +497,9 @@ const WorkoutList: React.FC = () => {
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
                     <div 
-                      className={`text-xs px-2 py-1 rounded-full ${getPartColor(exercisePart as ExercisePart, isAllSuccess)}`}
-                      title={`${getPartLabel(exercisePart as ExercisePart)} 운동 - ${isAllSuccess ? '성공' : '실패'}`}
+                      className={`text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200`}
                     >
-                      {getPartLabel(exercisePart as ExercisePart)}
+                      {getPartLabel(exercisePart as ExercisePart)} {isAllSuccess ? '✓' : ''}
                     </div>
                   </div>
                 )}
