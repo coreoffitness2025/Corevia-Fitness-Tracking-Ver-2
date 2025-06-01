@@ -392,7 +392,15 @@ const WorkoutGraph: React.FC = () => {
           const configColor = configColors[config as keyof typeof configColors];
           const datasetId = `${exerciseName}-${config}`;
           
-          let pointStyleValue = basePointStyleFromMap; // 기본값 할당
+          // 세트 구성별로 다른 pointStyle 할당
+          const configPointStyles = {
+            '5x5': 'triangle',
+            '6x3': 'circle', 
+            '10x5': 'rect',
+            '15x5': 'rectRounded'
+          };
+          
+          let pointStyleValue = configPointStyles[config as keyof typeof configPointStyles] || basePointStyleFromMap;
 
           // 기존의 강제 변경 로직 제거 - 각 운동이 고유한 pointStyle을 유지하도록 함
           // if (exerciseName.includes('벤치 프레스')) {
