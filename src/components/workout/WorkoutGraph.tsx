@@ -185,7 +185,6 @@ const WorkoutGraph: React.FC = () => {
           usePointStyle: true,
           padding: 15,
           boxWidth: 20,
-          pointStyle: 'triangle',
         }
       },
       tooltip: {
@@ -395,12 +394,12 @@ const WorkoutGraph: React.FC = () => {
           
           let pointStyleValue = basePointStyleFromMap; // 기본값 할당
 
-          // 모든 '벤치 프레스' 데이터셋의 pointStyle을 'circle'로 테스트
-          if (exerciseName.includes('벤치 프레스')) {
-            pointStyleValue = 'circle'; // triangle -> circle
-          } else if (exercisePart === 'leg') { 
-            pointStyleValue = 'circle'; // triangle -> circle (일관성 테스트)
-          }
+          // 기존의 강제 변경 로직 제거 - 각 운동이 고유한 pointStyle을 유지하도록 함
+          // if (exerciseName.includes('벤치 프레스')) {
+          //   pointStyleValue = 'circle'; // triangle -> circle
+          // } else if (exercisePart === 'leg') { 
+          //   pointStyleValue = 'circle'; // triangle -> circle (일관성 테스트)
+          // }
           
           if (exerciseName.includes('벤치 프레스') || exercisePart === 'leg') {
             console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), Part: ${exercisePart}, PointStyle: ${pointStyleValue}`);
