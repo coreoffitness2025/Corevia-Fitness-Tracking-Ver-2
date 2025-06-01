@@ -185,6 +185,18 @@ const WorkoutGraph: React.FC = () => {
           usePointStyle: true,
           padding: 15,
           boxWidth: 20,
+          generateLabels: (chart: any) => {
+            const datasets = chart.data.datasets;
+            return datasets.map((dataset: any, index: number) => ({
+              text: dataset.label,
+              fillStyle: dataset.backgroundColor,
+              strokeStyle: dataset.borderColor,
+              lineWidth: 2,
+              pointStyle: dataset.pointStyle,
+              datasetIndex: index,
+              hidden: false
+            }));
+          }
         }
       },
       tooltip: {
