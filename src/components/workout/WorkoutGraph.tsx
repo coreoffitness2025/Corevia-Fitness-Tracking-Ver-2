@@ -392,16 +392,16 @@ const WorkoutGraph: React.FC = () => {
           const configColor = configColors[config as keyof typeof configColors];
           const datasetId = `${exerciseName}-${config}`;
           
-          let pointStyleValue = basePointStyleFromMap;
+          let pointStyleValue = basePointStyleFromMap; // 기본값 할당
 
-          if (exerciseName === '벤치 프레스' || exerciseName === '데드리프트') {
+          // 모든 '벤치 프레스' 데이터셋의 pointStyle을 'triangle'로 고정
+          if (exerciseName.includes('벤치 프레스')) {
             pointStyleValue = 'triangle';
-          } else if (exercisePart === 'leg') { // 하체 부위 운동은 모두 triangle로 설정
+          } else if (exercisePart === 'leg') { 
             pointStyleValue = 'triangle';
           }
-          // 다른 운동 스타일에 대한 특정 조건이 있다면 여기에 추가
-          
-          // 테스트를 위해 특정 데이터셋의 pointStyle 변경
+          // 이전에 테스트를 위해 추가했던 특정 config에 따른 pointStyle 오버라이드 로직 제거
+          /*
           if (exerciseName === '벤치 프레스' && config === '6x3') {
             pointStyleValue = 'circle'; 
             console.log(`[WorkoutGraph] Overriding pointStyle for '벤치 프레스 (6x3)' to 'circle'`);
@@ -410,6 +410,7 @@ const WorkoutGraph: React.FC = () => {
             pointStyleValue = 'rect'; 
             console.log(`[WorkoutGraph] Overriding pointStyle for '벤치 프레스 (10x5)' to 'rect'`);
           }
+          */
           
           if (exerciseName.includes('벤치 프레스') || exercisePart === 'leg') {
             console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), Part: ${exercisePart}, PointStyle: ${pointStyleValue}`);
@@ -417,14 +418,13 @@ const WorkoutGraph: React.FC = () => {
 
           const dataForChart = uniqueDates.map(date => dateData[date] || null);
           
-          // 범례 아이콘 확인을 위한 로그 추가
           console.log(`[WorkoutGraph] Adding dataset: Label='${exerciseName} (${config})', pointStyle='${pointStyleValue}'`);
 
           datasets.push({
             data: dataForChart, 
             pointStyle: pointStyleValue, 
             label: `${exerciseName} (${config})`, 
-            borderColor: configColor.border, 
+            borderColor: configColor.border, // 데이터셋별 고유 색상 유지
             backgroundColor: configColor.background, 
             tension: 0.2, 
             pointRadius: 6, 
