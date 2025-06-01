@@ -375,10 +375,10 @@ const WorkoutGraph: React.FC = () => {
       const uniqueDates = [...new Set(allDates)].sort((a, b) => new Date(a.split('/').map((s,i) => i === 0 ? '20'+s : s).join('/')).getTime() - new Date(b.split('/').map((s,i) => i === 0 ? '20'+s : s).join('/')).getTime());
       const datasets: any[] = [];
       const configColors = { 
-        '5x5': { border: 'rgb(124, 58, 237)', background: 'rgba(124, 58, 237, 0.5)' }, 
-        '6x3': { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.5)' }, 
-        '10x5': { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.5)' }, 
-        '15x5': { border: 'rgb(16, 185, 129)', background: 'rgba(16, 185, 129, 0.5)' } 
+        '5x5': { border: '#0000FF', background: 'rgba(0, 0, 255, 0.5)' },    // 파란색 (Blue)
+        '6x3': { border: '#800080', background: 'rgba(128, 0, 128, 0.5)' },  // 보라색 (Purple)
+        '10x5': { border: '#FF0000', background: 'rgba(255, 0, 0, 0.5)' },   // 빨간색 (Red)
+        '15x5': { border: '#008000', background: 'rgba(0, 128, 0, 0.5)' }  // 초록색 (Green)
       };
 
       Object.entries(exerciseConfigData).forEach(([exerciseName, configData]) => {
