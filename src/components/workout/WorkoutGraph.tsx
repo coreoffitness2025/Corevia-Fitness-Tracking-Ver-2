@@ -179,7 +179,7 @@ const WorkoutGraph: React.FC = () => {
     responsive: true,
     plugins: {
       legend: {
-        display: true,
+        display: false,
         position: 'top' as const,
         labels: {
           usePointStyle: true,
@@ -479,6 +479,9 @@ const WorkoutGraph: React.FC = () => {
       }
       setDynamicChartOptions(updatedOptions); // 상태를 통해 옵션 업데이트
 
+      // 디버깅: 최종 datasets 배열 확인
+      console.log('[WorkoutGraph] 최종 생성된 datasets:', datasets.map(d => ({ label: d.label, pointStyle: d.pointStyle, dataCount: d.data.filter((v: any) => v !== null).length })));
+
       setChartData(finalChartData); // options는 컴포넌트 prop으로 전달되므로, 여기서 직접 수정해도 다음 렌더링에 반영 안될 수 있음
                                   // 차트 업데이트를 위해서는 Chart.js 인스턴스의 update() 메소드를 사용하거나, 
                                   // options prop 자체를 변경해야 함. 
@@ -754,6 +757,38 @@ const WorkoutGraph: React.FC = () => {
         <div>
           {filteredData.length > 0 ? (
             <div className="h-120">
+              {/* 커스텀 범례 */}
+              {chartData.datasets && chartData.datasets.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-4 justify-center">
+                  {chartData.datasets.map((dataset: any, index: number) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 border-2 flex items-center justify-center"
+                        style={{ 
+                          borderColor: dataset.borderColor,
+                          backgroundColor: dataset.backgroundColor 
+                        }}
+                      >
+                        <div 
+                          className="w-2 h-2"
+                          style={{
+                            backgroundColor: dataset.borderColor,
+                            clipPath: dataset.pointStyle === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
+                                     dataset.pointStyle === 'rect' ? 'none' :
+                                     dataset.pointStyle === 'circle' ? 'circle(50%)' :
+                                     dataset.pointStyle === 'rectRounded' ? 'none' : 'none',
+                            borderRadius: dataset.pointStyle === 'circle' ? '50%' : 
+                                        dataset.pointStyle === 'rectRounded' ? '2px' : '0'
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {dataset.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <Line options={dynamicChartOptions} data={chartData} />
             </div>
           ) : (
