@@ -183,7 +183,8 @@ const WorkoutGraph: React.FC = () => {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 15
+          padding: 15,
+          boxWidth: 20,
         }
       },
       tooltip: {
@@ -399,6 +400,16 @@ const WorkoutGraph: React.FC = () => {
             pointStyleValue = 'triangle';
           }
           // 다른 운동 스타일에 대한 특정 조건이 있다면 여기에 추가
+          
+          // 테스트를 위해 특정 데이터셋의 pointStyle 변경
+          if (exerciseName === '벤치 프레스' && config === '6x3') {
+            pointStyleValue = 'circle'; 
+            console.log(`[WorkoutGraph] Overriding pointStyle for '벤치 프레스 (6x3)' to 'circle'`);
+          }
+          if (exerciseName === '벤치 프레스' && config === '10x5') {
+            pointStyleValue = 'rect'; 
+            console.log(`[WorkoutGraph] Overriding pointStyle for '벤치 프레스 (10x5)' to 'rect'`);
+          }
           
           if (exerciseName.includes('벤치 프레스') || exercisePart === 'leg') {
             console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), Part: ${exercisePart}, PointStyle: ${pointStyleValue}`);
