@@ -763,25 +763,17 @@ const WorkoutGraph: React.FC = () => {
                   {chartData.datasets.map((dataset: any, index: number) => (
                     <div key={index} className="flex items-center gap-2">
                       <div 
-                        className="w-4 h-4 border-2 flex items-center justify-center"
-                        style={{ 
-                          borderColor: dataset.borderColor,
-                          backgroundColor: dataset.backgroundColor 
+                        className="w-3 h-3"
+                        style={{
+                          backgroundColor: dataset.borderColor,
+                          clipPath: dataset.pointStyle === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
+                                   dataset.pointStyle === 'rect' ? 'none' :
+                                   dataset.pointStyle === 'circle' ? 'circle(50%)' :
+                                   dataset.pointStyle === 'rectRounded' ? 'none' : 'none',
+                          borderRadius: dataset.pointStyle === 'circle' ? '50%' : 
+                                      dataset.pointStyle === 'rectRounded' ? '2px' : '0'
                         }}
-                      >
-                        <div 
-                          className="w-2 h-2"
-                          style={{
-                            backgroundColor: dataset.borderColor,
-                            clipPath: dataset.pointStyle === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
-                                     dataset.pointStyle === 'rect' ? 'none' :
-                                     dataset.pointStyle === 'circle' ? 'circle(50%)' :
-                                     dataset.pointStyle === 'rectRounded' ? 'none' : 'none',
-                            borderRadius: dataset.pointStyle === 'circle' ? '50%' : 
-                                        dataset.pointStyle === 'rectRounded' ? '2px' : '0'
-                          }}
-                        />
-                      </div>
+                      />
                       <span className="text-sm text-gray-700 dark:text-gray-300">
                         {dataset.label}
                       </span>
