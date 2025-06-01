@@ -185,6 +185,7 @@ const WorkoutGraph: React.FC = () => {
           usePointStyle: true,
           padding: 15,
           boxWidth: 20,
+          pointStyle: 'triangle',
         }
       },
       tooltip: {
