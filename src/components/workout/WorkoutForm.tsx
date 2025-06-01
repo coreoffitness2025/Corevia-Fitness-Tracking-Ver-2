@@ -401,7 +401,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       isRunning: true,
     }));
 
-    toast.success(`${sectionId === 'main' ? '메인 운동' : 보통 운동 이름이나 ID를 표시} 휴식 타이머 시작`, {
+    const sectionName = sectionId === 'main' ? '메인 운동' : 
+      sectionId.startsWith('accessory_') ? 
+      `${accessoryExercises[parseInt(sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(sectionId.split('_')[1])+1}` 
+      : '운동'; // 기본값을 '운동'으로 변경
+
+    toast.success(`${sectionName} 휴식 타이머 시작`, {
       icon: '⏱️',
       duration: 2000,
       position: 'top-center',
