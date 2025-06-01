@@ -469,13 +469,20 @@ const WorkoutList: React.FC = () => {
             const dayWorkouts = workoutsByDate[dateStr] || [];
             const hasWorkout = dayWorkouts.length > 0;
             
-            let isAllSuccess = false;
-            let exercisePart = '';
+            let workoutPartsLabels: string[] = [];
+            let allSuccessForDay = true; // 해당 날짜의 모든 운동이 성공했는지 여부
             
             if (hasWorkout) {
-              const workout = dayWorkouts[0];
-              isAllSuccess = workout.isAllSuccess;
-              exercisePart = workout.part || '';
+              const parts = new Set<ExercisePart>();
+              dayWorkouts.forEach(workout => {
+                if (workout.part) {
+                  parts.add(workout.part);
+                }
+                if (!workout.isAllSuccess) { // 하나라도 실패한 운동이 있으면 그날은 전체 성공이 아님
+                  allSuccessForDay = false;
+                }
+              });
+              workoutPartsLabels = Array.from(parts).map(part => getPartLabel(part));
             }
             
             return (
@@ -488,7 +495,7 @@ const WorkoutList: React.FC = () => {
                   ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : ''}
                 `}
               >
-                <span className={`text-sm ${
+                <span className={`text-sm ${ 
                   isCurrentMonth ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'
                 }`}>
                   {day.getDate()}
@@ -497,9 +504,10 @@ const WorkoutList: React.FC = () => {
                 {hasWorkout && (
                   <div className="mt-1 flex flex-col gap-1">
                     <div 
-                      className={`text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200`}
+                      className={`text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 truncate`}
+                      title={workoutPartsLabels.join(' / ') + (allSuccessForDay ? ' ✓' : '')}
                     >
-                      {getPartLabel(exercisePart as ExercisePart)} {isAllSuccess ? '✓' : ''}
+                      {workoutPartsLabels.join('/')} {allSuccessForDay ? '✓' : ''}
                     </div>
                   </div>
                 )}

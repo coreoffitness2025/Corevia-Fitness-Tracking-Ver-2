@@ -406,6 +406,9 @@ const WorkoutGraph: React.FC = () => {
 
           const dataForChart = uniqueDates.map(date => dateData[date] || null);
           
+          // 범례 아이콘 확인을 위한 로그 추가
+          console.log(`[WorkoutGraph] Adding dataset: Label='${exerciseName} (${config})', pointStyle='${pointStyleValue}'`);
+
           datasets.push({
             data: dataForChart, 
             pointStyle: pointStyleValue, 

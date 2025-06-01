@@ -10,8 +10,8 @@ import MealPlans from '../components/nutrition/MealPlans';
 import OneRepMaxCalculator from '../components/1rmcalculator/OneRepMaxCalculator';
 import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import WorkoutProgram from '../components/workout/WorkoutProgram';
-import { Exercise, ExercisePart } from '../types';
-import { exercises } from '../data/exerciseData';
+import { Exercise as ImportedExercise, ExercisePart } from '../types';
+import { exercises as exerciseDataFromFile } from '../data/exerciseData';
 import { BarChart3, Target, Award, Settings, Utensils, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,19 +20,6 @@ import Button from '../components/common/Button';
 type TabType = 'exercise' | 'nutrition' | 'handbook';
 type Gender = 'male' | 'female';
 type Goal = 'lose' | 'maintain' | 'gain';
-
-// Exercise 타입을 exerciseData.ts와 호환되도록 수정
-interface Exercise {
-  id: string;
-  name: string;
-  part: string;
-  description: string;
-  instructions: string[];
-  videoUrl?: string;
-  equipment: string[];
-  muscles: string[];
-  level: string;
-}
 
 interface CalorieCalculatorInputs {
   gender: Gender;
@@ -52,28 +39,16 @@ interface CalorieCalculatorResults {
   fat: number;
 }
 
-// 운동 부위별로 분류하여 저장
-const exercisesByPart: Record<ExercisePart, Exercise[]> = {
-  chest: exercises.filter(exercise => exercise.part === 'chest'),
-  back: exercises.filter(exercise => exercise.part === 'back'),
-  shoulder: exercises.filter(exercise => exercise.part === 'shoulder'),
-  leg: exercises.filter(exercise => exercise.part === 'leg'),
-  biceps: exercises.filter(exercise => exercise.part === 'biceps'),
-  triceps: exercises.filter(exercise => exercise.part === 'triceps'),
-  abs: exercises.filter(exercise => exercise.part === 'abs'),
-  cardio: exercises.filter(exercise => exercise.part === 'cardio')
-};
-
-// 추가: 운동 부위별 아이콘 매핑
-const partIcons: Record<ExercisePart, string> = {
-  chest: '💪',
-  back: '🔙',
-  shoulder: '🏋️',
-  leg: '🦵',
-  biceps: '💪',
-  triceps: '💪',
-  abs: '🧘',
-  cardio: '🏃'
+const exercisesByPart: Record<ExercisePart, ImportedExercise[]> = {
+  chest: exerciseDataFromFile.filter(exercise => exercise.part === 'chest') as ImportedExercise[],
+  back: exerciseDataFromFile.filter(exercise => exercise.part === 'back') as ImportedExercise[],
+  shoulder: exerciseDataFromFile.filter(exercise => exercise.part === 'shoulder') as ImportedExercise[],
+  leg: exerciseDataFromFile.filter(exercise => exercise.part === 'leg') as ImportedExercise[],
+  biceps: exerciseDataFromFile.filter(exercise => exercise.part === 'biceps') as ImportedExercise[],
+  triceps: exerciseDataFromFile.filter(exercise => exercise.part === 'triceps') as ImportedExercise[],
+  abs: exerciseDataFromFile.filter(exercise => exercise.part === 'abs') as ImportedExercise[],
+  cardio: exerciseDataFromFile.filter(exercise => exercise.part === 'cardio') as ImportedExercise[],
+  complex: exerciseDataFromFile.filter(exercise => exercise.part === 'complex') as ImportedExercise[],
 };
 
 const QnaPage: React.FC = () => {
@@ -82,7 +57,7 @@ const QnaPage: React.FC = () => {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('exercise');
   const [selectedPart, setSelectedPart] = useState<ExercisePart>('chest');
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [selectedExercise, setSelectedExercise] = useState<ImportedExercise | null>(null);
   const [handbookSearchTerm, setHandbookSearchTerm] = useState<string>('');
   const [handbookSearchResults, setHandbookSearchResults] = useState<any[]>([]);
   const [showCalculator, setShowCalculator] = useState<boolean>(false);
@@ -93,7 +68,6 @@ const QnaPage: React.FC = () => {
   const [showMealPlans, setShowMealPlans] = useState<boolean>(false);
   const [selectedProgramType, setSelectedProgramType] = useState<string>('strength');
   
-  // FoodForm 또는 FoodLog에서 전달받은 초기 탭 설정 적용
   useEffect(() => {
     const state = location.state as { 
       activeTab?: TabType;
@@ -118,23 +92,20 @@ const QnaPage: React.FC = () => {
     }
   }, [location.state]);
   
-  // 칼로리 계산기 상태
   const [calculatorInputs, setCalculatorInputs] = useState<CalorieCalculatorInputs>({
     gender: 'male',
     age: 25,
     weight: 70,
     height: 175,
-    activityLevel: 1.55, // 보통 수준 (주 3-5회)
+    activityLevel: 1.55,
     goal: 'maintain'
   });
   
   const [calculatorResults, setCalculatorResults] = useState<CalorieCalculatorResults | null>(null);
 
-  // BMR 계산 (기초 대사량)
   const calculateBMR = (inputs: CalorieCalculatorInputs): number => {
     const { gender, age, weight, height } = inputs;
     
-    // 해리스-베네딕트 공식 사용
     if (gender === 'male') {
       return 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
     } else {
@@ -142,22 +113,20 @@ const QnaPage: React.FC = () => {
     }
   };
   
-  // 칼로리 계산
   const calculateCalories = () => {
     const bmr = calculateBMR(calculatorInputs);
     const tdee = bmr * calculatorInputs.activityLevel;
     
     let targetCalories = tdee;
     if (calculatorInputs.goal === 'lose') {
-      targetCalories = tdee * 0.85; // 15% 감소
+      targetCalories = tdee * 0.85;
     } else if (calculatorInputs.goal === 'gain') {
-      targetCalories = tdee * 1.15; // 15% 증가
+      targetCalories = tdee * 1.15;
     }
     
-    // 영양소 계산
-    const protein = calculatorInputs.weight * 2; // 체중 kg당 2g 단백질
-    const fat = (targetCalories * 0.25) / 9; // 칼로리의 25%를 지방에서 (1g 지방 = 9 칼로리)
-    const carbs = (targetCalories - (protein * 4) - (fat * 9)) / 4; // 나머지 칼로리 (1g 탄수화물 = 4 칼로리)
+    const protein = calculatorInputs.weight * 2;
+    const fat = (targetCalories * 0.25) / 9;
+    const carbs = (targetCalories - (protein * 4) - (fat * 9)) / 4;
     
     setCalculatorResults({
       bmr: Math.round(bmr),
@@ -169,28 +138,23 @@ const QnaPage: React.FC = () => {
     });
   };
   
-  // 입력값 변경 처리
   const handleInputChange = (field: keyof CalorieCalculatorInputs, value: any) => {
     setCalculatorInputs(prev => ({ ...prev, [field]: value }));
   };
   
-  // 운동 부위 선택 처리
   const handlePartSelect = (part: ExercisePart) => {
     setSelectedPart(part);
     setSelectedExercise(null);
   };
   
-  // 운동 선택 처리
-  const handleExerciseSelect = (exercise: Exercise) => {
+  const handleExerciseSelect = (exercise: ImportedExercise) => {
     setSelectedExercise(exercise);
   };
   
-  // 핸드북 검색
   const handleHandbookSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setHandbookSearchTerm(term);
     
-    // ExerciseFaq 컴포넌트에서 사용되는 실제 핸드북 데이터를 가져오기
     const handbookData = [
       { id: 'ex1', title: "운동 전 스트레칭은 꼭 해야 하나요?", content: "운동 전 워밍업과 스트레칭은 부상 방지와 운동 효과 증대를 위해 매우 중요합니다." },
       { id: 'ex2', title: "근육통이 생겼을 때 계속 운동해도 되나요?", content: "가벼운 근육통은 정상이지만, 심한 통증이 있다면 휴식을 취하는 것이 좋습니다." },
@@ -217,7 +181,6 @@ const QnaPage: React.FC = () => {
     setHandbookSearchResults(results);
   };
 
-  // 각 섹션별 표시 여부 토글 함수들
   const toggleCalculator = () => {
     setShowCalculator(!showCalculator);
     setShowNutritionScout(false);
@@ -251,7 +214,6 @@ const QnaPage: React.FC = () => {
           </p>
         </div>
 
-        {/* 새로운 버튼들 - 색상 변경 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
@@ -334,7 +296,6 @@ const QnaPage: React.FC = () => {
           </button>
         </div>
 
-        {/* 탭 콘텐츠 */}
         {activeTab === 'exercise' && !showWeightGuide && !show1RMCalculator && !showWorkoutSets && (
           <>
             {selectedExercise ? (
@@ -376,7 +337,6 @@ const QnaPage: React.FC = () => {
 
         {activeTab === 'nutrition' && (
           <div className="space-y-8">
-            {/* 칼로리 계산기 */}
             {showCalculator && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
@@ -393,7 +353,6 @@ const QnaPage: React.FC = () => {
                   onComplete={async (result) => {
                     try {
                       console.log('칼로리 계산 결과:', result);
-                      // 계산 결과를 상태에 저장
                       setCalculatorResults({
                         bmr: result.bmr,
                         tdee: result.tdee,
@@ -414,7 +373,6 @@ const QnaPage: React.FC = () => {
               </div>
             )}
             
-            {/* 영양성분 검색 */}
             {showNutritionScout && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
@@ -426,13 +384,10 @@ const QnaPage: React.FC = () => {
                     ✕
                   </button>
                 </div>
-                <NutritionScout 
-                  initialSearchTerm={(location.state as any)?.searchTerm || ""}
-                />
+                <NutritionScout />
               </div>
             )}
             
-            {/* 식단 예시 */}
             {showMealPlans && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
@@ -448,7 +403,6 @@ const QnaPage: React.FC = () => {
               </div>
             )}
             
-            {/* 영양 정보 안내 */}
             {!showCalculator && !showNutritionScout && !showMealPlans && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold">영양 & 식단 정보</h2>
@@ -497,7 +451,6 @@ const QnaPage: React.FC = () => {
             </div>
             
             <ExerciseFaq
-              searchResults={handbookSearchResults}
               searchTerm={handbookSearchTerm}
             />
           </div>

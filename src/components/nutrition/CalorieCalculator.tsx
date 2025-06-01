@@ -17,6 +17,8 @@ import {
 interface CalorieCalculatorProps {
   userProfile: UserProfile | null;
   onComplete?: (result: { 
+    bmr: number;
+    tdee: number;
     targetCalories: number;
     macros: { protein: number; carbs: number; fat: number; };
   }) => Promise<void>;
@@ -143,6 +145,8 @@ const CalorieCalculator = ({ userProfile, onComplete }: CalorieCalculatorProps) 
     try {
       if (onComplete) {
         await onComplete({
+          bmr: calculatorResults.bmr,
+          tdee: calculatorResults.tdee,
           targetCalories: calculatorResults.targetCalories,
           macros: {
             protein: calculatorResults.protein,

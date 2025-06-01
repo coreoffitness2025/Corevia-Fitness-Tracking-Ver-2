@@ -162,13 +162,12 @@ export interface Exercise {
   id: string;
   name: string;
   description: string;
-  muscleGroups: string[];
+  muscles: string[];
   equipment: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  level: 'beginner' | 'intermediate' | 'advanced';
   instructions: string[];
   videoUrl?: string;
   part: ExercisePart;
-  level: string;
 }
 
 export interface WorkoutSession {

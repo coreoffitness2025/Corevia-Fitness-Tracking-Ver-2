@@ -1,38 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Exercise, ExercisePart } from '../../types';
-import { exercises } from '../../data/exerciseData';
+import { Exercise as ImportedExercise, ExercisePart } from '../../types';
+import { exercises as exerciseDataFromFile } from '../../data/exerciseData';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import Button from '../common/Button';
 
 interface ExerciseSearchProps {
-  onSelectExercise: (exercise: Exercise) => void;
+  onSelectExercise: (exercise: ImportedExercise) => void;
   selectedPart?: ExercisePart;
   onPartChange?: (part: ExercisePart) => void;
 }
 
 // 운동 부위별로 분류하여 저장
-const exercisesByPart: Record<ExercisePart, Exercise[]> = {
-  chest: exercises.filter(exercise => exercise.part === 'chest'),
-  back: exercises.filter(exercise => exercise.part === 'back'),
-  shoulder: exercises.filter(exercise => exercise.part === 'shoulder'),
-  leg: exercises.filter(exercise => exercise.part === 'leg'),
-  biceps: exercises.filter(exercise => exercise.part === 'biceps'),
-  triceps: exercises.filter(exercise => exercise.part === 'triceps'),
-  abs: exercises.filter(exercise => exercise.part === 'abs'),
-  cardio: exercises.filter(exercise => exercise.part === 'cardio'),
-  complex: exercises.filter(exercise => exercise.part === 'complex'),
-};
-
-const partIcons: Record<ExercisePart, string> = {
-  chest: '👕',
-  back: '🔙',
-  shoulder: '🏋️',
-  leg: '🦵',
-  biceps: '💪',
-  triceps: '💪',
-  abs: '🧘',
-  cardio: '🏃',
-  complex: '⚙️'
+const exercisesByPart: Record<ExercisePart, ImportedExercise[]> = {
+  chest: exerciseDataFromFile.filter(exercise => exercise.part === 'chest') as ImportedExercise[],
+  back: exerciseDataFromFile.filter(exercise => exercise.part === 'back') as ImportedExercise[],
+  shoulder: exerciseDataFromFile.filter(exercise => exercise.part === 'shoulder') as ImportedExercise[],
+  leg: exerciseDataFromFile.filter(exercise => exercise.part === 'leg') as ImportedExercise[],
+  biceps: exerciseDataFromFile.filter(exercise => exercise.part === 'biceps') as ImportedExercise[],
+  triceps: exerciseDataFromFile.filter(exercise => exercise.part === 'triceps') as ImportedExercise[],
+  abs: exerciseDataFromFile.filter(exercise => exercise.part === 'abs') as ImportedExercise[],
+  cardio: exerciseDataFromFile.filter(exercise => exercise.part === 'cardio') as ImportedExercise[],
+  complex: exerciseDataFromFile.filter(exercise => exercise.part === 'complex') as ImportedExercise[],
 };
 
 const ExerciseSearch: React.FC<ExerciseSearchProps> = ({ 
@@ -41,7 +29,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   onPartChange 
 }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<Exercise[]>([]);
+  const [searchResults, setSearchResults] = useState<ImportedExercise[]>([]);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [showAllExercises, setShowAllExercises] = useState<boolean>(false);
   const [internalSelectedPart, setInternalSelectedPart] = useState<ExercisePart>(selectedPart);
@@ -77,7 +65,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
     // 검색어와 일치하는 운동 찾기
     const results = allExercises.filter(ex => 
       ex.name.toLowerCase().includes(term) || 
-      ex.description?.toLowerCase().includes(term)
+      (ex.description && ex.description.toLowerCase().includes(term))
     );
     
     setSearchResults(results);
@@ -85,10 +73,10 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   };
   
   // 검색 결과에서 운동 선택
-  const handleSearchSelect = (exercise: Exercise) => {
+  const handleSearchSelect = (exercise: ImportedExercise) => {
     // 해당 운동이 속한 부위 찾기
-    for (const [part, exercises] of Object.entries(exercisesByPart)) {
-      if (exercises.some(ex => ex.id === exercise.id)) {
+    for (const [part, exercisesAtPath] of Object.entries(exercisesByPart)) {
+      if (exercisesAtPath.some(ex => ex.id === exercise.id)) {
         handlePartSelect(part as ExercisePart);
         onSelectExercise(exercise);
         setSearchTerm(exercise.name);
@@ -109,13 +97,13 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   // 운동 부위별 버튼 렌더링 (아이콘 및 스타일 복원)
   const renderExerciseByParts = () => {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-6">
         {(Object.keys(exercisesByPart) as ExercisePart[]).filter(p => p !== 'complex').map((partKey) => (
           <button
             key={partKey}
             onClick={() => handlePartSelect(partKey)}
             className={`
-              flex flex-col items-center justify-center p-4 rounded-lg transition-all
+              flex flex-col items-center justify-center p-3 rounded-lg transition-all text-sm
               ${
                 internalSelectedPart === partKey
                   ? 'bg-primary-400 text-white shadow-md transform scale-105'
@@ -123,7 +111,6 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               }
             `}
           >
-            <span className="text-3xl mb-1">{partIcons[partKey]}</span>
             <span className="font-medium">{getPartLabel(partKey)}</span>
           </button>
         ))}

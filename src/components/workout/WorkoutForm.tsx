@@ -116,15 +116,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 통합 타이머 상태
   const [globalTimer, setGlobalTimer] = useState<{
-    sectionId: string | null; // 어떤 운동 섹션에 연결된 타이머인지 (예: 'main', 'accessory_0')
-    timeLeft: number;         // 남은 시간 (초)
-    initialTime: number;      // 초기 설정 시간 (초)
+    sectionId: string | null; 
+    timeLeft: number;         
+    // initialTime: number; // initialTime 제거
+    timerMinutes: number;     // 분 상태 추가
+    timerSeconds: number;     // 초 상태 추가
     isPaused: boolean;
-    isRunning: boolean;       // 타이머가 실제로 setInterval로 실행 중인지
+    isRunning: boolean;       
   }>({
     sectionId: null,
     timeLeft: 120, 
-    initialTime: 120,
+    // initialTime: 120,
+    timerMinutes: 2,
+    timerSeconds: 0,
     isPaused: true,
     isRunning: false,
   });
@@ -396,7 +400,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     setGlobalTimer(prev => ({
       ...prev,
       sectionId,
-      timeLeft: prev.initialTime, // 초기 설정 시간으로 리셋
+      timeLeft: prev.timerMinutes * 60 + prev.timerSeconds, // timerMinutes와 timerSeconds로 timeLeft 설정
       isPaused: false,
       isRunning: true,
     }));
@@ -427,7 +431,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
             });
           }
-          return { ...prev, sectionId: null, timeLeft: prev.initialTime, isPaused: true, isRunning: false };
+          // 타이머 종료 시 timeLeft를 다시 timerMinutes, timerSeconds 기준으로 설정
+          return { ...prev, sectionId: null, timeLeft: prev.timerMinutes * 60 + prev.timerSeconds, isPaused: true, isRunning: false };
         }
         return { ...prev, timeLeft: prev.timeLeft - 1 };
       });
@@ -450,26 +455,39 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
     setGlobalTimer(prev => ({
       ...prev,
-      sectionId: null, // 연결된 섹션 해제
-      timeLeft: prev.initialTime,
+      sectionId: null, 
+      timeLeft: prev.timerMinutes * 60 + prev.timerSeconds, // timerMinutes와 timerSeconds로 timeLeft 설정
       isPaused: true,
       isRunning: false,
     }));
   };
 
-  const adjustGlobalTimer = (amount: number) => {
+  const handleTimerInputChange = (type: 'minutes' | 'seconds', value: string) => {
+    const numValue = parseInt(value, 10);
+    if (isNaN(numValue) || numValue < 0) return; // 유효하지 않은 입력 방지
+
     setGlobalTimer(prev => {
-      const newInitialTime = Math.max(10, prev.initialTime + amount); // 최소 10초
-      // 타이머가 실행 중이 아닐 때만 initialTime 변경 시 timeLeft도 함께 변경
-      const newTimeLeft = !prev.isRunning ? newInitialTime : prev.timeLeft; 
+      let newMinutes = prev.timerMinutes;
+      let newSeconds = prev.timerSeconds;
+
+      if (type === 'minutes') {
+        newMinutes = Math.min(99, numValue); // 최대 99분
+      } else {
+        newSeconds = Math.min(59, numValue); // 최대 59초
+      }
+      
+      // 타이머가 실행 중이 아닐 때만 timeLeft도 함께 업데이트
+      const newTimeLeft = !prev.isRunning ? newMinutes * 60 + newSeconds : prev.timeLeft;
+
       return {
         ...prev,
-        initialTime: newInitialTime,
+        timerMinutes: newMinutes,
+        timerSeconds: newSeconds,
         timeLeft: newTimeLeft,
       };
     });
   };
-  
+
   // 보조 운동 추가
   const addAccessoryExercise = () => {
     // 기본 세트 구성을 현재 선택된 세트 구성과 일치시킴
@@ -1225,19 +1243,35 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="icon" size="sm" onClick={() => adjustGlobalTimer(-10)} aria-label="시간 10초 줄이기">
-                <ChevronDown size={20} />
-              </Button>
-              <Button variant="icon" size="sm" onClick={() => adjustGlobalTimer(10)} aria-label="시간 10초 늘리기">
-                <ChevronUp size={20} />
-              </Button>
+              {/* 시간 조절 화살표 버튼 대신 입력 필드 (간단한 형태) */}
+              {!globalTimer.isRunning && (
+                <div className="flex items-center gap-1">
+                  <input 
+                    type="number"
+                    value={String(globalTimer.timerMinutes).padStart(2, '0')}
+                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
+                    className="w-12 p-1 text-center bg-gray-700 rounded text-white text-sm tabular-nums"
+                    min="0"
+                    max="99"
+                  />
+                  <span>:</span>
+                  <input 
+                    type="number"
+                    value={String(globalTimer.timerSeconds).padStart(2, '0')}
+                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
+                    className="w-12 p-1 text-center bg-gray-700 rounded text-white text-sm tabular-nums"
+                    min="0"
+                    max="59"
+                  />
+                </div>
+              )}
               <Button 
-                variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"} 
+                variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"} // "primary"를 다시 "warning"으로 변경
                 size="sm" 
                 onClick={togglePauseGlobalTimer}
                 icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={18} /> : <Pause size={18} />}
               >
-                {globalTimer.isPaused || !globalTimer.isRunning ? (globalTimer.timeLeft === globalTimer.initialTime ? '시작' : '재개') : '일시정지'}
+                {globalTimer.isPaused || !globalTimer.isRunning ? (globalTimer.timeLeft === (globalTimer.timerMinutes * 60 + globalTimer.timerSeconds) ? '시작' : '재개') : '일시정지'}
               </Button>
               <Button variant="danger" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={18} />}>
                 초기화
@@ -1378,7 +1412,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               <CardTitle>메인 운동</CardTitle>
               {globalTimer.sectionId !== 'main' && !globalTimer.isRunning && (
                  <Button size="sm" variant="outline" onClick={() => startGlobalTimer('main')} icon={<Timer size={16}/>}>
-                   휴식 시작 ({formatTimeGlobal(globalTimer.initialTime)})
+                   {/* 휴식 시작 ({formatTimeGlobal(globalTimer.initialTime)}) -> 휴식 시작 ({formatTimeGlobal(globalTimer.timerMinutes * 60 + globalTimer.timerSeconds)}) */}
+                   휴식 시작 ({formatTimeGlobal(globalTimer.timerMinutes * 60 + globalTimer.timerSeconds)})
                  </Button>
               )}
               {globalTimer.sectionId === 'main' && globalTimer.isRunning && (

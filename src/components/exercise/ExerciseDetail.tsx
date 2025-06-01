@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Exercise, ExercisePart } from '../../types';
+import { Exercise as ImportedExercise, ExercisePart } from '../../types';
 
 interface ExerciseDetailProps {
-  exercise: Exercise;
+  exercise: ImportedExercise;
   onClose: () => void;
 }
 
@@ -21,7 +21,8 @@ const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise, onClose }) =>
       biceps: '이두',
       triceps: '삼두',
       abs: '복근',
-      cardio: '유산소'
+      cardio: '유산소',
+      complex: '복합'
     };
     return labels[part as ExercisePart];
   };

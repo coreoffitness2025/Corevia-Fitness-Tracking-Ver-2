@@ -18,7 +18,8 @@ interface AccessoryExerciseProps {
   globalTimer: {
     sectionId: string | null;
     timeLeft: number;
-    initialTime: number;
+    timerMinutes: number;
+    timerSeconds: number;
     isPaused: boolean;
     isRunning: boolean;
   };
@@ -128,7 +129,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         <div className="flex items-center gap-2">
           {globalTimer.sectionId !== componentSectionId && (!globalTimer.isRunning || globalTimer.sectionId !== componentSectionId) && (
             <Button size="xs" variant="outline" onClick={() => startGlobalTimer(componentSectionId)} icon={<Play size={14}/>} className="py-1 px-2 text-xs">
-              휴식 ({formatTime(globalTimer.initialTime)})
+              휴식 ({formatTime(globalTimer.timerMinutes * 60 + globalTimer.timerSeconds)})
             </Button>
           )}
           {globalTimer.sectionId === componentSectionId && globalTimer.isRunning && (
