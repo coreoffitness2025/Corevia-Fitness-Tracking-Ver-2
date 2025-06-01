@@ -394,23 +394,12 @@ const WorkoutGraph: React.FC = () => {
           
           let pointStyleValue = basePointStyleFromMap; // 기본값 할당
 
-          // 모든 '벤치 프레스' 데이터셋의 pointStyle을 'triangle'로 고정
+          // 모든 '벤치 프레스' 데이터셋의 pointStyle을 'circle'로 테스트
           if (exerciseName.includes('벤치 프레스')) {
-            pointStyleValue = 'triangle';
+            pointStyleValue = 'circle'; // triangle -> circle
           } else if (exercisePart === 'leg') { 
-            pointStyleValue = 'triangle';
+            pointStyleValue = 'circle'; // triangle -> circle (일관성 테스트)
           }
-          // 이전에 테스트를 위해 추가했던 특정 config에 따른 pointStyle 오버라이드 로직 제거
-          /*
-          if (exerciseName === '벤치 프레스' && config === '6x3') {
-            pointStyleValue = 'circle'; 
-            console.log(`[WorkoutGraph] Overriding pointStyle for '벤치 프레스 (6x3)' to 'circle'`);
-          }
-          if (exerciseName === '벤치 프레스' && config === '10x5') {
-            pointStyleValue = 'rect'; 
-            console.log(`[WorkoutGraph] Overriding pointStyle for '벤치 프레스 (10x5)' to 'rect'`);
-          }
-          */
           
           if (exerciseName.includes('벤치 프레스') || exercisePart === 'leg') {
             console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), Part: ${exercisePart}, PointStyle: ${pointStyleValue}`);
