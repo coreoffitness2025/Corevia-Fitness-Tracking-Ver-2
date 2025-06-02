@@ -369,6 +369,12 @@ const WorkoutGraph: React.FC = () => {
         const exerciseName = workout.mainExercise.name;
         const dateStr = parseFirestoreDate(workout.date as unknown as FirestoreTimestamp | Date | string).toLocaleDateString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric' }).replace(/\./g, '/').replace(/\s/g, '').replace(/\/$/, '');
         
+        // 80kg 데이터 특별 추적 (prepareChartData 진입점)
+        const hasEightyKg = workout.mainExercise.sets.some(set => set.weight === 80);
+        if (hasEightyKg && workout.part === 'leg') {
+          console.log(`[WorkoutGraph] 🔍 80kg 데이터 prepareChartData 진입: ${exerciseName} (${dateStr}), 세트정보: ${JSON.stringify(workout.mainExercise.sets.map(s => ({weight: s.weight, reps: s.reps})))}`);
+        }
+        
         // 디버깅: 운동 이름과 날짜 확인
         console.log(`[WorkoutGraph] 운동 데이터 처리: ${exerciseName} (${dateStr})`);
         
@@ -393,6 +399,12 @@ const WorkoutGraph: React.FC = () => {
         newDateAllWorkoutsMap[dateStr].push(workout);
         
         const sets = workout.mainExercise.sets;
+        
+        // 80kg 데이터 세트 구성 확인
+        if (hasEightyKg && workout.part === 'leg') {
+          console.log(`[WorkoutGraph] 🔍 80kg 데이터 세트 구성 검사 시작: 세트수=${sets.length}, 반복횟수=[${sets.map(s => s.reps).join(', ')}]`);
+        }
+        
         let setConfig = '';
         if (sets.length === 5 && sets.every(set => set.reps === 5)) setConfig = '5x5';
         else if (sets.length === 3 && sets.every(set => set.reps === 6)) setConfig = '6x3';
@@ -400,6 +412,9 @@ const WorkoutGraph: React.FC = () => {
         else if (sets.length === 5 && sets.every(set => set.reps === 15)) setConfig = '15x5';
         else {
           // 표준 세트 구성이 아니면 제외 (디버깅 로그 추가)
+          if (hasEightyKg && workout.part === 'leg') {
+            console.log(`[WorkoutGraph] ❌ 80kg 데이터 제외됨 (비표준 세트): ${exerciseName}, 세트구성: ${sets.length}세트 x [${sets.map(s => s.reps).join(', ')}]회, 무게: [${sets.map(s => s.weight).join(', ')}]kg`);
+          }
           if (workout.part === 'leg' && exerciseName?.includes('스쿼트')) {
             console.log(`[WorkoutGraph] ❌ 스쿼트 데이터 제외됨 (비표준 세트): ${exerciseName}, 세트구성: ${sets.length}세트 x [${sets.map(s => s.reps).join(', ')}]회, 무게: [${sets.map(s => s.weight).join(', ')}]kg`);
           }
@@ -426,6 +441,11 @@ const WorkoutGraph: React.FC = () => {
         // 하체/스쿼트 데이터 특별 디버깅
         if (workout.part === 'leg' && exerciseName?.includes('스쿼트')) {
              console.log(`[WorkoutGraph] ✅ 스쿼트 데이터 포함됨: ${exerciseName} (${dateStr}, ${setConfig}): 모든무게=[${allWeightsInWorkout.join(', ')}]kg, 최대=${currentMaxWorkoutWeight}kg`);
+             
+             // 80kg 특별 추적
+             if (allWeightsInWorkout.includes(80)) {
+               console.log(`[WorkoutGraph] 🎯 80kg 스쿼트 발견! 세트구성: ${setConfig}, 세트정보: ${JSON.stringify(sets.map(s => ({weight: s.weight, reps: s.reps})))}`);
+             }
         }
         
         if (currentMaxWorkoutWeight > 0) {
