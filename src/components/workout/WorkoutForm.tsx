@@ -1332,67 +1332,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 </div>
               </div>
               
-              {/* 빠른 설정 버튼들 (항상 표시) */}
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-300">빠른설정:</span>
-                <button
-                  onClick={() => {
-                    setGlobalTimer(prev => ({
-                      ...prev,
-                      timerMinutes: 1,
-                      timerSeconds: 30,
-                      timeLeft: 90
-                    }));
-                    toast.success('⏰ 1:30 설정!', { duration: 1000 });
-                  }}
-                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                >
-                  1:30
-                </button>
-                <button
-                  onClick={() => {
-                    setGlobalTimer(prev => ({
-                      ...prev,
-                      timerMinutes: 2,
-                      timerSeconds: 0,
-                      timeLeft: 120
-                    }));
-                    toast.success('⏰ 2:00 설정!', { duration: 1000 });
-                  }}
-                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                >
-                  2:00
-                </button>
-                <button
-                  onClick={() => {
-                    setGlobalTimer(prev => ({
-                      ...prev,
-                      timerMinutes: 2,
-                      timerSeconds: 30,
-                      timeLeft: 150
-                    }));
-                    toast.success('⏰ 2:30 설정!', { duration: 1000 });
-                  }}
-                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                >
-                  2:30
-                </button>
-                <button
-                  onClick={() => {
-                    setGlobalTimer(prev => ({
-                      ...prev,
-                      timerMinutes: 3,
-                      timerSeconds: 0,
-                      timeLeft: 180
-                    }));
-                    toast.success('⏰ 3:00 설정!', { duration: 1000 });
-                  }}
-                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                >
-                  3:00
-                </button>
-              </div>
-              
               {/* 타이머 컨트롤 버튼들 */}
               <div className="flex items-center gap-1">
                 <Button 
