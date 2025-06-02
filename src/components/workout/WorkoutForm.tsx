@@ -1046,11 +1046,28 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
 
-  // handleRepsChange 함수 추가
+  // handleRepsChange 함수 수정
   const handleRepsChange = (newReps: number, setIndex: number, isMainExercise: boolean = true) => {
+    // 세트 구성에 따른 반복 횟수 제한
+    let maxReps = newReps;
+    
+    // 표준 세트 구성의 경우 최대 반복 횟수 제한
+    if (selectedSetConfiguration === '5x5') {
+      maxReps = Math.min(newReps, 5);
+    } else if (selectedSetConfiguration === '6x3') {
+      maxReps = Math.min(newReps, 6);
+    } else if (selectedSetConfiguration === '10x5') {
+      maxReps = Math.min(newReps, 10);
+    } else if (selectedSetConfiguration === '15x5') {
+      maxReps = Math.min(newReps, 15);
+    }
+    
+    // 최소값 체크 (0 이하 방지)
+    maxReps = Math.max(1, maxReps);
+
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
-      newSets[setIndex].reps = newReps;
+      newSets[setIndex].reps = maxReps;
       setMainExercise({ ...mainExercise, sets: newSets });
     }
   };
@@ -1569,13 +1586,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">메인 운동</CardTitle>
               <div className="flex items-center gap-4">
                 {/* 타이머 UI - 메인 운동 섹션 내부로 이동 */}
-                <div className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-3 shadow-inner">
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">휴식 시간:</span>
+                <div className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-3 shadow-inner min-w-[420px]">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">휴식 시간:</span>
                   
                   {/* 시간 조정 버튼 */}
                   <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl p-2 border border-gray-200 dark:border-gray-600 shadow-sm">
                     {/* 분 조정 */}
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center w-12">
                       <button
                         onClick={() => {
                           const newMinutes = Math.min(99, globalTimer.timerMinutes + 1);
@@ -1590,7 +1607,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       >
                         ▲
                       </button>
-                      <span className="text-base font-mono text-gray-800 dark:text-gray-200 min-w-[2rem] text-center py-1">
+                      <span className="text-base font-mono text-gray-800 dark:text-gray-200 text-center py-1 w-8">
                         {String(globalTimer.timerMinutes).padStart(2, '0')}
                       </span>
                       <button
@@ -1610,7 +1627,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     </div>
                     <span className="text-gray-800 dark:text-gray-200 mx-2 text-lg font-bold">:</span>
                     {/* 초 조정 */}
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center w-12">
                       <button
                         onClick={() => {
                           const newSeconds = Math.min(59, globalTimer.timerSeconds + 15);
@@ -1625,7 +1642,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       >
                         ▲
                       </button>
-                      <span className="text-base font-mono text-gray-800 dark:text-gray-200 min-w-[2rem] text-center py-1">
+                      <span className="text-base font-mono text-gray-800 dark:text-gray-200 text-center py-1 w-8">
                         {String(globalTimer.timerSeconds).padStart(2, '0')}
                       </span>
                       <button
@@ -1658,11 +1675,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         }
                       }}
                       icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={16} /> : <Pause size={16} />}
-                      className="font-medium shadow-lg"
+                      className="font-medium shadow-lg whitespace-nowrap"
                     >
                       {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '일시정지'}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={16} />} className="font-medium">
+                    <Button variant="outline" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={16} />} className="font-medium whitespace-nowrap">
                       초기화
                     </Button>
                   </div>
@@ -1782,7 +1799,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">횟수</label>
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          횟수
+                          {selectedSetConfiguration !== 'custom' && (
+                            <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              (최대 {
+                                selectedSetConfiguration === '5x5' ? '5회' :
+                                selectedSetConfiguration === '6x3' ? '6회' :
+                                selectedSetConfiguration === '10x5' ? '10회' :
+                                selectedSetConfiguration === '15x5' ? '15회' : ''
+                              })
+                            </span>
+                          )}
+                        </label>
                         <input
                           type="number"
                           value={set.reps || ''}

@@ -86,8 +86,27 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   };
 
   const handleSetChange = (setIndex: number, field: 'weight' | 'reps', value: number) => {
+    let finalValue = value;
+    
+    // 반복 횟수 제한 (reps field만)
+    if (field === 'reps') {
+      // 표준 세트 구성의 경우 최대 반복 횟수 제한
+      if (selectedSetConfig === '5x5') {
+        finalValue = Math.min(value, 5);
+      } else if (selectedSetConfig === '6x3') {
+        finalValue = Math.min(value, 6);
+      } else if (selectedSetConfig === '10x5') {
+        finalValue = Math.min(value, 10);
+      } else if (selectedSetConfig === '15x5') {
+        finalValue = Math.min(value, 15);
+      }
+      
+      // 최소값 체크 (0 이하 방지)
+      finalValue = Math.max(1, finalValue);
+    }
+    
     const newSets = exercise.sets.map((s, i) =>
-      i === setIndex ? { ...s, [field]: value } : s
+      i === setIndex ? { ...s, [field]: finalValue } : s
     );
     onChange(index, { ...exercise, sets: newSets });
   };
@@ -127,11 +146,11 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
       <div className="flex justify-between items-center mb-4">
         <h4 className="text-xl font-bold text-gray-900 dark:text-white">{exercise.name || `보조 운동 ${index + 1}`}</h4>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-3 shadow-inner">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">휴식 시간:</span>
+          <div className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-3 shadow-inner min-w-[380px]">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">휴식 시간:</span>
             
             <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl p-2 border border-gray-200 dark:border-gray-600 shadow-sm">
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center w-12">
                 <button
                   onClick={() => {
                     // 실제 타이머 조정은 상위 컴포넌트에서 처리
@@ -140,7 +159,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 >
                   ▲
                 </button>
-                <span className="text-base font-mono text-gray-800 dark:text-gray-200 min-w-[2rem] text-center py-1">
+                <span className="text-base font-mono text-gray-800 dark:text-gray-200 text-center py-1 w-8">
                   {String(globalTimer.timerMinutes).padStart(2, '0')}
                 </span>
                 <button
@@ -153,7 +172,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 </button>
               </div>
               <span className="text-gray-800 dark:text-gray-200 mx-2 text-lg font-bold">:</span>
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center w-12">
                 <button
                   onClick={() => {
                     // 실제 타이머 조정은 상위 컴포넌트에서 처리
@@ -162,7 +181,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 >
                   ▲
                 </button>
-                <span className="text-base font-mono text-gray-800 dark:text-gray-200 min-w-[2rem] text-center py-1">
+                <span className="text-base font-mono text-gray-800 dark:text-gray-200 text-center py-1 w-8">
                   {String(globalTimer.timerSeconds).padStart(2, '0')}
                 </span>
                 <button
@@ -188,11 +207,11 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                   }
                 }}
                 icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={16} /> : <Pause size={16} />}
-                className="font-medium shadow-lg"
+                className="font-medium shadow-lg whitespace-nowrap"
               >
                 {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '일시정지'}
               </Button>
-              <Button variant="outline" size="sm" onClick={resetGlobalTimer} icon={<X size={16} />} className="font-medium">
+              <Button variant="outline" size="sm" onClick={resetGlobalTimer} icon={<X size={16} />} className="font-medium whitespace-nowrap">
                 초기화
               </Button>
             </div>
@@ -267,7 +286,19 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">횟수</label>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  횟수
+                  {selectedSetConfig !== 'custom' && (
+                    <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      (최대 {
+                        selectedSetConfig === '5x5' ? '5회' :
+                        selectedSetConfig === '6x3' ? '6회' :
+                        selectedSetConfig === '10x5' ? '10회' :
+                        selectedSetConfig === '15x5' ? '15회' : ''
+                      })
+                    </span>
+                  )}
+                </label>
                 <input 
                   type="number" 
                   value={set.reps || ''} 
