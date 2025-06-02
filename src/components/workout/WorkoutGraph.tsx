@@ -167,6 +167,7 @@ const WorkoutGraph: React.FC = () => {
   // 차트 옵션
   const initialChartOptions: ChartOptions<'line'> = {
     responsive: true,
+    maintainAspectRatio: false, // 높이 조정 가능하도록
     plugins: {
       legend: {
         display: false,
@@ -235,18 +236,48 @@ const WorkoutGraph: React.FC = () => {
     scales: {
       y: {
         type: 'linear',
+        beginAtZero: false, // 0부터 시작하지 않도록 기본 설정
         title: {
           display: true,
-          text: '무게 (kg)'
+          text: '무게 (kg)',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
         },
         ticks: {
-          stepSize: 5
+          stepSize: 2.5,
+          callback: function(value: any) {
+            return `${value}kg`;
+          },
+          font: {
+            size: 12
+          }
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.1)'
         }
       },
       x: {
         title: {
           display: true,
-          text: '날짜'
+          text: '날짜',
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          font: {
+            size: 11
+          },
+          maxRotation: 45,
+          minRotation: 0
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.1)'
         }
       }
     },
@@ -257,6 +288,7 @@ const WorkoutGraph: React.FC = () => {
     },
     elements: {
       line: {
+        borderWidth: 2,
         segment: {
           borderColor: (ctx: any) => {
             if (!ctx.p0 || !ctx.p1 || !ctx.p0.dataset) return undefined;
@@ -270,6 +302,11 @@ const WorkoutGraph: React.FC = () => {
             return (dataset as any).borderColor;
           }
         }
+      },
+      point: {
+        radius: 6,
+        hoverRadius: 8,
+        borderWidth: 2
       }
     },
     onClick: (event, elements, chart) => {
@@ -459,16 +496,30 @@ const WorkoutGraph: React.FC = () => {
       
       let yMin, yMax;
       if (hasValidData) {
-        const padding = 10; // 모든 부위에 동일한 padding 값 적용
+        // 패딩을 더 크게 하여 데이터가 잘 보이도록 함
+        const range = maxWeight - minWeight;
+        const padding = Math.max(10, range * 0.1); // 최소 10kg 또는 데이터 범위의 10%
+        
         yMin = Math.max(0, minWeight - padding); // 0 이하로 내려가지 않도록
         yMax = maxWeight + padding;
-        if (yMin === yMax) { // 모든 데이터 포인트가 같을 경우
-          yMin = Math.max(0, yMin - 5); // yMin이 음수가 되지 않도록 보장
-          yMax = yMax + 5;
+        
+        // 모든 데이터 포인트가 같을 경우 더 넓은 범위 설정
+        if (yMin === yMax || Math.abs(yMax - yMin) < 20) {
+          const center = (yMin + yMax) / 2;
+          yMin = Math.max(0, center - 15);
+          yMax = center + 15;
         }
-        console.log(`[WorkoutGraph] Y축 범위 동적 설정 - 부위: ${selectedPart}, 계산된 min: ${yMin}, max: ${yMax}`);
+        
+        // 최소 범위 보장 (최소 20kg 범위)
+        if (yMax - yMin < 20) {
+          const center = (yMin + yMax) / 2;
+          yMin = Math.max(0, center - 10);
+          yMax = center + 10;
+        }
+        
+        console.log(`[WorkoutGraph] Y축 범위 동적 설정 - 부위: ${selectedPart}, 계산된 min: ${yMin}, max: ${yMax}, 데이터 범위: ${minWeight}-${maxWeight}kg`);
       } else {
-        // 유효한 데이터가 없을 경우 기본 범위 (예: 0-100)
+        // 유효한 데이터가 없을 경우 기본 범위
         yMin = 0;
         yMax = 100;
         console.log(`[WorkoutGraph] Y축 범위 기본값 사용 (유효 데이터 없음)`);
@@ -476,15 +527,25 @@ const WorkoutGraph: React.FC = () => {
 
       const finalChartData = { labels: uniqueDates, datasets };
 
-      // 차트 옵션을 직접 수정하는 대신, 차트 데이터와 함께 옵션을 전달하거나
-      // 차트가 업데이트될 때 옵션을 적용하는 것이 더 일반적입니다.
-      // 여기서는 기존 방식을 유지하되, beginAtZero 관련 직접 조작은 제거합니다.
-      const updatedOptions = JSON.parse(JSON.stringify(initialChartOptions)); // 옵션 객체 깊은 복사
+      // 차트 옵션 업데이트 - 더 안전한 방식으로 처리
+      const updatedOptions = JSON.parse(JSON.stringify(initialChartOptions));
       if (updatedOptions.scales?.y) {
         updatedOptions.scales.y.min = yMin;
         updatedOptions.scales.y.max = yMax;
+        updatedOptions.scales.y.beginAtZero = false; // 0부터 시작하지 않도록 설정
+        
+        // tick 설정 개선
+        updatedOptions.scales.y.ticks = {
+          ...updatedOptions.scales.y.ticks,
+          stepSize: Math.max(2.5, Math.round((yMax - yMin) / 8)), // 적절한 간격 설정
+          callback: function(value: any) {
+            return `${value}kg`;
+          }
+        };
+        
+        console.log(`[WorkoutGraph] 차트 옵션 업데이트 - Y축 min: ${yMin}, max: ${yMax}, stepSize: ${updatedOptions.scales.y.ticks.stepSize}`);
       }
-      setDynamicChartOptions(updatedOptions); // 상태를 통해 옵션 업데이트
+      setDynamicChartOptions(updatedOptions);
 
       // 디버깅: 최종 datasets 배열 확인
       console.log('[WorkoutGraph] 최종 생성된 datasets:', datasets.map(d => ({ label: d.label, pointStyle: d.pointStyle, dataCount: d.data.filter((v: any) => v !== null).length })));
@@ -589,70 +650,83 @@ const WorkoutGraph: React.FC = () => {
       let filtered = [...dataToFilter];
       console.log(`[WorkoutGraph] applyFilters - 시작, 데이터 ${filtered.length}개, 선택된 부위: ${selectedPart}, 운동: ${selectedExercise}, 세트구성: ${selectedSetConfig}`);
 
+      // 부위별 필터링
       filtered = filtered.filter(item => item.part === selectedPart);
       console.log(`[WorkoutGraph] applyFilters - 부위 필터링 후 (${selectedPart}): ${filtered.length}개`);
-      if (selectedPart === 'shoulder') {
-        const specificShoulderRecord = filtered.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
-        if (specificShoulderRecord) {
-            console.log("[WorkoutGraph] applyFilters - '어깨' 부위 필터링 후 102.5kg 기록:", JSON.stringify({...specificShoulderRecord, date: 안전한_날짜_문자열_변환(specificShoulderRecord.date)},null,2));
-        } else {
-            console.log("[WorkoutGraph] applyFilters - '어깨' 부위 필터링 후 102.5kg 기록 없음");
-        }
+      
+      // 스쿼트/하체 데이터 특별 디버깅
+      if (selectedPart === 'leg') {
+        const legExercises = filtered.map(w => ({
+          exercise: w.mainExercise?.name,
+          date: w.date,
+          maxWeight: Math.max(...(w.mainExercise?.sets?.map(s => s.weight) || [0]))
+        }));
+        console.log('[WorkoutGraph] 하체 운동 데이터 목록:', legExercises);
+        
+        const squatData = filtered.filter(w => w.mainExercise?.name?.includes('스쿼트'));
+        console.log(`[WorkoutGraph] 스쿼트 데이터 ${squatData.length}개:`, squatData.map(w => ({
+          name: w.mainExercise?.name,
+          sets: w.mainExercise?.sets?.map(s => `${s.weight}kg x ${s.reps}회`)
+        })));
       }
 
+      // 운동별 필터링 (선택된 운동이 'all'이 아닌 경우)
       if (selectedExercise !== 'all') {
         const selectedExerciseLabel = exerciseOptions[selectedPart]?.find(opt => opt.value === selectedExercise)?.label;
         console.log(`[WorkoutGraph] 선택된 운동 라벨: ${selectedExerciseLabel}`);
         
         if (selectedExerciseLabel) {
+          const beforeCount = filtered.length;
           filtered = filtered.filter(item => 
-            item.mainExercise && item.mainExercise.name === selectedExerciseLabel // includes() 대신 정확한 매칭(===) 사용
+            item.mainExercise && item.mainExercise.name === selectedExerciseLabel
           );
+          console.log(`[WorkoutGraph] 운동 필터링: "${selectedExerciseLabel}" - ${beforeCount}개 → ${filtered.length}개`);
         } else {
-          // 선택된 운동 라벨을 찾을 수 없는 경우 빈 배열 반환
+          console.warn(`[WorkoutGraph] 선택된 운동 라벨을 찾을 수 없음: ${selectedExercise}`);
           filtered = [];
         }
       }
       console.log(`[WorkoutGraph] applyFilters - 운동 종류 필터링 후 (${selectedExercise}): ${filtered.length}개`);
-       if (selectedPart === 'shoulder') {
-        const specificShoulderRecord = filtered.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
-        if (specificShoulderRecord) {
-            console.log("[WorkoutGraph] applyFilters - '어깨' 운동종류 필터링 후 102.5kg 기록:", JSON.stringify({...specificShoulderRecord, date: 안전한_날짜_문자열_변환(specificShoulderRecord.date)},null,2));
-        } else {
-            console.log("[WorkoutGraph] applyFilters - '어깨' 운동종류 필터링 후 102.5kg 기록 없음");
-        }
-      }
 
+      // 세트 구성별 필터링 (선택된 구성이 'all'이 아닌 경우)
       if (selectedSetConfig !== 'all') {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(item => {
           if (!item.mainExercise || !item.mainExercise.sets || item.mainExercise.sets.length === 0) {
             return false;
           }
           
-          // 세트 개수와 반복 횟수로 필터링
           const sets = item.mainExercise.sets;
           
-          if (selectedSetConfig === '5x5') {
-            return sets.length === 5 && sets.every(set => set.reps === 5);
-          } else if (selectedSetConfig === '10x5') {
-            return sets.length === 5 && sets.every(set => set.reps === 10);
-          } else if (selectedSetConfig === '15x5') {
-            return sets.length === 5 && sets.every(set => set.reps === 15);
-          } else if (selectedSetConfig === '6x3') {
-            return sets.length === 3 && sets.every(set => set.reps === 6);
+          // 세트 구성 매칭 로직 개선
+          switch (selectedSetConfig) {
+            case '5x5':
+              return sets.length === 5 && sets.every(set => set.reps === 5);
+            case '10x5':
+              return sets.length === 5 && sets.every(set => set.reps === 10);
+            case '15x5':
+              return sets.length === 5 && sets.every(set => set.reps === 15);
+            case '6x3':
+              return sets.length === 3 && sets.every(set => set.reps === 6);
+            default:
+              return false;
           }
-          
-          return false;
         });
+        console.log(`[WorkoutGraph] 세트 구성 필터링: "${selectedSetConfig}" - ${beforeCount}개 → ${filtered.length}개`);
       }
       console.log(`[WorkoutGraph] applyFilters - 세트 구성 필터링 후 (${selectedSetConfig}): ${filtered.length}개`);
-       if (selectedPart === 'shoulder') {
-        const specificShoulderRecord = filtered.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
-        if (specificShoulderRecord) {
-            console.log("[WorkoutGraph] applyFilters - '어깨' 세트구성 필터링 후 102.5kg 기록:", JSON.stringify({...specificShoulderRecord, date: 안전한_날짜_문자열_변환(specificShoulderRecord.date)},null,2));
-        } else {
-            console.log("[WorkoutGraph] applyFilters - '어깨' 세트구성 필터링 후 102.5kg 기록 없음");
-        }
+
+      // 최종 필터링 결과 디버깅
+      if (filtered.length > 0) {
+        const exerciseNames = [...new Set(filtered.map(w => w.mainExercise?.name))];
+        const weightRanges = filtered.map(w => {
+          const weights = w.mainExercise?.sets?.map(s => s.weight) || [0];
+          return { min: Math.min(...weights), max: Math.max(...weights) };
+        });
+        const overallMin = Math.min(...weightRanges.map(r => r.min));
+        const overallMax = Math.max(...weightRanges.map(r => r.max));
+        
+        console.log(`[WorkoutGraph] 최종 필터링 결과 - 운동종류: [${exerciseNames.join(', ')}], 무게범위: ${overallMin}-${overallMax}kg`);
       }
 
       setFilteredData(filtered);
@@ -660,11 +734,22 @@ const WorkoutGraph: React.FC = () => {
       if (filtered.length > 0) {
         prepareChartData(filtered);
       } else {
+        console.log('[WorkoutGraph] 필터링된 데이터가 없어 빈 차트 설정');
         setChartData({ labels: [], datasets: [] }); 
         setDateWorkoutMap({}); 
         setDateAllWorkoutsMap({});
+        
+        // 빈 데이터일 때도 기본 y축 범위 설정
+        const emptyOptions = JSON.parse(JSON.stringify(initialChartOptions));
+        if (emptyOptions.scales?.y) {
+          emptyOptions.scales.y.min = 0;
+          emptyOptions.scales.y.max = 100;
+        }
+        setDynamicChartOptions(emptyOptions);
       }
-    } catch (error) { console.error('[WorkoutGraph] applyFilters 오류:', error); }
+    } catch (error) { 
+      console.error('[WorkoutGraph] applyFilters 오류:', error); 
+    }
   };
   
   // 필터 변경 시 데이터 재필터링
@@ -834,7 +919,9 @@ const WorkoutGraph: React.FC = () => {
                   ))}
                 </div>
               )}
-              <Line options={dynamicChartOptions} data={chartData} />
+              <div className="relative" style={{ height: '480px' }}>
+                <Line options={dynamicChartOptions} data={chartData} />
+              </div>
             </div>
           ) : (
             <div className="h-64 flex items-center justify-center">
