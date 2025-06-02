@@ -43,9 +43,9 @@ const exercisePartOptions = [
 // 각 부위별 메인 운동 옵션
 const mainExerciseOptions: Record<ExercisePart, {value: MainExerciseType, label: string}[]> = {
   chest: [
+    { value: 'chestPress', label: '체스트 프레스 머신' }, // 체스트 프레스 머신을 첫 번째로 이동
     { value: 'benchPress', label: '벤치 프레스' },
-    { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' },
-    { value: 'chestPress', label: '체스트 프레스 머신' } // 체스트 프레스 머신 추가
+    { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' }
   ],
   back: [
     { value: 'barbellRow', label: '바벨로우' }, 
