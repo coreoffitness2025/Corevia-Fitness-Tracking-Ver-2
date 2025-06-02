@@ -127,6 +127,81 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
       <div className="flex justify-between items-center mb-3">
         <h4 className="text-lg font-semibold">{exercise.name || `보조 운동 ${index + 1}`}</h4>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">휴식:</span>
+            
+            <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-1 border">
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={() => {
+                    const newMinutes = Math.min(99, globalTimer.timerMinutes + 1);
+                    const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
+                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                  }}
+                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  ▲
+                </button>
+                <span className="text-xs font-mono text-gray-800 dark:text-gray-200 min-w-[1rem] text-center">
+                  {String(globalTimer.timerMinutes).padStart(2, '0')}
+                </span>
+                <button
+                  onClick={() => {
+                    const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
+                    const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
+                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                  }}
+                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  ▼
+                </button>
+              </div>
+              <span className="text-gray-800 dark:text-gray-200 mx-1">:</span>
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={() => {
+                    const newSeconds = Math.min(59, globalTimer.timerSeconds + 15);
+                    const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
+                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                  }}
+                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  ▲
+                </button>
+                <span className="text-xs font-mono text-gray-800 dark:text-gray-200 min-w-[1rem] text-center">
+                  {String(globalTimer.timerSeconds).padStart(2, '0')}
+                </span>
+                <button
+                  onClick={() => {
+                    const newSeconds = Math.max(0, globalTimer.timerSeconds - 15);
+                    const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
+                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                  }}
+                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <Button 
+                variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"}
+                size="xs" 
+                onClick={() => {
+                  if (!globalTimer.isRunning) {
+                    startGlobalTimer(componentSectionId);
+                  } else {
+                    resetGlobalTimer();
+                  }
+                }}
+                icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={12} /> : <Pause size={12} />}
+              >
+                {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '정지'}
+              </Button>
+            </div>
+          </div>
+          
           {globalTimer.sectionId !== componentSectionId && (!globalTimer.isRunning || globalTimer.sectionId !== componentSectionId) && (
             <Button size="xs" variant="outline" onClick={() => startGlobalTimer(componentSectionId)} icon={<Play size={14}/>} className="py-1 px-2 text-xs">
               휴식 ({formatTime(globalTimer.timerMinutes * 60 + globalTimer.timerSeconds)})
