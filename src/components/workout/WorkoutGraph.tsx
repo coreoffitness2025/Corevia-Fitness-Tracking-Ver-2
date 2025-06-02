@@ -45,40 +45,27 @@ const partOptions = [
   { value: 'triceps', label: '삼두' }
 ];
 
-// 운동 종류 옵션 (부위별로 그룹화)
+// 운동 종류 옵션 (부위별로 그룹화) - 메인 운동만
 const exerciseOptions: Record<string, { value: string; label: string }[]> = {
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
     { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' },
-    { value: 'chestPress', label: '체스트 프레스 머신' },
-    { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
-    { value: 'declineBenchPress', label: '디클라인 벤치 프레스' },
-    { value: 'cableFly', label: '케이블 플라이' },
-    { value: 'dumbbellFly', label: '덤벨 플라이' }
+    { value: 'chestPress', label: '체스트 프레스 머신' }
   ],
   back: [
     { value: 'deadlift', label: '데드리프트' },
     { value: 'barbellRow', label: '바벨로우' },
     { value: 'tBarRow', label: '티바로우' },
-    { value: 'pullUp', label: '턱걸이 (풀업)' },
-    { value: 'latPulldown', label: '랫 풀다운' },
-    { value: 'seatedRow', label: '시티드 로우' }
+    { value: 'pullUp', label: '턱걸이 (풀업)' }
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
-    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' },
-    { value: 'lateralRaise', label: '레터럴 레이즈' },
-    { value: 'frontRaise', label: '프론트 레이즈' },
-    { value: 'facePull', label: '페이스 풀' },
-    { value: 'reverseFly', label: '리버스 플라이' }
+    { value: 'dumbbellShoulderPress', label: '덤벨 숄더 프레스' }
   ],
   leg: [
     { value: 'squat', label: '스쿼트' },
     { value: 'legPress', label: '레그 프레스' },
-    { value: 'romanianDeadlift', label: '루마니안 데드리프트' },
-    { value: 'lunges', label: '런지' },
-    { value: 'legExtension', label: '레그 익스텐션' },
-    { value: 'legCurl', label: '레그 컬' }
+    { value: 'romanianDeadlift', label: '루마니안 데드리프트' }
   ],
   biceps: [
     { value: 'dumbbellCurl', label: '덤벨 컬' },
@@ -343,7 +330,7 @@ const WorkoutGraph: React.FC = () => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
 
         const exerciseName = workout.mainExercise.name;
-        const dateStr = workout.date.toLocaleDateString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric' }).replace(/\./g, '/').replace(/\s/g, '').replace(/\/$/, '');
+        const dateStr = parseFirestoreDate(workout.date as unknown as FirestoreTimestamp | Date | string).toLocaleDateString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric' }).replace(/\./g, '/').replace(/\s/g, '').replace(/\/$/, '');
         
         // 디버깅: 운동 이름과 날짜 확인
         console.log(`[WorkoutGraph] 운동 데이터 처리: ${exerciseName} (${dateStr})`);

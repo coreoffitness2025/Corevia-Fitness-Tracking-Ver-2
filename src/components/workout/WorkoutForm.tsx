@@ -678,7 +678,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
         } else {
           // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
-          const { repsCount: targetReps } = getConfiguration(
+          const { repsCount: targetReps } = getSetConfiguration(
             selectedSetConfiguration, 
             customSets, 
             customReps
@@ -1249,7 +1249,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 {globalTimer.sectionId === 'main' ? '메인 운동' : 
                  globalTimer.sectionId.startsWith('accessory_') ? 
                    `${accessoryExercises[parseInt(globalTimer.sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(globalTimer.sectionId.split('_')[1])+1}` 
-                   : '휴식'} 휴식 중:
+                   : '운동'} 휴식 중:
               </span>
               <span className="text-2xl font-bold tabular-nums">
                 {formatTimeGlobal(globalTimer.timeLeft)}
@@ -1398,12 +1398,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 <Button 
                   variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"}
                   size="sm" 
-                  onClick={togglePauseGlobalTimer}
-                  icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={16} /> : <Pause size={16} />}
+                  onClick={() => {
+                    if (!globalTimer.isRunning) {
+                      startGlobalTimer('main');
+                    } else {
+                      togglePauseGlobalTimer();
+                    }
+                  }}
+                  icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={14} /> : <Pause size={14} />}
                 >
                   {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '일시정지'}
                 </Button>
-                <Button variant="danger" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={16} />}>
+                <Button variant="outline" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={14} />}>
                   초기화
                 </Button>
               </div>
@@ -1541,18 +1547,169 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <CardSection>
             <div className="flex justify-between items-center mb-4">
               <CardTitle>메인 운동</CardTitle>
-              {globalTimer.sectionId !== 'main' && !globalTimer.isRunning && (
-                 <Button size="sm" variant="outline" onClick={() => startGlobalTimer('main')} icon={<Timer size={16}/>}>
-                   {/* 휴식 시작 ({formatTimeGlobal(globalTimer.initialTime)}) -> 휴식 시작 ({formatTimeGlobal(globalTimer.timerMinutes * 60 + globalTimer.timerSeconds)}) */}
-                   휴식 시작 ({formatTimeGlobal(globalTimer.timerMinutes * 60 + globalTimer.timerSeconds)})
-                 </Button>
-              )}
-              {globalTimer.sectionId === 'main' && globalTimer.isRunning && (
-                <Button size="sm" variant="danger" onClick={resetGlobalTimer} icon={<X size={16}/>}>
-                  타이머 중지
-                </Button>
-              )}
+              <div className="flex items-center gap-3">
+                {/* 타이머 UI - 메인 운동 섹션 내부로 이동 */}
+                <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">휴식 시간:</span>
+                  
+                  {/* 시간 조정 버튼 */}
+                  <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-1 border">
+                    {/* 분 조정 */}
+                    <div className="flex flex-col items-center">
+                      <button
+                        onClick={() => {
+                          const newMinutes = Math.min(99, globalTimer.timerMinutes + 1);
+                          const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
+                          setGlobalTimer(prev => ({
+                            ...prev,
+                            timerMinutes: newMinutes,
+                            timeLeft: newTimeLeft
+                          }));
+                        }}
+                        className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                      >
+                        ▲
+                      </button>
+                      <span className="text-sm font-mono text-gray-800 dark:text-gray-200 min-w-[1.5rem] text-center">
+                        {String(globalTimer.timerMinutes).padStart(2, '0')}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
+                          const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
+                          setGlobalTimer(prev => ({
+                            ...prev,
+                            timerMinutes: newMinutes,
+                            timeLeft: newTimeLeft
+                          }));
+                        }}
+                        className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <span className="text-gray-800 dark:text-gray-200 mx-1">:</span>
+                    {/* 초 조정 */}
+                    <div className="flex flex-col items-center">
+                      <button
+                        onClick={() => {
+                          const newSeconds = Math.min(59, globalTimer.timerSeconds + 15);
+                          const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
+                          setGlobalTimer(prev => ({
+                            ...prev,
+                            timerSeconds: newSeconds,
+                            timeLeft: newTimeLeft
+                          }));
+                        }}
+                        className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                      >
+                        ▲
+                      </button>
+                      <span className="text-sm font-mono text-gray-800 dark:text-gray-200 min-w-[1.5rem] text-center">
+                        {String(globalTimer.timerSeconds).padStart(2, '0')}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const newSeconds = Math.max(0, globalTimer.timerSeconds - 15);
+                          const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
+                          setGlobalTimer(prev => ({
+                            ...prev,
+                            timerSeconds: newSeconds,
+                            timeLeft: newTimeLeft
+                          }));
+                        }}
+                        className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* 빠른 설정 버튼들 */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setGlobalTimer(prev => ({
+                          ...prev,
+                          timerMinutes: 1,
+                          timerSeconds: 30,
+                          timeLeft: 90
+                        }));
+                        toast.success('1:30 설정', { duration: 1000 });
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded transition-colors"
+                    >
+                      1:30
+                    </button>
+                    <button
+                      onClick={() => {
+                        setGlobalTimer(prev => ({
+                          ...prev,
+                          timerMinutes: 2,
+                          timerSeconds: 0,
+                          timeLeft: 120
+                        }));
+                        toast.success('2:00 설정', { duration: 1000 });
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded transition-colors"
+                    >
+                      2:00
+                    </button>
+                    <button
+                      onClick={() => {
+                        setGlobalTimer(prev => ({
+                          ...prev,
+                          timerMinutes: 3,
+                          timerSeconds: 0,
+                          timeLeft: 180
+                        }));
+                        toast.success('3:00 설정', { duration: 1000 });
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded transition-colors"
+                    >
+                      3:00
+                    </button>
+                  </div>
+                  
+                  {/* 타이머 컨트롤 버튼들 */}
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"}
+                      size="sm" 
+                      onClick={() => {
+                        if (!globalTimer.isRunning) {
+                          startGlobalTimer('main');
+                        } else {
+                          togglePauseGlobalTimer();
+                        }
+                      }}
+                      icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={14} /> : <Pause size={14} />}
+                    >
+                      {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '일시정지'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={14} />}>
+                      초기화
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
+            
+            {/* 타이머 실행 중일 때 상태 표시 */}
+            {globalTimer.isRunning && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-800 dark:text-blue-200 font-medium">
+                    휴식 중: {formatTimeGlobal(globalTimer.timeLeft)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-blue-600 dark:text-blue-300">
+                      {globalTimer.isPaused ? '일시정지됨' : '진행 중'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* 운동 선택 및 정보 */}
             {part === 'complex' ? (
