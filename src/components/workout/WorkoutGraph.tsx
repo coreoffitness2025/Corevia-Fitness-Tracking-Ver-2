@@ -398,29 +398,46 @@ const WorkoutGraph: React.FC = () => {
         else if (sets.length === 3 && sets.every(set => set.reps === 6)) setConfig = '6x3';
         else if (sets.length === 5 && sets.every(set => set.reps === 10)) setConfig = '10x5';
         else if (sets.length === 5 && sets.every(set => set.reps === 15)) setConfig = '15x5';
-        else return;
+        else {
+          // 표준 세트 구성이 아니면 제외 (디버깅 로그 추가)
+          if (workout.part === 'leg' && exerciseName?.includes('스쿼트')) {
+            console.log(`[WorkoutGraph] ❌ 스쿼트 데이터 제외됨 (비표준 세트): ${exerciseName}, 세트구성: ${sets.length}세트 x [${sets.map(s => s.reps).join(', ')}]회, 무게: [${sets.map(s => s.weight).join(', ')}]kg`);
+          }
+          return;
+        }
 
         if (!exerciseConfigData[exerciseName]) {
           exerciseConfigData[exerciseName] = { '5x5': {}, '6x3': {}, '10x5': {}, '15x5': {} };
         }
         
         let currentMaxWorkoutWeight = 0;
+        const allWeightsInWorkout: number[] = [];
+        
         sets.forEach(set => {
-          if (set.weight > currentMaxWorkoutWeight) currentMaxWorkoutWeight = set.weight;
           if (set.weight > 0) {
+            allWeightsInWorkout.push(set.weight);
+            if (set.weight > currentMaxWorkoutWeight) currentMaxWorkoutWeight = set.weight;
             minWeight = Math.min(minWeight, set.weight);
             maxWeight = Math.max(maxWeight, set.weight);
             hasValidData = true;
           }
         });
 
-        if (workout.part === 'shoulder' && exerciseName === '오버헤드 프레스') {
-             console.log(`[WorkoutGraph] prepareChartData (forEach) - 어깨 '오버헤드 프레스' 처리 중 (${dateStr}, ${setConfig}): currentMaxWorkoutWeight = ${currentMaxWorkoutWeight}`);
+        // 하체/스쿼트 데이터 특별 디버깅
+        if (workout.part === 'leg' && exerciseName?.includes('스쿼트')) {
+             console.log(`[WorkoutGraph] ✅ 스쿼트 데이터 포함됨: ${exerciseName} (${dateStr}, ${setConfig}): 모든무게=[${allWeightsInWorkout.join(', ')}]kg, 최대=${currentMaxWorkoutWeight}kg`);
         }
+        
         if (currentMaxWorkoutWeight > 0) {
           exerciseConfigData[exerciseName][setConfig][dateStr] = currentMaxWorkoutWeight;
-          if (workout.part === 'shoulder' && exerciseName === '오버헤드 프레스') {
-             console.log(`[WorkoutGraph] prepareChartData - exerciseConfigData 저장: ['${exerciseName}']['${setConfig}']['${dateStr}'] = ${currentMaxWorkoutWeight}`);
+          
+          // 80kg 데이터 특별 추적
+          if (allWeightsInWorkout.includes(80)) {
+            console.log(`[WorkoutGraph] 🎯 80kg 데이터 발견! 운동: ${exerciseName}, 날짜: ${dateStr}, 세트구성: ${setConfig}, 저장된값: ${currentMaxWorkoutWeight}kg`);
+          }
+          
+          if (currentMaxWorkoutWeight === 80) {
+            console.log(`[WorkoutGraph] 🔥 80kg이 최대무게로 차트에 표시됨! 운동: ${exerciseName}, 날짜: ${dateStr}`);
           }
         }
       });
@@ -443,8 +460,10 @@ const WorkoutGraph: React.FC = () => {
         const exercisePart = originalWorkoutEntry?.part;
 
         const basePointStyleFromMap = exercisePointStyles[exerciseName] || 'circle'; 
+        
         Object.entries(configData).forEach(([config, dateData]) => {
           if (Object.keys(dateData).length === 0) return;
+          
           const configColor = configColors[config as keyof typeof configColors];
           const datasetId = `${exerciseName}-${config}`;
           
@@ -458,26 +477,22 @@ const WorkoutGraph: React.FC = () => {
           
           let pointStyleValue = configPointStyles[config as keyof typeof configPointStyles] || basePointStyleFromMap;
 
-          // 기존의 강제 변경 로직 제거 - 각 운동이 고유한 pointStyle을 유지하도록 함
-          // if (exerciseName.includes('벤치 프레스')) {
-          //   pointStyleValue = 'circle'; // triangle -> circle
-          // } else if (exercisePart === 'leg') { 
-          //   pointStyleValue = 'circle'; // triangle -> circle (일관성 테스트)
-          // }
-          
-          if (exerciseName.includes('벤치 프레스') || exercisePart === 'leg') {
-            console.log(`[WorkoutGraph] Dataset for: ${exerciseName} (${config}), Part: ${exercisePart}, PointStyle: ${pointStyleValue}`);
+          // 하체 운동 디버깅 강화
+          if (exercisePart === 'leg') {
+            console.log(`[WorkoutGraph] 🦵 하체 Dataset 생성: ${exerciseName} (${config}), 색상: ${configColor.border}, 포인트: ${pointStyleValue}`);
+            console.log(`[WorkoutGraph] 🦵 데이터 포인트 수:`, Object.keys(dateData).length);
+            console.log(`[WorkoutGraph] 🦵 실제 데이터:`, dateData);
           }
 
           const dataForChart = uniqueDates.map(date => dateData[date] || null);
           
-          console.log(`[WorkoutGraph] Adding dataset: Label='${exerciseName} (${config})', pointStyle='${pointStyleValue}'`);
+          console.log(`[WorkoutGraph] Adding dataset: Label='${exerciseName} (${config})', pointStyle='${pointStyleValue}', 데이터수=${dataForChart.filter(v => v !== null).length}`);
 
           datasets.push({
             data: dataForChart, 
             pointStyle: pointStyleValue, 
             label: `${exerciseName} (${config})`, 
-            borderColor: configColor.border, // 데이터셋별 고유 색상 유지
+            borderColor: configColor.border,
             backgroundColor: configColor.background, 
             tension: 0.2, 
             pointRadius: 6, 
