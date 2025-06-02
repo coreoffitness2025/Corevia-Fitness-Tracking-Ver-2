@@ -779,6 +779,46 @@ const WorkoutGraph: React.FC = () => {
           </div>
         </div>
         
+        {/* 운동 선택 필터 추가 */}
+        <div className="mb-6">
+          <div className="mb-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">운동 선택:</span>
+          </div>
+          <div className="flex items-center flex-wrap gap-2 p-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            {/* 전체 보기 버튼 */}
+            <button
+              type="button"
+              onClick={() => setSelectedExercise('all')}
+              className={`
+                py-2 px-3 rounded-lg flex items-center transition-all duration-300 text-xs font-medium
+                ${selectedExercise === 'all' 
+                  ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }
+              `}
+            >
+              전체
+            </button>
+            {/* 선택된 부위의 운동들 */}
+            {exerciseOptions[selectedPart]?.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedExercise(option.value)}
+                className={`
+                  py-2 px-3 rounded-lg flex items-center transition-all duration-300 text-xs font-medium
+                  ${selectedExercise === option.value 
+                    ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }
+                `}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
         {/* 그래프 */}
         <div>
           {filteredData.length > 0 ? (

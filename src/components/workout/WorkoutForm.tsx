@@ -678,7 +678,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
         } else {
           // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
-          const { repsCount: targetReps } = getSetConfiguration(
+          const { repsCount: targetReps } = getConfiguration(
             selectedSetConfiguration, 
             customSets, 
             customReps
@@ -1256,135 +1256,157 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {/* 타이머 프리셋 버튼들 (타이머가 실행 중이 아닐 때만 표시) */}
-              {!globalTimer.isRunning && (
-                <div className="flex items-center gap-1 mr-3">
-                  <span className="text-xs text-gray-300 mr-2">빠른 설정:</span>
-                  <button
-                    onClick={() => {
-                      setGlobalTimer(prev => ({
-                        ...prev,
-                        timerMinutes: 1,
-                        timerSeconds: 30,
-                        timeLeft: 90
-                      }));
-                      toast.success('⏰ 1:30 설정됨!', { duration: 1500 });
-                      // 0.5초 후 자동으로 타이머 시작
-                      setTimeout(() => {
-                        if (globalTimer.sectionId) {
-                          startGlobalTimer(globalTimer.sectionId);
-                        } else {
-                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
-                        }
-                      }, 100);
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                  >
-                    1:30
-                  </button>
-                  <button
-                    onClick={() => {
-                      setGlobalTimer(prev => ({
-                        ...prev,
-                        timerMinutes: 2,
-                        timerSeconds: 0,
-                        timeLeft: 120
-                      }));
-                      toast.success('⏰ 2:00 설정됨!', { duration: 1500 });
-                      // 0.5초 후 자동으로 타이머 시작
-                      setTimeout(() => {
-                        if (globalTimer.sectionId) {
-                          startGlobalTimer(globalTimer.sectionId);
-                        } else {
-                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
-                        }
-                      }, 100);
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                  >
-                    2:00
-                  </button>
-                  <button
-                    onClick={() => {
-                      setGlobalTimer(prev => ({
-                        ...prev,
-                        timerMinutes: 2,
-                        timerSeconds: 30,
-                        timeLeft: 150
-                      }));
-                      toast.success('⏰ 2:30 설정됨!', { duration: 1500 });
-                      // 0.5초 후 자동으로 타이머 시작
-                      setTimeout(() => {
-                        if (globalTimer.sectionId) {
-                          startGlobalTimer(globalTimer.sectionId);
-                        } else {
-                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
-                        }
-                      }, 100);
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                  >
-                    2:30
-                  </button>
-                  <button
-                    onClick={() => {
-                      setGlobalTimer(prev => ({
-                        ...prev,
-                        timerMinutes: 3,
-                        timerSeconds: 0,
-                        timeLeft: 180
-                      }));
-                      toast.success('⏰ 3:00 설정됨!', { duration: 1500 });
-                      // 0.5초 후 자동으로 타이머 시작
-                      setTimeout(() => {
-                        if (globalTimer.sectionId) {
-                          startGlobalTimer(globalTimer.sectionId);
-                        } else {
-                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
-                        }
-                      }, 100);
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
-                  >
-                    3:00
-                  </button>
+              {/* 타이머 시간 조정 (항상 표시) */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-300">시간:</span>
+                <div className="flex items-center bg-gray-700 rounded-lg p-1">
+                  {/* 분 조정 */}
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={() => {
+                        const newMinutes = Math.min(99, globalTimer.timerMinutes + 1);
+                        const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
+                        setGlobalTimer(prev => ({
+                          ...prev,
+                          timerMinutes: newMinutes,
+                          timeLeft: newTimeLeft
+                        }));
+                      }}
+                      className="text-xs px-1 py-0.5 text-white hover:bg-gray-600 rounded"
+                    >
+                      ▲
+                    </button>
+                    <span className="text-sm font-mono text-white min-w-[2rem] text-center">
+                      {String(globalTimer.timerMinutes).padStart(2, '0')}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
+                        const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
+                        setGlobalTimer(prev => ({
+                          ...prev,
+                          timerMinutes: newMinutes,
+                          timeLeft: newTimeLeft
+                        }));
+                      }}
+                      className="text-xs px-1 py-0.5 text-white hover:bg-gray-600 rounded"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  <span className="text-white mx-1">:</span>
+                  {/* 초 조정 */}
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={() => {
+                        const newSeconds = Math.min(59, globalTimer.timerSeconds + 15);
+                        const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
+                        setGlobalTimer(prev => ({
+                          ...prev,
+                          timerSeconds: newSeconds,
+                          timeLeft: newTimeLeft
+                        }));
+                      }}
+                      className="text-xs px-1 py-0.5 text-white hover:bg-gray-600 rounded"
+                    >
+                      ▲
+                    </button>
+                    <span className="text-sm font-mono text-white min-w-[2rem] text-center">
+                      {String(globalTimer.timerSeconds).padStart(2, '0')}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const newSeconds = Math.max(0, globalTimer.timerSeconds - 15);
+                        const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
+                        setGlobalTimer(prev => ({
+                          ...prev,
+                          timerSeconds: newSeconds,
+                          timeLeft: newTimeLeft
+                        }));
+                      }}
+                      className="text-xs px-1 py-0.5 text-white hover:bg-gray-600 rounded"
+                    >
+                      ▼
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
               
-              {/* 시간 조절 입력 필드 */}
-              {!globalTimer.isRunning && (
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-300">직접 입력:</span>
-                  <input 
-                    type="number"
-                    value={String(globalTimer.timerMinutes).padStart(2, '0')}
-                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
-                    className="w-12 p-1 text-center bg-gray-700 rounded text-white text-sm tabular-nums"
-                    min="0"
-                    max="99"
-                  />
-                  <span>:</span>
-                  <input 
-                    type="number"
-                    value={String(globalTimer.timerSeconds).padStart(2, '0')}
-                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
-                    className="w-12 p-1 text-center bg-gray-700 rounded text-white text-sm tabular-nums"
-                    min="0"
-                    max="59"
-                  />
-                </div>
-              )}
-              <Button 
-                variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"} // "primary"를 다시 "warning"으로 변경
-                size="sm" 
-                onClick={togglePauseGlobalTimer}
-                icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={18} /> : <Pause size={18} />}
-              >
-                {globalTimer.isPaused || !globalTimer.isRunning ? (globalTimer.timeLeft === (globalTimer.timerMinutes * 60 + globalTimer.timerSeconds) ? '시작' : '재개') : '일시정지'}
-              </Button>
-              <Button variant="danger" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={18} />}>
-                초기화
-              </Button>
+              {/* 빠른 설정 버튼들 (항상 표시) */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-300">빠른설정:</span>
+                <button
+                  onClick={() => {
+                    setGlobalTimer(prev => ({
+                      ...prev,
+                      timerMinutes: 1,
+                      timerSeconds: 30,
+                      timeLeft: 90
+                    }));
+                    toast.success('⏰ 1:30 설정!', { duration: 1000 });
+                  }}
+                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                >
+                  1:30
+                </button>
+                <button
+                  onClick={() => {
+                    setGlobalTimer(prev => ({
+                      ...prev,
+                      timerMinutes: 2,
+                      timerSeconds: 0,
+                      timeLeft: 120
+                    }));
+                    toast.success('⏰ 2:00 설정!', { duration: 1000 });
+                  }}
+                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                >
+                  2:00
+                </button>
+                <button
+                  onClick={() => {
+                    setGlobalTimer(prev => ({
+                      ...prev,
+                      timerMinutes: 2,
+                      timerSeconds: 30,
+                      timeLeft: 150
+                    }));
+                    toast.success('⏰ 2:30 설정!', { duration: 1000 });
+                  }}
+                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                >
+                  2:30
+                </button>
+                <button
+                  onClick={() => {
+                    setGlobalTimer(prev => ({
+                      ...prev,
+                      timerMinutes: 3,
+                      timerSeconds: 0,
+                      timeLeft: 180
+                    }));
+                    toast.success('⏰ 3:00 설정!', { duration: 1000 });
+                  }}
+                  className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                >
+                  3:00
+                </button>
+              </div>
+              
+              {/* 타이머 컨트롤 버튼들 */}
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"}
+                  size="sm" 
+                  onClick={togglePauseGlobalTimer}
+                  icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={16} /> : <Pause size={16} />}
+                >
+                  {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '일시정지'}
+                </Button>
+                <Button variant="danger" size="sm" onClick={resetGlobalTimer} icon={<RotateCcw size={16} />}>
+                  초기화
+                </Button>
+              </div>
             </div>
           </div>
         )}
