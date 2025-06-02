@@ -123,71 +123,63 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   };
 
   return (
-    <div className="border rounded-lg p-4 mb-4 bg-white dark:bg-gray-800 shadow">
-      <div className="flex justify-between items-center mb-3">
-        <h4 className="text-lg font-semibold">{exercise.name || `보조 운동 ${index + 1}`}</h4>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-2">
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">휴식:</span>
+    <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-6 mb-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 shadow-lg">
+      <div className="flex justify-between items-center mb-4">
+        <h4 className="text-xl font-bold text-gray-900 dark:text-white">{exercise.name || `보조 운동 ${index + 1}`}</h4>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-3 shadow-inner">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">휴식 시간:</span>
             
-            <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg p-1 border">
+            <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl p-2 border border-gray-200 dark:border-gray-600 shadow-sm">
               <div className="flex flex-col items-center">
                 <button
                   onClick={() => {
-                    const newMinutes = Math.min(99, globalTimer.timerMinutes + 1);
-                    const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
-                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                    // 실제 타이머 조정은 상위 컴포넌트에서 처리
                   }}
-                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                  className="text-xs px-2 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   ▲
                 </button>
-                <span className="text-xs font-mono text-gray-800 dark:text-gray-200 min-w-[1rem] text-center">
+                <span className="text-base font-mono text-gray-800 dark:text-gray-200 min-w-[2rem] text-center py-1">
                   {String(globalTimer.timerMinutes).padStart(2, '0')}
                 </span>
                 <button
                   onClick={() => {
-                    const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
-                    const newTimeLeft = newMinutes * 60 + globalTimer.timerSeconds;
-                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                    // 실제 타이머 조정은 상위 컴포넌트에서 처리
                   }}
-                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                  className="text-xs px-2 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   ▼
                 </button>
               </div>
-              <span className="text-gray-800 dark:text-gray-200 mx-1">:</span>
+              <span className="text-gray-800 dark:text-gray-200 mx-2 text-lg font-bold">:</span>
               <div className="flex flex-col items-center">
                 <button
                   onClick={() => {
-                    const newSeconds = Math.min(59, globalTimer.timerSeconds + 15);
-                    const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
-                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                    // 실제 타이머 조정은 상위 컴포넌트에서 처리
                   }}
-                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                  className="text-xs px-2 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   ▲
                 </button>
-                <span className="text-xs font-mono text-gray-800 dark:text-gray-200 min-w-[1rem] text-center">
+                <span className="text-base font-mono text-gray-800 dark:text-gray-200 min-w-[2rem] text-center py-1">
                   {String(globalTimer.timerSeconds).padStart(2, '0')}
                 </span>
                 <button
                   onClick={() => {
-                    const newSeconds = Math.max(0, globalTimer.timerSeconds - 15);
-                    const newTimeLeft = globalTimer.timerMinutes * 60 + newSeconds;
-                    // 여기서는 globalTimer를 직접 수정할 수 없으므로 간단한 표시만
+                    // 실제 타이머 조정은 상위 컴포넌트에서 처리
                   }}
-                  className="text-xs px-1 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                  className="text-xs px-2 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   ▼
                 </button>
               </div>
             </div>
             
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Button 
                 variant={globalTimer.isPaused || !globalTimer.isRunning ? "success" : "warning"}
-                size="xs" 
+                size="sm" 
                 onClick={() => {
                   if (!globalTimer.isRunning) {
                     startGlobalTimer(componentSectionId);
@@ -195,35 +187,31 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                     resetGlobalTimer();
                   }
                 }}
-                icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={12} /> : <Pause size={12} />}
+                icon={globalTimer.isPaused || !globalTimer.isRunning ? <Play size={16} /> : <Pause size={16} />}
+                className="font-medium shadow-lg"
               >
-                {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '정지'}
+                {globalTimer.isPaused || !globalTimer.isRunning ? '시작' : '일시정지'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={resetGlobalTimer} icon={<X size={16} />} className="font-medium">
+                초기화
               </Button>
             </div>
           </div>
           
-          {globalTimer.sectionId !== componentSectionId && (!globalTimer.isRunning || globalTimer.sectionId !== componentSectionId) && (
-            <Button size="xs" variant="outline" onClick={() => startGlobalTimer(componentSectionId)} icon={<Play size={14}/>} className="py-1 px-2 text-xs">
-              휴식 ({formatTime(globalTimer.timerMinutes * 60 + globalTimer.timerSeconds)})
-            </Button>
-          )}
-          {globalTimer.sectionId === componentSectionId && globalTimer.isRunning && (
-            <Button size="xs" variant="danger" onClick={resetGlobalTimer} icon={<X size={14}/>} className="py-1 px-2 text-xs">
-              중지
-            </Button>
-          )}
-          <Button variant="danger" size="sm" onClick={() => onRemove(index)} icon={<Trash size={16} />}>삭제</Button>
+          <Button variant="danger" size="sm" onClick={() => onRemove(index)} icon={<Trash size={18} />} className="font-medium shadow-lg">
+            삭제
+          </Button>
         </div>
       </div>
-      <div className="mb-3">
-        <label htmlFor={`accessory-exercise-name-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <div className="mb-4">
+        <label htmlFor={`accessory-exercise-name-${index}`} className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           운동 선택 ({currentExercisePart ? getPartLabel(currentExercisePart) : '부위 먼저'})
         </label>
         <select
           id={`accessory-exercise-name-${index}`}
           value={exercise.name}
           onChange={handleAccessoryNameSelect}
-          className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-primary-400 focus:border-primary-400"
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all font-medium"
           disabled={!currentExercisePart || filteredAccessoryExercises.length === 0}
         >
           <option value="">-- 운동 선택 --</option>
@@ -231,20 +219,20 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
             <option key={ex.id} value={ex.name}>{ex.name}</option>
           ))}
         </select>
-        {!currentExercisePart && <p className="text-xs text-red-500 mt-1">메인 운동의 부위를 먼저 선택해주세요.</p>}
+        {!currentExercisePart && <p className="text-sm text-red-500 mt-2 font-medium">메인 운동의 부위를 먼저 선택해주세요.</p>}
       </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">세트 구성</label>
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">세트 구성</label>
+        <div className="flex flex-wrap gap-3">
           {setConfigOptions.map(option => (
             <button
               key={option.value}
               type="button"
               onClick={() => handleSetConfigChange(option.value)}
-              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
+              className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap shadow-sm ${
                 selectedSetConfig === option.value
-                  ? 'bg-primary-400 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md'
               }`}
             >
               {option.label}
@@ -252,43 +240,53 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
           ))}
         </div>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {exercise.sets.map((set, setIndex) => (
-          <div key={setIndex} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/50 relative">
+          <div key={setIndex} className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 shadow-sm relative">
             {selectedSetConfig === 'custom' && (
                 <Button 
                     size="xs" 
                     variant="danger" 
                     onClick={() => removeSetFromExercise(setIndex)} 
-                    className="absolute top-1 right-1 h-7 w-7 p-1"
-                    icon={<X size={14} />} 
+                    className="absolute top-2 right-2 h-8 w-8 p-1 shadow-lg"
+                    icon={<X size={16} />} 
                     aria-label="세트 삭제" 
                 />
             )}
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-medium text-gray-800 dark:text-gray-200">세트 {setIndex + 1}</div>
+            <div className="flex justify-between items-center mb-3">
+              <div className="font-semibold text-gray-800 dark:text-gray-200 text-lg">세트 {setIndex + 1}</div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto] gap-3 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto] gap-4 items-end">
               <div>
-                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">무게 (kg)</label>
-                <input type="number" value={set.weight || ''} onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400" />
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">무게 (kg)</label>
+                <input 
+                  type="number" 
+                  value={set.weight || ''} 
+                  onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))} 
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all bg-white dark:bg-gray-800" 
+                />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">횟수</label>
-                <input type="number" value={set.reps || ''} onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))} className="w-full p-2 border rounded-md text-sm focus:border-primary-400 focus:ring-primary-400" />
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">횟수</label>
+                <input 
+                  type="number" 
+                  value={set.reps || ''} 
+                  onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))} 
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all bg-white dark:bg-gray-800" 
+                />
               </div>
               <div className="flex flex-col items-center space-y-1">
                 <Button
                   size="sm"
                   variant="icon"
                   onClick={() => handleAccessorySetCompletion(setIndex)}
-                  className={`h-10 w-10 flex items-center justify-center rounded-md transition-colors duration-200 ${
-                    set.isSuccess === true ? 'bg-green-500 text-white hover:bg-green-600' :
-                    'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
+                  className={`h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
+                    set.isSuccess === true ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105' :
+                    'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
                   }`}
                   aria-label={set.isSuccess === true ? "세트 성공" : "세트 미완료"}
                 >
-                  {set.isSuccess === true ? <CheckCircle size={20} /> : <Square size={20} />}
+                  {set.isSuccess === true ? <CheckCircle size={24} /> : <Square size={24} />}
                 </Button>
               </div>
             </div>
@@ -296,7 +294,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         ))}
       </div>
       {selectedSetConfig === 'custom' && (
-         <Button size="sm" variant="outline" onClick={addSetToExercise} className="mt-3 w-full" icon={<Plus size={16} />}>세트 추가</Button>
+         <Button size="sm" variant="outline" onClick={addSetToExercise} className="mt-4 w-full font-medium shadow-lg" icon={<Plus size={18} />}>세트 추가</Button>
       )}
     </div>
   );
