@@ -617,7 +617,9 @@ const WorkoutList: React.FC = () => {
               
               {/* 메인 운동 세트 정보 */}
               <div className="mb-6">
-                <h4 className="text-md font-medium mb-2">메인 운동 세트</h4>
+                <h4 className="text-md font-medium mb-2">
+                  메인 운동: {workout.mainExercise.name || '운동 이름 없음'}
+                </h4>
                 <div className="flex flex-wrap gap-2">
                   {workout.mainExercise.sets.map((set, index) => (
                     <div 
