@@ -1622,19 +1622,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </div>
             )}
             
-            {/* 복합 운동에서 추가 메인 운동 목록 */ 
+            {/* 복합 운동에서 추가 메인 운동 목록 */}
             {part === 'complex' && mainExercises.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3">추가 메인 운동</h3>
                 <div className="space-y-4">
-                  {mainExercises.map((exercise: { name: string; sets: Array<{ weight: number; reps: number; isSuccess: boolean | null }> }, idx: number) => ( // exercise, idx 타입 명시
+                  {mainExercises.map((exercise: { name: string; sets: Array<{ weight: number; reps: number; isSuccess: boolean | null }> }, idx: number) => (
                     <div key={idx} className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center">
                           <input
                             type="text"
                             value={exercise.name}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // e 타입 명시
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               const updatedExercise = { ...exercise, name: e.target.value };
                               handleMainExerciseChange(idx, updatedExercise);
                             }}
@@ -1651,7 +1651,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       </div>
                       
                       <div className="space-y-3">
-                        {exercise.sets.map((set: { weight: number; reps: number; isSuccess: boolean | null }, setIdx: number) => ( // set, setIdx 타입 명시
+                        {exercise.sets.map((set: { weight: number; reps: number; isSuccess: boolean | null }, setIdx: number) => (
                           <div key={setIdx} className="p-3 border rounded-lg">
                             <div className="flex justify-between items-center mb-2">
                               <div className="font-medium">세트 {setIdx + 1}</div>
@@ -1665,7 +1665,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                                 <input
                                   type="number"
                                   value={set.weight || ''}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // e 타입 명시
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     const newSets = [...exercise.sets];
                                     newSets[setIdx].weight = Number(e.target.value) || 0;
                                     const updatedExercise = { ...exercise, sets: newSets };
@@ -1681,7 +1681,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                                 <input
                                   type="number"
                                   value={set.reps || ''}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // e 타입 명시
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     const newSets = [...exercise.sets];
                                     newSets[setIdx].reps = Number(e.target.value) || 0;
                                     const updatedExercise = { ...exercise, sets: newSets };
