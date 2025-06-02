@@ -206,8 +206,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     // 알람 사운드 요소 생성
     try {
       alarmRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3');
+      alarmRef.current.preload = 'auto'; // 미리 로드
     } catch (error) {
       console.error('알람 사운드 로드 실패:', error);
+    }
+    
+    // 브라우저 알림 권한 요청
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('알림 권한:', permission);
+      });
     }
     
     if (userProfile) {
@@ -427,13 +435,84 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         }
         if (prev.timeLeft <= 1) {
           if (globalTimerRef.current) clearInterval(globalTimerRef.current);
-          toast.success('휴식 시간이 끝났습니다!', { position: 'top-center', icon: '⏰', duration: 5000 });
-          if (alarmRef.current) {
-            alarmRef.current.play().catch(err => {
-              console.error('알람 재생 실패:', err);
-              if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
+          
+          // 🔥 강화된 알림 시스템
+          const sectionName = sectionId === 'main' ? '메인 운동' : 
+            sectionId.startsWith('accessory_') ? 
+            `${accessoryExercises[parseInt(sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(sectionId.split('_')[1])+1}` 
+            : '운동';
+          
+          // 1. 시각적 알림 (토스트)
+          toast.success(`🔥 ${sectionName} 휴식 완료!`, { 
+            position: 'top-center', 
+            icon: '⏰', 
+            duration: 8000,
+            style: {
+              background: '#EF4444',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '1.1rem',
+              padding: '16px 24px',
+              borderRadius: '12px',
+              boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)',
+            }
+          });
+          
+          // 2. 브라우저 알림 (백그라운드에서도 보임)
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('🏋️‍♂️ 코어비아 피트니스', {
+              body: `${sectionName} 휴식 시간이 끝났습니다!\n다음 세트를 시작하세요! 💪`,
+              icon: '/favicon.ico',
+              badge: '/favicon.ico',
+              tag: 'workout-timer',
+              requireInteraction: true, // 사용자가 직접 닫을 때까지 표시
+              actions: [
+                { action: 'start', title: '다음 세트 시작' },
+                { action: 'snooze', title: '30초 더' }
+              ]
             });
           }
+          
+          // 3. 알람 사운드 재생 (3번 반복)
+          if (alarmRef.current) {
+            let playCount = 0;
+            const playAlarm = () => {
+              if (playCount < 3) {
+                alarmRef.current?.play().catch(err => {
+                  console.error('알람 재생 실패:', err);
+                });
+                playCount++;
+                setTimeout(playAlarm, 800); // 0.8초 간격으로 반복
+              }
+            };
+            playAlarm();
+          }
+          
+          // 4. 진동 알림 (강화된 패턴, 모바일만)
+          if ('vibrate' in navigator) {
+            // 긴 진동 패턴: 길게-짧게-길게-짧게-아주길게
+            navigator.vibrate([500, 200, 500, 200, 1000]);
+            
+            // 3초 후 추가 진동
+            setTimeout(() => {
+              navigator.vibrate([300, 100, 300]);
+            }, 3000);
+          }
+          
+          // 5. 화면 깜빡임 효과 (페이지 타이틀 변경)
+          let flashCount = 0;
+          const originalTitle = document.title;
+          const flashTitle = () => {
+            if (flashCount < 10) {
+              document.title = flashCount % 2 === 0 ? '🔥 휴식 완료! 🔥' : '💪 다음 세트! 💪';
+              flashCount++;
+              setTimeout(flashTitle, 500);
+            } else {
+              document.title = originalTitle;
+            }
+          };
+          flashTitle();
+          
           // 타이머 종료 시 timeLeft를 다시 timerMinutes, timerSeconds 기준으로 설정
           return { ...prev, sectionId: null, timeLeft: prev.timerMinutes * 60 + prev.timerSeconds, isPaused: true, isRunning: false };
         }
