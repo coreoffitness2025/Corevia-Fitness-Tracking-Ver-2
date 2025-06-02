@@ -678,7 +678,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
         } else {
           // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
-          const { repsCount: targetReps } = getSetConfiguration(
+          const { repsCount: targetReps } = getConfiguration(
             selectedSetConfiguration, 
             customSets, 
             customReps
@@ -1625,7 +1625,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     </div>
                   </div>
                   
-                  {/* 빠른 설정 버튼들 */}
+                  {/* 타이머 컨트롤 버튼들 */}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => {
