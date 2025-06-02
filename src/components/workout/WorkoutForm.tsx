@@ -997,6 +997,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
+      // 저장 전 메인 운동 상태 디버깅
+      console.log('[WorkoutForm] 저장 전 메인 운동 상태:', {
+        selectedMainExercise,
+        mainExerciseName: mainExercise.name,
+        mainExerciseSets: mainExercise.sets,
+        mainExerciseSetsLength: mainExercise.sets.length,
+        part,
+        isFormValid
+      });
+      
       // 메인 운동 데이터 정리: 무게와 반복 수가 0인 세트 제외 (isFormValid에서 이미 체크하지만, 안전장치)
       const cleanMainExercise = {
         part,
@@ -1008,7 +1018,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           isSuccess: set.isSuccess === null ? false : set.isSuccess // null이면 false로 처리
         }))
       };
-      console.log('Cleaned main exercise:', cleanMainExercise);
+      console.log('[WorkoutForm] cleanMainExercise 생성 완료:', cleanMainExercise);
 
       const cleanAccessoryExercises = accessoryExercises.map((exercise: { name: string; sets: Array<{ reps: number; weight: number; isSuccess: boolean | null }> }) => ({ // exercise 타입 명시
         name: exercise.name || '',
@@ -1243,9 +1253,69 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {/* 시간 조절 화살표 버튼 대신 입력 필드 (간단한 형태) */}
+              {/* 타이머 프리셋 버튼들 (타이머가 실행 중이 아닐 때만 표시) */}
+              {!globalTimer.isRunning && (
+                <div className="flex items-center gap-1 mr-3">
+                  <span className="text-xs text-gray-300 mr-2">빠른 설정:</span>
+                  <button
+                    onClick={() => {
+                      setGlobalTimer(prev => ({
+                        ...prev,
+                        timerMinutes: 1,
+                        timerSeconds: 30,
+                        timeLeft: 90
+                      }));
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                  >
+                    1:30
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGlobalTimer(prev => ({
+                        ...prev,
+                        timerMinutes: 2,
+                        timerSeconds: 0,
+                        timeLeft: 120
+                      }));
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                  >
+                    2:00
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGlobalTimer(prev => ({
+                        ...prev,
+                        timerMinutes: 2,
+                        timerSeconds: 30,
+                        timeLeft: 150
+                      }));
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                  >
+                    2:30
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGlobalTimer(prev => ({
+                        ...prev,
+                        timerMinutes: 3,
+                        timerSeconds: 0,
+                        timeLeft: 180
+                      }));
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
+                  >
+                    3:00
+                  </button>
+                </div>
+              )}
+              
+              {/* 시간 조절 입력 필드 */}
               {!globalTimer.isRunning && (
                 <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-300">직접 입력:</span>
                   <input 
                     type="number"
                     value={String(globalTimer.timerMinutes).padStart(2, '0')}
@@ -1552,7 +1622,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </div>
             )}
             
-            {/* 복합 운동에서 추가 메인 운동 목록 */} 
+            {/* 복합 운동에서 추가 메인 운동 목록 */ 
             {part === 'complex' && mainExercises.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3">추가 메인 운동</h3>

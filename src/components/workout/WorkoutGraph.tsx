@@ -50,6 +50,7 @@ const exerciseOptions: Record<string, { value: string; label: string }[]> = {
   chest: [
     { value: 'benchPress', label: '벤치 프레스' },
     { value: 'dumbbellBenchPress', label: '덤벨 벤치 프레스' },
+    { value: 'chestPress', label: '체스트 프레스 머신' },
     { value: 'inclineBenchPress', label: '인클라인 벤치 프레스' },
     { value: 'declineBenchPress', label: '디클라인 벤치 프레스' },
     { value: 'cableFly', label: '케이블 플라이' },
@@ -59,9 +60,9 @@ const exerciseOptions: Record<string, { value: string; label: string }[]> = {
     { value: 'deadlift', label: '데드리프트' },
     { value: 'barbellRow', label: '바벨로우' },
     { value: 'tBarRow', label: '티바로우' },
+    { value: 'pullUp', label: '턱걸이 (풀업)' },
     { value: 'latPulldown', label: '랫 풀다운' },
-    { value: 'seatedRow', label: '시티드 로우' },
-    { value: 'pullUp', label: '풀업' }
+    { value: 'seatedRow', label: '시티드 로우' }
   ],
   shoulder: [
     { value: 'overheadPress', label: '오버헤드 프레스' },
@@ -112,6 +113,8 @@ const setConfigOptions = [
 const exercisePointStyles: Record<string, string> = {
   // 가슴 운동
   '벤치 프레스': 'triangle',
+  '덤벨 벤치 프레스': 'star',
+  '체스트 프레스 머신': 'circle',
   '인클라인 벤치 프레스': 'circle',
   '디클라인 벤치 프레스': 'rect',
   
@@ -119,14 +122,17 @@ const exercisePointStyles: Record<string, string> = {
   '데드리프트': 'triangle',
   '바벨로우': 'circle',
   '티바로우': 'rect',
+  '턱걸이 (풀업)': 'rectRounded',
   
   // 어깨 운동
   '오버헤드 프레스': 'triangle',
+  '덤벨 숄더 프레스': 'crossRot',
   '레터럴 레이즈': 'circle',
   
   // 하체 운동
   '스쿼트': 'triangle', 
   '레그 프레스': 'circle',
+  '루마니안 데드리프트': 'dash',
   '런지': 'rect',
   '레그 익스텐션': 'rectRounded',
   '레그 컬': 'rectRot',
@@ -139,10 +145,7 @@ const exercisePointStyles: Record<string, string> = {
   // 삼두 운동
   '케이블 푸시다운': 'triangle',
   '오버헤드 익스텐션': 'circle',
-  '라잉 트라이셉스 익스텐션': 'rect',
-  '덤벨 벤치 프레스': 'star',
-  '덤벨 숄더 프레스': 'crossRot',
-  '루마니안 데드리프트': 'dash'
+  '라잉 트라이셉스 익스텐션': 'rect'
 };
 
 const WorkoutGraph: React.FC = () => {

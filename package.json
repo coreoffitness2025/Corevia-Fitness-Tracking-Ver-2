@@ -22,6 +22,10 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@capacitor/android": "7.2.0",
+    "@capacitor/cli": "7.2.0",
+    "@capacitor/core": "7.2.0",
+    "@capacitor/ios": "7.2.0",
     "@heroicons/react": "^2.2.0",
     "@tanstack/react-query": "5.76.1",
     "@types/html2canvas": "0.5.35",

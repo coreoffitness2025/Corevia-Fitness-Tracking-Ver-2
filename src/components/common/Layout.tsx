@@ -46,7 +46,14 @@ export default function Layout({
   const styles = getLayoutStyles(isDarkMode);
 
   return (
-    <div className={`${styles.container} ${includeBottomNav ? 'pb-20' : ''} ${className}`}>
+    <div 
+      className={`${styles.container} ${includeBottomNav ? 'pb-20' : ''} ${className}`}
+      style={{
+        paddingTop: 'var(--safe-area-inset-top, 0px)',
+        paddingLeft: 'var(--safe-area-inset-left, 0px)',
+        paddingRight: 'var(--safe-area-inset-right, 0px)'
+      }}
+    >
       <div className={styles.topBar}></div>
       
       {header && header}

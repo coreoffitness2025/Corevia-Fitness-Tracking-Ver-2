@@ -76,7 +76,14 @@ const BottomNavBar: React.FC = () => {
   const isDarkMode = document.documentElement.classList.contains('dark');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-nav backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-all duration-300 z-40">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-nav backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-all duration-300 z-40"
+      style={{ 
+        paddingBottom: 'calc(0.75rem + var(--safe-area-inset-bottom, 0px))',
+        paddingLeft: 'var(--safe-area-inset-left, 0px)',
+        paddingRight: 'var(--safe-area-inset-right, 0px)'
+      }}
+    >
       <div className="container mx-auto max-w-md flex justify-around items-center py-3">
         {navItems.map(item => (
           <NavItemComponent 

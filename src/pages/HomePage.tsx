@@ -114,6 +114,18 @@ const HomePage = () => {
           } as Session;
         });
         
+        // 디버깅: 가져온 운동 세션 데이터 확인
+        console.log('[HomePage] 가져온 운동 세션 데이터:', sessionsData);
+        sessionsData.forEach((session, index) => {
+          console.log(`[HomePage] 세션 ${index + 1}:`, {
+            part: session.part,
+            mainExerciseName: session.mainExercise?.name,
+            mainExerciseSetsCount: session.mainExercise?.sets?.length,
+            mainExerciseSets: session.mainExercise?.sets,
+            date: session.date
+          });
+        });
+        
         setRecentSessions(sessionsData);
         
         // 최근 7일 식사 기록 불러오기

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Corevia Fitness</string>
+    <string name="title_activity_main">Corevia Fitness</string>
+    <string name="package_name">com.corevia.fitness</string>
+    <string name="custom_url_scheme">com.corevia.fitness</string>
+</resources>
