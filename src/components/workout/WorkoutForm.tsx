@@ -1269,6 +1269,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timeLeft: 90
                       }));
                       toast.success('⏰ 1:30 설정됨!', { duration: 1500 });
+                      // 0.5초 후 자동으로 타이머 시작
+                      setTimeout(() => {
+                        if (globalTimer.sectionId) {
+                          startGlobalTimer(globalTimer.sectionId);
+                        } else {
+                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
+                        }
+                      }, 100);
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >
@@ -1283,6 +1291,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timeLeft: 120
                       }));
                       toast.success('⏰ 2:00 설정됨!', { duration: 1500 });
+                      // 0.5초 후 자동으로 타이머 시작
+                      setTimeout(() => {
+                        if (globalTimer.sectionId) {
+                          startGlobalTimer(globalTimer.sectionId);
+                        } else {
+                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
+                        }
+                      }, 100);
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >
@@ -1297,6 +1313,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timeLeft: 150
                       }));
                       toast.success('⏰ 2:30 설정됨!', { duration: 1500 });
+                      // 0.5초 후 자동으로 타이머 시작
+                      setTimeout(() => {
+                        if (globalTimer.sectionId) {
+                          startGlobalTimer(globalTimer.sectionId);
+                        } else {
+                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
+                        }
+                      }, 100);
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >
@@ -1311,6 +1335,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timeLeft: 180
                       }));
                       toast.success('⏰ 3:00 설정됨!', { duration: 1500 });
+                      // 0.5초 후 자동으로 타이머 시작
+                      setTimeout(() => {
+                        if (globalTimer.sectionId) {
+                          startGlobalTimer(globalTimer.sectionId);
+                        } else {
+                          startGlobalTimer('main'); // 기본값으로 메인 운동 타이머 시작
+                        }
+                      }, 100);
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >

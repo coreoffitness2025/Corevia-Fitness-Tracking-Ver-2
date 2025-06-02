@@ -614,11 +614,17 @@ const WorkoutGraph: React.FC = () => {
       }
 
       if (selectedExercise !== 'all') {
-        filtered = filtered.filter(item => 
-          item.mainExercise && item.mainExercise.name.includes(
-            exerciseOptions[selectedPart]?.find(opt => opt.value === selectedExercise)?.label || ''
-          )
-        );
+        const selectedExerciseLabel = exerciseOptions[selectedPart]?.find(opt => opt.value === selectedExercise)?.label;
+        console.log(`[WorkoutGraph] 선택된 운동 라벨: ${selectedExerciseLabel}`);
+        
+        if (selectedExerciseLabel) {
+          filtered = filtered.filter(item => 
+            item.mainExercise && item.mainExercise.name === selectedExerciseLabel // includes() 대신 정확한 매칭(===) 사용
+          );
+        } else {
+          // 선택된 운동 라벨을 찾을 수 없는 경우 빈 배열 반환
+          filtered = [];
+        }
       }
       console.log(`[WorkoutGraph] applyFilters - 운동 종류 필터링 후 (${selectedExercise}): ${filtered.length}개`);
        if (selectedPart === 'shoulder') {
