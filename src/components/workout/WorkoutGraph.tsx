@@ -341,16 +341,33 @@ const WorkoutGraph: React.FC = () => {
 
       data.forEach(workout => {
         if (!workout.mainExercise || !workout.mainExercise.sets || workout.mainExercise.sets.length === 0) return;
-        const dateObj = parseFirestoreDate(workout.date as unknown as FirestoreTimestamp | Date | string);
-        const dateStr = formatShortDate(dateObj);
-        allDates.push(dateStr);
-        const workoutKey = `${dateStr}-${workout.mainExercise.name}`;
-        newDateWorkoutMap[workoutKey] = workout;
-        if (!newDateAllWorkoutsMap[dateStr]) newDateAllWorkoutsMap[dateStr] = [];
-        newDateAllWorkoutsMap[dateStr].push(workout);
-        if (!newDateWorkoutMap[dateStr]) newDateWorkoutMap[dateStr] = workout;
-        
+
         const exerciseName = workout.mainExercise.name;
+        const dateStr = workout.date.toLocaleDateString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric' }).replace(/\./g, '/').replace(/\s/g, '').replace(/\/$/, '');
+        
+        // 디버깅: 운동 이름과 날짜 확인
+        console.log(`[WorkoutGraph] 운동 데이터 처리: ${exerciseName} (${dateStr})`);
+        
+        // 운동 이름이 exerciseOptions에 있는지 확인
+        let found = false;
+        Object.values(exerciseOptions).forEach(partExercises => {
+          if (partExercises.some(ex => ex.label === exerciseName)) {
+            found = true;
+          }
+        });
+        
+        if (!found) {
+          console.warn(`[WorkoutGraph] 운동 "${exerciseName}"이 exerciseOptions에서 찾을 수 없습니다.`);
+        }
+
+        allDates.push(dateStr);
+        newDateWorkoutMap[dateStr] = workout;
+        
+        if (!newDateAllWorkoutsMap[dateStr]) {
+          newDateAllWorkoutsMap[dateStr] = [];
+        }
+        newDateAllWorkoutsMap[dateStr].push(workout);
+        
         const sets = workout.mainExercise.sets;
         let setConfig = '';
         if (sets.length === 5 && sets.every(set => set.reps === 5)) setConfig = '5x5';

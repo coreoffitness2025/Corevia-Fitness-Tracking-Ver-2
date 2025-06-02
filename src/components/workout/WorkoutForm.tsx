@@ -312,6 +312,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     const currentPartExercises = mainExerciseOptions[part as ExercisePart];
     const foundExercise = currentPartExercises.find(ex => ex.value === selectedMainExercise);
     if (foundExercise) {
+      console.log(`[WorkoutForm] 메인 운동 변경: ${selectedMainExercise} -> ${foundExercise.label}`);
       setMainExercise((prev: typeof mainExercise) => ({ // prev 타입 명시
         ...prev,
         name: foundExercise.label
@@ -320,6 +321,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       // 메인 운동 변경 시 해당 운동의 최근 기록 가져오기
       // 운동 변경 시에도 세트 설정은 유지
       fetchLatestWorkout(part, selectedMainExercise, true);
+    } else {
+      console.warn(`[WorkoutForm] 메인 운동을 찾을 수 없습니다: part=${part}, selectedMainExercise=${selectedMainExercise}`);
     }
   }, [selectedMainExercise, part]);
 
@@ -1265,6 +1268,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timerSeconds: 30,
                         timeLeft: 90
                       }));
+                      toast.success('⏰ 1:30 설정됨!', { duration: 1500 });
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >
@@ -1278,6 +1282,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timerSeconds: 0,
                         timeLeft: 120
                       }));
+                      toast.success('⏰ 2:00 설정됨!', { duration: 1500 });
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >
@@ -1291,6 +1296,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timerSeconds: 30,
                         timeLeft: 150
                       }));
+                      toast.success('⏰ 2:30 설정됨!', { duration: 1500 });
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >
@@ -1304,6 +1310,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                         timerSeconds: 0,
                         timeLeft: 180
                       }));
+                      toast.success('⏰ 3:00 설정됨!', { duration: 1500 });
                     }}
                     className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded transition-colors"
                   >

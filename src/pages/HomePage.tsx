@@ -400,9 +400,15 @@ const HomePage = () => {
                     </span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {session.mainExercise?.name || '메인 운동'}: {session.mainExercise?.sets?.length || 0}세트
+                    {session.mainExercise?.name || '메인 운동 정보 없음'}: {session.mainExercise?.sets?.length || 0}세트
                     {session.mainExercise?.sets?.length > 0 && session.mainExercise.sets[0] && (
                       <span className="text-xs text-gray-500 dark:text-gray-400"> (대표: {session.mainExercise.sets[0].reps}회 x {session.mainExercise.sets[0].weight}kg)</span>
+                    )}
+                    {/* 디버깅 정보 표시 (개발 모드에서만) */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="text-xs text-red-500 mt-1">
+                        DEBUG: part={session.part}, mainExercise={JSON.stringify(session.mainExercise?.name || 'undefined')}
+                      </div>
                     )}
                   </p>
                   {session.accessoryExercises?.length > 0 && (
