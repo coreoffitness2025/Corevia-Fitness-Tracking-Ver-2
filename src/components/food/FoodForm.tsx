@@ -46,6 +46,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const navigate = useNavigate();
   const [mealDate, setMealDate] = useState<string>(new Date().toISOString().split('T')[0]); // YYYY-MM-DD 형식
   const [imageUrl, setImageUrl] = useState('');
+  const [foodName, setFoodName] = useState('');
   const [notes, setNotes] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [localImageFile, setLocalImageFile] = useState<File | null>(null);
@@ -255,7 +256,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           // 식단 기록 저장
           const foodRecord: FoodRecord = {
             userId: currentUser.uid,
-            name: `식사`,
+            name: foodName || '식사',
             description: notes || undefined,
             calories: targetCalories || undefined,
             protein: proteinTarget || undefined,
@@ -277,6 +278,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           setImagePreview(null);
           setLocalImageFile(null);
           setNotes('');
+          setFoodName('');
           
           // 성공 콜백 호출
           if (onSuccess) {
@@ -454,6 +456,23 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               💡 <strong>참고:</strong> 식단 사진은 기기 내부 저장소에 저장됩니다. 기기에서 해당 파일이 삭제되거나 브라우저 데이터가 초기화되면 사진을 볼 수 없게 됩니다.
             </p>
           </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="foodName"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            음식 이름 (선택사항)
+          </label>
+          <input
+            type="text"
+            id="foodName"
+            value={foodName}
+            onChange={(e) => setFoodName(e.target.value)}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="예: 치킨 샐러드, 김치찌개 등"
+          />
         </div>
 
         <div>

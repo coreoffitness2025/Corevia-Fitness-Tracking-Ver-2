@@ -266,7 +266,14 @@ const FoodLog = () => {
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-2 bg-gray-100 dark:bg-gray-800">
-                    <p className="font-medium text-sm text-center">식사 {recordsForDate.indexOf(record) + 1}</p>
+                    <p className="font-medium text-sm text-center">
+                      {record.name && record.name !== '식사' ? record.name : `식사 ${recordsForDate.indexOf(record) + 1}`}
+                    </p>
+                    {record.description && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 text-center mt-1 truncate">
+                        {record.description}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -321,7 +328,7 @@ const FoodLog = () => {
                               className="w-24 h-24 object-cover rounded-lg"
                             />
                             <p className="text-xs text-center mt-1">
-                              식사 {records.indexOf(record) + 1}
+                              {record.name && record.name !== '식사' ? record.name : `식사 ${records.indexOf(record) + 1}`}
                             </p>
                           </div>
                         ))}
@@ -537,7 +544,9 @@ const FoodLog = () => {
           <div className="relative w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-semibold">
-                식사 {selectedPhoto.index} 
+                {selectedPhoto.record.name && selectedPhoto.record.name !== '식사' 
+                  ? selectedPhoto.record.name 
+                  : `식사 ${selectedPhoto.index}`}
               </h3>
               <button 
                 onClick={closePhotoModal} 
