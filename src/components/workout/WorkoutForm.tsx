@@ -1703,6 +1703,61 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               </div>
             )}
             
+            {/* 현재 세트 설정 상태 표시 */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-800/20 border border-purple-200 dark:border-purple-700 rounded-xl shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="text-purple-800 dark:text-purple-200 font-semibold">
+                    현재 세트 설정:
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="primary"
+                      size="lg"
+                      className="bg-purple-600 text-white font-semibold px-4 py-2 text-base"
+                    >
+                      {(() => {
+                        const { setsCount, repsCount } = getSetConfiguration(
+                          selectedSetConfiguration,
+                          customSets,
+                          customReps
+                        );
+                        return selectedSetConfiguration === 'custom' 
+                          ? `${setsCount}x${repsCount} (커스텀)`
+                          : selectedSetConfiguration === '5x5' ? '5x5'
+                          : selectedSetConfiguration === '6x3' ? '6x3'
+                          : selectedSetConfiguration === '10x5' ? '10x5'
+                          : selectedSetConfiguration === '15x5' ? '15x5'
+                          : `${setsCount}x${repsCount}`;
+                      })()}
+                    </Badge>
+                    <div className="text-sm text-purple-600 dark:text-purple-300 font-medium">
+                      ({(() => {
+                        const { setsCount, repsCount } = getSetConfiguration(
+                          selectedSetConfiguration,
+                          customSets,
+                          customReps
+                        );
+                        return `${setsCount}세트 × ${repsCount}회`;
+                      })()})
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // 설정 페이지로 이동
+                    window.location.href = '/settings';
+                  }}
+                  icon={<Settings2 size={16} />}
+                  className="font-medium border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-400 dark:hover:bg-purple-900/20"
+                >
+                  세트 설정하기
+                </Button>
+              </div>
+            </div>
+            
             {/* 운동 선택 및 정보 */}
             {part === 'complex' ? (
               <ComplexWorkoutForm

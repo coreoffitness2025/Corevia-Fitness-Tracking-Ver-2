@@ -330,7 +330,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
 
   // 영양정보 페이지로 이동하는 함수
   const navigateToNutritionInfo = () => {
-    navigate('/qna', { state: { activeTab: 'nutrition' } });
+    navigate('/qna', { state: { activeTab: 'nutrition', openNutritionScout: true } });
   };
 
   return (

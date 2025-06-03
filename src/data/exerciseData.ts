@@ -465,7 +465,7 @@ export const exercises: Exercise[] = [
       '어깨 높이까지 들어올린 후 잠시 유지합니다.',
       '천천히 팔을 내려 시작 자세로 돌아갑니다.'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=ppx3FlO8YIo',
+    videoUrl: 'https://www.youtube.com/watch?v=Z5FA9aq3L6A',
     equipment: ['케이블 머신'],
     muscles: ['측면 삼각근'],
     level: 'intermediate'
@@ -597,7 +597,7 @@ export const exercises: Exercise[] = [
       '이두를 수축시켜 덤벨을 들어올립니다.',
       '천천히 덤벨을 내려 시작 자세로 돌아갑니다.'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=0AZlSK-gM08',
+    videoUrl: 'https://www.youtube.com/watch?v=VMbDQ8PZazY',
     equipment: ['덤벨', '벤치'],
     muscles: ['이두'],
     level: 'beginner'
@@ -629,7 +629,7 @@ export const exercises: Exercise[] = [
       '이두가 완전히 수축된 상태에서 잠시 유지합니다.',
       '천천히 바를 내려 시작 자세로 돌아갑니다.'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=6LrsjAJzRm4',
+    videoUrl: 'https://www.youtube.com/watch?v=zG2xJ0Q5QtI',
     equipment: ['EZ바'],
     muscles: ['이두'],
     level: 'beginner'
@@ -791,7 +791,7 @@ export const exercises: Exercise[] = [
       '팔꿈치를 고정한 채로 덤벨을 뒤로 밀어 팔을 펴줍니다.',
       '천천히 팔을 구부려 시작 자세로 돌아갑니다.'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=m9me07kHPnI',
+    videoUrl: 'https://www.youtube.com/watch?v=6SS6K3lAwZ8',
     equipment: ['덤벨', '벤치'],
     muscles: ['삼두 외측두'],
     level: 'beginner'
@@ -841,7 +841,7 @@ export const exercises: Exercise[] = [
       '복부 근육을 사용해 상체를 들어올립니다.',
       '천천히 상체를 내려 시작 자세로 돌아갑니다.'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=4hmQD6urLXA',
+    videoUrl: 'https://www.youtube.com/watch?v=M6yAoJJQvGY',
     equipment: ['없음'],
     muscles: ['복직근 상부'],
     level: 'beginner'
@@ -1051,7 +1051,7 @@ export const exercises: Exercise[] = [
       '동작을 부드럽게 연결하여 효율적으로 수영합니다.',
       '점차 거리나 시간을 늘려가며 강도를 조절합니다.'
     ],
-    videoUrl: 'https://www.youtube.com/watch?v=pFpbwYY_QH8',
+    videoUrl: 'https://www.youtube.com/watch?v=WreddX9aeGw',
     equipment: ['수영복', '수경'],
     muscles: ['광배근', '가슴', '삼두', '대퇴사두근', '심장'],
     level: 'intermediate'
