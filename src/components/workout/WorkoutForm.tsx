@@ -1792,7 +1792,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     <Badge
                       variant="primary"
                       size="lg"
-                      className="bg-blue-600 text-white font-semibold px-4 py-2 text-base"
+                      className="bg-blue-700 text-white font-semibold px-4 py-2 text-base hover:bg-blue-800 transition-colors"
                     >
                       {(() => {
                         const { setsCount, repsCount } = getSetConfiguration(
