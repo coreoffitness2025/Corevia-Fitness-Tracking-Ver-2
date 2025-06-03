@@ -130,13 +130,6 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       // React Query 뮤테이션 사용하여 설정 업데이트
       updateSettings(newSettings);
       
-      // 명시적으로 성공 메시지 표시
-      toast.success(`세트 설정이 ${setConfig}로 변경되었습니다! (${customReps}회 ${customSets}세트)`, {
-        duration: 3000,
-        position: 'top-center',
-        icon: '✅'
-      });
-      
       // 경험 정보 업데이트 - 이 부분은 기존 방식 유지
       if (userProfile?.experience) {
         // 타입 단언을 사용하여 타입 오류 해결

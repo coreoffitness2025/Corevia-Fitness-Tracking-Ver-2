@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkoutSettings } from '../../hooks/useWorkoutSettings';
 import { 
@@ -93,6 +94,7 @@ const warmupExercises = {
 type WorkoutGuidePreferredConfig = '10x5' | '6x3' | '15x5';
 
 const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
+  const navigate = useNavigate();
   const { userProfile, updateProfile } = useAuth();
   const { settings, isLoading: isLoadingSettings } = useWorkoutSettings();
   const [part, setPart] = useState<ExercisePart>('chest');
@@ -198,6 +200,21 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   }>>([]);
   const [isLoadingComplexWorkouts, setIsLoadingComplexWorkouts] = useState(false);
   const [isSavingComplexWorkout, setIsSavingComplexWorkout] = useState(false);
+
+  // 체중 관련 상태 추가
+  const [currentWeight, setCurrentWeight] = useState<number>(0);
+  const [showWeightChart, setShowWeightChart] = useState(false);
+  const [weightHistory, setWeightHistory] = useState<Array<{
+    date: Date;
+    weight: number;
+  }>>([]);
+
+  // userProfile이 로드된 후 체중 초기값 설정
+  useEffect(() => {
+    if (userProfile?.weight) {
+      setCurrentWeight(userProfile.weight);
+    }
+  }, [userProfile?.weight]);
 
   // 컴포넌트 마운트 시 초기화 로직 수정
   useEffect(() => {
@@ -1332,6 +1349,67 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   }, [part]);
 
+  // 체중 기록 저장 함수
+  const saveWeightRecord = async (weight: number) => {
+    if (!userProfile) return;
+    
+    try {
+      const weightRecord = {
+        date: Timestamp.now(),
+        weight: weight,
+        userId: userProfile.uid
+      };
+      
+      await addDoc(collection(db, 'weightRecords'), weightRecord);
+      
+      // 사용자 프로필의 현재 체중도 업데이트
+      await updateProfile({ weight: weight });
+      
+      // 체중 히스토리 새로고침
+      fetchWeightHistory();
+      
+      toast.success('체중이 기록되었습니다', {
+        duration: 2000,
+        position: 'top-center',
+        icon: '⚖️'
+      });
+    } catch (error) {
+      console.error('체중 기록 저장 실패:', error);
+      toast.error('체중 기록 저장에 실패했습니다');
+    }
+  };
+
+  // 체중 히스토리 가져오기
+  const fetchWeightHistory = async () => {
+    if (!userProfile) return;
+    
+    try {
+      const q = query(
+        collection(db, 'weightRecords'),
+        where('userId', '==', userProfile.uid),
+        orderBy('date', 'desc'),
+        limit(30) // 최근 30개 기록
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const history = querySnapshot.docs.map(doc => ({
+        date: doc.data().date.toDate(),
+        weight: doc.data().weight
+      }));
+      
+      setWeightHistory(history.reverse()); // 시간순으로 정렬
+    } catch (error) {
+      console.error('체중 히스토리 로드 실패:', error);
+    }
+  };
+
+  // 컴포넌트 마운트 시 체중 히스토리 로드
+  useEffect(() => {
+    if (userProfile) {
+      fetchWeightHistory();
+    }
+  }, [userProfile]);
+
   return (
     <Layout>
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -1704,17 +1782,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             )}
             
             {/* 현재 세트 설정 상태 표시 */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-800/20 border border-purple-200 dark:border-purple-700 rounded-xl shadow-sm">
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-800/20 border border-blue-200 dark:border-blue-700 rounded-xl shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="text-purple-800 dark:text-purple-200 font-semibold">
+                  <div className="text-blue-800 dark:text-blue-200 font-semibold">
                     현재 세트 설정:
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="primary"
                       size="lg"
-                      className="bg-purple-600 text-white font-semibold px-4 py-2 text-base"
+                      className="bg-blue-600 text-white font-semibold px-4 py-2 text-base"
                     >
                       {(() => {
                         const { setsCount, repsCount } = getSetConfiguration(
@@ -1731,7 +1809,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           : `${setsCount}x${repsCount}`;
                       })()}
                     </Badge>
-                    <div className="text-sm text-purple-600 dark:text-purple-300 font-medium">
+                    <div className="text-sm text-blue-600 dark:text-blue-300 font-medium">
                       ({(() => {
                         const { setsCount, repsCount } = getSetConfiguration(
                           selectedSetConfiguration,
@@ -1748,10 +1826,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   size="sm"
                   onClick={() => {
                     // 설정 페이지로 이동
-                    window.location.href = '/settings';
+                    navigate('/settings');
                   }}
                   icon={<Settings2 size={16} />}
-                  className="font-medium border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-400 dark:hover:bg-purple-900/20"
+                  className="font-medium border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
                 >
                   세트 설정하기
                 </Button>
@@ -2042,6 +2120,202 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               className="w-full p-4 min-h-24 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all resize-none"
               placeholder="이번 운동에 대한 메모를 남겨보세요..."
             />
+          </CardSection>
+        </Card>
+        
+        {/* 체중 기록 섹션 */}
+        <Card className="mb-8 shadow-lg border-0 bg-white dark:bg-gray-800">
+          <CardSection className="p-6">
+            <CardTitle className="text-xl font-bold text-gray-900 dark:text-white mb-6">체중 기록</CardTitle>
+            
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  현재 체중 (kg)
+                </label>
+                <input
+                  type="number"
+                  value={currentWeight}
+                  onChange={(e) => setCurrentWeight(Number(e.target.value))}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  min="30"
+                  max="200"
+                  step="0.1"
+                  placeholder="체중을 입력하세요"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => saveWeightRecord(currentWeight)}
+                  disabled={!currentWeight || currentWeight < 30 || currentWeight > 200}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2"
+                >
+                  기록 저장
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWeightChart(!showWeightChart)}
+                  icon={<History size={16} />}
+                  className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 font-medium"
+                >
+                  추이 분석
+                </Button>
+              </div>
+            </div>
+            
+            {/* 최근 체중 정보 표시 */}
+            {weightHistory.length > 0 && (
+              <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-800/20 border border-blue-200 dark:border-blue-700 rounded-xl">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-blue-800 dark:text-blue-200 font-medium">
+                    최근 기록: {weightHistory[weightHistory.length - 1]?.date.toLocaleDateString()} 
+                  </span>
+                  <span className="text-blue-600 dark:text-blue-300 font-semibold">
+                    {weightHistory[weightHistory.length - 1]?.weight}kg
+                  </span>
+                </div>
+                {weightHistory.length >= 2 && (
+                  <div className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                    전회 대비: {
+                      weightHistory[weightHistory.length - 1]?.weight - 
+                      weightHistory[weightHistory.length - 2]?.weight > 0 ? '+' : ''
+                    }
+                    {(
+                      weightHistory[weightHistory.length - 1]?.weight - 
+                      weightHistory[weightHistory.length - 2]?.weight
+                    ).toFixed(1)}kg
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* 체중 변화 그래프 */}
+            {showWeightChart && weightHistory.length > 0 && (
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">체중 변화 추이</h3>
+                
+                {/* 간단한 선형 그래프 표현 */}
+                <div className="relative h-48 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
+                  <div className="absolute inset-4">
+                    {/* Y축 라벨 */}
+                    <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
+                      {(() => {
+                        const weights = weightHistory.map(h => h.weight);
+                        const minWeight = Math.min(...weights);
+                        const maxWeight = Math.max(...weights);
+                        const range = maxWeight - minWeight || 1;
+                        return [
+                          <span key="max">{maxWeight.toFixed(1)}kg</span>,
+                          <span key="mid">{((maxWeight + minWeight) / 2).toFixed(1)}kg</span>,
+                          <span key="min">{minWeight.toFixed(1)}kg</span>
+                        ];
+                      })()}
+                    </div>
+                    
+                    {/* 그래프 영역 */}
+                    <div className="ml-12 mr-4 h-full relative">
+                      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        {/* 그리드 라인 */}
+                        <defs>
+                          <pattern id="grid" width="10" height="25" patternUnits="userSpaceOnUse">
+                            <path d="M 10 0 L 0 0 0 25" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
+                          </pattern>
+                        </defs>
+                        <rect width="100" height="100" fill="url(#grid)" />
+                        
+                        {/* 체중 변화 라인 */}
+                        {weightHistory.length > 1 && (() => {
+                          const weights = weightHistory.map(h => h.weight);
+                          const minWeight = Math.min(...weights);
+                          const maxWeight = Math.max(...weights);
+                          const range = maxWeight - minWeight || 1;
+                          
+                          const points = weightHistory.map((record, index) => {
+                            const x = (index / (weightHistory.length - 1)) * 100;
+                            const y = 100 - ((record.weight - minWeight) / range) * 100;
+                            return `${x},${y}`;
+                          }).join(' ');
+                          
+                          return (
+                            <>
+                              <polyline
+                                fill="none"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                                points={points}
+                              />
+                              {/* 데이터 포인트 */}
+                              {weightHistory.map((record, index) => {
+                                const x = (index / (weightHistory.length - 1)) * 100;
+                                const y = 100 - ((record.weight - minWeight) / range) * 100;
+                                return (
+                                  <circle
+                                    key={index}
+                                    cx={x}
+                                    cy={y}
+                                    r="2"
+                                    fill="#3b82f6"
+                                    stroke="#ffffff"
+                                    strokeWidth="1"
+                                  />
+                                );
+                              })}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
+                    
+                    {/* X축 라벨 (날짜) */}
+                    <div className="absolute bottom-0 left-12 right-4 flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {weightHistory.length > 1 && (
+                        <>
+                          <span>{weightHistory[0]?.date.toLocaleDateString()}</span>
+                          <span>{weightHistory[weightHistory.length - 1]?.date.toLocaleDateString()}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 통계 정보 */}
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  {(() => {
+                    const weights = weightHistory.map(h => h.weight);
+                    const minWeight = Math.min(...weights);
+                    const maxWeight = Math.max(...weights);
+                    const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length;
+                    const weightChange = weights[weights.length - 1] - weights[0];
+                    
+                    return (
+                      <>
+                        <div className="text-center p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="text-blue-600 dark:text-blue-400 font-semibold">{minWeight.toFixed(1)}kg</div>
+                          <div className="text-gray-500 dark:text-gray-400">최저</div>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="text-blue-600 dark:text-blue-400 font-semibold">{maxWeight.toFixed(1)}kg</div>
+                          <div className="text-gray-500 dark:text-gray-400">최고</div>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="text-blue-600 dark:text-blue-400 font-semibold">{avgWeight.toFixed(1)}kg</div>
+                          <div className="text-gray-500 dark:text-gray-400">평균</div>
+                        </div>
+                        <div className="text-center p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className={`font-semibold ${weightChange >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+                            {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}kg
+                          </div>
+                          <div className="text-gray-500 dark:text-gray-400">전체 변화</div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
           </CardSection>
         </Card>
         
