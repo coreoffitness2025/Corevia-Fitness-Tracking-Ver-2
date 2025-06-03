@@ -21,7 +21,7 @@ import Layout from '../common/Layout';
 import Card, { CardTitle, CardSection } from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
-import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square, Play, Pause, Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User, Zap, Camera, Upload, Timer, History, Settings2, ChevronsUpDown } from 'lucide-react'; // Timer, History, Settings2, ChevronsUpDown 아이콘 추가
+import { Plus, X, Clock, CheckCircle, XCircle, Save, Info, AlertTriangle, ChevronUp, ChevronDown, RotateCcw, Trash, Square, Play, Pause, Heart, ArrowBigUpDash, MoveHorizontal, Footprints, Grip, ArrowUp, User, Zap, Camera, Upload, Timer, History, Settings2, ChevronsUpDown, Edit, TrendingUp } from 'lucide-react'; // Timer, History, Settings2, ChevronsUpDown, Edit, TrendingUp 아이콘 추가
 import { getSetConfiguration } from '../../utils/workoutUtils';
 import AccessoryExerciseComponent from './AccessoryExerciseComponent';
 // 필요한 import 추가
@@ -204,6 +204,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 체중 관련 상태 추가
   const [currentWeight, setCurrentWeight] = useState<number>(0);
   const [showWeightChart, setShowWeightChart] = useState(false);
+  const [showWeightChangeModal, setShowWeightChangeModal] = useState(false);
+  const [newWeight, setNewWeight] = useState<number>(0);
   const [weightHistory, setWeightHistory] = useState<Array<{
     date: Date;
     weight: number;
@@ -213,6 +215,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   useEffect(() => {
     if (userProfile?.weight) {
       setCurrentWeight(userProfile.weight);
+      setNewWeight(userProfile.weight);
     }
   }, [userProfile?.weight]);
 
@@ -1387,7 +1390,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       const q = query(
         collection(db, 'weightRecords'),
         where('userId', '==', userProfile.uid),
-        orderBy('date', 'desc'),
         limit(30) // 최근 30개 기록
       );
       
@@ -1397,7 +1399,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         weight: doc.data().weight
       }));
       
-      setWeightHistory(history.reverse()); // 시간순으로 정렬
+      // 클라이언트에서 날짜순으로 정렬
+      history.sort((a, b) => a.date.getTime() - b.date.getTime());
+      setWeightHistory(history);
     } catch (error) {
       console.error('체중 히스토리 로드 실패:', error);
     }
@@ -1409,6 +1413,33 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       fetchWeightHistory();
     }
   }, [userProfile]);
+
+  // 체중 변경 모달 열기
+  const openWeightChangeModal = () => {
+    setNewWeight(currentWeight);
+    setShowWeightChangeModal(true);
+  };
+
+  // 체중 업데이트 함수
+  const updateWeight = async () => {
+    if (!userProfile || !newWeight || newWeight < 30 || newWeight > 200) return;
+    
+    try {
+      // 사용자 프로필의 체중 업데이트
+      await updateProfile({ weight: newWeight });
+      setCurrentWeight(newWeight);
+      setShowWeightChangeModal(false);
+      
+      toast.success('체중이 업데이트되었습니다', {
+        duration: 2000,
+        position: 'top-center',
+        icon: '⚖️'
+      });
+    } catch (error) {
+      console.error('체중 업데이트 실패:', error);
+      toast.error('체중 업데이트에 실패했습니다');
+    }
+  };
 
   return (
     <Layout>
@@ -1792,7 +1823,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     <Badge
                       variant="primary"
                       size="lg"
-                      className="bg-blue-700 text-white font-semibold px-4 py-2 text-base hover:bg-blue-800 transition-colors"
+                      className="bg-blue-500 text-white font-semibold px-4 py-2 text-base shadow-lg"
                     >
                       {(() => {
                         const { setsCount, repsCount } = getSetConfiguration(
@@ -2148,18 +2179,34 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               <div className="flex gap-2">
                 <Button
                   variant="primary"
+                  size="sm"
                   onClick={() => saveWeightRecord(currentWeight)}
-                  disabled={!currentWeight || currentWeight < 30 || currentWeight > 200}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2"
+                  className="font-medium shadow-lg whitespace-nowrap"
                 >
                   기록 저장
                 </Button>
                 
                 <Button
                   variant="outline"
-                  onClick={() => setShowWeightChart(!showWeightChart)}
-                  icon={<History size={16} />}
-                  className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 font-medium"
+                  size="sm"
+                  onClick={openWeightChangeModal}
+                  icon={<Edit size={16} />}
+                  className="font-medium border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                >
+                  변경
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowWeightChart(!showWeightChart);
+                    if (!showWeightChart) {
+                      fetchWeightHistory();
+                    }
+                  }}
+                  icon={<TrendingUp size={16} />}
+                  className="font-medium border-green-300 text-green-600 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/20"
                 >
                   추이 분석
                 </Button>
@@ -2331,6 +2378,61 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             저장하기
           </Button>
         </div>
+        
+        {/* 체중 변경 모달 */}
+        {showWeightChangeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">체중 변경</h3>
+                <button
+                  onClick={() => setShowWeightChangeModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  새로운 체중 (kg)
+                </label>
+                <input
+                  type="number"
+                  value={newWeight}
+                  onChange={(e) => setNewWeight(Number(e.target.value))}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  min="30"
+                  max="200"
+                  step="0.1"
+                  placeholder="체중을 입력하세요"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  30kg ~ 200kg 범위로 입력해주세요
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWeightChangeModal(false)}
+                  className="flex-1"
+                >
+                  취소
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={updateWeight}
+                  disabled={!newWeight || newWeight < 30 || newWeight > 200}
+                  className="flex-1"
+                >
+                  저장
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

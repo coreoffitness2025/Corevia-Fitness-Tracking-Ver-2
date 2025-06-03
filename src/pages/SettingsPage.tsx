@@ -48,32 +48,6 @@ const SettingsPage = () => {
     setIsLoading(false); 
   }, [authUserProfile, authUserSettings]);
 
-  const handleAppSettingChange = async (key: keyof UserSettings, value: any) => {
-    if (!currentSettings) return;
-    const newAppSettings = { ...currentSettings, [key]: value };
-    try {
-      await updateSettings(newAppSettings);
-      setCurrentSettings(newAppSettings);
-      toast.success('설정이 저장되었습니다.');
-    } catch (error) {
-      toast.error('설정 저장에 실패했습니다.');
-      console.error('앱 설정 저장 실패:', error);
-    }
-  };
-
-  const handleNotificationSettingChange = async (key: keyof UserSettings['notifications'], value: boolean) => {
-    if (!currentSettings) return;
-    const newNotifications = { ...currentSettings.notifications, [key]: value };
-    const newAppSettings = { ...currentSettings, notifications: newNotifications };
-    try {
-      await updateSettings(newAppSettings);
-      setCurrentSettings(newAppSettings);
-      toast.success('알림 설정이 저장되었습니다.');
-    } catch (error) {
-      toast.error('알림 설정 저장에 실패했습니다.');
-    }
-  };
-
   const handleUnitSettingChange = async (key: keyof UserSettings['units'], value: 'kg' | 'lbs' | 'cm' | 'ft') => {
     if (!currentSettings) return;
     const newUnits = { ...currentSettings.units, [key]: value };
@@ -121,7 +95,6 @@ const SettingsPage = () => {
       const q = query(
         collection(db, 'weightRecords'),
         where('userId', '==', currentUser.uid),
-        orderBy('date', 'desc'),
         limit(30) // 최근 30개 기록
       );
       
@@ -131,7 +104,9 @@ const SettingsPage = () => {
         weight: doc.data().weight
       }));
       
-      setWeightHistory(history.reverse()); // 시간순으로 정렬
+      // 클라이언트에서 날짜순으로 정렬
+      history.sort((a, b) => a.date.getTime() - b.date.getTime());
+      setWeightHistory(history);
     } catch (error) {
       console.error('체중 히스토리 로드 실패:', error);
       toast.error('체중 기록을 불러오는데 실패했습니다.');
@@ -157,10 +132,7 @@ const SettingsPage = () => {
   }
   
   const displaySettings = currentSettings || {
-    darkMode: false,
-    notifications: { workoutReminder: true, mealReminder: true, progressUpdate: true },
-    units: { weight: 'kg', height: 'cm' },
-    language: 'ko'
+    units: { weight: 'kg', height: 'cm' }
   };
 
   return (
@@ -304,69 +276,6 @@ const SettingsPage = () => {
 
         {!isLoading && (
           <>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                테마 설정
-              </h3>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700 dark:text-gray-300">다크 모드</span>
-                <button
-                  onClick={() => handleAppSettingChange('darkMode', !displaySettings.darkMode)}
-                  className={`px-4 py-2 rounded font-medium transition-colors duration-150 ease-in-out ${
-                    displaySettings.darkMode 
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                      : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200'
-                  }`}
-                >
-                  {displaySettings.darkMode ? '켜짐' : '꺼짐'}
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                알림 설정
-              </h3>
-              <div className="space-y-4">
-                {[
-                  { key: 'workoutReminder', label: '운동 알림' },
-                  { key: 'mealReminder', label: '식사 알림' },
-                  { key: 'progressUpdate', label: '진행 상황 알림' },
-                ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between">
-                    <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
-                    <button
-                      onClick={() => handleNotificationSettingChange(item.key as keyof UserSettings['notifications'], !displaySettings.notifications[item.key as keyof UserSettings['notifications']])}
-                      className={`px-4 py-2 rounded font-medium transition-colors duration-150 ease-in-out ${
-                        displaySettings.notifications[item.key as keyof UserSettings['notifications']] 
-                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                          : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200'
-                      }`}
-                    >
-                      {displaySettings.notifications[item.key as keyof UserSettings['notifications']] ? '켜짐' : '꺼짐'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                언어 설정
-              </h3>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700 dark:text-gray-300">언어</span>
-                <select
-                  value={displaySettings.language}
-                  onChange={(e) => handleAppSettingChange('language', e.target.value as 'ko' | 'en')}
-                  className="block w-auto px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100"
-                >
-                  <option value="ko">한국어</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
-            </div>
-
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
                 단위 설정
