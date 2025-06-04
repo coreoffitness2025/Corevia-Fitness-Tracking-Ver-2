@@ -204,6 +204,40 @@ export interface Food {
   notes?: string;
 }
 
+// 물 섭취 기록
+export interface WaterIntake {
+  id: string;
+  userId: string;
+  date: Date;
+  amount: number; // ml 단위
+  time: string; // 섭취 시간 (HH:mm)
+  notes?: string;
+}
+
+// 영양제/보충제 섭취 기록
+export interface Supplement {
+  id: string;
+  userId: string;
+  date: Date;
+  name: string; // 영양제 이름
+  dosage: string; // 복용량 (예: "1정", "2스푼")
+  time: string; // 섭취 시간 (HH:mm)
+  type: 'vitamin' | 'mineral' | 'protein' | 'preworkout' | 'postworkout' | 'other'; // 영양제 종류
+  notes?: string;
+}
+
+// 식단 관련 통합 타입 (기록 보기에서 사용)
+export type IntakeRecord = {
+  type: 'food';
+  data: Food;
+} | {
+  type: 'water';
+  data: WaterIntake;
+} | {
+  type: 'supplement';
+  data: Supplement;
+};
+
 export interface WorkoutGuideInfo {
   gender?: 'male' | 'female';
   age?: number;
