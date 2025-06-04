@@ -485,11 +485,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               icon: '/favicon.ico',
               badge: '/favicon.ico',
               tag: 'workout-timer',
-              requireInteraction: true, // 사용자가 직접 닫을 때까지 표시
-              actions: [
-                { action: 'start', title: '다음 세트 시작' },
-                { action: 'snooze', title: '30초 더' }
-              ]
+              requireInteraction: true // 사용자가 직접 닫을 때까지 표시
             });
           }
           
@@ -1733,7 +1729,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   <div className="flex items-center gap-2">
                     <Badge
                       size="lg"
-                      className="bg-blue-600 text-white font-semibold px-4 py-2 text-base shadow-lg border-0"
+                      className="bg-blue-800 text-white font-bold px-4 py-2 text-base shadow-xl border-0"
                     >
                       {(() => {
                         const { setsCount, repsCount } = getSetConfiguration(
@@ -1741,9 +1737,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           customSets,
                           customReps
                         );
-                        return selectedSetConfiguration === 'custom' 
-                          ? `${setsCount}x${repsCount} (커스텀)`
-                          : selectedSetConfiguration === '5x5' ? '5x5'
+                        return selectedSetConfiguration === '5x5' ? '5x5'
                           : selectedSetConfiguration === '6x3' ? '6x3'
                           : selectedSetConfiguration === '10x5' ? '10x5'
                           : selectedSetConfiguration === '15x5' ? '15x5'
@@ -1875,7 +1869,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                       <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                           횟수
-                          {selectedSetConfiguration !== 'custom' && (
+                          {selectedSetConfiguration !== '5x5' && selectedSetConfiguration !== '6x3' && selectedSetConfiguration !== '10x5' && selectedSetConfiguration !== '15x5' && (
                             <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
                               (최대 {
                                 selectedSetConfiguration === '5x5' ? '5회' :

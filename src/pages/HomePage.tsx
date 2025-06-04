@@ -10,6 +10,7 @@ import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, 
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutSettings } from '../hooks/useWorkoutSettings';
 import Button from '../components/common/Button';
+import { getFoodRecords, FoodRecord } from '../utils/indexedDB';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -128,7 +129,7 @@ const HomePage = () => {
         
         setRecentSessions(sessionsData);
         
-        // 최근 7일 식사 기록 불러오기
+        // 식단 기록 불러오기 (IndexedDB에서만)
         const recentDates = getRecentDates(7);
         const lastWeekStart = recentDates[recentDates.length - 1]; // 7일 전
         const todayEnd = new Date();
@@ -140,36 +141,53 @@ const HomePage = () => {
           userProfileUid: userProfile.uid
         });
         
-        const mealsQuery = query(
-          collection(db, 'foods'),
-          where('userId', '==', userProfile.uid),
-          where('date', '>=', lastWeekStart),
-          orderBy('date', 'desc'),
-          limit(30)  // 충분한 수의 식단 기록 가져오기
-        );
-        
-        const mealsSnapshot = await getDocs(mealsQuery);
-        const mealsData = mealsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            ...data,
-            id: doc.id,
-            date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date)
-          } as Food;
-        });
-        
-        console.log('[HomePage] 가져온 식단 데이터:', mealsData.length, '개', mealsData.map(m => ({
-          id: m.id,
-          name: m.name,
-          date: m.date.toISOString().split('T')[0]
-        })));
-        
-        setRecentMeals(mealsData);
-        
-        // 날짜별로 식단 그룹화
-        const grouped = groupFoodsByDate(mealsData);
-        console.log('[HomePage] 그룹화된 식단 데이터:', Object.keys(grouped));
-        setGroupedMeals(grouped);
+        // IndexedDB에서 식단 데이터 가져오기
+        try {
+          const indexedDBFoodRecords = await getFoodRecords();
+          const mealsData = indexedDBFoodRecords
+            .filter((record: FoodRecord) => {
+              // 사용자 필터링 및 날짜 필터링
+              const recordDate = new Date(record.date);
+              return record.userId === userProfile.uid && 
+                     recordDate >= lastWeekStart && 
+                     recordDate <= todayEnd;
+            })
+            .map((record: FoodRecord) => ({
+              id: record.id || `local-${Date.now()}-${Math.random()}`,
+              name: record.name,
+              description: record.description,
+              calories: record.calories,
+              protein: record.protein,
+              carbs: record.carbs,
+              fat: record.fat,
+              date: new Date(record.date),
+              imageUrl: record.imageId, // IndexedDB의 imageId를 imageUrl로 매핑
+              imageId: record.imageId,
+              userId: record.userId,
+              source: 'indexeddb'
+            } as Food & { source: string }))
+            .sort((a, b) => b.date.getTime() - a.date.getTime()); // 최신순 정렬
+          
+          console.log('[HomePage] IndexedDB에서 가져온 식단 데이터:', mealsData.length, '개', mealsData.map(m => ({
+            id: m.id,
+            name: m.name,
+            date: m.date.toISOString().split('T')[0],
+            source: m.source
+          })));
+          
+          setRecentMeals(mealsData);
+          
+          // 날짜별로 식단 그룹화
+          const grouped = groupFoodsByDate(mealsData);
+          console.log('[HomePage] 그룹화된 식단 데이터:', Object.keys(grouped));
+          setGroupedMeals(grouped);
+          
+        } catch (indexedDBError) {
+          console.warn('[HomePage] IndexedDB 접근 오류:', indexedDBError);
+          // IndexedDB 접근 실패 시 빈 배열 사용
+          setRecentMeals([]);
+          setGroupedMeals({});
+        }
         
       } catch (err) {
         console.error('Error fetching home page data:', err);

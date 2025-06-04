@@ -619,58 +619,136 @@ const WorkoutWeightGuide: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">운동 무게 추천 결과</h3>
+        <div className="space-y-8">
+          <div className="flex justify-between items-center p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl shadow-lg">
+            <div>
+              <h3 className="text-2xl font-bold">개인 맞춤 무게 추천</h3>
+              <p className="text-blue-100 mt-2">당신의 프로필에 최적화된 운동 무게입니다</p>
+            </div>
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => setResult(null)}
               size="sm"
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
             >
               다시 계산하기
             </Button>
           </div>
           
-          {/* 결과 표시 섹션 */}
-          <div className="space-y-6">
-            {/* 스쿼트 결과 */}
-            <div className="border-t pt-4 dark:border-gray-700">
-              <h4 className="text-md font-medium mb-2">스쿼트 (Squat)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {generateRepsTable(guideInfo.oneRepMaxes.squat, 'squat')}
+          {/* 주요 운동별 추천 무게 카드 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[
+              { name: '스쿼트', key: 'squat', color: 'from-red-400 to-red-600' },
+              { name: '데드리프트', key: 'deadlift', color: 'from-orange-400 to-orange-600' },
+              { name: '벤치프레스', key: 'bench', color: 'from-green-400 to-green-600' },
+              { name: '오버헤드프레스', key: 'overheadPress', color: 'from-purple-400 to-purple-600' }
+            ].map((exercise) => {
+              const maxWeight = guideInfo.oneRepMaxes[exercise.key as keyof typeof guideInfo.oneRepMaxes];
+              if (!maxWeight) return null;
+              
+              return (
+                <div key={exercise.key} className={`bg-gradient-to-br ${exercise.color} p-6 rounded-xl shadow-lg text-white transform hover:scale-105 transition-all duration-300`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <h4 className="text-xl font-bold">{exercise.name}</h4>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs opacity-80">1RM</p>
+                      <p className="text-lg font-bold">{maxWeight}kg</p>
+                    </div>
+                  </div>
+                  
+                  {/* 추천 반복 횟수별 무게 */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { reps: 3, label: '근력', percentage: 0.94 },
+                      { reps: 8, label: '근비대', percentage: 0.81 },
+                      { reps: 12, label: '근지구력', percentage: 0.70 }
+                    ].map(({ reps, label, percentage }) => {
+                      let adjustmentFactor = 1.0;
+                      
+                      if (result) {
+                        if (result.userLevel === 'beginner') adjustmentFactor = 0.85;
+                        else if (result.userLevel === 'intermediate') adjustmentFactor = 0.95;
+                        
+                        if (result.ageGroup === '36-50') adjustmentFactor *= 0.95;
+                        else if (result.ageGroup === '51+') adjustmentFactor *= 0.90;
+                        
+                        const gender = userProfile?.gender || 'male';
+                        if (gender === 'female') adjustmentFactor *= 0.92;
+                        
+                        if (result.setConfig.type === '6x3') adjustmentFactor *= 1.1;
+                        else if (result.setConfig.type === '15x5') adjustmentFactor *= 0.9;
+                      }
+                      
+                      const adjustedWeight = Math.round(maxWeight * percentage * adjustmentFactor);
+                      
+                      return (
+                        <div key={reps} className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
+                          <p className="text-xs opacity-80 mb-1">{label}</p>
+                          <p className="text-lg font-bold">{adjustedWeight}kg</p>
+                          <p className="text-xs opacity-80">{reps}회</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* 프로그레션 바 */}
+                  <div className="mt-4 bg-white/20 rounded-full h-2">
+                    <div 
+                      className="bg-white rounded-full h-2 transition-all duration-1000 ease-out" 
+                      style={{ width: `${Math.min((maxWeight / 200) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs opacity-80 mt-1">강도 지수: {Math.round((maxWeight / 200) * 100)}%</p>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* 세트 구성 정보 카드 */}
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-6 rounded-xl shadow-lg">
+            <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+              선택된 세트 구성: {result.setConfig.description}
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h5 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">장점:</h5>
+                <ul className="space-y-1">
+                  {result.setConfig.advantages.map((advantage, index) => (
+                    <li key={index} className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-2">
+                      <span className="text-green-500 mt-1">✓</span>
+                      {advantage}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-            
-            {/* 데드리프트 결과 */}
-            <div className="border-t pt-4 dark:border-gray-700">
-              <h4 className="text-md font-medium mb-2">데드리프트 (Deadlift)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {generateRepsTable(guideInfo.oneRepMaxes.deadlift, 'deadlift')}
-              </div>
-            </div>
-            
-            {/* 벤치프레스 결과 */}
-            <div className="border-t pt-4 dark:border-gray-700">
-              <h4 className="text-md font-medium mb-2">벤치프레스 (Bench Press)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {generateRepsTable(guideInfo.oneRepMaxes.bench, 'bench')}
-              </div>
-            </div>
-            
-            {/* 오버헤드프레스 결과 */}
-            <div className="border-t pt-4 dark:border-gray-700">
-              <h4 className="text-md font-medium mb-2">오버헤드프레스 (Overhead Press)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {generateRepsTable(guideInfo.oneRepMaxes.overheadPress, 'overheadPress')}
+              <div className="space-y-3">
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">휴식 시간</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">{result.recoveryTime}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">기준 강도</p>
+                  <p className="text-lg font-bold text-gray-800 dark:text-white">1RM의 {Math.round(result.percentageOfOneRM * 100)}%</p>
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="p-4 mt-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
-            <p className="text-sm text-yellow-700 dark:text-yellow-400">
-              <strong>참고:</strong> 이 무게는 참고용이며, 실제 운동 시 컨디션과 경험에 따라 조절하세요.
-              처음 시도하는 무게라면 낮은 무게부터 시작하여 점진적으로 증가시키는 것이 안전합니다.
-            </p>
+          {/* 안전 가이드 */}
+          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-l-4 border-yellow-400 p-6 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div>
+                <h4 className="font-bold text-yellow-800 dark:text-yellow-200 mb-2">안전 가이드</h4>
+                <ul className="space-y-2 text-sm text-yellow-700 dark:text-yellow-300">
+                  <li>• 처음 시도하는 무게라면 낮은 무게부터 시작하여 점진적으로 증가시키세요</li>
+                  <li>• 컨디션이 좋지 않은 날에는 무게를 줄이는 것이 안전합니다</li>
+                  <li>• 정확한 자세가 우선이며, 무게는 그 다음입니다</li>
+                  <li>• 운동 전 충분한 워밍업을 실시하세요</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       )}

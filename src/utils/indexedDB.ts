@@ -153,7 +153,42 @@ export const getFoodRecordsByDate = async (userId: string, date: Date): Promise<
       request.onsuccess = (event) => {
         const result = (event.target as IDBRequest).result;
         // ISO 문자열을 다시 Date 객체로 변환
-        const foods = result.map(food => ({
+        const foods = result.map((food: any) => ({
+          ...food,
+          date: new Date(food.date),
+          createdAt: new Date(food.createdAt)
+        }));
+        resolve(foods);
+      };
+      
+      request.onerror = (event) => {
+        console.error('식단 조회 오류:', event);
+        reject('식단 기록을 조회할 수 없습니다.');
+      };
+      
+      transaction.oncomplete = () => {
+        db.close();
+      };
+    });
+  } catch (error) {
+    console.error('식단 조회 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+// 모든 식단 기록 조회
+export const getFoodRecords = async (): Promise<FoodRecord[]> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([FOOD_STORE], 'readonly');
+      const store = transaction.objectStore(FOOD_STORE);
+      const request = store.getAll();
+      
+      request.onsuccess = (event) => {
+        const result = (event.target as IDBRequest).result;
+        // ISO 문자열을 다시 Date 객체로 변환
+        const foods = result.map((food: any) => ({
           ...food,
           date: new Date(food.date),
           createdAt: new Date(food.createdAt)

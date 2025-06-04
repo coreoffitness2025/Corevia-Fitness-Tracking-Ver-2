@@ -169,17 +169,10 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               <div className="flex flex-wrap gap-2">
                 {/* 디테일한 부위 정보 표시 */}
                 {exercise.muscles?.map((muscle, index) => (
-                  <span 
-                    key={index}
-                    className="inline-block bg-primary-100 dark:bg-primary-800/30 text-primary-700 dark:text-primary-300 text-xs px-2 py-1 rounded-full"
-                  >
+                  <span key={index} className="text-xs px-2 py-1 bg-primary-100 dark:bg-primary-800 text-primary-700 dark:text-primary-300 rounded-full font-medium">
                     {muscle}
                   </span>
                 ))}
-                <span className="inline-block bg-success-100 text-success-700 text-xs px-2 py-1 rounded-full dark:bg-success-900 dark:text-success-300">
-                  {exercise.level === 'beginner' ? '초급' : 
-                  exercise.level === 'intermediate' ? '중급' : '고급'}
-                </span>
               </div>
             </div>
           </div>

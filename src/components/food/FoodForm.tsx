@@ -63,6 +63,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     new Date().toTimeString().slice(0, 5) // 현재 시간으로 초기화 (HH:MM)
   );
   const [showTimeInput, setShowTimeInput] = useState<boolean>(false);
+  const [showTimeSlots, setShowTimeSlots] = useState<boolean>(false);
 
   // 사용자 프로필에서 목표 칼로리 계산
   useEffect(() => {
@@ -293,7 +294,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           
           // 사용자에게 로컬 저장 안내
           setTimeout(() => {
-            toast.custom((t) => (
+            toast.custom((t: any) => (
               <div className={`${t.visible ? 'animate-slide-in' : 'animate-slide-out'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto overflow-hidden`}>
                 <div className="p-4">
                   <div className="flex items-start">
@@ -339,6 +340,31 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   // 영양정보 페이지로 이동하는 함수
   const navigateToNutritionInfo = () => {
     navigate('/qna', { state: { activeTab: 'nutrition', openNutritionScout: true } });
+  };
+
+  // 시간대 슬롯 선택 함수
+  const handleTimeSlotSelect = (slot: string) => {
+    let timeValue = '';
+    switch(slot) {
+      case '08:00 ~ 12:00':
+        timeValue = '10:00';
+        break;
+      case '12:00 ~ 16:00':
+        timeValue = '14:00';
+        break;
+      case '16:00 ~ 20:00':
+        timeValue = '18:00';
+        break;
+      case '20:00 ~ 24:00':
+        timeValue = '22:00';
+        break;
+      case '새벽 야식':
+        timeValue = '02:00';
+        break;
+    }
+    setIntakeTime(timeValue);
+    setShowTimeSlots(false);
+    setShowTimeInput(false);
   };
 
   return (
@@ -422,17 +448,50 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
         <div>
           <label
             htmlFor="intakeTime"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
             섭취 시간대
           </label>
-          <input
-            type="time"
-            id="intakeTime"
-            value={intakeTime}
-            onChange={(e) => setIntakeTime(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="time"
+                id="intakeTime"
+                value={intakeTime}
+                onChange={(e) => setIntakeTime(e.target.value)}
+                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowTimeSlots(!showTimeSlots)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+              >
+                알수없음
+              </button>
+            </div>
+            
+            {showTimeSlots && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <h4 className="col-span-full text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">대략적인 시간대를 선택하세요:</h4>
+                {[
+                  '08:00 ~ 12:00',
+                  '12:00 ~ 16:00', 
+                  '16:00 ~ 20:00',
+                  '20:00 ~ 24:00',
+                  '새벽 야식'
+                ].map((slot) => (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => handleTimeSlotSelect(slot)}
+                    className="px-3 py-2 text-sm font-medium text-center text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors"
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-4">
