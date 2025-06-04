@@ -89,7 +89,7 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-lg"
               min="1"
               max="2000"
-              step="50"
+              step="1"
               required
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
