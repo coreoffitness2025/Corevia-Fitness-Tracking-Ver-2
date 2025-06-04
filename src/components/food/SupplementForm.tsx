@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Supplement } from '../../types';
+import { saveSupplementRecord, getSupplementRecords, SupplementRecord } from '../../utils/indexedDB';
 import Button from '../common/Button';
 import { Pill, Clock, Plus, Search, HelpCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -18,11 +19,38 @@ const SupplementForm: React.FC<SupplementFormProps> = ({ onSuccess }) => {
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [frequentSupplements, setFrequentSupplements] = useState<string[]>([]);
 
-  // 더미 데이터: 사용자가 자주 복용하는 영양제 (기록 기반)
-  const frequentSupplements = [
-    '멀티비타민', '오메가3', '비타민D', '마그네슘'
-  ];
+  // 자주 복용하는 영양제 로드
+  useEffect(() => {
+    const loadFrequentSupplements = async () => {
+      if (!userProfile?.uid) return;
+      
+      try {
+        const records = await getSupplementRecords(userProfile.uid);
+        
+        // 영양제별 복용 횟수 계산
+        const supplementCounts: { [key: string]: number } = {};
+        records.forEach(record => {
+          supplementCounts[record.name] = (supplementCounts[record.name] || 0) + 1;
+        });
+        
+        // 복용 횟수가 많은 순으로 정렬하여 상위 4개 선택
+        const frequent = Object.entries(supplementCounts)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 4)
+          .map(([name]) => name);
+          
+        setFrequentSupplements(frequent.length > 0 ? frequent : ['멀티비타민', '오메가3', '비타민D', '마그네슘']);
+      } catch (error) {
+        console.error('자주 복용하는 영양제 로드 오류:', error);
+        // 기본값으로 설정
+        setFrequentSupplements(['멀티비타민', '오메가3', '비타민D', '마그네슘']);
+      }
+    };
+    
+    loadFrequentSupplements();
+  }, [userProfile?.uid]);
 
   // 다양한 영양제 목록 (카테고리별)
   const allSupplements = [
@@ -125,7 +153,7 @@ const SupplementForm: React.FC<SupplementFormProps> = ({ onSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      const supplementRecord: Omit<Supplement, 'id'> = {
+      const supplementRecord: Omit<SupplementRecord, 'id' | 'createdAt'> = {
         userId: userProfile.uid,
         date: new Date(),
         name: name.trim(),
@@ -135,10 +163,10 @@ const SupplementForm: React.FC<SupplementFormProps> = ({ onSuccess }) => {
         notes: notes.trim() || undefined,
       };
 
-      // IndexedDB에 저장하는 로직 추가 예정
-      // await addSupplementRecord(supplementRecord);
+      // IndexedDB에 저장
+      await saveSupplementRecord(supplementRecord);
       
-      console.log('영양제 섭취 기록:', supplementRecord);
+      console.log('영양제 섭취 기록 저장 완료:', supplementRecord);
       
       toast.success(`${name} 복용 기록이 저장되었습니다.`);
       
@@ -149,6 +177,29 @@ const SupplementForm: React.FC<SupplementFormProps> = ({ onSuccess }) => {
       setIsUnknownTime(false);
       setNotes('');
       setSearchQuery('');
+      
+      // 자주 복용하는 영양제 목록 업데이트
+      if (!frequentSupplements.includes(name.trim())) {
+        const loadFrequentSupplements = async () => {
+          try {
+            const records = await getSupplementRecords(userProfile.uid);
+            const supplementCounts: { [key: string]: number } = {};
+            records.forEach(record => {
+              supplementCounts[record.name] = (supplementCounts[record.name] || 0) + 1;
+            });
+            
+            const frequent = Object.entries(supplementCounts)
+              .sort(([,a], [,b]) => b - a)
+              .slice(0, 4)
+              .map(([name]) => name);
+              
+            setFrequentSupplements(frequent);
+          } catch (error) {
+            console.error('자주 복용하는 영양제 업데이트 오류:', error);
+          }
+        };
+        loadFrequentSupplements();
+      }
       
       onSuccess?.();
     } catch (error) {

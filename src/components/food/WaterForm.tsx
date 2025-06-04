@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { WaterIntake } from '../../types';
+import { saveWaterRecord, WaterRecord } from '../../utils/indexedDB';
 import Button from '../common/Button';
 import { Droplets, Clock, Plus, HelpCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -49,7 +50,7 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
     setIsSubmitting(true);
 
     try {
-      const waterRecord: Omit<WaterIntake, 'id'> = {
+      const waterRecord: Omit<WaterRecord, 'id' | 'createdAt'> = {
         userId: userProfile.uid,
         date: new Date(),
         amount,
@@ -57,10 +58,10 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
         notes: notes.trim() || undefined,
       };
 
-      // IndexedDB에 저장하는 로직 추가 예정
-      // await addWaterRecord(waterRecord);
+      // IndexedDB에 저장
+      await saveWaterRecord(waterRecord);
       
-      console.log('물 섭취 기록:', waterRecord);
+      console.log('물 섭취 기록 저장 완료:', waterRecord);
       
       toast.success(`물 ${amount}ml 섭취 기록이 저장되었습니다.`);
       

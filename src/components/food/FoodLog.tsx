@@ -7,7 +7,7 @@ import { Info, Calendar, CalendarDays, ExternalLink, X, Plus, Droplets, Pill } f
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { getFoodRecordsByDate, getFoodImage, FoodRecord } from '../../utils/indexedDB';
+import { getFoodRecordsByDate, getFoodImage, FoodRecord, getWaterRecordsByDate, getSupplementRecordsByDate, WaterRecord, SupplementRecord } from '../../utils/indexedDB';
 import { WaterIntake, Supplement } from '../../types';
 import { 
   calculateNutritionGoals, 
@@ -42,8 +42,8 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
   const [foodRecords, setFoodRecords] = useState<FoodRecord[]>([]);
   
   // 물과 영양제 기록을 위한 상태 추가
-  const [waterRecords, setWaterRecords] = useState<WaterIntake[]>([]);
-  const [supplementRecords, setSupplementRecords] = useState<Supplement[]>([]);
+  const [waterRecords, setWaterRecords] = useState<WaterRecord[]>([]);
+  const [supplementRecords, setSupplementRecords] = useState<SupplementRecord[]>([]);
   
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
   const [calendarDates, setCalendarDates] = useState<Date[]>([]);
@@ -62,7 +62,8 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
 
   useEffect(() => {
     if (userProfile?.uid) {
-      loadFoodData();
+      loadFoodRecords();
+      loadAdditionalRecords();
     }
   }, [userProfile?.uid, selectedDate, viewMode]);
 
@@ -91,7 +92,7 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
     }
   }, [viewMode, selectedDate]);
 
-  const loadFoodData = async () => {
+  const loadFoodRecords = async () => {
     if (!userProfile?.uid) return;
     
     setIsLoading(true);
@@ -127,71 +128,11 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
       
       setFoodRecords(records);
       
-      // 물과 영양제 데이터 로드 (임시 더미 데이터)
-      await loadWaterAndSupplementData();
-      
       await loadImages(records);
     } catch (error) {
       console.error('식단 기록 로드 오류:', error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // 물과 영양제 데이터 로드 함수 (향후 IndexedDB와 연동)
-  const loadWaterAndSupplementData = async () => {
-    if (!userProfile?.uid) return;
-    
-    try {
-      // 임시 더미 데이터 (실제로는 IndexedDB에서 가져올 예정)
-      const currentDate = new Date(selectedDate);
-      
-      const mockWaterRecords: WaterIntake[] = [
-        {
-          id: '1',
-          userId: userProfile.uid,
-          date: currentDate,
-          amount: 500,
-          time: '08:30',
-          notes: '아침 운동 후'
-        },
-        {
-          id: '2',
-          userId: userProfile.uid,
-          date: currentDate,
-          amount: 300,
-          time: '12:00',
-          notes: '점심'
-        }
-      ];
-
-      const mockSupplementRecords: Supplement[] = [
-        {
-          id: '1',
-          userId: userProfile.uid,
-          date: currentDate,
-          name: '멀티비타민',
-          dosage: '1정',
-          time: '08:00',
-          type: 'vitamin',
-          notes: '공복에 복용'
-        },
-        {
-          id: '2',
-          userId: userProfile.uid,
-          date: currentDate,
-          name: '오메가3',
-          dosage: '2캡슐',
-          time: '20:00',
-          type: 'vitamin',
-          notes: '저녁 식후'
-        }
-      ];
-
-      setWaterRecords(mockWaterRecords);
-      setSupplementRecords(mockSupplementRecords);
-    } catch (error) {
-      console.error('물/영양제 데이터 로드 오류:', error);
     }
   };
 
@@ -626,6 +567,55 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
         </div>
       </div>
     );
+  };
+
+  // 물과 영양제 데이터 로드 함수
+  const loadAdditionalRecords = async () => {
+    if (!userProfile?.uid) return;
+    
+    try {
+      if (viewMode === 'day') {
+        // 일별 뷰: 선택된 날짜의 기록만 로드
+        const waters = await getWaterRecordsByDate(userProfile.uid, new Date(selectedDate));
+        const supplements = await getSupplementRecordsByDate(userProfile.uid, new Date(selectedDate));
+        setWaterRecords(waters);
+        setSupplementRecords(supplements);
+      } else if (viewMode === 'week') {
+        // 주별 뷰: 해당 주의 모든 기록 로드
+        const weekDates = getDaysOfWeek();
+        let allWaters: WaterRecord[] = [];
+        let allSupplements: SupplementRecord[] = [];
+        
+        for (const date of weekDates) {
+          const waters = await getWaterRecordsByDate(userProfile.uid, date);
+          const supplements = await getSupplementRecordsByDate(userProfile.uid, date);
+          allWaters = [...allWaters, ...waters];
+          allSupplements = [...allSupplements, ...supplements];
+        }
+        
+        setWaterRecords(allWaters);
+        setSupplementRecords(allSupplements);
+      } else if (viewMode === 'month') {
+        // 월별 뷰: 해당 월의 모든 기록 로드
+        const monthDates = getDatesForCalendar();
+        let allWaters: WaterRecord[] = [];
+        let allSupplements: SupplementRecord[] = [];
+        
+        for (const date of monthDates) {
+          const waters = await getWaterRecordsByDate(userProfile.uid, date);
+          const supplements = await getSupplementRecordsByDate(userProfile.uid, date);
+          allWaters = [...allWaters, ...waters];
+          allSupplements = [...allSupplements, ...supplements];
+        }
+        
+        setWaterRecords(allWaters);
+        setSupplementRecords(allSupplements);
+      }
+    } catch (error) {
+      console.error('물/영양제 기록 로드 오류:', error);
+      setWaterRecords([]);
+      setSupplementRecords([]);
+    }
   };
 
   return (
