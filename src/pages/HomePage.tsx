@@ -48,7 +48,7 @@ const calculateMacrosForHome = (targetCalories: number, weight_kg: number | unde
 // getYesterdayDate 함수를 getRecentDates로 수정
 const getRecentDates = (daysCount = 7) => {
   const dates = [];
-  for (let i = 1; i <= daysCount; i++) {
+  for (let i = 0; i <= daysCount; i++) {
     const date = new Date();
     date.setDate(date.getDate() - i);
     date.setHours(0, 0, 0, 0);
@@ -134,6 +134,12 @@ const HomePage = () => {
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
         
+        console.log('[HomePage] 식단 조회 범위:', {
+          lastWeekStart: lastWeekStart.toISOString(),
+          todayEnd: todayEnd.toISOString(),
+          userProfileUid: userProfile.uid
+        });
+        
         const mealsQuery = query(
           collection(db, 'foods'),
           where('userId', '==', userProfile.uid),
@@ -152,10 +158,17 @@ const HomePage = () => {
           } as Food;
         });
         
+        console.log('[HomePage] 가져온 식단 데이터:', mealsData.length, '개', mealsData.map(m => ({
+          id: m.id,
+          name: m.name,
+          date: m.date.toISOString().split('T')[0]
+        })));
+        
         setRecentMeals(mealsData);
         
         // 날짜별로 식단 그룹화
         const grouped = groupFoodsByDate(mealsData);
+        console.log('[HomePage] 그룹화된 식단 데이터:', Object.keys(grouped));
         setGroupedMeals(grouped);
         
       } catch (err) {
@@ -345,7 +358,7 @@ const HomePage = () => {
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">현재 예상 1RM</h2>
         </div>
         <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">스쿼트</p>
               <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.squat || 0} kg</p>
@@ -364,6 +377,17 @@ const HomePage = () => {
             <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
               <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">오버헤드프레스</p>
               <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.overheadPress || 0} kg</p>
+            </div>
+            
+            {/* 3대 합산 추가 */}
+            <div className="text-center p-3 rounded-md bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-800/40 dark:to-yellow-700/40 border-2 border-yellow-300 dark:border-yellow-600 transition-all duration-300">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 font-bold">예상 3대</p>
+              <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
+                {((userProfile?.oneRepMax?.squat || 0) + 
+                  (userProfile?.oneRepMax?.deadlift || 0) + 
+                  (userProfile?.oneRepMax?.bench || 0))} kg
+              </p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">S+D+B</p>
             </div>
           </div>
         </div>

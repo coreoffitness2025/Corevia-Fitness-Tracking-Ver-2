@@ -58,6 +58,12 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const [carbsTarget, setCarbsTarget] = useState<number>(0);
   const [fatTarget, setFatTarget] = useState<number>(0);
 
+  // 섭취 시간대 관련 상태 추가
+  const [intakeTime, setIntakeTime] = useState<string>(
+    new Date().toTimeString().slice(0, 5) // 현재 시간으로 초기화 (HH:MM)
+  );
+  const [showTimeInput, setShowTimeInput] = useState<boolean>(false);
+
   // 사용자 프로필에서 목표 칼로리 계산
   useEffect(() => {
     if (userProfile) {
@@ -240,7 +246,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     }
 
     try {
-      const mealDateTime = new Date(`${mealDate}T12:00:00`); // 기본 시간 정오로 설정
+      const mealDateTime = new Date(`${mealDate}T${intakeTime}`);
       
       // IndexedDB에 이미지 저장
       if (imagePreview) {
@@ -409,6 +415,22 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             id="mealDate"
             value={mealDate}
             onChange={(e) => setMealDate(e.target.value)}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="intakeTime"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            섭취 시간대
+          </label>
+          <input
+            type="time"
+            id="intakeTime"
+            value={intakeTime}
+            onChange={(e) => setIntakeTime(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>

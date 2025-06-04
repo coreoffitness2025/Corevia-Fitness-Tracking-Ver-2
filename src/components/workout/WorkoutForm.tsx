@@ -1733,7 +1733,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   <div className="flex items-center gap-2">
                     <Badge
                       size="lg"
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 text-base shadow-lg border-0"
+                      className="bg-blue-600 text-white font-semibold px-4 py-2 text-base shadow-lg border-0"
                     >
                       {(() => {
                         const { setsCount, repsCount } = getSetConfiguration(

@@ -139,8 +139,12 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
                 onClick={() => handleSearchSelect(exercise)}
               >
                 <div className="font-medium">{exercise.name}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {getPartLabel(exercise.part as ExercisePart)}
+                <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-1 mt-1">
+                  {exercise.muscles?.map((muscle, index) => (
+                    <span key={index} className="text-primary-600 dark:text-primary-400">
+                      {muscle}{index < exercise.muscles!.length - 1 ? ',' : ''}
+                    </span>
+                  )) || <span>{getPartLabel(exercise.part as ExercisePart)}</span>}
                 </div>
               </div>
             ))}
@@ -163,9 +167,15 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               <h3 className="text-lg font-semibold mb-2">{exercise.name}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{exercise.description}</p>
               <div className="flex flex-wrap gap-2">
-                <span className={`inline-block bg-part-${exercise.part} bg-opacity-20 dark:bg-opacity-30 text-gray-700 dark:text-gray-200 text-xs px-2 py-1 rounded-full`}>
-                  {getPartLabel(exercise.part as ExercisePart)}
-                </span>
+                {/* 디테일한 부위 정보 표시 */}
+                {exercise.muscles?.map((muscle, index) => (
+                  <span 
+                    key={index}
+                    className="inline-block bg-primary-100 dark:bg-primary-800/30 text-primary-700 dark:text-primary-300 text-xs px-2 py-1 rounded-full"
+                  >
+                    {muscle}
+                  </span>
+                ))}
                 <span className="inline-block bg-success-100 text-success-700 text-xs px-2 py-1 rounded-full dark:bg-success-900 dark:text-success-300">
                   {exercise.level === 'beginner' ? '초급' : 
                   exercise.level === 'intermediate' ? '중급' : '고급'}

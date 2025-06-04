@@ -379,7 +379,8 @@ const WorkoutWeightGuide: React.FC = () => {
   const generateRepsTable = (maxWeight: number | null, exerciseName: string) => {
     if (!maxWeight) return <p>1RM 정보가 없습니다</p>;
     
-    const repRanges = [
+    // 기본 백분율 (표준 공식 기반)
+    const baseRepRanges = [
       { reps: 1, percentage: 1.00 },
       { reps: 2, percentage: 0.97 },
       { reps: 3, percentage: 0.94 },
@@ -392,13 +393,58 @@ const WorkoutWeightGuide: React.FC = () => {
       { reps: 15, percentage: 0.65 }
     ];
     
-    return repRanges.map(range => (
-      <div key={range.reps} className="bg-gray-50 dark:bg-gray-800 p-2 rounded border dark:border-gray-700">
-        <div className="text-sm font-medium">{range.reps}회</div>
-        <div className="text-lg font-bold">{Math.round(maxWeight * range.percentage)}kg</div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">1RM의 {Math.round(range.percentage * 100)}%</div>
-      </div>
-    ));
+    // 사용자 프로필 기반 조정 계수 계산
+    let adjustmentFactor = 1.0;
+    
+    if (result) {
+      // 사용자의 경험 수준에 따른 조정
+      if (result.userLevel === 'beginner') {
+        adjustmentFactor = 0.85; // 초보자는 85% 수준
+      } else if (result.userLevel === 'intermediate') {
+        adjustmentFactor = 0.95; // 중급자는 95% 수준
+      } else {
+        adjustmentFactor = 1.0; // 고급자는 100% 수준
+      }
+      
+      // 연령에 따른 추가 조정
+      if (result.ageGroup === '36-50') {
+        adjustmentFactor *= 0.95; // 36-50세는 95%
+      } else if (result.ageGroup === '51+') {
+        adjustmentFactor *= 0.90; // 51세 이상은 90%
+      }
+      
+      // 성별에 따른 조정 (여성의 경우 상대적으로 높은 반복 횟수 선호)
+      const gender = userProfile?.gender || 'male';
+      if (gender === 'female') {
+        adjustmentFactor *= 0.92; // 여성은 92% 수준에서 시작
+      }
+      
+      // 세트 구성에 따른 조정
+      if (result.setConfig.type === '6x3') {
+        // 6x3 (근력 중심): 더 높은 무게, 낮은 반복
+        adjustmentFactor *= 1.1; // 10% 증가
+      } else if (result.setConfig.type === '15x5') {
+        // 15x5 (근지구력 중심): 낮은 무게, 높은 반복
+        adjustmentFactor *= 0.9; // 10% 감소
+      }
+      // 10x5는 기본값 유지
+    }
+    
+    // 조정된 백분율로 무게 계산
+    return baseRepRanges.map(range => {
+      const adjustedPercentage = range.percentage * adjustmentFactor;
+      const recommendedWeight = Math.round(maxWeight * adjustedPercentage);
+      
+      return (
+        <div key={range.reps} className="bg-gray-50 dark:bg-gray-800 p-2 rounded border dark:border-gray-700">
+          <div className="text-sm font-medium">{range.reps}회</div>
+          <div className="text-lg font-bold">{recommendedWeight}kg</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            1RM의 {Math.round(adjustedPercentage * 100)}%
+          </div>
+        </div>
+      );
+    });
   };
 
   return (
