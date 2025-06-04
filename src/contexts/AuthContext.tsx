@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { auth, db, getUserProfile, updateUserProfile as updateFirebaseProfile } from '../firebase/firebaseConfig';
 import { UserProfile, UserSettings } from '../types';
 import { 
@@ -234,6 +234,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const previousData = userDoc.exists() ? userDoc.data() as UserProfile : null;
       
       console.log('AuthContext: 이전 프로필 데이터', previousData);
+      
+      // 체중 변경 감지 및 기록 저장
+      const oldWeight = previousData?.weight;
+      const newWeight = profile.weight;
+      
+      if (newWeight && oldWeight !== newWeight) {
+        console.log('AuthContext: 체중 변경 감지', { oldWeight, newWeight });
+        
+        try {
+          // weightRecords 컬렉션에 새로운 체중 기록 추가
+          await addDoc(collection(db, 'weightRecords'), {
+            userId: currentUser.uid,
+            weight: newWeight,
+            date: new Date(),
+            createdAt: new Date()
+          });
+          console.log('AuthContext: 체중 기록 저장 완료');
+        } catch (weightError) {
+          console.error('체중 기록 저장 중 오류:', weightError);
+          // 체중 기록 저장 실패해도 프로필 업데이트는 계속 진행
+        }
+      }
       
       // 새 데이터 병합 (중첩된 객체도 올바르게 병합)
       const updatedProfile = deepMerge(

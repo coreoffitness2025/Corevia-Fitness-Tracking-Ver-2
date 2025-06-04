@@ -95,7 +95,8 @@ const SettingsPage = () => {
       const q = query(
         collection(db, 'weightRecords'),
         where('userId', '==', currentUser.uid),
-        limit(30) // 최근 30개 기록
+        orderBy('date', 'asc'),
+        limit(30)
       );
       
       const querySnapshot = await getDocs(q);
@@ -104,8 +105,6 @@ const SettingsPage = () => {
         weight: doc.data().weight
       }));
       
-      // 클라이언트에서 날짜순으로 정렬
-      history.sort((a, b) => a.date.getTime() - b.date.getTime());
       setWeightHistory(history);
     } catch (error) {
       console.error('체중 히스토리 로드 실패:', error);
