@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { WaterIntake } from '../../types';
 import Button from '../common/Button';
-import { Droplets, Clock, Plus } from 'lucide-react';
+import { Droplets, Clock, Plus, HelpCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface WaterFormProps {
@@ -13,6 +13,7 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
   const { userProfile } = useAuth();
   const [amount, setAmount] = useState<number>(250); // 기본값 250ml
   const [time, setTime] = useState<string>(new Date().toTimeString().slice(0, 5));
+  const [isUnknownTime, setIsUnknownTime] = useState<boolean>(false);
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -21,6 +22,15 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
 
   const handleQuickAmount = (quickAmount: number) => {
     setAmount(quickAmount);
+  };
+
+  const handleTimeUnknown = () => {
+    setIsUnknownTime(!isUnknownTime);
+    if (!isUnknownTime) {
+      setTime('');
+    } else {
+      setTime(new Date().toTimeString().slice(0, 5));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +53,7 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
         userId: userProfile.uid,
         date: new Date(),
         amount,
-        time,
+        time: isUnknownTime ? undefined : time,
         notes: notes.trim() || undefined,
       };
 
@@ -57,6 +67,7 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
       // 폼 초기화
       setAmount(250);
       setTime(new Date().toTimeString().slice(0, 5));
+      setIsUnknownTime(false);
       setNotes('');
       
       onSuccess?.();
@@ -127,13 +138,28 @@ const WaterForm: React.FC<WaterFormProps> = ({ onSuccess }) => {
             <Clock size={16} className="inline mr-1" />
             섭취 시간
           </label>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            required
-          />
+          <div className="flex gap-2">
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isUnknownTime}
+              required={!isUnknownTime}
+            />
+            <button
+              type="button"
+              onClick={handleTimeUnknown}
+              className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                isUnknownTime
+                  ? 'bg-gray-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              <HelpCircle size={16} />
+              알 수 없음
+            </button>
+          </div>
         </div>
 
         {/* 메모 */}
