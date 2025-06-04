@@ -253,16 +253,40 @@ const NutritionScout = () => {
       item => item.요리명 && item.요리명.toLowerCase().includes(queryText)
     );
     
+    // 코멘트 관련 필드 제거 함수
+    const removeCommentFields = (data: any) => {
+      const result = {...data};
+      
+      // 모든 코멘트 관련 필드 제거
+      Object.keys(result).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        const value = result[key];
+        
+        if (
+          key === '코멘트' || 
+          key.includes('코멘트') || 
+          key.includes('comment') || 
+          key.includes('설명') || 
+          lowerKey.includes('ment') ||
+          key.includes('') ||
+          (typeof value === 'string' && value.length > 50 && 
+           (value.includes('다이어트') || value.includes('단백질') || value.includes('영양')))
+        ) {
+          delete result[key];
+        }
+      });
+      
+      return result;
+    };
+    
     if (exactMatch) {
       console.log('정확한 일치 결과:', exactMatch);
-      // 코멘트 필드 제거
-      const { 코멘트, ...result } = exactMatch;
+      const result = removeCommentFields(exactMatch);
       setSearchResult(result);
       setShowAutoComplete(false);
     } else if (partialMatch) {
       console.log('부분 일치 결과:', partialMatch);
-      // 코멘트 필드 제거
-      const { 코멘트, ...result } = partialMatch;
+      const result = removeCommentFields(partialMatch);
       setSearchResult(result);
       setShowAutoComplete(false);
     } else {
@@ -283,9 +307,28 @@ const NutritionScout = () => {
       
       // 자동완성 항목을 위한 정제된 데이터 생성 (코멘트 제거)
       const cleanedSuggestions = matchingFoods.map(item => {
-        // 코멘트 필드 명시적으로 제거
-        const { 코멘트, ...rest } = item;
-        return rest as NutritionData;
+        const result = {...item};
+        
+        // 모든 코멘트 관련 필드 제거
+        Object.keys(result).forEach(key => {
+          const lowerKey = key.toLowerCase();
+          const value = result[key];
+          
+          if (
+            key === '코멘트' || 
+            key.includes('코멘트') || 
+            key.includes('comment') || 
+            key.includes('설명') || 
+            lowerKey.includes('ment') ||
+            key.includes('') ||
+            (typeof value === 'string' && value.length > 50 && 
+             (value.includes('다이어트') || value.includes('단백질') || value.includes('영양')))
+          ) {
+            delete result[key];
+          }
+        });
+        
+        return result as NutritionData;
       });
       
       // 정확한 일치 항목을 우선 정렬
@@ -318,22 +361,38 @@ const NutritionScout = () => {
     // 전체 foodData에서 선택된 요리명과 일치하는 완전한 데이터를 찾음
     const originalData = foodData.find(item => item.요리명 === suggestion.요리명);
     
+    // 코멘트 관련 필드 제거 함수
+    const removeCommentFields = (data: any) => {
+      const result = {...data};
+      
+      // 모든 코멘트 관련 필드 제거
+      Object.keys(result).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        const value = result[key];
+        
+        if (
+          key === '코멘트' || 
+          key.includes('코멘트') || 
+          key.includes('comment') || 
+          key.includes('설명') || 
+          lowerKey.includes('ment') ||
+          key.includes('') ||
+          (typeof value === 'string' && value.length > 50 && 
+           (value.includes('다이어트') || value.includes('단백질') || value.includes('영양')))
+        ) {
+          delete result[key];
+        }
+      });
+      
+      return result;
+    };
+    
     if (originalData) {
-      // 원본 데이터 복사
-      const result = {...originalData};
-      
-      // 코멘트 필드 항상 제거
-      if (result.코멘트) {
-        delete result['코멘트'];
-      }
-      
+      const result = removeCommentFields(originalData);
       setSearchResult(result);
     } else {
       // 전체 데이터에서 찾을 수 없는 경우 (드문 케이스)
-      const result = {...suggestion};
-      if (result.코멘트) {
-        delete result['코멘트'];
-      }
+      const result = removeCommentFields(suggestion);
       setSearchResult(result);
     }
     
@@ -365,58 +424,37 @@ const NutritionScout = () => {
     }
     
     const headers = rows[0].split(',');
-    
-    // 헤더에 필수 필드가 있는지 확인
-    const hasRequiredFields = headers.some(header => 
-      header === '요리명' || header === '음식명' || 
-      header.includes('요리') || header.includes('음식')
-    );
-    
-    if (!hasRequiredFields) {
-      console.warn(`발견된 열: ${headers.join(', ')}`);
-      throw new Error('CSV 형식이 올바르지 않습니다: 요리명 또는 음식명 필드를 찾을 수 없습니다');
-    }
+    console.log('[DEBUG] 원본 헤더:', headers);
     
     const result = rows.slice(1)
       .filter(row => row.trim()) // 빈 줄 제거
       .map(row => {
-        // 따옴표로 묶인 내용 처리를 위한 로직 추가
-        const values: string[] = [];
-        let inQuotes = false;
-        let currentValue = '';
+        // 간단한 CSV 파싱
+        const values = row.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
         
-        for (let i = 0; i < row.length; i++) {
-          const char = row[i];
-          
-          if (char === '"' && (i === 0 || row[i-1] !== '\\')) {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            values.push(currentValue);
-            currentValue = '';
-          } else {
-            currentValue += char;
-          }
+        const item: any = {};
+        
+        // 인덱스 기반으로 필드 매핑
+        if (values[0] && values[0].length > 0 && values[0].length < 50) {
+          item['요리명'] = values[0];
         }
         
-        // 마지막 값 추가
-        values.push(currentValue);
+        // 영양소 데이터 (숫자로 변환)
+        if (values[1] && !isNaN(parseFloat(values[1]))) {
+          item['탄수화물(g/100g)'] = parseFloat(values[1]);
+        }
+        if (values[2] && !isNaN(parseFloat(values[2]))) {
+          item['단백질(g/100g)'] = parseFloat(values[2]);
+        }
+        if (values[3] && !isNaN(parseFloat(values[3]))) {
+          item['지방(g/100g)'] = parseFloat(values[3]);
+        }
         
-        const item: Record<string, any> = {};
-        
-        headers.forEach((header, index) => {
-          const value = values[index]?.trim().replace(/^"|"$/g, '') || '';
-          // 숫자로 변환 가능한 경우 숫자로 변환
-          if (header.includes('g/100g') && !isNaN(parseFloat(value))) {
-            item[header] = parseFloat(value);
-          } else {
-            item[header] = value;
-          }
-        });
-        
-        return standardizeFields(item);
+        return item;
       })
-      .filter(item => item['요리명']); // 요리명이 있는 항목만 필터링
+      .filter(item => item['요리명'] && item['요리명'].length > 0); // 요리명이 있는 항목만
       
+    console.log('[DEBUG] 파싱된 데이터 샘플:', result.slice(0, 5));
     return result as NutritionData[];
   };
   
@@ -452,8 +490,27 @@ const NutritionScout = () => {
       }
     });
     
-    // 코멘트 필드가 있으면 항상 제거
-    delete standardizedItem['코멘트'];
+    // 코멘트 관련 필드 모두 제거 (인코딩이 깨진 경우도 포함)
+    const fieldsToRemove = Object.keys(standardizedItem).filter(key => {
+      const lowerKey = key.toLowerCase();
+      const value = standardizedItem[key];
+      
+      return (
+        key === '코멘트' || 
+        key.includes('코멘트') || 
+        key.includes('comment') || 
+        key.includes('설명') || 
+        lowerKey.includes('ment') ||
+        // 깨진 인코딩 패턴도 체크
+        key.includes('') ||
+        // 마지막 열이 긴 설명 텍스트를 포함하는 경우
+        (typeof value === 'string' && value.length > 50 && 
+         (value.includes('다이어트') || value.includes('단백질') || value.includes('영양'))));
+    });
+    
+    fieldsToRemove.forEach(key => {
+      delete standardizedItem[key];
+    });
     
     return standardizedItem;
   };
