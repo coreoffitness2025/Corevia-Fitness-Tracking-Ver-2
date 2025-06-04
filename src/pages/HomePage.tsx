@@ -6,11 +6,13 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../firebase/firebaseConfig';
 import LoadingSpinner, { LoadingScreen } from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
-import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings } from 'lucide-react';
+import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings, X, Scale, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutSettings } from '../hooks/useWorkoutSettings';
 import Button from '../components/common/Button';
 import { getFoodRecords, FoodRecord } from '../utils/indexedDB';
+import PersonalizationModal from '../components/auth/PersonalizationModal';
+import { toast } from 'react-hot-toast';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -79,7 +81,7 @@ const groupFoodsByDate = (foods: Food[]) => {
 };
 
 const HomePage = () => {
-  const { userProfile, loading: authLoading } = useAuth();
+  const { userProfile, loading: authLoading, updateProfile } = useAuth();
   const { settings: workoutSettings, isLoading: isLoadingSettings } = useWorkoutSettings();
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
   const [recentMeals, setRecentMeals] = useState<Food[]>([]); // 어제 식단 -> 최근 식단
@@ -87,7 +89,72 @@ const HomePage = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nutrients, setNutrients] = useState({ protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 });
+  
+  // 체중 관련 상태변수들
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [showWeightRecordModal, setShowWeightRecordModal] = useState(false);
+  const [weightHistory, setWeightHistory] = useState<Array<{
+    date: Date;
+    weight: number;
+  }>>([]);
+  const [isLoadingWeightHistory, setIsLoadingWeightHistory] = useState(false);
+  
   const navigate = useNavigate();
+
+  // 체중 히스토리 가져오기 함수
+  const fetchWeightHistory = async () => {
+    if (!userProfile) return;
+    
+    try {
+      setIsLoadingWeightHistory(true);
+      const q = query(
+        collection(db, 'weightRecords'),
+        where('userId', '==', userProfile.uid),
+        orderBy('date', 'asc'),
+        limit(30)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const history = querySnapshot.docs.map(doc => ({
+        date: doc.data().date.toDate(),
+        weight: doc.data().weight
+      }));
+      
+      setWeightHistory(history);
+    } catch (error) {
+      console.error('체중 히스토리 로드 실패:', error);
+      toast.error('체중 기록을 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoadingWeightHistory(false);
+    }
+  };
+
+  // 체중 추이 분석 버튼 클릭 핸들러
+  const handleWeightTrendClick = () => {
+    setShowWeightModal(true);
+    fetchWeightHistory();
+  };
+
+  // 체중 기록하기 버튼 클릭 핸들러
+  const handleWeightRecordClick = () => {
+    setShowWeightRecordModal(true);
+  };
+
+  // 체중 기록 저장 핸들러
+  const handleSaveWeightRecord = async (profileDataToSave: Partial<UserProfile>) => {
+    try {
+      if (userProfile?.uid) {
+        await updateProfile(profileDataToSave);
+        setShowWeightRecordModal(false);
+        toast.success('체중이 성공적으로 기록되었습니다.');
+      } else {
+        toast.error('로그인 후 체중을 기록할 수 있습니다.');
+      }
+    } catch (error) {
+      console.error('Error saving weight record:', error);
+      toast.error('체중 기록 중 오류가 발생했습니다.');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -328,6 +395,53 @@ const HomePage = () => {
         </div>
       </div>
 
+      {/* 체중 변화 추이 섹션 */}
+      <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="flex items-center mb-4">
+          <Scale size={28} className="text-purple-500 mr-3" />
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">내 체중 변화</h2>
+        </div>
+        <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="text-center md:text-left mb-4 md:mb-0">
+              <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                현재 체중
+              </h3>
+              <p className="text-3xl font-bold text-gray-800 dark:text-white">
+                {userProfile?.weight ? `${userProfile.weight} kg` : '기록 없음'}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                목표: {userProfile?.fitnessGoal === 'loss' ? '체중 감소' : 
+                      userProfile?.fitnessGoal === 'maintain' ? '체중 유지' : 
+                      userProfile?.fitnessGoal === 'gain' ? '체중 증가' : '설정되지 않음'}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleWeightRecordClick}
+                icon={<Plus size={18} />}
+                className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20"
+              >
+                체중 기록하기
+              </Button>
+              {userProfile?.weight && (
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleWeightTrendClick}
+                  icon={<TrendingUp size={18} />}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20"
+                >
+                  체중 그래프 보기
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 선호하는 세트 구성 표시 섹션 */}
       <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
         <div className="flex items-center mb-4">
@@ -525,6 +639,170 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+
+      {/* 체중 추이 분석 모달 */}
+      {showWeightModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200">체중 변화 추이</h3>
+              <button
+                onClick={() => setShowWeightModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {isLoadingWeightHistory ? (
+              <div className="flex justify-center items-center h-48">
+                <LoadingSpinner />
+              </div>
+            ) : weightHistory.length > 0 ? (
+              <div className="space-y-6">
+                {/* 체중 변화 그래프 */}
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">체중 변화 그래프</h4>
+                  
+                  {/* 간단한 선형 그래프 표현 */}
+                  <div className="relative h-64 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
+                    <div className="absolute inset-4">
+                      {/* Y축 라벨 */}
+                      <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
+                        {(() => {
+                          const weights = weightHistory.map(h => h.weight);
+                          const minWeight = Math.min(...weights);
+                          const maxWeight = Math.max(...weights);
+                          const range = maxWeight - minWeight || 1;
+                          return [
+                            <span key="max">{maxWeight.toFixed(1)}kg</span>,
+                            <span key="mid">{((maxWeight + minWeight) / 2).toFixed(1)}kg</span>,
+                            <span key="min">{minWeight.toFixed(1)}kg</span>
+                          ];
+                        })()}
+                      </div>
+                      
+                      {/* 그래프 영역 */}
+                      <div className="ml-12 mr-4 h-full relative">
+                        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                          {/* 그리드 라인 */}
+                          <defs>
+                            <pattern id="weight-grid" width="10" height="25" patternUnits="userSpaceOnUse">
+                              <path d="M 10 0 L 0 0 0 25" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
+                            </pattern>
+                          </defs>
+                          <rect width="100" height="100" fill="url(#weight-grid)" />
+                          
+                          {/* 체중 변화 라인 */}
+                          {weightHistory.length > 1 && (() => {
+                            const weights = weightHistory.map(h => h.weight);
+                            const minWeight = Math.min(...weights);
+                            const maxWeight = Math.max(...weights);
+                            const range = maxWeight - minWeight || 1;
+                            
+                            const points = weightHistory.map((record, index) => {
+                              const x = (index / (weightHistory.length - 1)) * 100;
+                              const y = 100 - ((record.weight - minWeight) / range) * 100;
+                              return `${x},${y}`;
+                            }).join(' ');
+                            
+                            return (
+                              <>
+                                <polyline
+                                  fill="none"
+                                  stroke="#3b82f6"
+                                  strokeWidth="2"
+                                  points={points}
+                                />
+                                {/* 데이터 포인트 */}
+                                {weightHistory.map((record, index) => {
+                                  const x = (index / (weightHistory.length - 1)) * 100;
+                                  const y = 100 - ((record.weight - minWeight) / range) * 100;
+                                  return (
+                                    <circle
+                                      key={index}
+                                      cx={x}
+                                      cy={y}
+                                      r="2.5"
+                                      fill="#3b82f6"
+                                      stroke="#ffffff"
+                                      strokeWidth="1"
+                                    />
+                                  );
+                                })}
+                              </>
+                            );
+                          })()}
+                        </svg>
+                      </div>
+                      
+                      {/* X축 라벨 (날짜) */}
+                      <div className="absolute bottom-0 left-12 right-4 flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        {weightHistory.length > 1 && (
+                          <>
+                            <span>{weightHistory[0]?.date.toLocaleDateString()}</span>
+                            <span>{weightHistory[weightHistory.length - 1]?.date.toLocaleDateString()}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 통계 정보 */}
+                  <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    {(() => {
+                      const weights = weightHistory.map(h => h.weight);
+                      const minWeight = Math.min(...weights);
+                      const maxWeight = Math.max(...weights);
+                      const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length;
+                      const weightChange = weights[weights.length - 1] - weights[0];
+                      
+                      return (
+                        <>
+                          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="text-purple-600 dark:text-purple-400 font-semibold text-lg">{minWeight.toFixed(1)}kg</div>
+                            <div className="text-gray-500 dark:text-gray-400">최저</div>
+                          </div>
+                          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="text-purple-600 dark:text-purple-400 font-semibold text-lg">{maxWeight.toFixed(1)}kg</div>
+                            <div className="text-gray-500 dark:text-gray-400">최고</div>
+                          </div>
+                          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="text-purple-600 dark:text-purple-400 font-semibold text-lg">{avgWeight.toFixed(1)}kg</div>
+                            <div className="text-gray-500 dark:text-gray-400">평균</div>
+                          </div>
+                          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className={`font-semibold text-lg ${weightChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}kg
+                            </div>
+                            <div className="text-gray-500 dark:text-gray-400">변화량</div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <Scale size={48} className="mx-auto text-gray-400 mb-4" />
+                <h4 className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-2">체중 기록이 없습니다</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  체중을 기록하면 변화 추이를 확인할 수 있습니다.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 체중 기록 모달 */}
+      <PersonalizationModal
+        isOpen={showWeightRecordModal}
+        onClose={() => setShowWeightRecordModal(false)}
+        onSave={handleSaveWeightRecord}
+        userProfile={userProfile}
+      />
     </Layout>
   );
 };
