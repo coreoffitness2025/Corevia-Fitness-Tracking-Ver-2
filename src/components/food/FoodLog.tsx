@@ -3,11 +3,12 @@ import { useAuthStore } from '../../stores/authStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { formatDate, formatDateWithWeekday, isToday } from '../../utils/dateUtils';
 import Card from '../common/Card';
-import { Info, Calendar, CalendarDays, ExternalLink, X, Plus } from 'lucide-react';
+import { Info, Calendar, CalendarDays, ExternalLink, X, Plus, Droplets, Pill } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { getFoodRecordsByDate, getFoodImage, FoodRecord } from '../../utils/indexedDB';
+import { WaterIntake, Supplement } from '../../types';
 import { 
   calculateNutritionGoals, 
   DEFAULT_USER_PROFILE,
@@ -19,14 +20,18 @@ import Button from '../common/Button';
 
 type ViewMode = 'day' | 'week' | 'month';
 
-const FoodLog = () => {
+interface FoodLogProps {
+  selectedDate?: Date;
+}
+
+const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => {
   const { user } = useAuthStore();
   const { userProfile } = useAuth();
   const { foods, setFoods } = useFoodStore();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    propSelectedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0]
   );
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [targetCalories, setTargetCalories] = useState<number>(0);
@@ -35,6 +40,11 @@ const FoodLog = () => {
   const [fatTarget, setFatTarget] = useState<number>(0);
   const [showNutritionSources, setShowNutritionSources] = useState<boolean>(false);
   const [foodRecords, setFoodRecords] = useState<FoodRecord[]>([]);
+  
+  // 물과 영양제 기록을 위한 상태 추가
+  const [waterRecords, setWaterRecords] = useState<WaterIntake[]>([]);
+  const [supplementRecords, setSupplementRecords] = useState<Supplement[]>([]);
+  
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
   const [calendarDates, setCalendarDates] = useState<Date[]>([]);
   const [recordsByDate, setRecordsByDate] = useState<Record<string, FoodRecord[]>>({});
@@ -117,11 +127,71 @@ const FoodLog = () => {
       
       setFoodRecords(records);
       
+      // 물과 영양제 데이터 로드 (임시 더미 데이터)
+      await loadWaterAndSupplementData();
+      
       await loadImages(records);
     } catch (error) {
       console.error('식단 기록 로드 오류:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 물과 영양제 데이터 로드 함수 (향후 IndexedDB와 연동)
+  const loadWaterAndSupplementData = async () => {
+    if (!userProfile?.uid) return;
+    
+    try {
+      // 임시 더미 데이터 (실제로는 IndexedDB에서 가져올 예정)
+      const currentDate = new Date(selectedDate);
+      
+      const mockWaterRecords: WaterIntake[] = [
+        {
+          id: '1',
+          userId: userProfile.uid,
+          date: currentDate,
+          amount: 500,
+          time: '08:30',
+          notes: '아침 운동 후'
+        },
+        {
+          id: '2',
+          userId: userProfile.uid,
+          date: currentDate,
+          amount: 300,
+          time: '12:00',
+          notes: '점심'
+        }
+      ];
+
+      const mockSupplementRecords: Supplement[] = [
+        {
+          id: '1',
+          userId: userProfile.uid,
+          date: currentDate,
+          name: '멀티비타민',
+          dosage: '1정',
+          time: '08:00',
+          type: 'vitamin',
+          notes: '공복에 복용'
+        },
+        {
+          id: '2',
+          userId: userProfile.uid,
+          date: currentDate,
+          name: '오메가3',
+          dosage: '2캡슐',
+          time: '20:00',
+          type: 'vitamin',
+          notes: '저녁 식후'
+        }
+      ];
+
+      setWaterRecords(mockWaterRecords);
+      setSupplementRecords(mockSupplementRecords);
+    } catch (error) {
+      console.error('물/영양제 데이터 로드 오류:', error);
     }
   };
 
@@ -248,12 +318,21 @@ const FoodLog = () => {
     const date = new Date(dateStr);
     const hasPhotos = recordsForDate.some(record => record.imageId);
     
+    // 해당 날짜의 물과 영양제 기록 필터링
+    const dayWaterRecords = waterRecords.filter(record => 
+      record.date.toISOString().split('T')[0] === dateStr
+    );
+    const daySupplementRecords = supplementRecords.filter(record => 
+      record.date.toISOString().split('T')[0] === dateStr
+    );
+    
     return (
       <div key={dateStr} className="mb-6">
         <h3 className="text-lg font-semibold mb-3">
           {formatDate(date)}
         </h3>
         
+        {/* 기존 음식 사진 */}
         {hasPhotos && (
           <div className="mb-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -281,9 +360,68 @@ const FoodLog = () => {
           </div>
         )}
         
-        {!hasPhotos && (
+        {/* 물과 영양제 기록 섹션 */}
+        {(dayWaterRecords.length > 0 || daySupplementRecords.length > 0) && (
+          <div className="mt-4 space-y-3">
+            {/* 물 섭취 기록 */}
+            {dayWaterRecords.length > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Droplets size={16} className="text-blue-500" />
+                  <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">물 섭취</h4>
+                </div>
+                <div className="space-y-1">
+                  {dayWaterRecords.map((record) => (
+                    <div key={record.id} className="flex justify-between items-center text-sm">
+                      <span className="text-blue-700 dark:text-blue-300">
+                        {record.time} - {record.amount}ml
+                      </span>
+                      {record.notes && (
+                        <span className="text-blue-600 dark:text-blue-400 text-xs">
+                          {record.notes}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                    <span className="text-blue-800 dark:text-blue-200 font-semibold text-sm">
+                      총 {dayWaterRecords.reduce((sum, record) => sum + record.amount, 0)}ml 섭취
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 영양제 복용 기록 */}
+            {daySupplementRecords.length > 0 && (
+              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Pill size={16} className="text-green-500" />
+                  <h4 className="text-sm font-semibold text-green-800 dark:text-green-200">영양제 복용</h4>
+                </div>
+                <div className="space-y-1">
+                  {daySupplementRecords.map((record) => (
+                    <div key={record.id} className="flex justify-between items-center text-sm">
+                      <span className="text-green-700 dark:text-green-300">
+                        {record.time} - {record.name} ({record.dosage})
+                      </span>
+                      {record.notes && (
+                        <span className="text-green-600 dark:text-green-400 text-xs">
+                          {record.notes}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* 기록이 없을 때 */}
+        {!hasPhotos && dayWaterRecords.length === 0 && daySupplementRecords.length === 0 && (
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-            <p className="text-gray-500 dark:text-gray-400">식단 기록이 없습니다.</p>
+            <p className="text-gray-500 dark:text-gray-400">이 날의 기록이 없습니다.</p>
           </div>
         )}
       </div>
@@ -300,6 +438,14 @@ const FoodLog = () => {
           const records = foodGroups[dateStr] || [];
           const hasPhotos = records.some(record => record.imageId);
           
+          // 해당 날짜의 물과 영양제 기록
+          const dayWaterRecords = waterRecords.filter(record => 
+            record.date.toISOString().split('T')[0] === dateStr
+          );
+          const daySupplementRecords = supplementRecords.filter(record => 
+            record.date.toISOString().split('T')[0] === dateStr
+          );
+          
           return (
             <Card key={dateStr} className="overflow-hidden">
               <div className="p-4">
@@ -311,12 +457,13 @@ const FoodLog = () => {
                   })}
                 </h3>
                 
-                {records.length === 0 ? (
+                {records.length === 0 && dayWaterRecords.length === 0 && daySupplementRecords.length === 0 ? (
                   <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                    식단 기록이 없습니다.
+                    이 날의 기록이 없습니다.
                   </p>
                 ) : (
                   <div>
+                    {/* 음식 사진 */}
                     {hasPhotos ? (
                       <div className="flex overflow-x-auto space-x-3 pb-2 mb-2">
                         {records.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
@@ -333,10 +480,28 @@ const FoodLog = () => {
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                        사진이 없습니다.
+                    ) : records.length > 0 && (
+                      <p className="text-gray-500 dark:text-gray-400 text-center py-2 text-sm">
+                        식사 기록 {records.length}개 (사진 없음)
                       </p>
+                    )}
+                    
+                    {/* 물과 영양제 요약 */}
+                    {(dayWaterRecords.length > 0 || daySupplementRecords.length > 0) && (
+                      <div className="flex gap-2 mt-2">
+                        {dayWaterRecords.length > 0 && (
+                          <div className="flex items-center gap-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                            <Droplets size={12} />
+                            <span>물 {dayWaterRecords.reduce((sum, record) => sum + record.amount, 0)}ml</span>
+                          </div>
+                        )}
+                        {daySupplementRecords.length > 0 && (
+                          <div className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded">
+                            <Pill size={12} />
+                            <span>영양제 {daySupplementRecords.length}개</span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -377,6 +542,17 @@ const FoodLog = () => {
             const hasRecords = records.length > 0;
             const hasPhotos = records.some(record => record.imageId && imageCache[record.imageId]);
             
+            // 해당 날짜의 물과 영양제 기록
+            const dayWaterRecords = waterRecords.filter(record => 
+              record.date.toISOString().split('T')[0] === dateStr
+            );
+            const daySupplementRecords = supplementRecords.filter(record => 
+              record.date.toISOString().split('T')[0] === dateStr
+            );
+            
+            const hasWaterOrSupplement = dayWaterRecords.length > 0 || daySupplementRecords.length > 0;
+            const totalRecords = records.length + dayWaterRecords.length + daySupplementRecords.length;
+            
             return (
               <div 
                 key={index} 
@@ -394,7 +570,7 @@ const FoodLog = () => {
                     </span>
                   </div>
                   
-                  {hasRecords && (
+                  {(hasRecords || hasWaterOrSupplement) && (
                     <div className="flex-1 flex flex-col">
                       {hasPhotos && (
                         <div className="flex overflow-x-auto space-x-1 py-1">
@@ -418,9 +594,27 @@ const FoodLog = () => {
                         </div>
                       )}
                       
+                      {/* 물과 영양제 표시 */}
+                      {hasWaterOrSupplement && (
+                        <div className="flex gap-1 px-1 py-0.5">
+                          {dayWaterRecords.length > 0 && (
+                            <div className="flex items-center">
+                              <Droplets size={8} className="text-blue-500" />
+                              <span className="text-xs text-blue-600 ml-0.5">{dayWaterRecords.reduce((sum, record) => sum + record.amount, 0)}</span>
+                            </div>
+                          )}
+                          {daySupplementRecords.length > 0 && (
+                            <div className="flex items-center">
+                              <Pill size={8} className="text-green-500" />
+                              <span className="text-xs text-green-600 ml-0.5">{daySupplementRecords.length}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       <div className="mt-auto text-xs">
                         <span className="bg-info-100 dark:bg-info-900/30 text-info-700 dark:text-info-300 rounded-full px-1 py-0.5">
-                          기록 {records.length}개
+                          기록 {totalRecords}개
                         </span>
                       </div>
                     </div>

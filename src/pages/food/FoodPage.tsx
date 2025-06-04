@@ -4,7 +4,7 @@ import Layout from '../../components/common/Layout';
 import FoodForm from '../../components/food/FoodForm';
 import WaterForm from '../../components/food/WaterForm';
 import SupplementForm from '../../components/food/SupplementForm';
-import IntakeLog from '../../components/food/IntakeLog';
+import FoodLog from '../../components/food/FoodLog';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useLocation } from 'react-router-dom';
 import { Utensils, Droplets, Pill, History } from 'lucide-react';
@@ -84,7 +84,7 @@ const FoodPage: React.FC = () => {
       case 'supplement':
         return <SupplementForm onSuccess={() => setActiveTab('records')} />;
       case 'records':
-        return <IntakeLog selectedDate={selectedDateFromState} />;
+        return <FoodLog selectedDate={selectedDateFromState} />;
       default:
         return <FoodForm onSuccess={() => setActiveTab('records')} />;
     }
