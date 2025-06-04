@@ -432,34 +432,36 @@ const HomePage = () => {
                 💡 신체 사진은 로컬 저장소에만 보관되어 개인정보를 안전하게 보호합니다
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="outline"
-                size="md"
-                onClick={handleBodyPhotoClick}
-                icon={<Camera size={18} />}
-                className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20"
-              >
-                신체 사진 기록하기
-              </Button>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={handleWeightRecordClick}
-                icon={<Plus size={18} />}
-                className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20"
-              >
-                체중 기록하기
-              </Button>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={handleBodyProgressClick}
-                icon={<TrendingUp size={18} />}
-                className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20"
-              >
-                신체 변화 추이 보기
-              </Button>
+            <div className="flex flex-col gap-3 w-full md:w-auto">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleBodyPhotoClick}
+                  icon={<Camera size={18} />}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
+                >
+                  신체 사진 기록
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleWeightRecordClick}
+                  icon={<Plus size={18} />}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
+                >
+                  체중 기록
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleBodyProgressClick}
+                  icon={<TrendingUp size={18} />}
+                  className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
+                >
+                  변화 추이 보기
+                </Button>
+              </div>
             </div>
           </div>
         </div>
