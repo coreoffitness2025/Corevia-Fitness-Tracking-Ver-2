@@ -361,6 +361,9 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       case '새벽 야식':
         timeValue = '02:00';
         break;
+      case '알수없음':
+        timeValue = '12:00'; // 기본값으로 점심 시간 설정
+        break;
     }
     setIntakeTime(timeValue);
     setShowTimeSlots(false);
@@ -478,13 +481,14 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
                   '12:00 ~ 16:00', 
                   '16:00 ~ 20:00',
                   '20:00 ~ 24:00',
-                  '새벽 야식'
+                  '새벽 야식',
+                  '알수없음'
                 ].map((slot) => (
                   <button
                     key={slot}
                     type="button"
                     onClick={() => handleTimeSlotSelect(slot)}
-                    className="px-3 py-2 text-sm font-medium text-center text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors"
+                    className="px-3 py-2 text-sm font-medium text-center text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md transition-colors border border-gray-300 dark:border-gray-500"
                   >
                     {slot}
                   </button>

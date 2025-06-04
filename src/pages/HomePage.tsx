@@ -424,7 +424,7 @@ const HomePage = () => {
                 <div 
                   key={session.id} 
                   className="p-4 bg-light-bg dark:bg-gray-700/50 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                  onClick={() => navigate('/workout', { state: { activeTab: 'records' } })}
+                  onClick={() => navigate('/workout', { state: { activeTab: 'records', selectedDate: session.date } })}
                 >
                   <div className="flex justify-between items-center mb-1">
                     <h3 className="font-semibold text-lg text-primary-600 dark:text-primary-400">
@@ -485,7 +485,7 @@ const HomePage = () => {
                     <div 
                       key={dateStr} 
                       className="p-4 bg-light-bg dark:bg-gray-700/50 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                      onClick={() => navigate('/food', { state: { activeTab: 'records' } })}
+                      onClick={() => navigate('/food', { state: { activeTab: 'records', selectedDate: dateObj } })}
                     >
                       <div className="flex justify-between items-center">
                         <h3 className="font-semibold text-lg text-warning-600 dark:text-warning-400">

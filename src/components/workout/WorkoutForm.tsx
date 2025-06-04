@@ -1720,16 +1720,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             )}
             
             {/* 현재 세트 설정 상태 표시 */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-800/20 border border-blue-200 dark:border-blue-700 rounded-xl shadow-sm">
+            <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="text-blue-800 dark:text-blue-200 font-semibold">
+                  <div className="text-gray-700 dark:text-gray-300 font-semibold">
                     현재 세트 설정:
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge
                       size="lg"
-                      className="bg-blue-800 text-white font-bold px-4 py-2 text-base shadow-xl border-0"
+                      className="bg-blue-600 text-white font-bold px-4 py-2 text-base shadow-lg border-0"
                     >
                       {(() => {
                         const { setsCount, repsCount } = getSetConfiguration(
@@ -1744,7 +1744,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                           : `${setsCount}x${repsCount}`;
                       })()}
                     </Badge>
-                    <div className="text-sm text-blue-600 dark:text-blue-300 font-medium">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       ({(() => {
                         const { setsCount, repsCount } = getSetConfiguration(
                           selectedSetConfiguration,
@@ -1764,7 +1764,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     navigate('/settings');
                   }}
                   icon={<Settings2 size={16} />}
-                  className="font-medium border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                  className="font-medium border-gray-300 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800/50"
                 >
                   세트 설정하기
                 </Button>
