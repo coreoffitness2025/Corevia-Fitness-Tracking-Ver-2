@@ -1,11 +1,12 @@
 // IndexedDB를 사용하여 식단 기록 및 이미지를 로컬에 저장하는 유틸리티
 
 const DB_NAME = 'coreviaFoodDB';
-const DB_VERSION = 2; // 버전 업그레이드
+const DB_VERSION = 3; // 버전 업그레이드
 const FOOD_STORE = 'foodRecords';
 const IMAGE_STORE = 'foodImages';
 const WATER_STORE = 'waterRecords';
 const SUPPLEMENT_STORE = 'supplementRecords';
+const BODY_PHOTO_STORE = 'bodyPhotoRecords';
 
 interface FoodRecord {
   id?: number;
@@ -41,6 +42,18 @@ interface SupplementRecord {
   type: 'vitamin' | 'mineral' | 'protein' | 'preworkout' | 'postworkout' | 'other';
   notes?: string;
   date: Date;
+  createdAt: Date;
+}
+
+interface BodyPhotoRecord {
+  id?: number;
+  userId: string;
+  weight?: number;
+  bodyFat?: number;
+  muscleMass?: number;
+  notes?: string;
+  date: Date;
+  imageId: string;
   createdAt: Date;
 }
 
@@ -87,6 +100,14 @@ const initDB = (): Promise<IDBDatabase> => {
         supplementStore.createIndex('date', 'date', { unique: false });
         supplementStore.createIndex('type', 'type', { unique: false });
         supplementStore.createIndex('userIdAndDate', ['userId', 'date'], { unique: false });
+      }
+      
+      // 신체 사진 기록 저장소 생성
+      if (!db.objectStoreNames.contains(BODY_PHOTO_STORE)) {
+        const bodyPhotoStore = db.createObjectStore(BODY_PHOTO_STORE, { keyPath: 'id', autoIncrement: true });
+        bodyPhotoStore.createIndex('userId', 'userId', { unique: false });
+        bodyPhotoStore.createIndex('date', 'date', { unique: false });
+        bodyPhotoStore.createIndex('userIdAndDate', ['userId', 'date'], { unique: false });
       }
     };
     
@@ -591,4 +612,173 @@ export const getSupplementRecords = async (userId: string): Promise<SupplementRe
   }
 };
 
-export type { FoodRecord, WaterRecord, SupplementRecord }; 
+// 신체 사진 기록 저장
+export const saveBodyPhotoRecord = async (bodyPhoto: Omit<BodyPhotoRecord, 'id' | 'createdAt'>): Promise<number> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([BODY_PHOTO_STORE], 'readwrite');
+      const store = transaction.objectStore(BODY_PHOTO_STORE);
+      
+      const bodyPhotoToSave = {
+        ...bodyPhoto,
+        date: bodyPhoto.date.toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      
+      const request = store.add(bodyPhotoToSave);
+      
+      request.onsuccess = (event) => {
+        const id = (event.target as IDBRequest).result as number;
+        resolve(id);
+      };
+      
+      request.onerror = (event) => {
+        console.error('신체 사진 기록 저장 오류:', event);
+        reject('신체 사진 기록을 저장할 수 없습니다.');
+      };
+      
+      transaction.oncomplete = () => {
+        db.close();
+      };
+    });
+  } catch (error) {
+    console.error('신체 사진 기록 저장 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+// 특정 날짜의 신체 사진 기록 조회
+export const getBodyPhotoRecordsByDate = async (userId: string, date: Date): Promise<BodyPhotoRecord[]> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([BODY_PHOTO_STORE], 'readonly');
+      const store = transaction.objectStore(BODY_PHOTO_STORE);
+      const index = store.index('userIdAndDate');
+      
+      const startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
+      
+      const range = IDBKeyRange.bound(
+        [userId, startDate.toISOString()],
+        [userId, endDate.toISOString()]
+      );
+      
+      const request = index.getAll(range);
+      
+      request.onsuccess = (event) => {
+        const result = (event.target as IDBRequest).result;
+        const bodyPhotos = result.map((bodyPhoto: any) => ({
+          ...bodyPhoto,
+          date: new Date(bodyPhoto.date),
+          createdAt: new Date(bodyPhoto.createdAt)
+        }));
+        resolve(bodyPhotos);
+      };
+      
+      request.onerror = (event) => {
+        console.error('신체 사진 기록 조회 오류:', event);
+        reject('신체 사진 기록을 조회할 수 없습니다.');
+      };
+      
+      transaction.oncomplete = () => {
+        db.close();
+      };
+    });
+  } catch (error) {
+    console.error('신체 사진 기록 조회 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+// 모든 신체 사진 기록 조회
+export const getBodyPhotoRecords = async (userId: string): Promise<BodyPhotoRecord[]> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([BODY_PHOTO_STORE], 'readonly');
+      const store = transaction.objectStore(BODY_PHOTO_STORE);
+      const index = store.index('userId');
+      const request = index.getAll(userId);
+      
+      request.onsuccess = (event) => {
+        const result = (event.target as IDBRequest).result;
+        const bodyPhotos = result.map((bodyPhoto: any) => ({
+          ...bodyPhoto,
+          date: new Date(bodyPhoto.date),
+          createdAt: new Date(bodyPhoto.createdAt)
+        }));
+        resolve(bodyPhotos);
+      };
+      
+      request.onerror = (event) => {
+        console.error('신체 사진 기록 조회 오류:', event);
+        reject('신체 사진 기록을 조회할 수 없습니다.');
+      };
+      
+      transaction.oncomplete = () => {
+        db.close();
+      };
+    });
+  } catch (error) {
+    console.error('신체 사진 기록 조회 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+// 신체 사진 기록 삭제 (이미지 함께 삭제)
+export const deleteBodyPhotoRecord = async (id: number): Promise<void> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([BODY_PHOTO_STORE, IMAGE_STORE], 'readwrite');
+      const bodyPhotoStore = transaction.objectStore(BODY_PHOTO_STORE);
+      
+      // 먼저 신체 사진 기록 조회
+      const getRequest = bodyPhotoStore.get(id);
+      
+      getRequest.onsuccess = (event) => {
+        const bodyPhoto = (event.target as IDBRequest).result;
+        if (!bodyPhoto) {
+          resolve();
+          return;
+        }
+        
+        // 신체 사진 기록 삭제
+        const deleteRequest = bodyPhotoStore.delete(id);
+        
+        deleteRequest.onsuccess = () => {
+          // 이미지 함께 삭제
+          if (bodyPhoto.imageId) {
+            const imageStore = transaction.objectStore(IMAGE_STORE);
+            imageStore.delete(bodyPhoto.imageId);
+          }
+          resolve();
+        };
+        
+        deleteRequest.onerror = (event) => {
+          console.error('신체 사진 기록 삭제 오류:', event);
+          reject('신체 사진 기록을 삭제할 수 없습니다.');
+        };
+      };
+      
+      getRequest.onerror = (event) => {
+        console.error('신체 사진 기록 조회 오류:', event);
+        reject('신체 사진 기록을 조회할 수 없습니다.');
+      };
+      
+      transaction.oncomplete = () => {
+        db.close();
+      };
+    });
+  } catch (error) {
+    console.error('신체 사진 기록 삭제 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+export type { FoodRecord, WaterRecord, SupplementRecord, BodyPhotoRecord }; 
