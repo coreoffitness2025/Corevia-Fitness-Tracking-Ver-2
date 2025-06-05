@@ -177,15 +177,31 @@ const NutritionScout = () => {
     setSearchQuery(value);
     
     if (value.trim()) {
+      const query = value.toLowerCase();
       const matchingFoods = foodData.filter(item => 
         item['요리명'] && 
-        item['요리명'].toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 5);
+        item['요리명'].toLowerCase().includes(query)
+      );
       
-      console.log('자동완성:', matchingFoods.length, '개');
+      // 우선순위별 정렬: 1순위(정확일치) > 2순위(시작일치) > 3순위(포함일치)
+      const sortedResults = matchingFoods.sort((a, b) => {
+        const aName = a['요리명'].toLowerCase();
+        const bName = b['요리명'].toLowerCase();
+        
+        // 정확히 일치하는 경우 최우선
+        if (aName === query && bName !== query) return -1;
+        if (bName === query && aName !== query) return 1;
+        
+        // 시작하는 경우 두 번째 우선순위
+        if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
+        if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
+        
+        // 나머지는 알파벳 순서
+        return aName.localeCompare(bName);
+      }).slice(0, 5);
       
-      setSuggestions(matchingFoods);
-      setShowAutoComplete(matchingFoods.length > 0);
+      setSuggestions(sortedResults);
+      setShowAutoComplete(sortedResults.length > 0);
     } else {
       setSuggestions([]);
       setShowAutoComplete(false);
