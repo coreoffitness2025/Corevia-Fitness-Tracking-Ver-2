@@ -683,7 +683,39 @@ const WorkoutGraph: React.FC = () => {
   const applyFilters = (dataToFilter = workoutData) => {
     try {
       let filtered = [...dataToFilter];
-      console.log(`[WorkoutGraph] applyFilters - 시작, 데이터 ${filtered.length}개, 선택된 부위: ${selectedPart}, 운동: ${selectedExercise}, 세트구성: ${selectedSetConfig}`);
+      console.log(`[WorkoutGraph] applyFilters - 시작, 데이터 ${filtered.length}개, 선택된 부위: ${selectedPart}, 운동: ${selectedExercise}, 세트구성: ${selectedSetConfig}, 기간: ${selectedPeriod}`);
+
+      // 기간별 필터링 추가
+      const now = new Date();
+      let startDate: Date;
+      
+      switch (selectedPeriod) {
+        case '1month':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case '3months':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 3);
+          break;
+        case '6months':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 6);
+          break;
+        case '1year':
+          startDate = new Date(now);
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 1);
+      }
+      
+      filtered = filtered.filter(item => {
+        const itemDate = parseFirestoreDate(item.date as unknown as FirestoreTimestamp | Date | string);
+        return itemDate >= startDate && itemDate <= now;
+      });
+      console.log(`[WorkoutGraph] applyFilters - 기간 필터링 후 (${selectedPeriod}): ${filtered.length}개`);
 
       // 부위별 필터링
       filtered = filtered.filter(item => item.part === selectedPart);
@@ -790,7 +822,7 @@ const WorkoutGraph: React.FC = () => {
   // 필터 변경 시 데이터 재필터링
   useEffect(() => {
     applyFilters();
-  }, [selectedPart, selectedExercise, selectedSetConfig]);
+  }, [selectedPart, selectedExercise, selectedSetConfig, selectedPeriod]);
   
   // 부위 변경 핸들러
   const handlePartChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -916,6 +948,31 @@ const WorkoutGraph: React.FC = () => {
                   py-2 px-3 rounded-lg flex items-center transition-all duration-300 text-xs font-medium
                   ${selectedExercise === option.value 
                     ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }
+                `}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* 기간 선택 필터 추가 */}
+        <div className="mb-6">
+          <div className="mb-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">기간 선택:</span>
+          </div>
+          <div className="flex items-center flex-wrap gap-2 p-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            {periodOptions.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedPeriod(option.value)}
+                className={`
+                  py-2 px-3 rounded-lg flex items-center transition-all duration-300 text-xs font-medium
+                  ${selectedPeriod === option.value 
+                    ? 'bg-green-500 text-white shadow-lg transform scale-105'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }
                 `}

@@ -60,6 +60,8 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
     if (!userProfile?.uid) return;
 
     try {
+      console.log('[BodyProgressView] 체중 기록 로드 시작, userId:', userProfile.uid);
+      
       const q = query(
         collection(db, 'weightRecords'),
         where('userId', '==', userProfile.uid),
@@ -67,12 +69,23 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
       );
       
       const querySnapshot = await getDocs(q);
-      const history = querySnapshot.docs.map(doc => ({
-        date: doc.data().date.toDate(),
-        weight: doc.data().weight
-      }));
+      console.log('[BodyProgressView] 체중 기록 쿼리 결과:', querySnapshot.size, '개');
       
+      const history = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('[BodyProgressView] 체중 기록 데이터:', data);
+        return {
+          date: data.date.toDate(),
+          weight: data.weight
+        };
+      });
+      
+      console.log('[BodyProgressView] 변환된 체중 기록:', history);
       setWeightHistory(history);
+      
+      if (history.length === 0) {
+        console.log('[BodyProgressView] 체중 기록이 없습니다. 체중 그래프가 표시되지 않습니다.');
+      }
     } catch (error) {
       console.error('체중 기록 로드 실패:', error);
       // Firebase 접근 실패시 빈 배열로 설정
@@ -230,7 +243,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
                 개인정보 보호
               </h4>
               <p className="text-sm text-purple-700 dark:text-purple-300">
-                체중 데이터는 Firebase에, 신체 사진은 <strong>로컬 저장소에만</strong> 보관됩니다. 
+                신체 사진은 <strong>로컬 저장소에만</strong> 보관됩니다. 
                 신체 사진은 다른 기기에서 확인할 수 없습니다.
               </p>
             </div>
@@ -238,7 +251,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
         </div>
 
         {/* 체중 변화 그래프 */}
-        {weightHistory.length > 0 && (
+        {weightHistory.length > 0 ? (
           <div className="mb-8">
             <div className="flex items-center mb-4">
               <Scale size={24} className="text-blue-500 mr-2" />
@@ -284,6 +297,22 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-8">
+            <div className="flex items-center mb-4">
+              <Scale size={24} className="text-blue-500 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">체중 변화 추이</h3>
+            </div>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
+              <Scale size={48} className="mx-auto text-yellow-500 mb-4" />
+              <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">
+                체중 기록이 없습니다
+              </p>
+              <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                홈페이지에서 "체중 기록" 버튼을 눌러 체중을 기록하면 변화 추이를 확인할 수 있습니다.
+              </p>
             </div>
           </div>
         )}

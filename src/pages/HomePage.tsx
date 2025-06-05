@@ -693,8 +693,6 @@ const HomePage = () => {
           onClose={() => setShowWeightRecordModal(false)}
           onSave={handleSaveWeightRecord}
           userProfile={userProfile}
-          title="체중 기록하기"
-          showOnlyWeight={true}
         />
       )}
     </Layout>
