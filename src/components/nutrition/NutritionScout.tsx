@@ -234,23 +234,23 @@ const NutritionScout = () => {
   };
 
   const handleSearch = (searchParam?: string) => {
-    const searchTerm = searchParam || searchQuery;
+    const queryText = searchParam || searchQuery.toLowerCase().trim();
     
-    if (!searchTerm.trim()) {
+    if (!queryText) {
       showToast.error('검색어를 입력해주세요.');
       return;
     }
+
+    console.log('검색어:', queryText);
     
-    const queryText = searchTerm.trim().toLowerCase();
-    
-    // 정확한 일치 검색
+    // 정확한 일치 검색 (안전한 문자열 처리)
     const exactMatch = foodData.find(
-      item => item.요리명 && item.요리명.toLowerCase() === queryText
+      item => item.요리명 && typeof item.요리명 === 'string' && item.요리명.toLowerCase() === queryText
     );
     
-    // 부분 일치 검색
+    // 부분 일치 검색 (안전한 문자열 처리)
     const partialMatch = foodData.find(
-      item => item.요리명 && item.요리명.toLowerCase().includes(queryText)
+      item => item.요리명 && typeof item.요리명 === 'string' && item.요리명.toLowerCase().includes(queryText)
     );
     
     // 코멘트 관련 필드 제거 함수
@@ -302,7 +302,7 @@ const NutritionScout = () => {
     if (value.trim()) {
       // 검색어와 일치하는 항목 찾기
       const matchingFoods = foodData.filter(item => 
-        item.요리명 && item.요리명.toLowerCase().includes(value.toLowerCase())
+        item.요리명 && typeof item.요리명 === 'string' && item.요리명.toLowerCase().includes(value.toLowerCase())
       );
       
       // 자동완성 항목을 위한 정제된 데이터 생성 (코멘트 제거)
@@ -333,8 +333,13 @@ const NutritionScout = () => {
       
       // 정확한 일치 항목을 우선 정렬
       const sortedSuggestions = cleanedSuggestions.sort((a, b) => {
-        const aStarts = a.요리명.toLowerCase().startsWith(value.toLowerCase());
-        const bStarts = b.요리명.toLowerCase().startsWith(value.toLowerCase());
+        // 안전한 문자열 처리
+        const aName = a.요리명 && typeof a.요리명 === 'string' ? a.요리명.toLowerCase() : '';
+        const bName = b.요리명 && typeof b.요리명 === 'string' ? b.요리명.toLowerCase() : '';
+        const queryLower = value.toLowerCase();
+        
+        const aStarts = aName.startsWith(queryLower);
+        const bStarts = bName.startsWith(queryLower);
         
         if (aStarts && !bStarts) return -1;
         if (!aStarts && bStarts) return 1;
@@ -435,7 +440,7 @@ const NutritionScout = () => {
         const item: any = {};
         
         // 인덱스 기반으로 필드 매핑
-        if (values[0] && values[0].length > 0 && values[0].length < 50) {
+        if (values[0] && typeof values[0] === 'string' && values[0].length > 0 && values[0].length < 50) {
           item['요리명'] = values[0];
         }
         
@@ -452,7 +457,7 @@ const NutritionScout = () => {
         
         return item;
       })
-      .filter(item => item['요리명'] && item['요리명'].length > 0); // 요리명이 있는 항목만
+      .filter(item => item['요리명'] && typeof item['요리명'] === 'string' && item['요리명'].length > 0); // 요리명이 유효한 문자열인 항목만
       
     console.log('[DEBUG] 파싱된 데이터 샘플:', result.slice(0, 5));
     return result as NutritionData[];
@@ -462,12 +467,20 @@ const NutritionScout = () => {
   const standardizeFields = (item: Record<string, any>): Record<string, any> => {
     const standardizedItem = {...item};
     
-    // 요리명 필드 표준화
+    // 요리명 필드 표준화 (안전한 문자열 처리)
     for (const key of Object.keys(item)) {
       if (key.includes('음식') || key.includes('요리') || key.includes('이름')) {
-        standardizedItem['요리명'] = item[key];
-        break;
+        const value = item[key];
+        if (value && typeof value === 'string' && value.trim().length > 0) {
+          standardizedItem['요리명'] = value.trim();
+          break;
+        }
       }
+    }
+    
+    // 요리명이 없거나 유효하지 않은 경우 기본값 설정
+    if (!standardizedItem['요리명'] || typeof standardizedItem['요리명'] !== 'string') {
+      standardizedItem['요리명'] = '이름 없음';
     }
     
     // 영양소 필드 표준화
@@ -560,14 +573,14 @@ const NutritionScout = () => {
             style={{ right: 0, left: 0 }}
           >
             {suggestions.map((suggestion, index) => {
-              // 검색어 하이라이트를 위한 처리
-              const itemName = suggestion.요리명;
-              const lowerName = itemName.toLowerCase();
+              // 검색어 하이라이트를 위한 처리 (안전한 문자열 처리)
+              const itemName = suggestion.요리명 || '';
+              const lowerName = typeof itemName === 'string' ? itemName.toLowerCase() : '';
               const lowerQuery = searchQuery.toLowerCase();
               const matchIndex = lowerName.indexOf(lowerQuery);
               
               let highlightedName;
-              if (matchIndex >= 0) {
+              if (matchIndex >= 0 && itemName) {
                 const before = itemName.substring(0, matchIndex);
                 const match = itemName.substring(matchIndex, matchIndex + lowerQuery.length);
                 const after = itemName.substring(matchIndex + lowerQuery.length);
@@ -579,7 +592,7 @@ const NutritionScout = () => {
                   </>
                 );
               } else {
-                highlightedName = itemName;
+                highlightedName = itemName || '이름 없음';
               }
               
               // 코멘트 필드가 없음을 확인
