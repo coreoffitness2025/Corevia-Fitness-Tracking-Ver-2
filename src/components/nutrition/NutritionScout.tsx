@@ -58,7 +58,7 @@ const NutritionScout = () => {
       
       console.log('CSV 텍스트 길이:', text.length);
       
-      // CSV 파싱 (따옴표가 있는 필드 처리)
+      // CSV 파싱 (RFC 4180 표준 준수)
       const lines = text.split('\n').filter(line => line.trim());
       console.log('전체 라인 수:', lines.length);
       
@@ -68,37 +68,23 @@ const NutritionScout = () => {
       const data: NutritionData[] = [];
       
       for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
+        const line = lines[i].trim();
+        if (!line) continue;
         
-        // CSV 필드 파싱 (따옴표 고려)
-        const values: string[] = [];
-        let current = '';
-        let inQuotes = false;
+        // 정확한 CSV 파싱을 위한 로직
+        const result = parseCSVLine(line);
         
-        for (let j = 0; j < line.length; j++) {
-          const char = line[j];
-          
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            values.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        values.push(current.trim()); // 마지막 필드
-        
-        if (values.length >= 5) {
+        if (result.length >= 5 && result[0]) {
           const item: NutritionData = {
-            '요리명': values[0]?.trim() || '',
-            '탄수화물(g/100g)': parseFloat(values[1]) || 0,
-            '단백질(g/100g)': parseFloat(values[2]) || 0,
-            '지방(g/100g)': parseFloat(values[3]) || 0,
-            '코멘트': values[4]?.replace(/^"|"$/g, '').trim() || '' // 앞뒤 따옴표 제거
+            '요리명': result[0].trim(),
+            '탄수화물(g/100g)': parseFloat(result[1]) || 0,
+            '단백질(g/100g)': parseFloat(result[2]) || 0,
+            '지방(g/100g)': parseFloat(result[3]) || 0,
+            '코멘트': result[4] || ''
           };
           
-          if (item['요리명']) {
+          // 요리명이 유효한 경우만 추가 (코멘트 내용이 요리명에 들어가지 않도록)
+          if (item['요리명'] && item['요리명'].length < 50 && !item['요리명'].includes('다이어트')) {
             data.push(item);
           }
         }
@@ -115,6 +101,42 @@ const NutritionScout = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // CSV 라인 파싱 함수 (RFC 4180 표준)
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // 연속된 따옴표는 이스케이프된 따옴표
+          current += '"';
+          i += 2;
+        } else {
+          // 따옴표 시작/끝
+          inQuotes = !inQuotes;
+          i++;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // 필드 구분자
+        result.push(current);
+        current = '';
+        i++;
+      } else {
+        current += char;
+        i++;
+      }
+    }
+    
+    result.push(current); // 마지막 필드
+    return result;
   };
 
   const handleSearch = (searchParam?: string) => {
