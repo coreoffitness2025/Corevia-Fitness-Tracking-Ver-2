@@ -198,7 +198,7 @@ const NutritionScout = () => {
         
         // 나머지는 알파벳 순서
         return aName.localeCompare(bName);
-      }).slice(0, 5);
+      }).slice(0, 10);
       
       setSuggestions(sortedResults);
       setShowAutoComplete(sortedResults.length > 0);
