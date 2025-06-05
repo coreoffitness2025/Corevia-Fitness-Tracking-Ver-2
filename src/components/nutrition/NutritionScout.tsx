@@ -291,7 +291,7 @@ const NutritionScout = () => {
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-primary-500">
               <h3 className="text-lg font-semibold text-primary-600 dark:text-primary-400 mb-2 flex items-center">
                 <span className="mr-2">💪</span>
-                트레이너 코멘트
+                코멘트
               </h3>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
                 {searchResult['코멘트']}
