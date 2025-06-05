@@ -19,6 +19,7 @@ interface BodyProgressViewProps {
 
 // 날짜 필터 타입 추가
 type DateFilter = 'daily' | 'weekly' | 'monthly';
+type WeightPeriodFilter = '1month' | '3months' | '6months' | '1year' | 'all';
 
 const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
   const { userProfile } = useAuth();
@@ -31,6 +32,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
     record: BodyPhotoRecord;
   } | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilter>('daily');
+  const [weightPeriodFilter, setWeightPeriodFilter] = useState<WeightPeriodFilter>('all');
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -143,8 +145,41 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
     setSelectedPhoto(null);
   };
 
-  // 체중 그래프 데이터 준비
-  const chartData = weightHistory.map(record => ({
+  // 체중 기록을 기간별로 필터링하는 함수
+  const getFilteredWeightHistory = () => {
+    if (weightPeriodFilter === 'all') {
+      return weightHistory;
+    }
+
+    const now = new Date();
+    let startDate: Date;
+
+    switch (weightPeriodFilter) {
+      case '1month':
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case '3months':
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case '6months':
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 6);
+        break;
+      case '1year':
+        startDate = new Date(now);
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        return weightHistory;
+    }
+
+    return weightHistory.filter(record => record.date >= startDate);
+  };
+
+  // 체중 그래프 데이터 준비 (필터링된 데이터 사용)
+  const chartData = getFilteredWeightHistory().map(record => ({
     date: record.date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
     weight: record.weight,
     fullDate: record.date.toLocaleDateString('ko-KR')
@@ -253,9 +288,63 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
         {/* 체중 변화 그래프 */}
         {weightHistory.length > 0 ? (
           <div className="mb-8">
-            <div className="flex items-center mb-4">
-              <Scale size={24} className="text-blue-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">체중 변화 추이</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <Scale size={24} className="text-blue-500 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">체중 변화 추이</h3>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setWeightPeriodFilter('1month')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    weightPeriodFilter === '1month' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  1개월
+                </button>
+                <button
+                  onClick={() => setWeightPeriodFilter('3months')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    weightPeriodFilter === '3months' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  3개월
+                </button>
+                <button
+                  onClick={() => setWeightPeriodFilter('6months')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    weightPeriodFilter === '6months' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  6개월
+                </button>
+                <button
+                  onClick={() => setWeightPeriodFilter('1year')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    weightPeriodFilter === '1year' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  1년
+                </button>
+                <button
+                  onClick={() => setWeightPeriodFilter('all')}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    weightPeriodFilter === 'all' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  전체
+                </button>
+              </div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
               <ResponsiveContainer width="100%" height={300}>
@@ -291,9 +380,22 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
               {weightHistory.length > 1 && (
                 <div className="mt-4 text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    총 변화량: {(weightHistory[weightHistory.length - 1].weight - weightHistory[0].weight).toFixed(1)} kg
-                    {weightHistory[weightHistory.length - 1].weight > weightHistory[0].weight ? 
-                      ' 증가' : ' 감소'}
+                    총 변화량: {(() => {
+                      const filteredData = getFilteredWeightHistory();
+                      if (filteredData.length > 1) {
+                        const change = (filteredData[filteredData.length - 1].weight - filteredData[0].weight).toFixed(1);
+                        return `${change} kg ${filteredData[filteredData.length - 1].weight > filteredData[0].weight ? '증가' : '감소'}`;
+                      }
+                      return '데이터 부족';
+                    })()}
+                    {weightPeriodFilter !== 'all' && (
+                      <span className="text-xs text-gray-500 dark:text-gray-500 ml-2">
+                        ({weightPeriodFilter === '1month' ? '최근 1개월' :
+                          weightPeriodFilter === '3months' ? '최근 3개월' :
+                          weightPeriodFilter === '6months' ? '최근 6개월' :
+                          weightPeriodFilter === '1year' ? '최근 1년' : '전체'} 기준)
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
