@@ -19,6 +19,8 @@ const PrivacyPolicy: React.FC = () => {
             <li><strong>개인 맞춤 서비스</strong>: 목표 칼로리 계산, 운동 통계 제공, 체중 변화 분석</li>
             <li><strong>서비스 개선</strong>: 신규 서비스 개발, 기존 서비스 개선, 이용 현황 통계</li>
             <li><strong>안전 관리</strong>: 부정 이용 방지, 시스템 보안 유지</li>
+            <li><strong>광고 서비스</strong>: 맞춤형 광고 제공, 광고 효과 측정, 서비스 수익화</li>
+            <li><strong>AI 기반 서비스</strong>: 향후 도입예정인 AI 기반 운동/식단 추천, 개인 맞춤형 피드백 제공</li>
           </ul>
         </section>
         

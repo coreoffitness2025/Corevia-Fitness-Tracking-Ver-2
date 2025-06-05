@@ -2,14 +2,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/common/Layout';
 import { useState, useEffect } from 'react';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, orderBy, limit, deleteDoc } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth';
 import { db } from '../firebase/firebaseConfig';
 import { UserProfile, UserSettings } from '../types';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { LogOut, Settings, FileText, Info, TrendingUp, X } from 'lucide-react';
+import { LogOut, Settings, FileText, Info, TrendingUp, X, Trash2 } from 'lucide-react';
 import WorkoutSetConfig from '../components/settings/WorkoutSetConfig';
 import { toast } from 'react-hot-toast';
 
@@ -37,6 +38,11 @@ const SettingsPage = () => {
     weight: number;
   }>>([]);
   const [isLoadingWeightHistory, setIsLoadingWeightHistory] = useState(false);
+
+  // 회원탈퇴 관련 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (authUserProfile) {
@@ -73,31 +79,101 @@ const SettingsPage = () => {
     }
   };
 
-  // 체중 히스토리 가져오기 함수
+  // 체중 기록 조회 함수
   const fetchWeightHistory = async () => {
     if (!currentUser) return;
     
+    setIsLoadingWeightHistory(true);
     try {
-      setIsLoadingWeightHistory(true);
       const q = query(
         collection(db, 'weightRecords'),
         where('userId', '==', currentUser.uid),
-        orderBy('date', 'asc'),
-        limit(30)
+        orderBy('date', 'desc'),
+        limit(30) // 최근 30개 기록
       );
       
       const querySnapshot = await getDocs(q);
-      const history = querySnapshot.docs.map(doc => ({
+      const records = querySnapshot.docs.map(doc => ({
         date: doc.data().date.toDate(),
         weight: doc.data().weight
       }));
       
-      setWeightHistory(history);
+      setWeightHistory(records);
     } catch (error) {
-      console.error('체중 히스토리 로드 실패:', error);
-      toast.error('체중 기록을 불러오는데 실패했습니다.');
+      console.error('체중 기록 조회 중 오류:', error);
+      toast.error('체중 기록을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setIsLoadingWeightHistory(false);
+    }
+  };
+
+  // 회원탈퇴 함수
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+    
+    if (deleteConfirmText !== '회원탈퇴') {
+      toast.error('확인 문구를 정확히 입력해주세요.');
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      // 1. Firestore에서 모든 사용자 데이터 삭제
+      const collections = [
+        'users',
+        'userSettings', 
+        'workouts',
+        'workoutRecords',
+        'weightRecords',
+        'bodyChecks',
+        'dietLogs'
+      ];
+      
+      for (const collectionName of collections) {
+        if (collectionName === 'workouts' || 
+            collectionName === 'workoutRecords' || 
+            collectionName === 'weightRecords' ||
+            collectionName === 'bodyChecks' ||
+            collectionName === 'dietLogs') {
+          // userId 필드로 필터링되는 컬렉션들
+          const q = query(
+            collection(db, collectionName),
+            where('userId', '==', currentUser.uid)
+          );
+          const querySnapshot = await getDocs(q);
+          
+          for (const docSnapshot of querySnapshot.docs) {
+            await deleteDoc(docSnapshot.ref);
+          }
+        } else {
+          // 사용자 ID를 문서 ID로 사용하는 컬렉션들
+          const docRef = doc(db, collectionName, currentUser.uid);
+          const docSnapshot = await getDoc(docRef);
+          if (docSnapshot.exists()) {
+            await deleteDoc(docRef);
+          }
+        }
+      }
+      
+      // 2. Firebase Auth에서 사용자 계정 삭제
+      await deleteUser(currentUser);
+      
+      toast.success('회원탈퇴가 완료되었습니다.');
+      navigate('/auth');
+      
+    } catch (error: any) {
+      console.error('회원탈퇴 중 오류:', error);
+      if (error.code === 'auth/requires-recent-login') {
+        toast.error('보안을 위해 최근에 로그인한 사용자만 탈퇴할 수 있습니다. 다시 로그인 후 시도해주세요.');
+        logout();
+        navigate('/auth');
+      } else {
+        toast.error('회원탈퇴 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      setDeleteConfirmText('');
     }
   };
 
@@ -261,15 +337,37 @@ const SettingsPage = () => {
             <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
               계정 관리
             </h3>
-            <Button
-              onClick={handleLogout}
-              variant="danger"
-              size="md"
-              icon={<LogOut size={18} />}
-              className="w-full md:w-auto"
-            >
-              로그아웃
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={() => navigate('/info')}
+              >
+                <Info className="w-5 h-5" />
+                피트니스 정보
+              </Button>
+              
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-5 h-5" />
+                로그아웃
+              </Button>
+
+              <Button
+                variant="danger"
+                size="lg"
+                className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                <Trash2 className="w-5 h-5" />
+                회원탈퇴
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -493,6 +591,81 @@ const SettingsPage = () => {
               >
                 닫기
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 회원탈퇴 확인 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-red-600 dark:text-red-400">
+                ⚠️ 회원탈퇴
+              </h2>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText('');
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                <p className="text-red-800 dark:text-red-200 text-sm">
+                  <strong>주의:</strong> 회원탈퇴 시 다음 데이터가 영구적으로 삭제됩니다:
+                </p>
+                <ul className="list-disc list-inside mt-2 text-red-700 dark:text-red-300 text-sm space-y-1">
+                  <li>개인 프로필 및 설정</li>
+                  <li>모든 운동 기록</li>
+                  <li>체중 기록 및 변화 추이</li>
+                  <li>식단 기록 및 사진</li>
+                  <li>바디 체크 사진</li>
+                </ul>
+                <p className="text-red-800 dark:text-red-200 text-sm mt-2">
+                  <strong>삭제된 데이터는 복구할 수 없습니다.</strong>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  탈퇴를 원하시면 아래에 <strong>"회원탈퇴"</strong>를 정확히 입력해주세요:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="회원탈퇴"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmText('');
+                  }}
+                  className="flex-1"
+                  disabled={isDeleting}
+                >
+                  취소
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={handleDeleteAccount}
+                  className="flex-1 bg-red-500 hover:bg-red-600"
+                  disabled={isDeleting || deleteConfirmText !== '회원탈퇴'}
+                >
+                  {isDeleting ? '탈퇴 중...' : '탈퇴하기'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

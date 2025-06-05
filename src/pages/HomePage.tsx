@@ -481,7 +481,7 @@ const HomePage = () => {
         <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
-              <h3 className="text-lg font-semibold text-primary-600 dark:text-primary-400">
+              <h3 className="text-lg font-bold text-primary-800 dark:text-primary-300">
                 현재 선호 세트 구성: {workoutSettings?.preferredSetup || '10x5'}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
