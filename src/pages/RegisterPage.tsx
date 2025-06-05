@@ -27,9 +27,9 @@ const RegisterPage: React.FC = () => {
     
     // 인증 상태가 변경되고 로그인되었으면 리디렉션
     if (isAuthenticated && currentUser) {
-      toast.success('로그인 되었습니다. 프로필 페이지로 이동합니다.');
+      toast.success('회원가입이 완료되었습니다. 홈페이지로 이동합니다.');
       // 리디렉션 시점을 지연시켜 중첩 리디렉션 방지
-      setTimeout(() => navigate('/profile'), 2000);
+      setTimeout(() => navigate('/'), 1000);
     }
   }, [isAuthenticated, currentUser, navigate]);
 

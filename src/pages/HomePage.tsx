@@ -15,6 +15,13 @@ import PersonalizationModal from '../components/auth/PersonalizationModal';
 import BodyPhotoForm from '../components/body/BodyPhotoForm';
 import BodyProgressView from '../components/body/BodyProgressView';
 import { toast } from 'react-hot-toast';
+import WeightRecordForm from '../components/body/WeightRecordForm';
+import Greeting from '../components/home/Greeting';
+import WorkoutSummary from '../components/home/WorkoutSummary';
+import FoodSummary from '../components/home/FoodSummary';
+import TodaySchedule from '../components/home/TodaySchedule';
+import { formatDate, isToday, isTomorrow, isYesterday } from '../utils/dateUtils';
+import { getTodaysWorkoutRecords, getTodaysFoodRecords, WorkoutRecord as DBWorkoutRecord } from '../utils/indexedDB';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -686,14 +693,19 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* 체중 기록 모달 (기존 PersonalizationModal 사용) */}
+      {/* 체중 기록 모달 */}
       {showWeightRecordModal && (
-        <PersonalizationModal
-          isOpen={showWeightRecordModal}
-          onClose={() => setShowWeightRecordModal(false)}
-          onSave={handleSaveWeightRecord}
-          userProfile={userProfile}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md mx-4">
+            <WeightRecordForm
+              onSuccess={() => {
+                setShowWeightRecordModal(false);
+                toast.success('체중이 성공적으로 기록되었습니다!');
+              }}
+              onCancel={() => setShowWeightRecordModal(false)}
+            />
+          </div>
+        </div>
       )}
     </Layout>
   );
