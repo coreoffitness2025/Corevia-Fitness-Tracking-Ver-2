@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { formatDate, formatDateWithWeekday, isToday } from '../../utils/dateUtils';
 import Card from '../common/Card';
-import { Info, Calendar, CalendarDays, ExternalLink, X, Plus, Droplets, Pill } from 'lucide-react';
+import { Info, Calendar, CalendarDays, ExternalLink, X, Plus, Droplets, Pill, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -50,6 +50,10 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
   const [recordsByDate, setRecordsByDate] = useState<Record<string, FoodRecord[]>>({});
   const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{url: string, record: FoodRecord, index: number} | null>(null);
+  
+  // 달력 모달 관련 상태 추가
+  const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false);
+  const [calendarCurrentDate, setCalendarCurrentDate] = useState<Date>(new Date(selectedDate));
 
   const [nutritionGoals, setNutritionGoals] = useState(() => {
     return calculateNutritionGoals(userProfile || DEFAULT_USER_PROFILE);
@@ -253,6 +257,56 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
   const closePhotoModal = () => {
     setShowPhotoModal(false);
     setSelectedPhoto(null);
+  };
+
+  // 달력 모달 관련 함수들
+  const openCalendarModal = () => {
+    setCalendarCurrentDate(new Date(selectedDate));
+    setShowCalendarModal(true);
+  };
+
+  const closeCalendarModal = () => {
+    setShowCalendarModal(false);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date.toISOString().split('T')[0]);
+    closeCalendarModal();
+  };
+
+  const getCalendarDates = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const endDate = new Date(lastDay);
+    endDate.setDate(endDate.getDate() + (6 - lastDay.getDay()));
+    
+    const dates = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
+  const navigateCalendarPrevious = () => {
+    const newDate = new Date(calendarCurrentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setCalendarCurrentDate(newDate);
+  };
+
+  const navigateCalendarNext = () => {
+    const newDate = new Date(calendarCurrentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setCalendarCurrentDate(newDate);
   };
 
   const renderFoodsByDate = (dateStr: string, recordsForDate: FoodRecord[]) => {
@@ -642,30 +696,41 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
             className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
             aria-label="이전"
           >
-            &lt;
+            <ChevronLeft size={20} />
           </button>
           
-          <span className="mx-4 font-medium text-center w-48 md:w-auto">
-            {viewMode === 'day' && new Date(selectedDate).toLocaleDateString('ko-KR', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric',
-              weekday: 'long'
-            })}
-            {viewMode === 'week' && (
-              <>
-                {getDaysOfWeek()[0].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} - {getDaysOfWeek()[6].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-              </>
-            )}
-            {viewMode === 'month' && new Date(selectedDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
-          </span>
+          <div className="flex items-center mx-4">
+            <span className="font-medium text-center w-48 md:w-auto mr-2">
+              {viewMode === 'day' && new Date(selectedDate).toLocaleDateString('ko-KR', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+              })}
+              {viewMode === 'week' && (
+                <>
+                  {getDaysOfWeek()[0].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} - {getDaysOfWeek()[6].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                </>
+              )}
+              {viewMode === 'month' && new Date(selectedDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+            </span>
+            
+            <button 
+              onClick={openCalendarModal}
+              className="p-2 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-700/50 text-primary-600 dark:text-primary-400"
+              aria-label="달력으로 날짜 선택"
+              title="달력으로 날짜 선택"
+            >
+              <Calendar size={20} />
+            </button>
+          </div>
           
           <button 
             onClick={navigateNext}
             className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
             aria-label="다음"
           >
-            &gt;
+            <ChevronRight size={20} />
           </button>
         </div>
         
@@ -760,6 +825,98 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 달력 모달 */}
+      {showCalendarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md mx-4">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">날짜 선택</h3>
+              <button 
+                onClick={closeCalendarModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              {/* 월 네비게이션 */}
+              <div className="flex justify-between items-center mb-4">
+                <button 
+                  onClick={navigateCalendarPrevious}
+                  className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <h4 className="text-lg font-semibold">
+                  {calendarCurrentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+                </h4>
+                
+                <button 
+                  onClick={navigateCalendarNext}
+                  className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+              
+              {/* 달력 그리드 */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+                  <div key={day} className="p-2 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-7 gap-1">
+                {getCalendarDates(calendarCurrentDate).map((date, index) => {
+                  const isCurrentMonth = date.getMonth() === calendarCurrentDate.getMonth();
+                  const isToday = date.toDateString() === new Date().toDateString();
+                  const isSelected = date.toISOString().split('T')[0] === selectedDate;
+                  
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleDateSelect(date)}
+                      className={`
+                        p-2 text-sm rounded-lg transition-colors
+                        ${!isCurrentMonth 
+                          ? 'text-gray-400 dark:text-gray-600' 
+                          : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }
+                        ${isToday 
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                          : ''
+                        }
+                        ${isSelected 
+                          ? 'bg-primary-500 text-white hover:bg-primary-600' 
+                          : ''
+                        }
+                      `}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* 오늘 날짜로 이동 버튼 */}
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDateSelect(new Date())}
+                >
+                  오늘
+                </Button>
+              </div>
             </div>
           </div>
         </div>

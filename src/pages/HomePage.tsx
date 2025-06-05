@@ -6,7 +6,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../firebase/firebaseConfig';
 import LoadingSpinner, { LoadingScreen } from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
-import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings, X, Scale, Plus, Camera, User } from 'lucide-react';
+import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings, X, Scale, Plus, Camera, User, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutSettings } from '../hooks/useWorkoutSettings';
 import Button from '../components/common/Button';
@@ -456,7 +456,7 @@ const HomePage = () => {
                   variant="outline"
                   size="md"
                   onClick={handleBodyProgressClick}
-                  icon={<TrendingUp size={18} />}
+                  icon={<BarChart3 size={18} />}
                   className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
                 >
                   변화 추이 보기
@@ -692,7 +692,7 @@ const HomePage = () => {
           isOpen={showWeightRecordModal}
           onClose={() => setShowWeightRecordModal(false)}
           onSave={handleSaveWeightRecord}
-          currentProfile={userProfile}
+          userProfile={userProfile}
           title="체중 기록하기"
           showOnlyWeight={true}
         />
