@@ -48,19 +48,6 @@ const SettingsPage = () => {
     setIsLoading(false); 
   }, [authUserProfile, authUserSettings]);
 
-  const handleUnitSettingChange = async (key: keyof UserSettings['units'], value: 'kg' | 'lbs' | 'cm' | 'ft') => {
-    if (!currentSettings) return;
-    const newUnits = { ...currentSettings.units, [key]: value };
-    const newAppSettings = { ...currentSettings, units: newUnits };
-    try {
-      await updateSettings(newAppSettings);
-      setCurrentSettings(newAppSettings);
-      toast.success('단위 설정이 저장되었습니다.');
-    } catch (error) {
-      toast.error('단위 설정 저장에 실패했습니다.');
-    }
-  };
-  
   const handleSavePersonalization = async (profileDataToSave: Partial<UserProfile>) => {
     try {
       if (currentUser?.uid) {
@@ -130,10 +117,6 @@ const SettingsPage = () => {
     );
   }
   
-  const displaySettings = currentSettings || {
-    units: { weight: 'kg', height: 'cm' }
-  };
-
   return (
     <Layout>
       <div className="mb-6">
@@ -271,35 +254,6 @@ const SettingsPage = () => {
             
             <WorkoutSetConfig />
           </div>
-        )}
-
-        {!isLoading && (
-          <>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                단위 설정
-              </h3>
-              <div className="space-y-4">
-                {[
-                  { key: 'weight', label: '무게 단위', options: [{value: 'kg', label: 'kg'}, {value: 'lbs', label: 'lbs'}] },
-                  { key: 'height', label: '키 단위', options: [{value: 'cm', label: 'cm'}, {value: 'ft', label: 'ft'}] },
-                ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between">
-                    <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
-                    <select
-                      value={displaySettings.units[item.key as keyof UserSettings['units']]}
-                      onChange={(e) => handleUnitSettingChange(item.key as keyof UserSettings['units'], e.target.value as any)}
-                      className="block w-auto px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100"
-                    >
-                      {item.options.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
         )}
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
