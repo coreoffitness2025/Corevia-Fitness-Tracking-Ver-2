@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { User } from 'firebase/auth';
+import { User, sendPasswordResetEmail } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import { useAuth } from '../contexts/AuthContext';
-import { signInWithGoogle, signInWithEmail, getGoogleRedirectResult } from '../firebase/firebaseConfig';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { signInWithGoogle, signInWithEmail, getGoogleRedirectResult, auth } from '../firebase/firebaseConfig';
+import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 
@@ -54,10 +54,12 @@ const LoginHeader = ({ navigate }: { navigate: (path: string) => void }) => (
 
 const EmailLoginForm = ({ 
   onSubmit, 
-  isLoading 
+  isLoading,
+  onForgotPassword 
 }: { 
   onSubmit: (email: string, password: string, rememberMe: boolean) => void; 
   isLoading: boolean;
+  onForgotPassword: () => void;
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,17 +98,26 @@ const EmailLoginForm = ({
           required
         />
       </div>
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          id="rememberMe"
-          checked={rememberMe}
-          onChange={(e) => setRememberMe(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
-        <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-          로그인 상태 유지
-        </label>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+            로그인 상태 유지
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          아이디/비밀번호 찾기
+        </button>
       </div>
       <button
         type="submit"
@@ -119,10 +130,181 @@ const EmailLoginForm = ({
   );
 };
 
+// 아이디/비밀번호 찾기 모달 컴포넌트
+const ForgotPasswordModal = ({ 
+  isOpen, 
+  onClose 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+}) => {
+  const [activeTab, setActiveTab] = useState<'findId' | 'resetPassword'>('resetPassword');
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error('이메일을 입력해주세요.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast.success('비밀번호 재설정 이메일이 전송되었습니다. 이메일을 확인해주세요.');
+      onClose();
+    } catch (error: any) {
+      console.error('비밀번호 재설정 오류:', error);
+      if (error.code === 'auth/user-not-found') {
+        toast.error('등록되지 않은 이메일입니다.');
+      } else if (error.code === 'auth/invalid-email') {
+        toast.error('올바른 이메일 형식을 입력해주세요.');
+      } else {
+        toast.error('비밀번호 재설정 이메일 전송에 실패했습니다.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailCheck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error('이메일을 입력해주세요.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Firebase에서는 직접적인 사용자 존재 확인이 어려우므로 Firestore에서 확인
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('email', '==', email)
+      );
+      const querySnapshot = await getDocs(usersQuery);
+      
+      if (!querySnapshot.empty) {
+        toast.success('해당 이메일로 가입된 계정이 있습니다.');
+      } else {
+        toast.error('해당 이메일로 가입된 계정이 없습니다.');
+      }
+    } catch (error) {
+      console.error('이메일 확인 오류:', error);
+      toast.error('이메일 확인 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md mx-4">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            계정 찾기
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* 탭 메뉴 */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setActiveTab('findId')}
+            className={`flex-1 py-3 px-4 text-sm font-medium ${
+              activeTab === 'findId'
+                ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            아이디 찾기
+          </button>
+          <button
+            onClick={() => setActiveTab('resetPassword')}
+            className={`flex-1 py-3 px-4 text-sm font-medium ${
+              activeTab === 'resetPassword'
+                ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            비밀번호 재설정
+          </button>
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'findId' ? (
+            <form onSubmit={handleEmailCheck} className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                가입시 사용한 이메일을 입력하시면 계정 존재 여부를 확인해드립니다.
+              </p>
+              <div>
+                <label htmlFor="findEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  이메일 주소
+                </label>
+                <input
+                  type="email"
+                  id="findEmail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="example@email.com"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? '확인 중...' : '이메일 확인'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handlePasswordReset} className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                가입시 사용한 이메일을 입력하시면 비밀번호 재설정 링크를 보내드립니다.
+              </p>
+              <div>
+                <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  이메일 주소
+                </label>
+                <input
+                  type="email"
+                  id="resetEmail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="example@email.com"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? '전송 중...' : '재설정 이메일 전송'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { currentUser, updateProfile, isAuthenticated } = useAuth();
   const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -387,6 +569,7 @@ export default function LoginPage() {
           <EmailLoginForm 
             onSubmit={handleEmailLogin} 
             isLoading={isLoading} 
+            onForgotPassword={() => setIsForgotPasswordOpen(true)}
           />
         </div>
       </div>
@@ -395,6 +578,11 @@ export default function LoginPage() {
         isOpen={isPersonalizationOpen}
         onClose={() => setIsPersonalizationOpen(false)}
         onSave={handlePersonalizationSave}
+      />
+      
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
       />
     </div>
   );
