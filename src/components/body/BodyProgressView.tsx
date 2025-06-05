@@ -17,6 +17,9 @@ interface BodyProgressViewProps {
   onClose?: () => void;
 }
 
+// 날짜 필터 타입 추가
+type DateFilter = 'daily' | 'weekly' | 'monthly';
+
 const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
   const { userProfile } = useAuth();
   const [bodyPhotos, setBodyPhotos] = useState<BodyPhotoRecord[]>([]);
@@ -27,6 +30,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
     url: string;
     record: BodyPhotoRecord;
   } | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('daily');
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -133,6 +137,63 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
     fullDate: record.date.toLocaleDateString('ko-KR')
   }));
 
+  const getFilteredPhotos = () => {
+    const now = new Date();
+    
+    switch (dateFilter) {
+      case 'daily':
+        // 최근 30일 동안의 사진
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        return bodyPhotos.filter(photo => photo.date >= thirtyDaysAgo);
+        
+      case 'weekly':
+        // 날짜별로 그룹화하여 주별로 대표 사진 1장씩만 표시
+        const weeklyPhotos: BodyPhotoRecord[] = [];
+        const weekGroups = new Map<string, BodyPhotoRecord[]>();
+        
+        bodyPhotos.forEach(photo => {
+          const weekKey = `${photo.date.getFullYear()}-${Math.floor(photo.date.getDate() / 7)}`;
+          if (!weekGroups.has(weekKey)) {
+            weekGroups.set(weekKey, []);
+          }
+          weekGroups.get(weekKey)!.push(photo);
+        });
+        
+        // 각 주의 첫 번째 사진만 선택
+        weekGroups.forEach(photos => {
+          const sortedPhotos = photos.sort((a, b) => a.date.getTime() - b.date.getTime());
+          weeklyPhotos.push(sortedPhotos[0]);
+        });
+        
+        return weeklyPhotos.sort((a, b) => b.date.getTime() - a.date.getTime());
+        
+      case 'monthly':
+        // 월별로 그룹화하여 대표 사진 1장씩만 표시
+        const monthlyPhotos: BodyPhotoRecord[] = [];
+        const monthGroups = new Map<string, BodyPhotoRecord[]>();
+        
+        bodyPhotos.forEach(photo => {
+          const monthKey = `${photo.date.getFullYear()}-${photo.date.getMonth()}`;
+          if (!monthGroups.has(monthKey)) {
+            monthGroups.set(monthKey, []);
+          }
+          monthGroups.get(monthKey)!.push(photo);
+        });
+        
+        // 각 월의 첫 번째 사진만 선택
+        monthGroups.forEach(photos => {
+          const sortedPhotos = photos.sort((a, b) => a.date.getTime() - b.date.getTime());
+          monthlyPhotos.push(sortedPhotos[0]);
+        });
+        
+        return monthlyPhotos.sort((a, b) => b.date.getTime() - a.date.getTime());
+        
+      default:
+        return bodyPhotos;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -229,14 +290,55 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
 
         {/* 신체 사진 갤러리 */}
         <div>
-          <div className="flex items-center mb-4">
-            <Camera size={24} className="text-purple-500 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">신체 사진 기록</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Camera size={24} className="text-purple-500 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">신체 사진 기록</h3>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setDateFilter('daily')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  dateFilter === 'daily' 
+                    ? 'bg-purple-500 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                일별
+              </button>
+              <button
+                onClick={() => setDateFilter('weekly')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  dateFilter === 'weekly' 
+                    ? 'bg-purple-500 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                주별
+              </button>
+              <button
+                onClick={() => setDateFilter('monthly')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  dateFilter === 'monthly' 
+                    ? 'bg-purple-500 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                월별
+              </button>
+            </div>
+          </div>
+
+          {/* 선택사항 안내 */}
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>📝 참고:</strong> 체중, 체지방률, 근육량 기록은 선택사항입니다. 사진만 기록하셔도 됩니다.
+            </p>
           </div>
           
           {bodyPhotos.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {bodyPhotos.map((photo) => (
+              {getFilteredPhotos().map((photo) => (
                 <div 
                   key={photo.id} 
                   className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"

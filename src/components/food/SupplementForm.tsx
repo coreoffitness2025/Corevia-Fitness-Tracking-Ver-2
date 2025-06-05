@@ -20,6 +20,7 @@ const SupplementForm: React.FC<SupplementFormProps> = ({ onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [frequentSupplements, setFrequentSupplements] = useState<string[]>([]);
+  const [showTimeSlots, setShowTimeSlots] = useState<boolean>(false);
 
   // 자주 복용하는 영양제 로드
   useEffect(() => {
@@ -124,11 +125,37 @@ const SupplementForm: React.FC<SupplementFormProps> = ({ onSuccess }) => {
   };
 
   const handleTimeUnknown = () => {
-    setIsUnknownTime(!isUnknownTime);
-    if (!isUnknownTime) {
-      setTime('');
-    } else {
-      setTime(new Date().toTimeString().slice(0, 5));
+    setShowTimeSlots(!showTimeSlots);
+  };
+
+  // 시간대 슬롯 선택 함수
+  const handleTimeSlotSelect = (slot: string) => {
+    let timeValue = '';
+    switch(slot) {
+      case '08:00 ~ 12:00':
+        timeValue = '10:00';
+        break;
+      case '12:00 ~ 16:00':
+        timeValue = '14:00';
+        break;
+      case '16:00 ~ 20:00':
+        timeValue = '18:00';
+        break;
+      case '20:00 ~ 24:00':
+        timeValue = '22:00';
+        break;
+      case '새벽 야식':
+        timeValue = '02:00';
+        break;
+      case '알 수 없음':
+        timeValue = '12:00'; // 기본값으로 점심 시간 설정
+        setIsUnknownTime(true);
+        break;
+    }
+    setTime(timeValue);
+    setShowTimeSlots(false);
+    if (slot !== '알 수 없음') {
+      setIsUnknownTime(false);
     }
   };
 
@@ -308,29 +335,50 @@ const SupplementForm: React.FC<SupplementFormProps> = ({ onSuccess }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <Clock size={16} className="inline mr-1" />
-            복용 시간
+            복용 시간대
           </label>
-          <div className="flex gap-2">
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isUnknownTime}
-              required={!isUnknownTime}
-            />
-            <button
-              type="button"
-              onClick={handleTimeUnknown}
-              className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                isUnknownTime
-                  ? 'bg-gray-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <HelpCircle size={16} />
-              알 수 없음
-            </button>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isUnknownTime}
+                required={!isUnknownTime}
+              />
+              <button
+                type="button"
+                onClick={handleTimeUnknown}
+                className="px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                <HelpCircle size={16} />
+                알 수 없음
+              </button>
+            </div>
+            
+            {showTimeSlots && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <h4 className="col-span-full text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">대략적인 시간대를 선택하세요:</h4>
+                {[
+                  '08:00 ~ 12:00',
+                  '12:00 ~ 16:00', 
+                  '16:00 ~ 20:00',
+                  '20:00 ~ 24:00',
+                  '새벽 야식',
+                  '알 수 없음'
+                ].map((slot) => (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => handleTimeSlotSelect(slot)}
+                    className="px-3 py-2 text-sm font-medium text-center text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md transition-colors border border-gray-300 dark:border-gray-500"
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

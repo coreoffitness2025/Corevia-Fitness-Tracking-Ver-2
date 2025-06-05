@@ -439,7 +439,7 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
                         {daySupplementRecords.length > 0 && (
                           <div className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded">
                             <Pill size={12} />
-                            <span>영양제 {daySupplementRecords.length}개</span>
+                            <span>{daySupplementRecords.map(s => s.name).join(', ')}</span>
                           </div>
                         )}
                       </div>
@@ -547,7 +547,13 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
                           {daySupplementRecords.length > 0 && (
                             <div className="flex items-center">
                               <Pill size={8} className="text-green-500" />
-                              <span className="text-xs text-green-600 ml-0.5">{daySupplementRecords.length}</span>
+                              <span className="text-xs text-green-600 ml-0.5" title={daySupplementRecords.map(s => s.name).join(', ')}>
+                                {daySupplementRecords.length === 1 
+                                  ? daySupplementRecords[0].name.length > 4 
+                                    ? daySupplementRecords[0].name.slice(0, 4) + '...'
+                                    : daySupplementRecords[0].name
+                                  : `${daySupplementRecords.length}개`}
+                              </span>
                             </div>
                           )}
                         </div>

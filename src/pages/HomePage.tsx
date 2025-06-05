@@ -438,7 +438,7 @@ const HomePage = () => {
                   variant="outline"
                   size="md"
                   onClick={handleBodyPhotoClick}
-                  icon={<Camera size={18} />}
+                  icon={<Plus size={18} />}
                   className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
                 >
                   신체 사진 기록
