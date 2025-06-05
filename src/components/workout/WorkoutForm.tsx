@@ -27,6 +27,11 @@ import AccessoryExerciseComponent from './AccessoryExerciseComponent';
 // 필요한 import 추가
 import ComplexWorkoutForm, { MainExerciseItem, AccessoryExerciseItem } from './ComplexWorkoutForm';
 import type { ReactNode } from 'react'; // ReactNode 타입 import
+import { doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
+import WorkoutSetConfig from '../settings/WorkoutSetConfig';
+import ExerciseDatabase from '../exercise/ExerciseDatabase';
+import { scheduleNotification, triggerHapticFeedback } from '../../utils/capacitorUtils';
 
 interface WorkoutFormProps {
   onSuccess?: () => void; // 저장 성공 시 호출될 콜백
@@ -462,23 +467,29 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             `${accessoryExercises[parseInt(sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(sectionId.split('_')[1])+1}` 
             : '운동';
           
-          // 1. 시각적 알림 (토스트)
-          toast.success(`🔥 ${sectionName} 휴식 완료!`, { 
-            position: 'top-center', 
-            icon: '⏰', 
-            duration: 8000,
+          // 1. 토스트 알림 (강화된 스타일)
+          toast.success(`🏋️‍♂️ ${sectionName} 휴식 완료!`, {
+            duration: 5000,
             style: {
-              background: '#EF4444',
+              background: 'linear-gradient(135deg, #ef4444, #f97316)',
               color: '#fff',
+              fontSize: '18px',
               fontWeight: 'bold',
-              fontSize: '1.1rem',
               padding: '16px 24px',
               borderRadius: '12px',
               boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)',
             }
           });
           
-          // 2. 브라우저 알림 (백그라운드에서도 보임)
+          // 2. Capacitor 네이티브 알림 (앱에서 더 강력한 알림)
+          scheduleNotification(
+            '🏋️‍♂️ 코어비아 피트니스',
+            `${sectionName} 휴식 시간이 끝났습니다! 다음 세트를 시작하세요! 💪`
+          ).catch(err => {
+            console.warn('네이티브 알림 전송 실패:', err);
+          });
+          
+          // 3. 브라우저 알림 (웹에서 백그라운드에서도 보임)
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('🏋️‍♂️ 코어비아 피트니스', {
               body: `${sectionName} 휴식 시간이 끝났습니다!\n다음 세트를 시작하세요! 💪`,
@@ -489,7 +500,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             });
           }
           
-          // 3. 알람 사운드 재생 (3번 반복)
+          // 4. 알람 사운드 재생 (3번 반복)
           if (alarmRef.current) {
             let playCount = 0;
             const playAlarm = () => {
@@ -504,18 +515,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             playAlarm();
           }
           
-          // 4. 진동 알림 (강화된 패턴, 모바일만)
-          if ('vibrate' in navigator) {
-            // 긴 진동 패턴: 길게-짧게-길게-짧게-아주길게
-            navigator.vibrate([500, 200, 500, 200, 1000]);
-            
-            // 3초 후 추가 진동
-            setTimeout(() => {
-              navigator.vibrate([300, 100, 300]);
-            }, 3000);
-          }
+          // 5. 강화된 햅틱 피드백 (Capacitor 지원)
+          triggerHapticFeedback('heavy').catch(err => {
+            console.warn('햅틱 피드백 실패:', err);
+          });
           
-          // 5. 화면 깜빡임 효과 (페이지 타이틀 변경)
+          // 6. 추가 햅틱 패턴 (3초 후)
+          setTimeout(() => {
+            triggerHapticFeedback('medium').catch(err => {
+              console.warn('추가 햅틱 피드백 실패:', err);
+            });
+          }, 3000);
+          
+          // 7. 화면 깜빡임 효과 (페이지 타이틀 변경)
           let flashCount = 0;
           const originalTitle = document.title;
           const flashTitle = () => {

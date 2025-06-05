@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
 import { v4 as uuidv4 } from 'uuid';
 import Button from '../common/Button';
+import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback } from '../../utils/capacitorUtils';
 
 interface FoodFormProps {
   onSuccess?: () => void; // 식단 저장 후 호출될 콜백
@@ -152,30 +153,60 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     }
   };
 
-  // 카메라로 촬영 (모바일 웹앱에서 작동)
-  const handleCameraCapture = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment'; // 모바일 기기에서 카메라 활성화
-    input.onchange = (e: Event) => {
-      const fileInput = e.target as HTMLInputElement;
-      if (fileInput.files && fileInput.files[0]) {
-        // 로컬 파일 저장
-        setLocalImageFile(fileInput.files[0]);
+  // 카메라로 촬영 (Capacitor 네이티브 카메라 지원)
+  const handleCameraCapture = async () => {
+    try {
+      // 햅틱 피드백
+      await triggerHapticFeedback('light');
+      
+      // Capacitor 네이티브 카메라 또는 웹 카메라 사용
+      const photoDataUrl = await takePhoto();
+      
+      if (photoDataUrl) {
+        setImagePreview(photoDataUrl);
+        // UUID 기반 이미지 ID 생성
+        setImageUrl(uuidv4());
         
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            setImagePreview(reader.result);
-            // UUID 기반 이미지 ID 생성
-            setImageUrl(uuidv4());
-          }
-        };
-        reader.readAsDataURL(fileInput.files[0]);
+        // dataURL을 Blob으로 변환하여 localImageFile에 저장
+        const response = await fetch(photoDataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+        setLocalImageFile(file);
+        
+        toast.success('사진이 선택되었습니다!');
       }
-    };
-    input.click();
+    } catch (error) {
+      console.error('카메라 촬영 실패:', error);
+      toast.error('카메라 촬영 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 갤러리에서 사진 선택 (Capacitor 네이티브 갤러리 지원)
+  const handleGallerySelect = async () => {
+    try {
+      // 햅틱 피드백
+      await triggerHapticFeedback('light');
+      
+      // Capacitor 네이티브 갤러리 또는 웹 파일 선택 사용
+      const photoDataUrl = await pickPhotoFromGallery();
+      
+      if (photoDataUrl) {
+        setImagePreview(photoDataUrl);
+        // UUID 기반 이미지 ID 생성
+        setImageUrl(uuidv4());
+        
+        // dataURL을 Blob으로 변환하여 localImageFile에 저장
+        const response = await fetch(photoDataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
+        setLocalImageFile(file);
+        
+        toast.success('사진이 선택되었습니다!');
+      }
+    } catch (error) {
+      console.error('갤러리 선택 실패:', error);
+      toast.error('갤러리에서 사진 선택 중 오류가 발생했습니다.');
+    }
   };
 
   // 이미지를 저장하는 부분을 수정합니다.
@@ -514,16 +545,15 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               카메라로 촬영
             </Button>
             
-            <label className="w-full sm:w-auto sm:flex-1 max-w-xs mx-auto px-4 py-2 text-sm font-medium text-white bg-primary-400 border border-transparent rounded-md shadow-sm hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 cursor-pointer text-center flex items-center justify-center">
-              <Upload size={18} className="inline mr-2" />
-              앨범에서 선택
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </label>
+            <Button
+              type="button"
+              onClick={handleGallerySelect}
+              variant="primary"
+              className="w-full sm:w-auto sm:flex-1 max-w-xs mx-auto"
+              icon={<Upload size={18} className="inline mr-2" />}
+            >
+              갤러리에서 선택
+            </Button>
           </div>
           
           {imagePreview && (
