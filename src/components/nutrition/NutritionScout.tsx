@@ -286,6 +286,14 @@ const NutritionScout = () => {
           <h2 className="text-xl font-bold mb-2">{searchResult['요리명']}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">100g당 영양성분(음식의 영양성분은 절대적이지 않고 조리 방법 등에 따라 달라질 수 있습니다.)</p>
           
+          {/* 데이터 안내 문구 */}
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3 mb-6">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-center">
+              <span className="mr-2">⚠️</span>
+              음식의 영양 성분과 코멘트는 AI와 웹상에 존재하는 음식 데이터들을 종합하여 산출된 결과물로써, 일부 오류가 있을 수 있어 참고용으로만 활용하는걸 권장합니다.
+            </p>
+          </div>
+          
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">칼로리</p>
