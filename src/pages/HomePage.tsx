@@ -154,20 +154,12 @@ const HomePage = () => {
     setShowWeightRecordModal(true);
   };
 
-  // 체중 기록 저장 핸들러
-  const handleSaveWeightRecord = async (profileDataToSave: Partial<UserProfile>) => {
-    try {
-      if (userProfile?.uid) {
-        await updateProfile(profileDataToSave);
-        setShowWeightRecordModal(false);
-        toast.success('체중이 성공적으로 기록되었습니다.');
-      } else {
-        toast.error('로그인 후 체중을 기록할 수 있습니다.');
-      }
-    } catch (error) {
-      console.error('Error saving weight record:', error);
-      toast.error('체중 기록 중 오류가 발생했습니다.');
-    }
+  // 체중 기록 성공 핸들러 (개선)
+  const handleWeightRecordSuccess = () => {
+    setShowWeightRecordModal(false);
+    // 체중 기록 후 히스토리 다시 로드
+    fetchWeightHistory();
+    toast.success('체중이 성공적으로 기록되었습니다!');
   };
 
   // 신체 사진 기록 성공 핸들러
@@ -342,9 +334,20 @@ const HomePage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* 프로필 정보 카드 */} 
         <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center mb-4">
-            <UserCircle size={28} className="text-primary-500 mr-3" />
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">내 프로필</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <UserCircle size={28} className="text-primary-500 mr-3" />
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">내 프로필</h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/settings')}
+              icon={<Settings size={16} />}
+              className="text-primary-600 border-primary-300 hover:bg-primary-50 dark:text-primary-400 dark:border-primary-600 dark:hover:bg-primary-900/20"
+            >
+              설정
+            </Button>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
@@ -698,10 +701,7 @@ const HomePage = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-md mx-4">
             <WeightRecordForm
-              onSuccess={() => {
-                setShowWeightRecordModal(false);
-                toast.success('체중이 성공적으로 기록되었습니다!');
-              }}
+              onSuccess={handleWeightRecordSuccess}
               onCancel={() => setShowWeightRecordModal(false)}
             />
           </div>

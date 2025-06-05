@@ -21,12 +21,20 @@ const WeightRecordForm: React.FC<WeightRecordFormProps> = ({ onSuccess, onCancel
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('[WeightRecordForm] 체중 기록 시작:', { 
+      userProfile: userProfile?.uid, 
+      weight, 
+      date 
+    });
+    
     if (!userProfile?.uid) {
+      console.error('[WeightRecordForm] 사용자 정보가 없습니다:', userProfile);
       toast.error('로그인이 필요합니다.');
       return;
     }
 
     if (weight <= 0 || weight > 300) {
+      console.error('[WeightRecordForm] 잘못된 체중 값:', weight);
       toast.error('올바른 체중을 입력해주세요 (1-300kg).');
       return;
     }
@@ -34,6 +42,8 @@ const WeightRecordForm: React.FC<WeightRecordFormProps> = ({ onSuccess, onCancel
     setIsSubmitting(true);
 
     try {
+      console.log('[WeightRecordForm] Firebase 저장 시작...');
+      
       // Firebase weightRecords 컬렉션에 저장
       const weightRecord = {
         userId: userProfile.uid,
@@ -43,18 +53,30 @@ const WeightRecordForm: React.FC<WeightRecordFormProps> = ({ onSuccess, onCancel
         createdAt: Timestamp.now()
       };
 
-      await addDoc(collection(db, 'weightRecords'), weightRecord);
+      console.log('[WeightRecordForm] 저장할 데이터:', weightRecord);
+      
+      const docRef = await addDoc(collection(db, 'weightRecords'), weightRecord);
+      console.log('[WeightRecordForm] Firebase 저장 성공, docId:', docRef.id);
 
+      console.log('[WeightRecordForm] 사용자 프로필 업데이트 시작...');
+      
       // 사용자 프로필의 현재 체중도 업데이트
       await updateProfile({
         weight: weight,
         lastWeightUpdate: new Date()
       });
+      
+      console.log('[WeightRecordForm] 사용자 프로필 업데이트 성공');
 
       toast.success('체중이 성공적으로 기록되었습니다!');
       onSuccess();
     } catch (error) {
-      console.error('체중 기록 저장 오류:', error);
+      console.error('[WeightRecordForm] 체중 기록 저장 오류:', error);
+      console.error('[WeightRecordForm] 오류 상세:', {
+        code: (error as any)?.code,
+        message: (error as any)?.message,
+        stack: (error as any)?.stack
+      });
       toast.error('체중 기록 저장 중 오류가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
