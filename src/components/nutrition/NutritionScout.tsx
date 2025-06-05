@@ -7,6 +7,7 @@ interface NutritionData {
   '탄수화물(g/100g)': number;
   '단백질(g/100g)': number;
   '지방(g/100g)': number;
+  '코멘트': string;
 }
 
 const NutritionScout = () => {
@@ -57,7 +58,7 @@ const NutritionScout = () => {
       
       console.log('CSV 텍스트 길이:', text.length);
       
-      // CSV 파싱
+      // CSV 파싱 (따옴표가 있는 필드 처리)
       const lines = text.split('\n').filter(line => line.trim());
       console.log('전체 라인 수:', lines.length);
       
@@ -65,14 +66,36 @@ const NutritionScout = () => {
       console.log('헤더:', headers);
       
       const data: NutritionData[] = [];
+      
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',');
-        if (values.length >= 4) {
+        const line = lines[i];
+        
+        // CSV 필드 파싱 (따옴표 고려)
+        const values: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let j = 0; j < line.length; j++) {
+          const char = line[j];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim()); // 마지막 필드
+        
+        if (values.length >= 5) {
           const item: NutritionData = {
             '요리명': values[0]?.trim() || '',
             '탄수화물(g/100g)': parseFloat(values[1]) || 0,
             '단백질(g/100g)': parseFloat(values[2]) || 0,
-            '지방(g/100g)': parseFloat(values[3]) || 0
+            '지방(g/100g)': parseFloat(values[3]) || 0,
+            '코멘트': values[4]?.replace(/^"|"$/g, '').trim() || '' // 앞뒤 따옴표 제거
           };
           
           if (item['요리명']) {
@@ -242,9 +265,9 @@ const NutritionScout = () => {
       {searchResult && !isLoading && (
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
           <h2 className="text-xl font-bold mb-2">{searchResult['요리명']}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">100g당 영양성분</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">100g당 영양성분(음식의 영양성분은 절대적이지 않고 조리 방법 등에 따라 달라질 수 있습니다.)</p>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">칼로리</p>
               <p className="text-lg font-bold text-blue-500">{calculateCalories(searchResult)} kcal</p>
@@ -262,6 +285,19 @@ const NutritionScout = () => {
               <p className="text-lg font-bold text-red-500">{searchResult['지방(g/100g)']}g</p>
             </div>
           </div>
+
+          {/* 트레이너 코멘트 */}
+          {searchResult['코멘트'] && (
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-primary-500">
+              <h3 className="text-lg font-semibold text-primary-600 dark:text-primary-400 mb-2 flex items-center">
+                <span className="mr-2">💪</span>
+                트레이너 코멘트
+              </h3>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                {searchResult['코멘트']}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
