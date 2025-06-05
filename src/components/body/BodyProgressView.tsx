@@ -62,10 +62,10 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
     try {
       console.log('[BodyProgressView] 체중 기록 로드 시작, userId:', userProfile.uid);
       
+      // Firebase 인덱스 문제를 해결하기 위해 orderBy를 제거하고 클라이언트에서 정렬
       const q = query(
         collection(db, 'weightRecords'),
-        where('userId', '==', userProfile.uid),
-        orderBy('date', 'asc')
+        where('userId', '==', userProfile.uid)
       );
       
       const querySnapshot = await getDocs(q);
@@ -78,7 +78,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
           date: data.date.toDate(),
           weight: data.weight
         };
-      });
+      }).sort((a, b) => a.date.getTime() - b.date.getTime()); // 클라이언트에서 날짜순 정렬
       
       console.log('[BodyProgressView] 변환된 체중 기록:', history);
       setWeightHistory(history);
