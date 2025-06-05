@@ -83,10 +83,7 @@ const NutritionScout = () => {
             '코멘트': result[4] || ''
           };
           
-          // 요리명이 유효한 경우만 추가 (코멘트 내용이 요리명에 들어가지 않도록)
-          if (item['요리명'] && item['요리명'].length < 50 && !item['요리명'].includes('다이어트')) {
-            data.push(item);
-          }
+          data.push(item);
         }
       }
       
