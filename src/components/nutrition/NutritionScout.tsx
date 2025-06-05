@@ -241,7 +241,8 @@ const NutritionScout = () => {
       {/* 검색 결과 */}
       {searchResult && !isLoading && (
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">{searchResult['요리명']}</h2>
+          <h2 className="text-xl font-bold mb-2">{searchResult['요리명']}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">100g당 영양성분</p>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
@@ -271,7 +272,7 @@ const NutritionScout = () => {
             음식 이름을 검색해보세요
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {foodData.length > 0 ? `${foodData.length}개 음식 데이터에서 검색할 수 있습니다.` : '데이터를 로드하는 중입니다...'}
+            {foodData.length > 0 ? `${foodData.length}개 음식 데이터에서 검색할 수 있습니다 .` : '데이터를 로드하는 중입니다...'}
           </p>
         </div>
       )}
