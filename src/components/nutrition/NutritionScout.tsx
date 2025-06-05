@@ -50,12 +50,19 @@ const NutritionScout = () => {
   const loadCSVData = async () => {
     try {
       setIsLoading(true);
+      console.log('CSV 로딩 시작...');
+      
       const response = await fetch('/nutrition_db.csv');
       const text = await response.text();
       
+      console.log('CSV 텍스트 길이:', text.length);
+      
       // CSV 파싱
       const lines = text.split('\n').filter(line => line.trim());
+      console.log('전체 라인 수:', lines.length);
+      
       const headers = lines[0].split(',');
+      console.log('헤더:', headers);
       
       const data: NutritionData[] = [];
       for (let i = 1; i < lines.length; i++) {
@@ -74,6 +81,9 @@ const NutritionScout = () => {
         }
       }
       
+      console.log('최종 데이터 개수:', data.length);
+      console.log('처음 5개 데이터:', data.slice(0, 5));
+      
       setFoodData(data);
       toast.success(`${data.length}개 음식 데이터 로드 완료`);
     } catch (error) {
@@ -86,6 +96,8 @@ const NutritionScout = () => {
 
   const handleSearch = (searchParam?: string) => {
     const queryText = (searchParam || searchQuery).trim();
+    
+    console.log('검색 시작:', queryText, '데이터 개수:', foodData.length);
     
     if (!queryText) {
       toast.error('검색어를 입력해주세요.');
@@ -101,6 +113,8 @@ const NutritionScout = () => {
     const partialMatch = foodData.find(
       item => item['요리명'] && item['요리명'].toLowerCase().includes(queryText.toLowerCase())
     );
+
+    console.log('검색 결과:', exactMatch || partialMatch || '없음');
 
     if (exactMatch) {
       setSearchResult(exactMatch);
@@ -125,6 +139,8 @@ const NutritionScout = () => {
         item['요리명'] && 
         item['요리명'].toLowerCase().includes(value.toLowerCase())
       ).slice(0, 5);
+      
+      console.log('자동완성:', matchingFoods.length, '개');
       
       setSuggestions(matchingFoods);
       setShowAutoComplete(matchingFoods.length > 0);
