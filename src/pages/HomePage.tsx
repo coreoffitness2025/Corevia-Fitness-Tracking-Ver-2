@@ -16,12 +16,7 @@ import BodyPhotoForm from '../components/body/BodyPhotoForm';
 import BodyProgressView from '../components/body/BodyProgressView';
 import { toast } from 'react-hot-toast';
 import WeightRecordForm from '../components/body/WeightRecordForm';
-import Greeting from '../components/home/Greeting';
-import WorkoutSummary from '../components/home/WorkoutSummary';
-import FoodSummary from '../components/home/FoodSummary';
-import TodaySchedule from '../components/home/TodaySchedule';
-import { formatDate, isToday, isTomorrow, isYesterday } from '../utils/dateUtils';
-import { getTodaysWorkoutRecords, getTodaysFoodRecords, WorkoutRecord as DBWorkoutRecord } from '../utils/indexedDB';
+import { formatDate, isToday } from '../utils/dateUtils';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
