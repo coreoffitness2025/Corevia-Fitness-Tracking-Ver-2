@@ -56,86 +56,74 @@ interface NutritionData {
   '코멘트'?: string; // 코멘트 필드를 옵셔널로 처리
 }
 
-// 더미 데이터 사용
-const DEFAULT_FOOD_DATA: NutritionData[] = [
-  {
-    '요리명': '닭가슴살',
-    '탄수화물(g/100g)': 0,
-    '단백질(g/100g)': 23,
-    '지방(g/100g)': 2
-  },
-  {
-    '요리명': '계란',
-    '탄수화물(g/100g)': 1.1,
-    '단백질(g/100g)': 12.5,
-    '지방(g/100g)': 10.6
-  },
-  {
-    '요리명': '우유',
-    '탄수화물(g/100g)': 4.9,
-    '단백질(g/100g)': 3.3,
-    '지방(g/100g)': 3.2
-  },
-  {
-    '요리명': '두부',
-    '탄수화물(g/100g)': 1.9,
-    '단백질(g/100g)': 8.1,
-    '지방(g/100g)': 4.2
-  },
-  {
-    '요리명': '현미밥',
-    '탄수화물(g/100g)': 34.6,
-    '단백질(g/100g)': 2.7,
-    '지방(g/100g)': 0.6
-  },
-  {
-    '요리명': '고구마',
-    '탄수화물(g/100g)': 20.1,
-    '단백질(g/100g)': 1.6,
-    '지방(g/100g)': 0.1
-  },
-  {
-    '요리명': '아보카도',
-    '탄수화물(g/100g)': 8.5,
-    '단백질(g/100g)': 2,
-    '지방(g/100g)': 14.7
-  },
-  {
-    '요리명': '연어',
-    '탄수화물(g/100g)': 0,
-    '단백질(g/100g)': 20.4,
-    '지방(g/100g)': 13.4
-  },
-  {
-    '요리명': '견과류',
-    '탄수화물(g/100g)': 16.2,
-    '단백질(g/100g)': 14.3,
-    '지방(g/100g)': 49.9
-  },
-  {
-    '요리명': '바나나',
-    '탄수화물(g/100g)': 22.8,
-    '단백질(g/100g)': 1.1,
-    '지방(g/100g)': 0.3
-  }
+// 확장된 음식 데이터베이스 (CSV 대신 사용)
+const NUTRITION_DATABASE: NutritionData[] = [
+  // 육류
+  { '요리명': '닭가슴살', '탄수화물(g/100g)': 0, '단백질(g/100g)': 23, '지방(g/100g)': 2 },
+  { '요리명': '닭다리살', '탄수화물(g/100g)': 0, '단백질(g/100g)': 18, '지방(g/100g)': 9 },
+  { '요리명': '소고기등심', '탄수화물(g/100g)': 0, '단백질(g/100g)': 20, '지방(g/100g)': 15 },
+  { '요리명': '돼지고기안심', '탄수화물(g/100g)': 0, '단백질(g/100g)': 22, '지방(g/100g)': 3 },
+  
+  // 해산물
+  { '요리명': '연어', '탄수화물(g/100g)': 0, '단백질(g/100g)': 20.4, '지방(g/100g)': 13.4 },
+  { '요리명': '고등어', '탄수화물(g/100g)': 0, '단백질(g/100g)': 18.5, '지방(g/100g)': 12 },
+  { '요리명': '참치', '탄수화물(g/100g)': 0, '단백질(g/100g)': 25, '지방(g/100g)': 1 },
+  { '요리명': '새우', '탄수화물(g/100g)': 0, '단백질(g/100g)': 18, '지방(g/100g)': 1 },
+  
+  // 유제품/계란
+  { '요리명': '계란', '탄수화물(g/100g)': 1.1, '단백질(g/100g)': 12.5, '지방(g/100g)': 10.6 },
+  { '요리명': '우유', '탄수화물(g/100g)': 4.9, '단백질(g/100g)': 3.3, '지방(g/100g)': 3.2 },
+  { '요리명': '그릭요거트', '탄수화물(g/100g)': 4, '단백질(g/100g)': 10, '지방(g/100g)': 0.4 },
+  { '요리명': '체다치즈', '탄수화물(g/100g)': 1.3, '단백질(g/100g)': 25, '지방(g/100g)': 33 },
+  
+  // 콩류/견과류
+  { '요리명': '두부', '탄수화물(g/100g)': 1.9, '단백질(g/100g)': 8.1, '지방(g/100g)': 4.2 },
+  { '요리명': '아몬드', '탄수화물(g/100g)': 21.6, '단백질(g/100g)': 21.2, '지방(g/100g)': 49.9 },
+  { '요리명': '호두', '탄수화물(g/100g)': 13.7, '단백질(g/100g)': 15.2, '지방(g/100g)': 65.2 },
+  { '요리명': '땅콩', '탄수화물(g/100g)': 16.1, '단백질(g/100g)': 25.8, '지방(g/100g)': 49.2 },
+  
+  // 곡류
+  { '요리명': '현미밥', '탄수화물(g/100g)': 34.6, '단백질(g/100g)': 2.7, '지방(g/100g)': 0.6 },
+  { '요리명': '백미밥', '탄수화물(g/100g)': 28, '단백질(g/100g)': 2.7, '지방(g/100g)': 0.3 },
+  { '요리명': '오트밀', '탄수화물(g/100g)': 66, '단백질(g/100g)': 17, '지방(g/100g)': 7 },
+  { '요리명': '퀴노아', '탄수화물(g/100g)': 64, '단백질(g/100g)': 14, '지방(g/100g)': 6 },
+  
+  // 채소
+  { '요리명': '브로콜리', '탄수화물(g/100g)': 7, '단백질(g/100g)': 2.8, '지방(g/100g)': 0.4 },
+  { '요리명': '시금치', '탄수화물(g/100g)': 3.6, '단백질(g/100g)': 2.9, '지방(g/100g)': 0.4 },
+  { '요리명': '당근', '탄수화물(g/100g)': 9.6, '단백질(g/100g)': 0.9, '지방(g/100g)': 0.2 },
+  { '요리명': '양배추', '탄수화물(g/100g)': 5.8, '단백질(g/100g)': 1.3, '지방(g/100g)': 0.1 },
+  
+  // 과일
+  { '요리명': '바나나', '탄수화물(g/100g)': 22.8, '단백질(g/100g)': 1.1, '지방(g/100g)': 0.3 },
+  { '요리명': '사과', '탄수화물(g/100g)': 14.3, '단백질(g/100g)': 0.3, '지방(g/100g)': 0.2 },
+  { '요리명': '아보카도', '탄수화물(g/100g)': 8.5, '단백질(g/100g)': 2, '지방(g/100g)': 14.7 },
+  { '요리명': '블루베리', '탄수화물(g/100g)': 14.5, '단백질(g/100g)': 0.7, '지방(g/100g)': 0.3 },
+  
+  // 기타
+  { '요리명': '고구마', '탄수화물(g/100g)': 20.1, '단백질(g/100g)': 1.6, '지방(g/100g)': 0.1 },
+  { '요리명': '감자', '탄수화물(g/100g)': 17, '단백질(g/100g)': 2, '지방(g/100g)': 0.1 },
+  
+  // 인기 음식들
+  { '요리명': '치킨', '탄수화물(g/100g)': 8, '단백질(g/100g)': 19, '지방(g/100g)': 12 },
+  { '요리명': '삼겹살', '탄수화물(g/100g)': 0, '단백질(g/100g)': 17, '지방(g/100g)': 28 },
+  { '요리명': '김치', '탄수화물(g/100g)': 2.4, '단백질(g/100g)': 1.6, '지방(g/100g)': 0.6 },
+  { '요리명': '미역국', '탄수화물(g/100g)': 1.2, '단백질(g/100g)': 0.8, '지방(g/100g)': 0.1 },
 ];
 
 const NutritionScout = () => {
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [foodData, setFoodData] = useState<NutritionData[]>(DEFAULT_FOOD_DATA);
+  const [foodData, setFoodData] = useState<NutritionData[]>(NUTRITION_DATABASE);
   const [searchResult, setSearchResult] = useState<NutritionData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<NutritionData[]>([]);
   const [showAutoComplete, setShowAutoComplete] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const autoCompleteRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadCSV();
-    
     // URL에서 검색어 파라미터 가져오기
     const state = location.state as { searchTerm?: string } | null;
     if (state && state.searchTerm) {
@@ -160,79 +148,6 @@ const NutritionScout = () => {
     };
   }, [location.state]);
 
-  const loadCSV = async () => {
-    setIsLoading(true);
-    setLoadError(null);
-    
-    try {
-      // CSV 파일 URL 설정 (public 폴더의 파일을 직접 URL로 참조)
-      const csvUrl = '/nutrition_db.csv';
-      console.log(`[DEBUG] 파일 로드 시도: ${csvUrl}`);
-      
-      // 외부 CSV 로드 시도
-      const response = await fetch(csvUrl);
-      
-      if (!response.ok) {
-        console.error(`[DEBUG] 파일 로드 실패: 상태 코드 ${response.status}`);
-        throw new Error(`HTTP 오류: ${response.status}`);
-      }
-      
-      console.log(`[DEBUG] 파일 로드 성공: 상태 코드 ${response.status}`);
-      
-      // ArrayBuffer로 응답 받기
-      const buffer = await response.arrayBuffer();
-      
-      // 다양한 인코딩 시도
-      const encodings = ['UTF-8', 'EUC-KR', 'CP949'];
-      let csvText = '';
-      let success = false;
-      
-      for (const encoding of encodings) {
-        try {
-          // TextDecoder로 다양한 인코딩 시도
-          const decoder = new TextDecoder(encoding);
-          csvText = decoder.decode(buffer);
-          
-          // 첫 줄에 '요리명' 또는 '음식명'이 포함되어 있는지 확인
-          if (csvText.includes('요리명') || csvText.includes('음식명')) {
-            console.log(`[DEBUG] ${encoding} 인코딩으로 성공적으로 디코딩했습니다.`);
-            success = true;
-            break;
-          }
-        } catch (error) {
-          console.warn(`[DEBUG] ${encoding} 인코딩 시도 실패:`, error);
-        }
-      }
-      
-      if (!success) {
-        console.error(`[DEBUG] 지원되는 인코딩으로 CSV를 읽을 수 없습니다.`);
-        console.log(`[DEBUG] 파일 내용 첫 부분: ${csvText.substring(0, 200)}`);
-        throw new Error('지원되는 인코딩으로 CSV를 읽을 수 없습니다.');
-      }
-      
-      console.log(`[DEBUG] CSV 데이터 수신 (첫 100자): ${csvText.substring(0, 100)}...`);
-      
-      const data = parseCSVImproved(csvText);
-      
-      if (data.length > 0) {
-        console.log(`[DEBUG] CSV 로드 성공: ${data.length}개 항목`);
-        console.log(`[DEBUG] 첫 번째 항목:`, JSON.stringify(data[0]));
-        setFoodData(data);
-      } else {
-        console.error(`[DEBUG] CSV 데이터가 비어있습니다.`);
-        throw new Error('CSV 데이터가 비어있습니다.');
-      }
-    } catch (error) {
-      console.error(`[DEBUG] CSV 로드 오류:`, error);
-      console.log(`[DEBUG] 기본 데이터 사용`);
-      setFoodData(DEFAULT_FOOD_DATA);
-      setLoadError(error instanceof Error ? error.message : '알 수 없는 오류');
-      showToast.warning('영양 데이터베이스 로드에 실패하여 기본 데이터를 사용합니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSearch = (searchParam?: string) => {
     const queryText = searchParam || searchQuery.toLowerCase().trim();
     
@@ -253,41 +168,13 @@ const NutritionScout = () => {
       item => item.요리명 && typeof item.요리명 === 'string' && item.요리명.toLowerCase().includes(queryText)
     );
     
-    // 코멘트 관련 필드 제거 함수
-    const removeCommentFields = (data: any) => {
-      const result = {...data};
-      
-      // 모든 코멘트 관련 필드 제거
-      Object.keys(result).forEach(key => {
-        const lowerKey = key.toLowerCase();
-        const value = result[key];
-        
-        if (
-          key === '코멘트' || 
-          key.includes('코멘트') || 
-          key.includes('comment') || 
-          key.includes('설명') || 
-          lowerKey.includes('ment') ||
-          key.includes('') ||
-          (typeof value === 'string' && value.length > 50 && 
-           (value.includes('다이어트') || value.includes('단백질') || value.includes('영양')))
-        ) {
-          delete result[key];
-        }
-      });
-      
-      return result;
-    };
-    
     if (exactMatch) {
       console.log('정확한 일치 결과:', exactMatch);
-      const result = removeCommentFields(exactMatch);
-      setSearchResult(result);
+      setSearchResult(exactMatch);
       setShowAutoComplete(false);
     } else if (partialMatch) {
       console.log('부분 일치 결과:', partialMatch);
-      const result = removeCommentFields(partialMatch);
-      setSearchResult(result);
+      setSearchResult(partialMatch);
       setShowAutoComplete(false);
     } else {
       setSearchResult(null);
@@ -300,39 +187,16 @@ const NutritionScout = () => {
     setSearchQuery(value);
     
     if (value.trim()) {
-      // 검색어와 일치하는 항목 찾기
+      // 검색어와 일치하는 항목 찾기 (더 엄격한 필터링)
       const matchingFoods = foodData.filter(item => 
-        item.요리명 && typeof item.요리명 === 'string' && item.요리명.toLowerCase().includes(value.toLowerCase())
+        item.요리명 && 
+        typeof item.요리명 === 'string' && 
+        item.요리명.trim().length > 0 &&
+        item.요리명.toLowerCase().includes(value.toLowerCase())
       );
       
-      // 자동완성 항목을 위한 정제된 데이터 생성 (코멘트 제거)
-      const cleanedSuggestions = matchingFoods.map(item => {
-        const result = {...item};
-        
-        // 모든 코멘트 관련 필드 제거
-        Object.keys(result).forEach(key => {
-          const lowerKey = key.toLowerCase();
-          const value = result[key];
-          
-          if (
-            key === '코멘트' || 
-            key.includes('코멘트') || 
-            key.includes('comment') || 
-            key.includes('설명') || 
-            lowerKey.includes('ment') ||
-            key.includes('') ||
-            (typeof value === 'string' && value.length > 50 && 
-             (value.includes('다이어트') || value.includes('단백질') || value.includes('영양')))
-          ) {
-            delete result[key];
-          }
-        });
-        
-        return result as NutritionData;
-      });
-      
       // 정확한 일치 항목을 우선 정렬
-      const sortedSuggestions = cleanedSuggestions.sort((a, b) => {
+      const sortedSuggestions = matchingFoods.sort((a, b) => {
         // 안전한 문자열 처리
         const aName = a.요리명 && typeof a.요리명 === 'string' ? a.요리명.toLowerCase() : '';
         const bName = b.요리명 && typeof b.요리명 === 'string' ? b.요리명.toLowerCase() : '';
@@ -362,45 +226,7 @@ const NutritionScout = () => {
 
   const selectSuggestion = (suggestion: NutritionData) => {
     setSearchQuery(suggestion.요리명);
-    
-    // 전체 foodData에서 선택된 요리명과 일치하는 완전한 데이터를 찾음
-    const originalData = foodData.find(item => item.요리명 === suggestion.요리명);
-    
-    // 코멘트 관련 필드 제거 함수
-    const removeCommentFields = (data: any) => {
-      const result = {...data};
-      
-      // 모든 코멘트 관련 필드 제거
-      Object.keys(result).forEach(key => {
-        const lowerKey = key.toLowerCase();
-        const value = result[key];
-        
-        if (
-          key === '코멘트' || 
-          key.includes('코멘트') || 
-          key.includes('comment') || 
-          key.includes('설명') || 
-          lowerKey.includes('ment') ||
-          key.includes('') ||
-          (typeof value === 'string' && value.length > 50 && 
-           (value.includes('다이어트') || value.includes('단백질') || value.includes('영양')))
-        ) {
-          delete result[key];
-        }
-      });
-      
-      return result;
-    };
-    
-    if (originalData) {
-      const result = removeCommentFields(originalData);
-      setSearchResult(result);
-    } else {
-      // 전체 데이터에서 찾을 수 없는 경우 (드문 케이스)
-      const result = removeCommentFields(suggestion);
-      setSearchResult(result);
-    }
-    
+    setSearchResult(suggestion);
     setShowAutoComplete(false);
   };
 
@@ -419,113 +245,6 @@ const NutritionScout = () => {
     
     // 칼로리 계산: 1g 탄수화물 = 4kcal, 1g 단백질 = 4kcal, 1g 지방 = 9kcal
     return Math.round((carbs * 4) + (protein * 4) + (fat * 9));
-  };
-
-  // 개선된 CSV 파싱 함수
-  const parseCSVImproved = (text: string): NutritionData[] => {
-    const rows = text.split('\n');
-    if (rows.length <= 1) {
-      throw new Error('CSV 데이터 형식이 올바르지 않습니다.');
-    }
-    
-    const headers = rows[0].split(',');
-    console.log('[DEBUG] 원본 헤더:', headers);
-    
-    const result = rows.slice(1)
-      .filter(row => row.trim()) // 빈 줄 제거
-      .map(row => {
-        // 간단한 CSV 파싱
-        const values = row.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        
-        const item: any = {};
-        
-        // 인덱스 기반으로 필드 매핑
-        if (values[0] && typeof values[0] === 'string' && values[0].length > 0 && values[0].length < 50) {
-          item['요리명'] = values[0];
-        }
-        
-        // 영양소 데이터 (숫자로 변환)
-        if (values[1] && !isNaN(parseFloat(values[1]))) {
-          item['탄수화물(g/100g)'] = parseFloat(values[1]);
-        }
-        if (values[2] && !isNaN(parseFloat(values[2]))) {
-          item['단백질(g/100g)'] = parseFloat(values[2]);
-        }
-        if (values[3] && !isNaN(parseFloat(values[3]))) {
-          item['지방(g/100g)'] = parseFloat(values[3]);
-        }
-        
-        return item;
-      })
-      .filter(item => item['요리명'] && typeof item['요리명'] === 'string' && item['요리명'].length > 0); // 요리명이 유효한 문자열인 항목만
-      
-    console.log('[DEBUG] 파싱된 데이터 샘플:', result.slice(0, 5));
-    return result as NutritionData[];
-  };
-  
-  // 필드명 표준화 함수
-  const standardizeFields = (item: Record<string, any>): Record<string, any> => {
-    const standardizedItem = {...item};
-    
-    // 요리명 필드 표준화 (안전한 문자열 처리)
-    for (const key of Object.keys(item)) {
-      if (key.includes('음식') || key.includes('요리') || key.includes('이름')) {
-        const value = item[key];
-        if (value && typeof value === 'string' && value.trim().length > 0) {
-          standardizedItem['요리명'] = value.trim();
-          break;
-        }
-      }
-    }
-    
-    // 요리명이 없거나 유효하지 않은 경우 기본값 설정
-    if (!standardizedItem['요리명'] || typeof standardizedItem['요리명'] !== 'string') {
-      standardizedItem['요리명'] = '이름 없음';
-    }
-    
-    // 영양소 필드 표준화
-    const nutritionFields: [string, string[]][] = [
-      ['탄수화물(g/100g)', ['탄수화물', 'carbs', '탄수', '탄수화물(g)']],
-      ['단백질(g/100g)', ['단백질', 'protein', '단백', '단백질(g)']],
-      ['지방(g/100g)', ['지방', 'fat', '지방(g)']]
-    ];
-    
-    nutritionFields.forEach(([standard, alternates]) => {
-      if (!item.hasOwnProperty(standard)) {
-        for (const alt of alternates) {
-          for (const key of Object.keys(item)) {
-            if (key.includes(alt)) {
-              standardizedItem[standard] = item[key];
-              break;
-            }
-          }
-        }
-      }
-    });
-    
-    // 코멘트 관련 필드 모두 제거 (인코딩이 깨진 경우도 포함)
-    const fieldsToRemove = Object.keys(standardizedItem).filter(key => {
-      const lowerKey = key.toLowerCase();
-      const value = standardizedItem[key];
-      
-      return (
-        key === '코멘트' || 
-        key.includes('코멘트') || 
-        key.includes('comment') || 
-        key.includes('설명') || 
-        lowerKey.includes('ment') ||
-        // 깨진 인코딩 패턴도 체크
-        key.includes('') ||
-        // 마지막 열이 긴 설명 텍스트를 포함하는 경우
-        (typeof value === 'string' && value.length > 50 && 
-         (value.includes('다이어트') || value.includes('단백질') || value.includes('영양'))));
-    });
-    
-    fieldsToRemove.forEach(key => {
-      delete standardizedItem[key];
-    });
-    
-    return standardizedItem;
   };
 
   return (
@@ -595,18 +314,12 @@ const NutritionScout = () => {
                 highlightedName = itemName || '이름 없음';
               }
               
-              // 코멘트 필드가 없음을 확인
-              if (suggestion.코멘트) {
-                console.warn('자동완성 항목에 코멘트가 포함되어 있습니다:', suggestion.요리명);
-              }
-              
               return (
                 <div
                   key={index}
                   onClick={() => selectSuggestion(suggestion)}
                   className="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-white border-b border-gray-100 dark:border-gray-600 last:border-b-0"
                 >
-                  {/* 요리명만 표시, 코멘트 제외 */}
                   {highlightedName}
                 </div>
               );
@@ -742,17 +455,14 @@ const NutritionScout = () => {
           <h3 className="mt-4 text-lg font-medium text-gray-800 dark:text-white">음식 이름을 검색해보세요</h3>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             음식 이름을 입력하고 검색하면 영양 정보를 확인할 수 있습니다.<br />
-            예시: 닭가슴살, 현미밥, 연어, 고구마, 치킨, 데리야끼킨롤밥
+            예시: 닭가슴살, 연어, 계란, 현미밥, 고구마, 치킨, 아보카도, 브로콜리, 아몬드
           </p>
         </div>
       )}
 
       {/* 데이터베이스 정보 표시 */}
-      <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex justify-between items-center">
-        <span>데이터베이스: {foodData.length}개 항목</span>
-        {loadError && (
-          <span className="text-red-500">{loadError}</span>
-        )}
+      <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+        <span>데이터베이스: {foodData.length}개 음식 항목 보유</span>
       </div>
     </div>
   );
