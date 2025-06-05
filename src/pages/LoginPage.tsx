@@ -177,21 +177,19 @@ const ForgotPasswordModal = ({
 
     setIsLoading(true);
     try {
-      // Firebase에서는 직접적인 사용자 존재 확인이 어려우므로 Firestore에서 확인
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('email', '==', email)
-      );
-      const querySnapshot = await getDocs(usersQuery);
-      
-      if (!querySnapshot.empty) {
-        toast.success('해당 이메일로 가입된 계정이 있습니다.');
-      } else {
-        toast.error('해당 이메일로 가입된 계정이 없습니다.');
-      }
-    } catch (error) {
+      // 보안상 이유로 직접적인 사용자 존재 확인 대신
+      // 비밀번호 재설정 이메일을 보내서 계정 존재 여부를 간접 확인
+      await sendPasswordResetEmail(auth, email);
+      toast.success('해당 이메일로 계정이 존재합니다. 비밀번호 재설정 이메일도 함께 전송되었습니다.');
+    } catch (error: any) {
       console.error('이메일 확인 오류:', error);
-      toast.error('이메일 확인 중 오류가 발생했습니다.');
+      if (error.code === 'auth/user-not-found') {
+        toast.error('해당 이메일로 가입된 계정이 없습니다.');
+      } else if (error.code === 'auth/invalid-email') {
+        toast.error('올바른 이메일 형식을 입력해주세요.');
+      } else {
+        toast.error('해당 이메일로 가입된 계정이 없거나 확인할 수 없습니다.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,6 +241,7 @@ const ForgotPasswordModal = ({
             <form onSubmit={handleEmailCheck} className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 가입시 사용한 이메일을 입력하시면 계정 존재 여부를 확인해드립니다.
+                <br />계정이 존재하는 경우 비밀번호 재설정 이메일도 함께 전송됩니다.
               </p>
               <div>
                 <label htmlFor="findEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

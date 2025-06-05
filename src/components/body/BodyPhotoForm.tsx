@@ -46,7 +46,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
     }
 
     if (!selectedFile) {
-      toast.error('신체 사진을 선택해주세요.');
+      toast.error('바디 체크 사진을 선택해주세요.');
       return;
     }
 
@@ -72,9 +72,9 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       // IndexedDB에 신체 사진 기록 저장
       await saveBodyPhotoRecord(bodyPhotoRecord);
       
-      console.log('신체 사진 기록 저장 완료:', bodyPhotoRecord);
+      console.log('바디 체크 기록 저장 완료:', bodyPhotoRecord);
       
-      toast.success('신체 사진이 성공적으로 기록되었습니다.');
+      toast.success('바디 체크가 성공적으로 기록되었습니다.');
       
       // 폼 초기화
       setWeight('');
@@ -89,8 +89,8 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       
       onSuccess?.();
     } catch (error) {
-      console.error('신체 사진 기록 저장 오류:', error);
-      toast.error('신체 사진 기록 저장 중 오류가 발생했습니다.');
+      console.error('바디 체크 기록 저장 오류:', error);
+      toast.error('바디 체크 기록 저장 중 오류가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -100,7 +100,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex items-center mb-6">
         <User size={28} className="text-purple-500 mr-3" />
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">신체 사진 기록</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">바디 체크</h2>
       </div>
 
       {/* 중요 안내 */}
@@ -112,7 +112,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
               개인정보 보호
             </h4>
             <p className="text-sm text-purple-700 dark:text-purple-300">
-              신체 사진은 민감한 개인정보로, <strong>오직 사용자의 기기에만 로컬 저장</strong>됩니다. 
+              바디 체크 사진은 민감한 개인정보로, <strong>오직 사용자의 기기에만 로컬 저장</strong>됩니다. 
               서버나 클라우드에 업로드되지 않으며, 다른 기기에서는 확인할 수 없습니다.
             </p>
           </div>
@@ -124,14 +124,14 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <Camera size={16} className="inline mr-1" />
-            신체 사진 *
+            바디 체크 사진 *
           </label>
           <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
             {previewUrl ? (
               <div className="space-y-4">
                 <img 
                   src={previewUrl} 
-                  alt="신체 사진 미리보기" 
+                  alt="바디 체크 사진 미리보기" 
                   className="mx-auto max-h-64 rounded-lg object-cover"
                 />
                 <Button
@@ -148,7 +148,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
                 <Camera size={48} className="mx-auto text-gray-400" />
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
-                    신체 사진을 선택해주세요
+                    바디 체크 사진을 선택해주세요
                   </p>
                   <Button
                     type="button"
@@ -175,7 +175,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <Scale size={16} className="inline mr-1" />
-            체중 (kg)
+            체중 (kg) <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
           </label>
           <input
             type="number"
@@ -193,7 +193,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <Percent size={16} className="inline mr-1" />
-            체지방률 (%)
+            체지방률 (%) <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
           </label>
           <input
             type="number"
@@ -211,7 +211,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <Zap size={16} className="inline mr-1" />
-            근육량 (kg)
+            근육량 (kg) <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
           </label>
           <input
             type="number"
@@ -228,7 +228,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         {/* 메모 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            메모 (선택사항)
+            메모 <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
           </label>
           <textarea
             value={notes}
@@ -253,7 +253,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
             icon={<Plus size={20} />}
             className="flex-1 bg-purple-500 hover:bg-purple-600 border-purple-500"
           >
-            {isSubmitting ? '저장 중...' : '신체 사진 기록하기'}
+            {isSubmitting ? '저장 중...' : '바디 체크 기록하기'}
           </Button>
           {onCancel && (
             <Button
@@ -277,8 +277,8 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
           <li>• <strong>체중:</strong> 아침 공복 상태에서 측정이 가장 정확합니다</li>
           <li>• <strong>체지방률:</strong> 인바디 등 체성분 분석기 결과를 입력하세요</li>
-          <li>• <strong>근육량:</strong> 골격근량 또는 체성분 분석기의 근육량 수치</li>
-          <li>• <strong>사진:</strong> 정면, 측면 등 일정한 각도로 촬영하면 변화 추이를 더 잘 확인할 수 있습니다</li>
+          <li>• <strong>근육량:</strong> 인바디 등 체성분 분석기에서 측정한 골격근량 또는 근육량 수치</li>
+          <li>• <strong>사진:</strong> 동일한 각도와 자세로 촬영하면 변화 추이를 더 잘 확인할 수 있습니다</li>
         </ul>
       </div>
     </div>

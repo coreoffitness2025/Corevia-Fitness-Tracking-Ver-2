@@ -428,7 +428,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <Camera size={24} className="text-purple-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">신체 사진 기록</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">바디 체크 기록</h3>
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -482,7 +482,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
                   {photo.imageId && imageCache[photo.imageId] ? (
                     <img 
                       src={imageCache[photo.imageId]} 
-                      alt="신체 변화 사진" 
+                      alt="바디 체크 사진" 
                       className="w-full h-48 object-cover"
                     />
                   ) : (
@@ -531,7 +531,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
               <Camera size={48} className="mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
-                아직 신체 사진 기록이 없습니다.
+                아직 바디 체크 기록이 없습니다.
               </p>
             </div>
           )}
@@ -543,7 +543,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
             <div className="relative w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden max-h-[90vh] flex flex-col">
               <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-xl font-semibold">
-                  신체 사진 - {selectedPhoto.record.date.toLocaleDateString('ko-KR')}
+                  바디 체크 - {selectedPhoto.record.date.toLocaleDateString('ko-KR')}
                 </h3>
                 <button 
                   onClick={closePhotoModal} 
@@ -557,7 +557,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
                 <div className="p-4 flex justify-center">
                   <img 
                     src={selectedPhoto.url} 
-                    alt="신체 변화 사진" 
+                    alt="바디 체크 사진" 
                     className="w-full max-h-[60vh] object-contain rounded-lg"
                   />
                 </div>

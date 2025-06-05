@@ -165,7 +165,7 @@ const HomePage = () => {
   // 신체 사진 기록 성공 핸들러
   const handleBodyPhotoSuccess = () => {
     setShowBodyPhotoModal(false);
-    toast.success('신체 사진이 성공적으로 기록되었습니다.');
+    toast.success('바디 체크가 성공적으로 기록되었습니다.');
   };
 
   useEffect(() => {
@@ -439,7 +439,7 @@ const HomePage = () => {
                       userProfile?.fitnessGoal === 'gain' ? '체중 증가' : '설정되지 않음'}
               </p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
-                💡 신체 사진은 로컬 저장소에만 보관되어 개인정보를 안전하게 보호합니다
+                💡 바디 체크는 로컬 저장소에만 보관되어 개인정보를 안전하게 보호합니다
               </p>
             </div>
             <div className="flex flex-col gap-3 w-full md:w-auto">
@@ -451,7 +451,7 @@ const HomePage = () => {
                   icon={<Plus size={18} />}
                   className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
                 >
-                  신체 사진 기록
+                  바디 체크
                 </Button>
                 <Button
                   variant="outline"
@@ -675,7 +675,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 신체 사진 기록 모달 */}
+      {/* 바디 체크 모달 */}
       {showBodyPhotoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl">
