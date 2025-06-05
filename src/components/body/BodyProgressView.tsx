@@ -307,11 +307,15 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
             </div>
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
               <Scale size={48} className="mx-auto text-yellow-500 mb-4" />
-              <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">
+              <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2 text-lg">
                 체중 기록이 없습니다
               </p>
-              <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                홈페이지에서 "체중 기록" 버튼을 눌러 체중을 기록하면 변화 추이를 확인할 수 있습니다.
+              <p className="text-yellow-700 dark:text-yellow-300 text-base mb-4">
+                체중을 입력해주세요
+              </p>
+              <p className="text-yellow-600 dark:text-yellow-400 text-sm">
+                홈페이지 → "내 신체 변화" → "체중 기록" 버튼을 클릭하여<br/>
+                체중을 기록하면 변화 추이 그래프를 확인할 수 있습니다.
               </p>
             </div>
           </div>
