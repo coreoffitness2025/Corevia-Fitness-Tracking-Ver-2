@@ -33,7 +33,7 @@ export const takePhoto = async (): Promise<ImageResult | null> => {
       // 파일 경로와 데이터 URL 반환
       return {
         dataUrl: image.webPath || '',
-        filePath: image.path,
+        filePath: image.path || image.webPath, // filePath 필드를 확실히 설정
         isNative: true
       };
     } 
@@ -68,7 +68,7 @@ export const pickPhotoFromGallery = async (): Promise<ImageResult | null> => {
       // 파일 경로와 데이터 URL 반환
       return {
         dataUrl: image.webPath || '',
-        filePath: image.path,
+        filePath: image.path || image.webPath, // filePath 필드를 확실히 설정
         isNative: true
       };
     } 

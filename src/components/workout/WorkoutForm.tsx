@@ -1170,10 +1170,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         sleepHours: sleepHours === undefined ? null : sleepHours, // undefined인 경우 null로 설정
         condition: condition || 'normal', // condition이 undefined인 경우 'normal'로 설정
         startTime,
-        lastMealTime: lastMealTime || undefined,
+        lastMealTime: lastMealTime || null, // undefined인 경우 null로 설정
         stretchingCompleted,
         warmupCompleted,
-        stretchingNotes: stretchingNotes || undefined
+        stretchingNotes: stretchingNotes || null // undefined인 경우 null로 설정
       };
 
       console.log('WorkoutForm: Attempting to save session data to Firestore. Data:', JSON.stringify(sessionData, null, 2));
@@ -1689,28 +1689,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     <Button
                       size="sm"
                       variant={warmupCompleted ? 'success' : 'primary'}
-                      onClick={() => setWarmupCompleted(!warmupCompleted)}
+                      onClick={() => {
+                        setWarmupCompleted(!warmupCompleted);
+                        setStretchingCompleted(!warmupCompleted); // 두 상태를 동시에 변경
+                      }}
                       className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
                         warmupCompleted 
                           ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
                           : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
                       }`}
-                      aria-label={warmupCompleted ? "웜업 완료" : "웜업 미완료"}
+                      aria-label={warmupCompleted ? "스트레칭/웜업 완료" : "스트레칭/웜업 미완료"}
                     >
                       {warmupCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={stretchingCompleted ? 'success' : 'primary'}
-                      onClick={() => setStretchingCompleted(!stretchingCompleted)}
-                      className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
-                        stretchingCompleted 
-                          ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
-                          : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
-                      }`}
-                      aria-label={stretchingCompleted ? "스트레칭 완료" : "스트레칭 미완료"}
-                    >
-                      {stretchingCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
                     </Button>
                   </div>
                 </div>

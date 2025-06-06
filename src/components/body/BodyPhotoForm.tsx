@@ -1,11 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import { toast } from 'react-hot-toast';
 import { Plus, X, Camera, Image as ImageIcon } from 'lucide-react';
 import { saveBodyPhotoRecord, BodyPhotoRecord, saveBodyPhotoWithImage } from '../../services/bodyService';
 import { saveFoodImage } from '../../services/foodService';
-import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback, ImageResult } from '../../utils/capacitorUtils';
+import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback, ImageResult, isNativePlatform } from '../../utils/capacitorUtils';
+import { v4 as uuidv4 } from 'uuid';
 
 interface BodyPhotoFormProps {
   onSuccess?: () => void;
@@ -24,6 +25,11 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 하이브리드 방식을 위한 추가 상태
   const [imageInfo, setImageInfo] = useState<{isNative?: boolean, filePath?: string} | null>(null);
+  const [imageId, setImageId] = useState<string>('');
+  const [localImagePath, setLocalImagePath] = useState<string | null>(null);
+  const [localImageFile, setLocalImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]); // YYYY-MM-DD 형식
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -52,88 +58,76 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
   };
 
   // 카메라로 사진 촬영
-  const handleCameraCapture = async () => {
+  const handleTakePhoto = async () => {
     try {
       // 햅틱 피드백
-      await triggerHapticFeedback('light');
+      await triggerHapticFeedback('medium');
       
-      // Capacitor 네이티브 카메라 또는 웹 카메라 사용
+      // 사진 촬영
       const result = await takePhoto();
       
       if (result) {
-        setPreviewUrl(result.dataUrl);
+        setImagePreview(result.dataUrl);
+        // UUID 기반 이미지 ID 생성
+        const newImageId = uuidv4();
+        setImageId(newImageId);
         
-        // 네이티브 앱 환경인 경우 갤러리 경로 정보 저장
+        // 네이티브 환경과 웹 환경 구분 처리
         if (result.isNative && result.filePath) {
-          setImageInfo({
-            isNative: true,
-            filePath: result.filePath
-          });
-          
-          // 네이티브 앱에서는 파일 객체를 생성할 필요 없음
-          if (result.dataUrl) {
-            // 미리보기용으로만 dataUrl을 사용
-            toast.success('사진이 촬영되었습니다!');
-          }
+          // 네이티브 환경에서는 파일 경로 저장
+          setLocalImagePath(result.filePath);
+          setLocalImageFile(null);
         } else {
-          // 웹 환경에서는 기존 방식대로 Blob으로 변환
+          // 웹 환경에서는 Blob 변환
           const response = await fetch(result.dataUrl);
           const blob = await response.blob();
-          const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
-          setSelectedFile(file);
-          setImageInfo({
-            isNative: false
-          });
-          
-          toast.success('사진이 촬영되었습니다!');
+          const file = new File([blob], 'body-photo.jpg', { type: 'image/jpeg' });
+          setLocalImageFile(file);
+          setLocalImagePath(null);
         }
+        
+        toast.success('사진이 촬영되었습니다!');
       }
     } catch (error) {
-      console.error('카메라 촬영 실패:', error);
-      toast.error('카메라 촬영 중 오류가 발생했습니다.');
+      console.error('사진 촬영 실패:', error);
+      toast.error('사진 촬영에 실패했습니다.');
     }
   };
 
   // 갤러리에서 사진 선택
-  const handleGallerySelect = async () => {
+  const handleSelectFromGallery = async () => {
     try {
       // 햅틱 피드백
       await triggerHapticFeedback('light');
       
-      // Capacitor 네이티브 갤러리 또는 웹 파일 선택 사용
+      // 갤러리에서 사진 선택
       const result = await pickPhotoFromGallery();
       
       if (result) {
-        setPreviewUrl(result.dataUrl);
+        setImagePreview(result.dataUrl);
+        // UUID 기반 이미지 ID 생성
+        const newImageId = uuidv4();
+        setImageId(newImageId);
         
-        // 네이티브 앱 환경인 경우 갤러리 경로 정보 저장
+        // 네이티브 환경과 웹 환경 구분 처리
         if (result.isNative && result.filePath) {
-          setImageInfo({
-            isNative: true,
-            filePath: result.filePath
-          });
-          
-          // 네이티브 앱에서는 파일 객체를 생성할 필요 없음
-          if (result.dataUrl) {
-            // 미리보기용으로만 dataUrl을 사용
-            toast.success('사진이 선택되었습니다!');
-          }
+          // 네이티브 환경에서는 파일 경로 저장
+          setLocalImagePath(result.filePath);
+          setLocalImageFile(null);
         } else {
-          // 웹 환경에서는 기존 방식대로 Blob으로 변환
+          // 웹 환경에서는 Blob 변환
           const response = await fetch(result.dataUrl);
           const blob = await response.blob();
-          const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
-          setSelectedFile(file);
-          setImageInfo({
-            isNative: false
-          });
-          
-          toast.success('사진이 선택되었습니다!');
+          const file = new File([blob], 'body-photo.jpg', { type: 'image/jpeg' });
+          setLocalImageFile(file);
+          setLocalImagePath(null);
         }
+        
+        toast.success('사진이 선택되었습니다!');
       }
     } catch (error) {
-      console.error('갤러리 선택 실패:', error);
-      toast.error('갤러리에서 사진 선택 중 오류가 발생했습니다.');
+      console.error('갤러리 사진 선택 실패:', error);
+      toast.error('사진 선택에 실패했습니다.');
     }
   };
 
@@ -145,63 +139,133 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       return;
     }
 
-    if (!previewUrl) {
-      toast.error('바디 체크 사진을 선택해주세요.');
+    if (!previewUrl && !localImagePath && !localImageFile) {
+      toast.error('사진이 필요합니다.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // 이미지 ID 생성
-      const imageId = `body_${userProfile.uid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // 선택한 날짜 기준으로 데이터 저장
+      const selectedDate = new Date(date);
       
-      // 하이브리드 방식으로 이미지 저장
-      if (imageInfo?.isNative && imageInfo.filePath) {
-        // 네이티브 앱 환경 - 갤러리 이미지 경로 저장
-        // 파일 객체는 필요 없지만 API 호환성을 위해 빈 Blob 전달
-        const emptyFile = new File([], 'empty.jpg', { type: 'image/jpeg' });
-        await saveFoodImage(imageId, userProfile.uid, emptyFile, imageInfo);
-      } else if (selectedFile) {
-        // 웹 환경 - 기존 방식으로 이미지 데이터 저장
-        await saveFoodImage(imageId, userProfile.uid, selectedFile);
+      // 이미지 저장 - 네이티브/웹 환경에 따라 처리
+      if (imageId) {
+        try {
+          // 네이티브 앱 환경인 경우 (파일 경로 저장)
+          if (localImagePath) {
+            console.log('네이티브 환경: 파일 경로 저장:', localImagePath);
+            
+            // 파일 경로만 DB에 저장
+            await saveFoodImage(imageId, userProfile.uid, localImagePath);
+          } 
+          // 웹 환경인 경우 (이미지 리사이징 후 Blob 저장)
+          else if (localImageFile && previewUrl) {
+            console.log('웹 환경: 이미지 리사이징 및 Blob 저장');
+            
+            // 이미지 리사이징 (최대 800x600, 품질 80%)
+            const canvas = document.createElement('canvas');
+            const img = new Image();
+            
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => {
+                // 이미지 크기 조정
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > 800 || height > 600) {
+                  const ratio = Math.min(800 / width, 600 / height);
+                  width = Math.floor(width * ratio);
+                  height = Math.floor(height * ratio);
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                if (!ctx) {
+                  reject(new Error('Canvas context not available'));
+                  return;
+                }
+                
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve();
+              };
+              
+              img.onerror = () => {
+                reject(new Error('이미지 로드 실패'));
+              };
+              
+              img.src = previewUrl;
+            });
+            
+            // Canvas를 Blob으로 변환
+            const blob = await new Promise<Blob>((resolve, reject) => {
+              canvas.toBlob(
+                (blob) => {
+                  if (blob) {
+                    resolve(blob);
+                  } else {
+                    reject(new Error('Blob 생성 실패'));
+                  }
+                },
+                'image/jpeg',
+                0.8
+              );
+            });
+            
+            // IndexedDB에 이미지 저장
+            await saveFoodImage(imageId, userProfile.uid, blob);
+          } else {
+            toast.error('이미지 데이터가 없습니다.');
+            return;
+          }
+          
+          // 신체 정보 기록 저장
+          const bodyPhotoRecord: Omit<BodyPhotoRecord, 'id' | 'createdAt'> = {
+            userId: userProfile.uid,
+            date: selectedDate,
+            weight: weight ? parseFloat(weight) : undefined,
+            bodyFat: bodyFat ? parseFloat(bodyFat) : undefined,
+            muscleMass: muscleMass ? parseFloat(muscleMass) : undefined,
+            notes: notes.trim() || undefined,
+            imageId,
+            isNative: imageInfo?.isNative,
+            filePath: imageInfo?.filePath
+          };
+          
+          await saveBodyPhotoWithImage(bodyPhotoRecord, imageInfo || undefined);
+          
+          console.log('바디 체크 기록 저장 완료:', bodyPhotoRecord);
+          
+          toast.success('바디 체크가 성공적으로 기록되었습니다.');
+          
+          // 입력 필드 초기화
+          setWeight('');
+          setBodyFat('');
+          setMuscleMass('');
+          setNotes('');
+          setSelectedFile(null);
+          setPreviewUrl(null);
+          setImageInfo(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          setLocalImagePath(null);
+          setLocalImageFile(null);
+          setImageId('');
+          setDate(new Date().toISOString().split('T')[0]);
+          
+          onSuccess?.();
+        } catch (error) {
+          console.error('신체 기록 저장 오류:', error);
+          toast.error('신체 기록 저장에 실패했습니다.');
+        }
       }
-      
-      const bodyPhotoRecord: Omit<BodyPhotoRecord, 'id' | 'createdAt'> = {
-        userId: userProfile.uid,
-        date: new Date(),
-        weight: weight ? parseFloat(weight) : undefined,
-        bodyFat: bodyFat ? parseFloat(bodyFat) : undefined,
-        muscleMass: muscleMass ? parseFloat(muscleMass) : undefined,
-        notes: notes.trim() || undefined,
-        imageId,
-        isNative: imageInfo?.isNative,
-        filePath: imageInfo?.filePath
-      };
-
-      // 향상된 바디 체크 기록 저장 함수 사용
-      await saveBodyPhotoWithImage(bodyPhotoRecord, imageInfo || undefined);
-      
-      console.log('바디 체크 기록 저장 완료:', bodyPhotoRecord);
-      
-      toast.success('바디 체크가 성공적으로 기록되었습니다.');
-      
-      // 폼 초기화
-      setWeight('');
-      setBodyFat('');
-      setMuscleMass('');
-      setNotes('');
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      setImageInfo(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      
-      onSuccess?.();
     } catch (error) {
-      console.error('바디 체크 기록 저장 오류:', error);
-      toast.error('바디 체크 기록 저장 중 오류가 발생했습니다.');
+      console.error('폼 제출 오류:', error);
+      toast.error('제출 중 오류가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -310,7 +374,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
                   {/* 카메라 버튼 */}
                   <button
                     type="button"
-                    onClick={handleCameraCapture}
+                    onClick={handleTakePhoto}
                     className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center shadow-md transition-all duration-200"
                   >
                     <Camera size={24} className="mr-2" />
@@ -320,7 +384,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
                   {/* 갤러리 버튼 */}
                   <button
                     type="button"
-                    onClick={handleGallerySelect}
+                    onClick={handleSelectFromGallery}
                     className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg flex items-center shadow-md transition-all duration-200"
                   >
                     <ImageIcon size={24} className="mr-2" />

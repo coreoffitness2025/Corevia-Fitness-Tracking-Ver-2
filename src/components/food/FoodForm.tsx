@@ -10,7 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import NutritionSourcesGuide from './NutritionSourcesGuide';
 import { v4 as uuidv4 } from 'uuid';
 import Button from '../common/Button';
-import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback } from '../../utils/capacitorUtils';
+import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback, isNativePlatform } from '../../utils/capacitorUtils';
+import { format } from 'date-fns';
 
 interface FoodFormProps {
   onSuccess?: () => void; // 식단 저장 후 호출될 콜백
@@ -45,26 +46,23 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   const { currentUser, userProfile } = useAuth();
   const { addFood } = useFoodStore();
   const navigate = useNavigate();
-  const [mealDate, setMealDate] = useState<string>(new Date().toISOString().split('T')[0]); // YYYY-MM-DD 형식
-  const [imageUrl, setImageUrl] = useState('');
-  const [foodName, setFoodName] = useState('');
-  const [notes, setNotes] = useState('');
+  const [mealDate, setMealDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [intakeTime, setIntakeTime] = useState<string>(format(new Date(), 'HH:mm'));
+  const [showTimeSlots, setShowTimeSlots] = useState<boolean>(false);
+  const [showTimeInput, setShowTimeInput] = useState<boolean>(false);
+  const [foodName, setFoodName] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [localImageFile, setLocalImageFile] = useState<File | null>(null);
+  const [localImagePath, setLocalImagePath] = useState<string | null>(null);
   const [showNutritionSources, setShowNutritionSources] = useState<boolean>(false);
   
-  // 칼로리 목표 관련 상태
+  // 목표 영양소 계산을 위한 상태
   const [targetCalories, setTargetCalories] = useState<number>(0);
   const [proteinTarget, setProteinTarget] = useState<number>(0);
   const [carbsTarget, setCarbsTarget] = useState<number>(0);
   const [fatTarget, setFatTarget] = useState<number>(0);
-
-  // 섭취 시간대 관련 상태 추가
-  const [intakeTime, setIntakeTime] = useState<string>(
-    new Date().toTimeString().slice(0, 5) // 현재 시간으로 초기화 (HH:MM)
-  );
-  const [showTimeInput, setShowTimeInput] = useState<boolean>(false);
-  const [showTimeSlots, setShowTimeSlots] = useState<boolean>(false);
 
   // 사용자 프로필에서 목표 칼로리 계산
   useEffect(() => {
@@ -160,18 +158,26 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       await triggerHapticFeedback('light');
       
       // Capacitor 네이티브 카메라 또는 웹 카메라 사용
-      const photoDataUrl = await takePhoto();
+      const photoResult = await takePhoto();
       
-      if (photoDataUrl) {
-        setImagePreview(photoDataUrl);
+      if (photoResult) {
+        setImagePreview(photoResult.dataUrl);
         // UUID 기반 이미지 ID 생성
         setImageUrl(uuidv4());
         
-        // dataURL을 Blob으로 변환하여 localImageFile에 저장
-        const response = await fetch(photoDataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
-        setLocalImageFile(file);
+        // 네이티브 환경에서는 filePath 저장, 웹 환경에서는 Blob 변환
+        if (photoResult.isNative && photoResult.filePath) {
+          // 네이티브 환경에서는 파일 경로 저장
+          setLocalImagePath(photoResult.filePath);
+          setLocalImageFile(null);
+        } else {
+          // 웹 환경에서는 Blob 변환
+          const response = await fetch(photoResult.dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+          setLocalImageFile(file);
+          setLocalImagePath(null);
+        }
         
         toast.success('사진이 선택되었습니다!');
       }
@@ -188,18 +194,26 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       await triggerHapticFeedback('light');
       
       // Capacitor 네이티브 갤러리 또는 웹 파일 선택 사용
-      const photoDataUrl = await pickPhotoFromGallery();
+      const photoResult = await pickPhotoFromGallery();
       
-      if (photoDataUrl) {
-        setImagePreview(photoDataUrl);
+      if (photoResult) {
+        setImagePreview(photoResult.dataUrl);
         // UUID 기반 이미지 ID 생성
         setImageUrl(uuidv4());
         
-        // dataURL을 Blob으로 변환하여 localImageFile에 저장
-        const response = await fetch(photoDataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
-        setLocalImageFile(file);
+        // 네이티브 환경에서는 filePath 저장, 웹 환경에서는 Blob 변환
+        if (photoResult.isNative && photoResult.filePath) {
+          // 네이티브 환경에서는 파일 경로 저장
+          setLocalImagePath(photoResult.filePath);
+          setLocalImageFile(null);
+        } else {
+          // 웹 환경에서는 Blob 변환
+          const response = await fetch(photoResult.dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
+          setLocalImageFile(file);
+          setLocalImagePath(null);
+        }
         
         toast.success('사진이 선택되었습니다!');
       }
@@ -254,6 +268,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
         };
         
         img.onerror = () => {
+          console.error('이미지 로드 중 오류 발생');
           reject(new Error('이미지 로드 중 오류가 발생했습니다.'));
         };
         
@@ -285,16 +300,46 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
     try {
       const mealDateTime = new Date(`${mealDate}T${intakeTime}`);
       
-      // IndexedDB에 이미지 저장
-      if (imagePreview) {
+      // 이미지 저장 처리 - 네이티브/웹 환경에 따라 다르게 처리
+      if (imageUrl) {
         try {
-          // 이미지 크기 조정 (최대 800x600, 품질 80%)
-          const resizedImageBlob = await resizeImage(imagePreview, 800, 600);
-          console.log('이미지 크기 조정 완료. 원본 크기:', imagePreview.length, '조정 후:', resizedImageBlob.size);
+          // 네이티브 앱 환경인 경우 (파일 경로 저장)
+          if (isNativePlatform() && localImagePath) {
+            console.log('네이티브 환경: 파일 경로 저장:', localImagePath);
+            
+            // 파일 경로를 DB에 저장 (Blob 대신)
+            await saveFoodImage(imageUrl, currentUser.uid, localImagePath);
+          } 
+          // 웹 환경인 경우 (이미지 리사이징 후 Blob 저장)
+          else if (localImageFile) {
+            console.log('웹 환경: 이미지 리사이징 및 Blob 저장');
+            
+            // 이미지 데이터 리사이징
+            let imageBlob: Blob;
+            
+            if (imagePreview && imagePreview.startsWith('data:')) {
+              // 데이터 URL인 경우 리사이징
+              try {
+                imageBlob = await resizeImage(imagePreview, 800, 600);
+                console.log('이미지 리사이징 완료. 크기:', imageBlob.size);
+              } catch (resizeError) {
+                console.error('이미지 리사이징 오류:', resizeError);
+                // 리사이징 실패 시 원본 파일 사용
+                imageBlob = localImageFile;
+              }
+            } else {
+              // 그 외의 경우 원본 파일 사용
+              imageBlob = localImageFile;
+            }
+            
+            // IndexedDB에 이미지 저장
+            await saveFoodImage(imageUrl, currentUser.uid, imageBlob);
+          } else {
+            toast.error('이미지 데이터가 없습니다.');
+            return;
+          }
           
-          // IndexedDB에 이미지 저장
-          await saveFoodImage(imageUrl, currentUser.uid, resizedImageBlob);
-          console.log('IndexedDB에 이미지 저장됨:', imageUrl);
+          console.log('이미지 저장 완료:', imageUrl);
           
           // 식단 기록 저장
           const foodRecord: FoodRecord = {
@@ -314,12 +359,13 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           console.log('식단 기록 저장됨:', recordId);
           
           // 성공 메시지
-          toast.success('식단이 로컬에 저장되었습니다.');
+          toast.success('식단이 저장되었습니다.');
           
           // 상태 초기화
           setImageUrl('');
           setImagePreview(null);
           setLocalImageFile(null);
+          setLocalImagePath(null);
           setNotes('');
           setFoodName('');
           
@@ -328,28 +374,30 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             onSuccess();
           }
           
-          // 사용자에게 로컬 저장 안내
-          setTimeout(() => {
-            toast.custom((t: any) => (
-              <div className={`${t.visible ? 'animate-slide-in' : 'animate-slide-out'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto overflow-hidden`}>
-                <div className="p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 text-blue-500">
-                      <AlertTriangle size={24} />
-                    </div>
-                    <div className="ml-3 w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        브라우저 로컬 저장소 안내
-                      </p>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        사진은 현재 기기에만 저장됩니다. 브라우저 데이터를 삭제하거나 다른 기기에서는 사진을 볼 수 없습니다.
-                      </p>
+          // 웹 환경인 경우 로컬 저장 안내 메시지 표시
+          if (!isNativePlatform()) {
+            setTimeout(() => {
+              toast.custom((t: any) => (
+                <div className={`${t.visible ? 'animate-slide-in' : 'animate-slide-out'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto overflow-hidden`}>
+                  <div className="p-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 text-blue-500">
+                        <AlertTriangle size={24} />
+                      </div>
+                      <div className="ml-3 w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          브라우저 로컬 저장소 안내
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                          사진은 현재 기기에만 저장됩니다. 브라우저 데이터를 삭제하거나 다른 기기에서는 사진을 볼 수 없습니다.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ), { duration: 5000 });
-          }, 1000);
+              ), { duration: 5000 });
+            }, 1000);
+          }
           
         } catch (storageError) {
           console.error('이미지 저장 오류:', storageError);
