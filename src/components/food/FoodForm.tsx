@@ -277,6 +277,11 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       return;
     }
 
+    if (!foodName.trim()) {
+      toast.error('음식 이름을 입력해주세요.');
+      return;
+    }
+
     try {
       const mealDateTime = new Date(`${mealDate}T${intakeTime}`);
       
@@ -294,7 +299,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
           // 식단 기록 저장
           const foodRecord: FoodRecord = {
             userId: currentUser.uid,
-            name: foodName || '식사',
+            name: foodName,
             description: notes || undefined,
             calories: targetCalories || undefined,
             protein: proteinTarget || undefined,
@@ -578,7 +583,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             htmlFor="foodName"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            음식 이름 (선택사항)
+            음식 이름
           </label>
           <input
             type="text"
@@ -587,6 +592,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             onChange={(e) => setFoodName(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="예: 치킨 샐러드, 김치찌개 등"
+            required
           />
         </div>
 

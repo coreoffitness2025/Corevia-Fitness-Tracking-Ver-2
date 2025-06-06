@@ -42,7 +42,8 @@ const defaultProfile: UserProfile = {
       maxWeight: 0,
       maxReps: 0
     }
-  }
+  },
+  isPremium: false
 };
 
 const defaultSettings: UserSettings = {

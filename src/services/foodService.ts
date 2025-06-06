@@ -8,7 +8,8 @@ import {
   Timestamp,
   updateDoc,
   doc,
-  deleteDoc
+  deleteDoc,
+  runTransaction
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
@@ -518,4 +519,41 @@ const openFoodImagesDatabase = async () => {
       }
     }
   });
+};
+
+// 식단 기록 업데이트 함수
+export const updateFoodRecord = async (foodId: string, updatedFood: Partial<Food>): Promise<void> => {
+  try {
+    const db = getFirestore();
+    
+    // 트랜잭션 사용하여 데이터 일관성 유지
+    await runTransaction(db, async (transaction) => {
+      const foodRef = doc(db, 'foods', foodId);
+      const foodDoc = await transaction.get(foodRef);
+      
+      if (!foodDoc.exists()) {
+        throw new Error('식단 기록을 찾을 수 없습니다.');
+      }
+      
+      // 식단 데이터 업데이트
+      transaction.update(foodRef, updatedFood);
+      
+      // 이미지 ID가 있으면 이미지 메타데이터도 함께 업데이트
+      if (updatedFood.imageUrl && updatedFood.userId) {
+        const imageId = foodDoc.data().imageId;
+        if (imageId) {
+          const imageMetaRef = doc(db, `users/${updatedFood.userId}/imageMetadata`, imageId);
+          transaction.update(imageMetaRef, {
+            lastUpdated: new Date(),
+            ...((updatedFood.name) ? { description: updatedFood.name } : {})
+          });
+        }
+      }
+    });
+    
+    console.log('식단 기록이 성공적으로 업데이트되었습니다.');
+  } catch (error) {
+    console.error('식단 기록 업데이트 중 오류:', error);
+    throw error;
+  }
 }; 

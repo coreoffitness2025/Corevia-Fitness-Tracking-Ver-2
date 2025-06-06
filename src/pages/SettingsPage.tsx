@@ -381,7 +381,15 @@ const SettingsPage = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">성별</p>
+                  <p className="font-medium">
+                    {userProfile.gender === 'male' && '남성'}
+                    {userProfile.gender === 'female' && '여성'}
+                    {!userProfile.gender && '설정되지 않음'}
+                  </p>
+                </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                   <p className="text-sm text-gray-500 dark:text-gray-400">피트니스 목표</p>
                   <p className="font-medium">
@@ -509,140 +517,169 @@ const SettingsPage = () => {
               </h3>
             </div>
             
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md mb-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                데이터 동기화를 활성화하면 여러 기기에서 같은 계정으로 로그인할 때 데이터가 자동으로 동기화됩니다. 
-                이 기능을 통해 휴대폰을 바꾸거나 다른 기기에서도 동일한 데이터를 사용할 수 있습니다.
-              </p>
-            </div>
-            
-            <div className="space-y-4">
-              {/* 클라우드 동기화 활성화 */}
-              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-gray-800 dark:text-gray-200">클라우드 동기화 활성화</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">데이터를 기기 간에 동기화합니다</p>
+            {userProfile?.isPremium ? (
+              <> 
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md mb-6">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    데이터 동기화를 활성화하면 여러 기기에서 같은 계정으로 로그인할 때 데이터가 자동으로 동기화됩니다. 
+                    이 기능을 통해 휴대폰을 바꾸거나 다른 기기에서도 동일한 데이터를 사용할 수 있습니다.
+                  </p>
                 </div>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={cloudSyncSettings.enabled}
-                    onChange={(e) => handleSyncSettingChange('enabled', e.target.checked)}
-                    className="sr-only"
-                    id="cloud-sync-toggle"
-                  />
-                  <label
-                    htmlFor="cloud-sync-toggle"
-                    className={`block w-14 h-8 rounded-full transition-colors duration-300 ease-in-out cursor-pointer ${
-                      cloudSyncSettings.enabled ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <span
-                      className={`block w-6 h-6 mt-1 ml-1 bg-white rounded-full transition-transform duration-300 ease-in-out transform ${
-                        cloudSyncSettings.enabled ? 'translate-x-6' : ''
-                      }`}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {cloudSyncSettings.enabled && (
-                <>
-                  {/* 자동 동기화 */}
+                
+                <div className="space-y-4">
+                  {/* 클라우드 동기화 활성화 */}
                   <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-gray-800 dark:text-gray-200">자동 동기화</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">앱 실행 시 자동으로 동기화합니다</p>
+                      <h4 className="font-medium text-gray-800 dark:text-gray-200">클라우드 동기화 활성화</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">데이터를 기기 간에 동기화합니다</p>
                     </div>
                     <div className="relative">
                       <input
                         type="checkbox"
-                        checked={cloudSyncSettings.autoSync}
-                        onChange={(e) => handleSyncSettingChange('autoSync', e.target.checked)}
+                        checked={cloudSyncSettings.enabled}
+                        onChange={(e) => handleSyncSettingChange('enabled', e.target.checked)}
                         className="sr-only"
-                        id="auto-sync-toggle"
+                        id="cloud-sync-toggle"
                       />
                       <label
-                        htmlFor="auto-sync-toggle"
+                        htmlFor="cloud-sync-toggle"
                         className={`block w-14 h-8 rounded-full transition-colors duration-300 ease-in-out cursor-pointer ${
-                          cloudSyncSettings.autoSync ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                          cloudSyncSettings.enabled ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       >
                         <span
                           className={`block w-6 h-6 mt-1 ml-1 bg-white rounded-full transition-transform duration-300 ease-in-out transform ${
-                            cloudSyncSettings.autoSync ? 'translate-x-6' : ''
+                            cloudSyncSettings.enabled ? 'translate-x-6' : ''
                           }`}
                         />
                       </label>
                     </div>
                   </div>
 
-                  {/* 사진 동기화 */}
-                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div>
-                      <h4 className="font-medium text-gray-800 dark:text-gray-200">사진 동기화</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">식단 및 바디 체크 사진을 동기화합니다</p>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={cloudSyncSettings.syncPhotos}
-                        onChange={(e) => handleSyncSettingChange('syncPhotos', e.target.checked)}
-                        className="sr-only"
-                        id="photo-sync-toggle"
-                      />
-                      <label
-                        htmlFor="photo-sync-toggle"
-                        className={`block w-14 h-8 rounded-full transition-colors duration-300 ease-in-out cursor-pointer ${
-                          cloudSyncSettings.syncPhotos ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      >
-                        <span
-                          className={`block w-6 h-6 mt-1 ml-1 bg-white rounded-full transition-transform duration-300 ease-in-out transform ${
-                            cloudSyncSettings.syncPhotos ? 'translate-x-6' : ''
-                          }`}
-                        />
-                      </label>
-                    </div>
-                  </div>
+                  {cloudSyncSettings.enabled && (
+                    <>
+                      {/* 자동 동기화 */}
+                      <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                          <h4 className="font-medium text-gray-800 dark:text-gray-200">자동 동기화</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">앱 실행 시 자동으로 동기화합니다</p>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={cloudSyncSettings.autoSync}
+                            onChange={(e) => handleSyncSettingChange('autoSync', e.target.checked)}
+                            className="sr-only"
+                            id="auto-sync-toggle"
+                          />
+                          <label
+                            htmlFor="auto-sync-toggle"
+                            className={`block w-14 h-8 rounded-full transition-colors duration-300 ease-in-out cursor-pointer ${
+                              cloudSyncSettings.autoSync ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
+                          >
+                            <span
+                              className={`block w-6 h-6 mt-1 ml-1 bg-white rounded-full transition-transform duration-300 ease-in-out transform ${
+                                cloudSyncSettings.autoSync ? 'translate-x-6' : ''
+                              }`}
+                            />
+                          </label>
+                        </div>
+                      </div>
 
-                  {/* 마지막 동기화 시간 */}
-                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h4 className="font-medium text-gray-800 dark:text-gray-200">마지막 동기화</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {cloudSyncSettings.lastSyncTime 
-                        ? new Date(cloudSyncSettings.lastSyncTime).toLocaleString('ko-KR')
-                        : '아직 동기화되지 않음'}
-                    </p>
-                  </div>
+                      {/* 사진 동기화 */}
+                      <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                          <h4 className="font-medium text-gray-800 dark:text-gray-200">사진 동기화</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">식단 및 바디 체크 사진을 동기화합니다</p>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={cloudSyncSettings.syncPhotos}
+                            onChange={(e) => handleSyncSettingChange('syncPhotos', e.target.checked)}
+                            className="sr-only"
+                            id="photo-sync-toggle"
+                          />
+                          <label
+                            htmlFor="photo-sync-toggle"
+                            className={`block w-14 h-8 rounded-full transition-colors duration-300 ease-in-out cursor-pointer ${
+                              cloudSyncSettings.syncPhotos ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
+                          >
+                            <span
+                              className={`block w-6 h-6 mt-1 ml-1 bg-white rounded-full transition-transform duration-300 ease-in-out transform ${
+                                cloudSyncSettings.syncPhotos ? 'translate-x-6' : ''
+                              }`}
+                            />
+                          </label>
+                        </div>
+                      </div>
 
-                  {/* 동기화 작업 버튼 */}
-                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                      {/* 마지막 동기화 시간 */}
+                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h4 className="font-medium text-gray-800 dark:text-gray-200">마지막 동기화</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {cloudSyncSettings.lastSyncTime 
+                            ? new Date(cloudSyncSettings.lastSyncTime).toLocaleString('ko-KR')
+                            : '아직 동기화되지 않음'}
+                        </p>
+                      </div>
+
+                      {/* 동기화 작업 버튼 */}
+                      <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                        <Button
+                          onClick={handleSyncNow}
+                          disabled={isSyncing}
+                          variant="primary"
+                          size="lg"
+                          icon={<RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />}
+                          className="flex-1"
+                        >
+                          {isSyncing ? '동기화 중...' : '지금 동기화'}
+                        </Button>
+                        
+                        <Button
+                          onClick={handleRecoverData}
+                          disabled={isRecovering}
+                          variant="outline"
+                          size="lg"
+                          icon={<Smartphone size={18} />}
+                          className="flex-1"
+                        >
+                          {isRecovering ? '복구 중...' : '클라우드에서 복구'}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-100 dark:border-purple-800">
+                <div className="flex flex-col items-center text-center">
+                  <div className="p-3 bg-purple-100 dark:bg-purple-800/30 rounded-full mb-4">
+                    <Cloud className="text-purple-500 dark:text-purple-400" size={32} />
+                  </div>
+                  <h4 className="text-lg font-bold text-purple-800 dark:text-purple-300 mb-2">
+                    프리미엄 전용 기능
+                  </h4>
+                  <p className="text-sm text-purple-700 dark:text-purple-400 mb-4">
+                    AI 트레이닝 분석, 여러 기기 간 데이터 동기화, 무제한 운동 기록을 포함한<br />
+                    프리미엄 기능을 사용하려면 구독을 시작하세요.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full max-w-sm">
                     <Button
-                      onClick={handleSyncNow}
-                      disabled={isSyncing}
                       variant="primary"
                       size="lg"
-                      icon={<RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />}
-                      className="flex-1"
+                      className="w-full bg-purple-600 hover:bg-purple-700 border-purple-600"
+                      onClick={() => toast.success('곧 프리미엄 기능이 출시됩니다!')}
                     >
-                      {isSyncing ? '동기화 중...' : '지금 동기화'}
-                    </Button>
-                    
-                    <Button
-                      onClick={handleRecoverData}
-                      disabled={isRecovering}
-                      variant="outline"
-                      size="lg"
-                      icon={<Smartphone size={18} />}
-                      className="flex-1"
-                    >
-                      {isRecovering ? '복구 중...' : '클라우드에서 복구'}
+                      프리미엄 시작하기
                     </Button>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

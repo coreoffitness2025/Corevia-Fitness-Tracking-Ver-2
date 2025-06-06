@@ -120,6 +120,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   // 웜업 및 스트레칭 완료 상태 관리
   const [stretchingCompleted, setStretchingCompleted] = useState(false);
   const [warmupCompleted, setWarmupCompleted] = useState(false);
+  const [stretchingNotes, setStretchingNotes] = useState('');
 
   // 수면 시간 및 컨디션 상태 추가
   const [sleepHours, setSleepHours] = useState<number | undefined>(undefined);
@@ -898,50 +899,43 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     mainExerciseType?: MainExerciseType,
     useCurrentSettings: boolean = false
   ) => {
-    if (!userProfile) return;
-
+    if (!userProfile?.uid) return;
+    console.log(`[WorkoutForm] ${exercisePart} 부위의 최근 운동 기록 조회 시작...`);
+    
     try {
-      console.log(`fetchLatestWorkout 실행: 부위=${exercisePart}, 운동타입=${mainExerciseType || '없음'}, 현재설정사용=${useCurrentSettings}`);
-      
-      // 1. 특정 부위와 운동 타입에 대한 최근 기록 쿼리
-      const sessionsCollection = collection(db, 'sessions');
-      
-      // 복합 인덱스 오류 해결: orderBy 제거하고 기본 쿼리만 사용
+      // 같은 부위의 가장 최근 운동 기록 쿼리
+      const workoutsCollection = collection(db, 'sessions');
       const q = query(
-        sessionsCollection,
+        workoutsCollection,
         where('userId', '==', userProfile.uid),
-        where('part', '==', exercisePart)
-        // orderBy 제거 - Firestore 복합 인덱스 오류 해결
+        where('part', '==', exercisePart),
+        orderBy('date', 'desc'),
+        limit(1)
       );
-
-      console.log('Firestore 쿼리 실행 중...');
+      
       const snapshot = await getDocs(q);
-      console.log(`쿼리 결과: ${snapshot.size}개 문서 발견`);
       
       if (!snapshot.empty) {
-        // 클라이언트에서 날짜 기준으로 정렬
-        const sortedDocs = snapshot.docs.sort((a: any, b: any) => { // a, b 타입 명시
-          const dateA = a.data().date.toDate();
-          const dateB = b.data().date.toDate();
-          return dateB.getTime() - dateA.getTime(); // 최신 날짜순 정렬
-        });
+        const latestWorkout = snapshot.docs[0].data();
+        console.log(`[WorkoutForm] 최근 운동 기록 찾음:`, latestWorkout);
         
-        // 가장 최근 데이터 사용
-        const latestSession = sortedDocs[0].data() as Session;
-        console.log('최근 운동 기록 데이터:', JSON.stringify(latestSession, null, 2));
+        // 스트레칭/웜업 관련 메모 로드
+        if (latestWorkout.stretchingNotes) {
+          setStretchingNotes(latestWorkout.stretchingNotes);
+        }
         
-        // 메인 운동 타입이 지정된 경우, 해당 운동과 일치하는지 확인
-        if (mainExerciseType && latestSession.mainExercise) {
+        // 메인 운동 이름이 일치하는 경우 추가 정보 제공
+        if (!mainExerciseType || (latestWorkout.mainExercise && latestWorkout.mainExercise.name === getMainExerciseName(mainExerciseType))) {
           // 현재 선택된 운동의 레이블 가져오기
           const currentExerciseLabel = mainExerciseOptions[exercisePart].find(
             ex => ex.value === mainExerciseType
           )?.label;
           
           console.log(`현재 선택된 운동 이름: ${currentExerciseLabel}`);
-          console.log(`저장된 운동 이름: ${latestSession.mainExercise.name}`);
+          console.log(`저장된 운동 이름: ${latestWorkout.mainExercise.name}`);
           
           // 운동 이름이 다르면 처리 중단
-          if (currentExerciseLabel && latestSession.mainExercise.name !== currentExerciseLabel) {
+          if (currentExerciseLabel && latestWorkout.mainExercise.name !== currentExerciseLabel) {
             console.log('선택된 운동이 최근 기록과 일치하지 않습니다. 무게를 로드하지 않습니다.');
             setLatestWorkoutInfo({
               date: null,
@@ -956,12 +950,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           }
         }
         
-        if (latestSession.mainExercise && latestSession.mainExercise.sets && latestSession.mainExercise.sets.length > 0) {
+        if (latestWorkout.mainExercise && latestWorkout.mainExercise.sets && latestWorkout.mainExercise.sets.length > 0) {
           // 모든 세트가 성공인지 확인
-          const allSuccess = latestSession.mainExercise.sets.every(set => set.isSuccess === true);
+          const allSuccess = latestWorkout.mainExercise.sets.every(set => set.isSuccess === true);
           
           // 마지막 세트의 무게 가져오기 (보통 마지막 세트가 최대 무게)
-          const lastWeight = latestSession.mainExercise.sets[0].weight;
+          const lastWeight = latestWorkout.mainExercise.sets[0].weight;
           
           // 새 무게 계산: 모든 세트 성공 시 2.5kg 증량, 실패 시 동일 무게
           const newWeight = allSuccess ? lastWeight + 2.5 : lastWeight;
@@ -970,17 +964,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           
           // 최근 운동 이력 정보만 업데이트 - 세트 구성은 변경하지 않음
           setLatestWorkoutInfo({
-            date: latestSession.date instanceof Date 
-              ? latestSession.date 
-              : (typeof latestSession.date === 'object' && latestSession.date && 'seconds' in latestSession.date
-                ? new Date((latestSession.date as { seconds: number }).seconds * 1000) // 타입 단언 및 seconds 접근
+            date: latestWorkout.date instanceof Date 
+              ? latestWorkout.date 
+              : (typeof latestWorkout.date === 'object' && latestWorkout.date && 'seconds' in latestWorkout.date
+                ? new Date((latestWorkout.date as { seconds: number }).seconds * 1000) // 타입 단언 및 seconds 접근
                 : new Date()),
             weight: lastWeight,
             allSuccess,
             exists: true,
-            exerciseName: latestSession.mainExercise.name,
-            sets: latestSession.mainExercise.sets.length,
-            reps: latestSession.mainExercise.sets[0]?.reps || 0
+            exerciseName: latestWorkout.mainExercise.name,
+            sets: latestWorkout.mainExercise.sets.length,
+            reps: latestWorkout.mainExercise.sets[0]?.reps || 0
           });
           
           // 중요: 현재 선택된 세트 설정 사용 (최근 기록이 아닌 현재 설정 우선)
@@ -1012,12 +1006,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             // settings가 아직 로드되지 않은 경우, 최근 운동 기록 기반으로만 설정
             console.log('[fetchLatestWorkout] settings 없음, 최근 운동 기록만 사용');
             
-            const setsCount = latestSession.mainExercise.sets.length;
+            const setsCount = latestWorkout.mainExercise.sets.length;
             
             // 메인 운동 세트 설정: 새 무게 적용 (모든 세트에 동일한 무게 적용)
             const newSets = Array(setsCount).fill(0).map((_, index) => {
               return {
-                reps: latestSession.mainExercise.sets[index]?.reps || 0, 
+                reps: latestWorkout.mainExercise.sets[index]?.reps || 0, 
                 weight: newWeight,
                 isSuccess: null
               };
@@ -1176,10 +1170,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         isAllSuccess: mainExercise.sets.every((set: { isSuccess: boolean | null }) => set.isSuccess === true), // isSuccess가 true인 경우만 전체 성공 // set 타입 명시
         successSets: mainExercise.sets.filter((set: { isSuccess: boolean | null }) => set.isSuccess === true).length, // isSuccess가 true인 세트 수 // set 타입 명시
         accessoryNames: cleanAccessoryExercises.map((ex: { name: string }) => ex.name), // ex 타입 명시
-        sleepHours,
+        sleepHours: sleepHours === undefined ? null : sleepHours, // undefined인 경우 null로 설정
         condition,
         startTime,
-        lastMealTime: lastMealTime || undefined
+        lastMealTime: lastMealTime || undefined,
+        stretchingCompleted,
+        warmupCompleted,
+        stretchingNotes: stretchingNotes || undefined
       };
 
       console.log('WorkoutForm: Attempting to save session data to Firestore. Data:', JSON.stringify(sessionData, null, 2));
@@ -1237,7 +1234,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       }
     } catch (error) {
       console.error('WorkoutForm: Error saving session:', error); // 전체 에러 객체 로깅
-      toast.error('운동 기록 저장에 실패했습니다. 콘솔을 확인해주세요.'); // 사용자에게 콘솔 확인 안내
+      toast.error('운동 기록 저장에 실패했습니다.'); // 콘솔 확인 안내 제거
     }
   };
 
@@ -1686,38 +1683,94 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <CardSection className="p-6">
             <CardTitle className="text-xl font-bold text-gray-900 dark:text-white mb-6">준비 및 웜업</CardTitle>
             
-            <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-800 dark:text-white">스트레칭/웜업</h3>
-                <Button
-                  size="sm"
-                  variant={warmupCompleted ? 'success' : 'primary'}
-                  onClick={() => {
-                    setWarmupCompleted(!warmupCompleted);
-                    setStretchingCompleted(!warmupCompleted);
-                  }}
-                  icon={warmupCompleted ? <CheckCircle size={18} /> : undefined}
-                  className={warmupCompleted ? "bg-green-500 text-white hover:bg-green-600 font-medium shadow-lg" : "bg-blue-500 text-white hover:bg-blue-600 font-medium shadow-lg"}
-                >
-                  {warmupCompleted ? '완료' : '완료'}
-                </Button>
-              </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                운동 전 충분한 스트레칭과 웜업을 수행해주세요.
-              </p>
-              
-              {showWarmupTips && (
-                <div className="mt-4 p-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
-                  <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-3">
-                    {part} 운동 웜업 추천
-                  </h4>
-                  <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                    {(warmupExercises[part as keyof typeof warmupExercises] || []).map((tip: string, i: number) => ( // 타입 단언 및 tip, i 타입 명시
-                      <li key={i}>{tip}</li>
-                    ))}
-                  </ul>
+            <div className="space-y-6">
+              {/* 스트레칭 섹션 */}
+              <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 dark:text-white">스트레칭</h3>
+                  <Button
+                    size="sm"
+                    variant={stretchingCompleted ? 'success' : 'primary'}
+                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
+                    className={`h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
+                      stretchingCompleted 
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
+                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                    }`}
+                    aria-label={stretchingCompleted ? "스트레칭 완료" : "스트레칭 미완료"}
+                  >
+                    {stretchingCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
+                  </Button>
                 </div>
-              )}
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                  운동 전 충분한 스트레칭을 수행해주세요.
+                </p>
+              </div>
+
+              {/* 웜업 섹션 */}
+              <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 dark:text-white">웜업</h3>
+                  <Button
+                    size="sm"
+                    variant={warmupCompleted ? 'success' : 'primary'}
+                    onClick={() => setWarmupCompleted(!warmupCompleted)}
+                    className={`h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
+                      warmupCompleted 
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
+                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                    }`}
+                    aria-label={warmupCompleted ? "웜업 완료" : "웜업 미완료"}
+                  >
+                    {warmupCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                  본 운동 전에 충분한 웜업을 수행해주세요.
+                </p>
+
+                {showWarmupTips && (
+                  <div className="mt-4 p-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-3">
+                      {part} 운동 웜업 추천
+                    </h4>
+                    <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                      {(warmupExercises[part as keyof typeof warmupExercises] || []).map((tip: string, i: number) => (
+                        <li key={i}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowWarmupTips(!showWarmupTips)}
+                    className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                  >
+                    {showWarmupTips ? '웜업 추천 닫기' : '웜업 추천 보기'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* 스트레칭/웜업 메모 */}
+              <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800">
+                <label
+                  htmlFor="stretchingNotes"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  스트레칭/웜업 메모 (선택사항)
+                </label>
+                <textarea
+                  id="stretchingNotes"
+                  value={stretchingNotes}
+                  onChange={(e) => setStretchingNotes(e.target.value)}
+                  rows={2}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="스트레칭/웜업 관련 메모를 남겨보세요..."
+                />
+              </div>
             </div>
           </CardSection>
         </Card>

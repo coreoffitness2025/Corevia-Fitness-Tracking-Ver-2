@@ -6,10 +6,29 @@ service cloud.firestore {
       allow read, write: if false;
     }
     
+    // 데이터 유효성 검사 함수
+    function isValidUserProfile(data) {
+      // 필수 필드 검증
+      return data.uid is string
+        && data.height is number && data.height > 0 && data.height < 250
+        && data.weight is number && data.weight > 0 && data.weight < 300
+        && data.age is number && data.age > 0 && data.age < 120
+        && (data.gender == 'male' || data.gender == 'female')
+        && (data.activityLevel in ['sedentary', 'light', 'moderate', 'active', 'veryActive'])
+        && (data.fitnessGoal in ['loss', 'maintain', 'gain']);
+    }
+    
+    function isValidWeight(data) {
+      return data.weight is number && data.weight > 0 && data.weight < 300;
+    }
+    
     // 사용자 프로필 컬렉션 접근 규칙
     match /users/{userId} {
       // 로그인한 사용자 본인의 프로필만 쓰기 가능
-      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId 
+                   && (isValidUserProfile(request.resource.data) || !("height" in request.resource.data));
+      allow delete: if request.auth != null && request.auth.uid == userId;
       // 모든 로그인한 사용자는 다른 사용자 프로필 읽기 가능
       allow read: if request.auth != null;
     }
@@ -19,7 +38,7 @@ service cloud.firestore {
       // 자신의 세션만 읽고 쓸 수 있음
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
       // 쿼리를 위한 추가 규칙
-      allow list: if request.auth != null && request.query.limit <= 10;
+      allow list: if request.auth != null && request.query.limit <= 50;
       // 세션 업데이트 및 삭제
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       // 새 세션 생성 시 현재 사용자 ID만 사용 가능하도록
@@ -31,7 +50,7 @@ service cloud.firestore {
       // 자신의 식단 기록만 읽고 쓸 수 있음
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
       // 쿼리를 위한 추가 규칙
-      allow list: if request.auth != null && request.query.limit <= 10;
+      allow list: if request.auth != null && request.query.limit <= 50;
       // 식단 기록 업데이트 및 삭제
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       // 새 식단 기록 생성 시 현재 사용자 ID만 사용 가능하도록
@@ -55,11 +74,13 @@ service cloud.firestore {
       // 자신의 체중 기록만 읽고 쓸 수 있음
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
       // 쿼리를 위한 추가 규칙
-      allow list: if request.auth != null && request.query.limit <= 50;
+      allow list: if request.auth != null && request.query.limit <= 100;
       // 체중 기록 업데이트 및 삭제
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      // 새 체중 기록 생성 시 현재 사용자 ID만 사용 가능하도록
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // 새 체중 기록 생성 시 현재 사용자 ID만 사용 가능하도록 + 체중 유효성 검증
+      allow create: if request.auth != null 
+                  && request.auth.uid == request.resource.data.userId
+                  && isValidWeight(request.resource.data);
     }
   }
 } 

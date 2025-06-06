@@ -65,6 +65,9 @@ export interface Session {
   condition?: 'bad' | 'normal' | 'good'; // 컨디션 상태 (선택 사항)
   startTime?: string; // 운동 시작 시간 (HH:MM 형식)
   lastMealTime?: string; // 마지막 식사 시간 (HH:MM 형식)
+  stretchingCompleted?: boolean; // 스트레칭 완료 여부
+  warmupCompleted?: boolean; // 웜업 완료 여부
+  stretchingNotes?: string; // 스트레칭/웜업 관련 메모
 }
 
 /* ---------- 일일 운동 기록 ---------- */
@@ -146,6 +149,7 @@ export interface UserProfile {
     overheadPress: number;
   };
   settings?: UserSettings;
+  isPremium?: boolean; // 프리미엄 회원 여부
 }
 
 export interface UserSettings {

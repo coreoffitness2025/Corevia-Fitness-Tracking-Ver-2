@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initializeAdMob, setupAdMobListeners } from './utils/adMobUtils';
 import { getCloudSyncSettings, syncAllData } from './services/syncService';
 import { toast } from 'react-hot-toast';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase/firebaseConfig';
 
 // 보호된 라우트 컴포넌트 import
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -133,6 +135,20 @@ const AppContent: React.FC = () => {
     const checkAndSyncData = async () => {
       if (currentUser?.uid) {
         try {
+          // 사용자 프로필 및 동기화 설정 가져오기
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          const userProfile = userDoc.exists() ? userDoc.data() : null;
+          
+          // 프리미엄 회원인지 확인
+          const isPremium = userProfile?.isPremium === true;
+          
+          // 프리미엄 회원이 아니면 동기화하지 않음
+          if (!isPremium) {
+            console.log('프리미엄 회원이 아니므로 자동 동기화를 건너뜁니다.');
+            return;
+          }
+          
           // 사용자의 동기화 설정 가져오기
           const syncSettings = await getCloudSyncSettings(currentUser.uid);
           
