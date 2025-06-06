@@ -1,17 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getBodyPhotoRecords, getFoodImage, BodyPhotoRecord } from '../../utils/indexedDB';
+import { getBodyPhotoRecords, getBodyPhotoImage, BodyPhotoRecord } from '../../services/bodyService';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/firebaseConfig';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Camera, Scale, TrendingUp, Calendar, Info, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '../common/LoadingSpinner';
-
-interface WeightRecord {
-  date: Date;
-  weight: number;
-}
+import { WeightRecord, getWeightHistory } from '../../services/weightService';
 
 interface BodyProgressViewProps {
   onClose?: () => void;
@@ -60,68 +56,43 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
 
   const loadWeightHistory = async () => {
     if (!userProfile?.uid) return;
-
+    
     try {
-      console.log('[BodyProgressView] 체중 기록 로드 시작, userId:', userProfile.uid);
-      
-      // Firebase 인덱스 문제를 해결하기 위해 orderBy를 제거하고 클라이언트에서 정렬
-      const q = query(
-        collection(db, 'weightRecords'),
-        where('userId', '==', userProfile.uid)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      console.log('[BodyProgressView] 체중 기록 쿼리 결과:', querySnapshot.size, '개');
-      
-      const history = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('[BodyProgressView] 체중 기록 데이터:', data);
-        return {
-          date: data.date.toDate(),
-          weight: data.weight
-        };
-      }).sort((a, b) => a.date.getTime() - b.date.getTime()); // 클라이언트에서 날짜순 정렬
-      
-      console.log('[BodyProgressView] 변환된 체중 기록:', history);
+      const history = await getWeightHistory(userProfile.uid);
       setWeightHistory(history);
-      
-      if (history.length === 0) {
-        console.log('[BodyProgressView] 체중 기록이 없습니다. 체중 그래프가 표시되지 않습니다.');
-      }
+      console.log(`${history.length}개의 체중 기록을 로드했습니다.`);
     } catch (error) {
-      console.error('체중 기록 로드 실패:', error);
-      // Firebase 접근 실패시 빈 배열로 설정
-      setWeightHistory([]);
+      console.error('체중 기록 로드 오류:', error);
     }
   };
 
   const loadBodyPhotos = async () => {
     if (!userProfile?.uid) return;
-
+    
     try {
       const photos = await getBodyPhotoRecords(userProfile.uid);
-      // 날짜순으로 정렬 (최신순)
-      const sortedPhotos = photos.sort((a, b) => b.date.getTime() - a.date.getTime());
-      setBodyPhotos(sortedPhotos);
+      setBodyPhotos(photos);
       
-      // 이미지 로드
-      await loadImages(sortedPhotos);
+      // 하이브리드 방식으로 이미지 로드
+      const newCache = await loadImages(photos);
+      setImageCache(prevCache => ({ ...prevCache, ...newCache }));
+      
+      console.log(`${photos.length}개의 바디 체크 사진을 로드했습니다.`);
     } catch (error) {
-      console.error('신체 사진 기록 로드 실패:', error);
-      setBodyPhotos([]);
+      console.error('바디 체크 사진 로드 오류:', error);
     }
   };
 
   const loadImages = async (photos: BodyPhotoRecord[]) => {
-    const newImageCache: Record<string, string> = { ...imageCache };
+    const newImageCache: Record<string, string> = {};
     
     for (const photo of photos) {
       if (photo.imageId && !newImageCache[photo.imageId]) {
         try {
-          const imageBlob = await getFoodImage(photo.imageId);
-          if (imageBlob) {
-            const imageUrl = URL.createObjectURL(imageBlob);
-            newImageCache[photo.imageId] = imageUrl;
+          // 하이브리드 방식으로 이미지 로드 (getBodyPhotoImage 사용)
+          const imageDataUrl = await getBodyPhotoImage(photo);
+          if (imageDataUrl) {
+            newImageCache[photo.imageId] = imageDataUrl;
           }
         } catch (error) {
           console.error(`이미지 로드 오류 (ID: ${photo.imageId}):`, error);
@@ -129,7 +100,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
       }
     }
     
-    setImageCache(newImageCache);
+    return newImageCache;
   };
 
   const handlePhotoClick = (photo: BodyPhotoRecord) => {

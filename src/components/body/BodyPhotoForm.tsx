@@ -3,9 +3,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import { toast } from 'react-hot-toast';
 import { Plus, X, Camera, Image as ImageIcon } from 'lucide-react';
-import { saveBodyPhotoRecord, BodyPhotoRecord } from '../../services/bodyService';
+import { saveBodyPhotoRecord, BodyPhotoRecord, saveBodyPhotoWithImage } from '../../services/bodyService';
 import { saveFoodImage } from '../../services/foodService';
-import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback } from '../../utils/capacitorUtils';
+import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback, ImageResult } from '../../utils/capacitorUtils';
 
 interface BodyPhotoFormProps {
   onSuccess?: () => void;
@@ -22,6 +22,8 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 하이브리드 방식을 위한 추가 상태
+  const [imageInfo, setImageInfo] = useState<{isNative?: boolean, filePath?: string} | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,12 +34,18 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         setPreviewUrl(fileReader.result as string);
       };
       fileReader.readAsDataURL(file);
+      
+      // 웹 환경에서 선택한 파일은 네이티브가 아님
+      setImageInfo({
+        isNative: false
+      });
     }
   };
 
   const handleRemoveImage = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
+    setImageInfo(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -50,18 +58,35 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       await triggerHapticFeedback('light');
       
       // Capacitor 네이티브 카메라 또는 웹 카메라 사용
-      const photoDataUrl = await takePhoto();
+      const result = await takePhoto();
       
-      if (photoDataUrl) {
-        setPreviewUrl(photoDataUrl);
+      if (result) {
+        setPreviewUrl(result.dataUrl);
         
-        // dataURL을 Blob으로 변환하여 selectedFile에 저장
-        const response = await fetch(photoDataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
-        setSelectedFile(file);
-        
-        toast.success('사진이 촬영되었습니다!');
+        // 네이티브 앱 환경인 경우 갤러리 경로 정보 저장
+        if (result.isNative && result.filePath) {
+          setImageInfo({
+            isNative: true,
+            filePath: result.filePath
+          });
+          
+          // 네이티브 앱에서는 파일 객체를 생성할 필요 없음
+          if (result.dataUrl) {
+            // 미리보기용으로만 dataUrl을 사용
+            toast.success('사진이 촬영되었습니다!');
+          }
+        } else {
+          // 웹 환경에서는 기존 방식대로 Blob으로 변환
+          const response = await fetch(result.dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+          setSelectedFile(file);
+          setImageInfo({
+            isNative: false
+          });
+          
+          toast.success('사진이 촬영되었습니다!');
+        }
       }
     } catch (error) {
       console.error('카메라 촬영 실패:', error);
@@ -76,18 +101,35 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       await triggerHapticFeedback('light');
       
       // Capacitor 네이티브 갤러리 또는 웹 파일 선택 사용
-      const photoDataUrl = await pickPhotoFromGallery();
+      const result = await pickPhotoFromGallery();
       
-      if (photoDataUrl) {
-        setPreviewUrl(photoDataUrl);
+      if (result) {
+        setPreviewUrl(result.dataUrl);
         
-        // dataURL을 Blob으로 변환하여 selectedFile에 저장
-        const response = await fetch(photoDataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
-        setSelectedFile(file);
-        
-        toast.success('사진이 선택되었습니다!');
+        // 네이티브 앱 환경인 경우 갤러리 경로 정보 저장
+        if (result.isNative && result.filePath) {
+          setImageInfo({
+            isNative: true,
+            filePath: result.filePath
+          });
+          
+          // 네이티브 앱에서는 파일 객체를 생성할 필요 없음
+          if (result.dataUrl) {
+            // 미리보기용으로만 dataUrl을 사용
+            toast.success('사진이 선택되었습니다!');
+          }
+        } else {
+          // 웹 환경에서는 기존 방식대로 Blob으로 변환
+          const response = await fetch(result.dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
+          setSelectedFile(file);
+          setImageInfo({
+            isNative: false
+          });
+          
+          toast.success('사진이 선택되었습니다!');
+        }
       }
     } catch (error) {
       console.error('갤러리 선택 실패:', error);
@@ -103,7 +145,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       return;
     }
 
-    if (!selectedFile) {
+    if (!previewUrl) {
       toast.error('바디 체크 사진을 선택해주세요.');
       return;
     }
@@ -114,8 +156,16 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       // 이미지 ID 생성
       const imageId = `body_${userProfile.uid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // 이미지 저장
-      await saveFoodImage(imageId, userProfile.uid, selectedFile);
+      // 하이브리드 방식으로 이미지 저장
+      if (imageInfo?.isNative && imageInfo.filePath) {
+        // 네이티브 앱 환경 - 갤러리 이미지 경로 저장
+        // 파일 객체는 필요 없지만 API 호환성을 위해 빈 Blob 전달
+        const emptyFile = new File([], 'empty.jpg', { type: 'image/jpeg' });
+        await saveFoodImage(imageId, userProfile.uid, emptyFile, imageInfo);
+      } else if (selectedFile) {
+        // 웹 환경 - 기존 방식으로 이미지 데이터 저장
+        await saveFoodImage(imageId, userProfile.uid, selectedFile);
+      }
       
       const bodyPhotoRecord: Omit<BodyPhotoRecord, 'id' | 'createdAt'> = {
         userId: userProfile.uid,
@@ -124,11 +174,13 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
         bodyFat: bodyFat ? parseFloat(bodyFat) : undefined,
         muscleMass: muscleMass ? parseFloat(muscleMass) : undefined,
         notes: notes.trim() || undefined,
-        imageId
+        imageId,
+        isNative: imageInfo?.isNative,
+        filePath: imageInfo?.filePath
       };
 
-      // IndexedDB에 신체 사진 기록 저장
-      await saveBodyPhotoRecord(bodyPhotoRecord);
+      // 향상된 바디 체크 기록 저장 함수 사용
+      await saveBodyPhotoWithImage(bodyPhotoRecord, imageInfo || undefined);
       
       console.log('바디 체크 기록 저장 완료:', bodyPhotoRecord);
       
@@ -141,6 +193,7 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
       setNotes('');
       setSelectedFile(null);
       setPreviewUrl(null);
+      setImageInfo(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -274,17 +327,17 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
                     갤러리에서 선택
                   </button>
                 </div>
-                
-                {/* 기존 파일 업로드 방식 제거 */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept="image/*"
-                  className="sr-only"
-                />
               </div>
             )}
+            
+            {/* 숨겨진 파일 입력 필드 (스타일링 목적으로만 유지) */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
           </div>
         </div>
         

@@ -406,10 +406,25 @@ export const getFoodEntriesByDate = async (userId: string, date: Date): Promise<
   }
 };
 
-// 식단 이미지 데이터를 IndexedDB에 저장
-export const saveFoodImage = async (imageId: string, userId: string, file: File): Promise<void> => {
+// 식단 이미지 데이터를 저장 (하이브리드 방식)
+export const saveFoodImage = async (imageId: string, userId: string, file: File, imageInfo?: { filePath?: string, isNative?: boolean }): Promise<void> => {
   try {
-    // 이미지 데이터를 IndexedDB에 저장
+    // 네이티브 앱 환경이고 파일 경로가 있는 경우 (갤러리 이미지)
+    if (imageInfo?.isNative && imageInfo.filePath) {
+      // 갤러리 이미지 경로 저장
+      await db.put('foodImages', {
+        id: imageId,
+        userId,
+        filePath: imageInfo.filePath,
+        isNative: true,
+        data: null, // 데이터는 저장하지 않음 (경로만 저장)
+        createdAt: new Date()
+      });
+      console.log('갤러리 이미지 경로 저장됨:', imageInfo.filePath);
+      return;
+    }
+
+    // 웹 환경 또는 파일 경로가 없는 경우 (기존 방식)
     const db = await openFoodImagesDatabase();
     
     const reader = new FileReader();
@@ -422,6 +437,8 @@ export const saveFoodImage = async (imageId: string, userId: string, file: File)
             id: imageId,
             userId,
             data: reader.result,
+            isNative: false,
+            filePath: null,
             createdAt: new Date()
           });
           resolve();
@@ -456,13 +473,34 @@ export const uploadFoodImageToFirebase = async (imageId: string, userId: string,
   }
 };
 
-// IndexedDB에서 이미지 가져오기
+// IndexedDB에서 이미지 가져오기 (하이브리드 방식)
 export const getFoodImage = async (imageId: string): Promise<string | null> => {
   try {
     const db = await openFoodImagesDatabase();
     const image = await db.get('foodImages', imageId);
     
-    return image ? image.data as string : null;
+    if (!image) {
+      console.error('이미지를 찾을 수 없음:', imageId);
+      return null;
+    }
+
+    // 네이티브 앱 환경에서 갤러리 이미지인 경우
+    if (image.isNative && image.filePath) {
+      try {
+        // Capacitor Filesystem을 사용하여 갤러리 이미지 읽기
+        const { Filesystem } = await import('@capacitor/filesystem');
+        const { data } = await Filesystem.readFile({
+          path: image.filePath
+        });
+        return `data:image/jpeg;base64,${data}`;
+      } catch (fileError) {
+        console.error('갤러리 이미지 읽기 실패:', fileError);
+        return null;
+      }
+    }
+    
+    // 웹 환경에서는 저장된 데이터 사용
+    return image.data as string;
   } catch (error) {
     console.error('이미지 가져오기 오류:', error);
     return null;

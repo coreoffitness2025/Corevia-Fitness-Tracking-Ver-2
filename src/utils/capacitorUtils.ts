@@ -1,7 +1,15 @@
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+
+// 반환할 이미지 정보 타입 정의
+export interface ImageResult {
+  dataUrl: string;
+  filePath?: string;
+  isNative: boolean;
+}
 
 // 플랫폼 확인
 export const isNativePlatform = () => {
@@ -9,22 +17,35 @@ export const isNativePlatform = () => {
 };
 
 // 카메라 권한 요청 및 사진 촬영
-export const takePhoto = async (): Promise<string | null> => {
+export const takePhoto = async (): Promise<ImageResult | null> => {
   try {
-    if (!isNativePlatform()) {
+    // 네이티브 앱 환경인 경우
+    if (isNativePlatform()) {
+      // 네이티브에서는 Capacitor Camera 사용 (갤러리에 저장)
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera,
+        saveToGallery: true // 갤러리에 저장
+      });
+
+      // 파일 경로와 데이터 URL 반환
+      return {
+        dataUrl: image.webPath || '',
+        filePath: image.path,
+        isNative: true
+      };
+    } 
+    // 웹 환경인 경우
+    else {
       // 웹에서는 기존 방식 사용
-      return await takePhotoWeb();
+      const dataUrl = await takePhotoWeb();
+      return dataUrl ? {
+        dataUrl,
+        isNative: false
+      } : null;
     }
-
-    // 네이티브에서는 Capacitor Camera 사용
-    const image = await Camera.getPhoto({
-      quality: 90,
-      allowEditing: false,
-      resultType: CameraResultType.DataUrl,
-      source: CameraSource.Camera,
-    });
-
-    return image.dataUrl || null;
   } catch (error) {
     console.error('사진 촬영 실패:', error);
     return null;
@@ -32,22 +53,34 @@ export const takePhoto = async (): Promise<string | null> => {
 };
 
 // 갤러리에서 사진 선택
-export const pickPhotoFromGallery = async (): Promise<string | null> => {
+export const pickPhotoFromGallery = async (): Promise<ImageResult | null> => {
   try {
-    if (!isNativePlatform()) {
+    // 네이티브 앱 환경인 경우
+    if (isNativePlatform()) {
+      // 네이티브에서는 Capacitor Camera 사용 (갤러리에서 선택)
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Photos
+      });
+
+      // 파일 경로와 데이터 URL 반환
+      return {
+        dataUrl: image.webPath || '',
+        filePath: image.path,
+        isNative: true
+      };
+    } 
+    // 웹 환경인 경우
+    else {
       // 웹에서는 기존 방식 사용
-      return await pickPhotoWeb();
+      const dataUrl = await pickPhotoWeb();
+      return dataUrl ? {
+        dataUrl,
+        isNative: false
+      } : null;
     }
-
-    // 네이티브에서는 Capacitor Camera 사용
-    const image = await Camera.getPhoto({
-      quality: 90,
-      allowEditing: false,
-      resultType: CameraResultType.DataUrl,
-      source: CameraSource.Photos,
-    });
-
-    return image.dataUrl || null;
   } catch (error) {
     console.error('갤러리 사진 선택 실패:', error);
     return null;
