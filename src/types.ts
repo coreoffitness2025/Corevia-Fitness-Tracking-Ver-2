@@ -63,6 +63,7 @@ export interface Session {
   accessoryNames: string[];
   sleepHours?: number; // 수면 시간 (선택 사항)
   condition?: 'bad' | 'normal' | 'good'; // 컨디션 상태 (선택 사항)
+  startTime?: string; // 운동 시작 시간 (HH:MM 형식)
 }
 
 /* ---------- 일일 운동 기록 ---------- */

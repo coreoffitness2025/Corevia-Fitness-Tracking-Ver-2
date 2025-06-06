@@ -621,8 +621,8 @@ const WorkoutList: React.FC = () => {
                   메인 운동: {workout.mainExercise.name || '운동 이름 없음'}
                 </h4>
 
-                {/* 수면 시간 및 컨디션 정보 */}
-                {(workout.sleepHours !== undefined || workout.condition !== undefined) && (
+                {/* 수면 시간, 컨디션, 운동 시작 시간 정보 */}
+                {(workout.sleepHours !== undefined || workout.condition !== undefined || workout.startTime) && (
                   <div className="flex flex-wrap gap-3 mb-3 mt-1 items-center">
                     {workout.sleepHours !== undefined && (
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
@@ -643,6 +643,13 @@ const WorkoutList: React.FC = () => {
                         }`}>
                           {workout.condition === 'good' ? '좋음' : workout.condition === 'normal' ? '보통' : '나쁨'}
                         </span>
+                      </div>
+                    )}
+                    
+                    {workout.startTime && (
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <span className="mr-1">시작 시간:</span>
+                        <span className="font-medium">{workout.startTime}</span>
                       </div>
                     )}
                   </div>
