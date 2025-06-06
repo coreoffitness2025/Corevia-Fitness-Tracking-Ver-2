@@ -250,14 +250,17 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
               </div>
             ) : (
               <div className="text-center p-4">
-                <div className="flex justify-center mb-4 space-x-4">
+                <div className="mb-4">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">바디 체크 사진을 촬영하거나 선택해주세요</p>
+                </div>
+                <div className="flex justify-center space-x-4">
                   {/* 카메라 버튼 */}
                   <button
                     type="button"
                     onClick={handleCameraCapture}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center shadow-md transition-all duration-200"
                   >
-                    <Camera size={20} className="mr-2" />
+                    <Camera size={24} className="mr-2" />
                     사진 촬영
                   </button>
                   
@@ -265,27 +268,21 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
                   <button
                     type="button"
                     onClick={handleGallerySelect}
-                    className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center"
+                    className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg flex items-center shadow-md transition-all duration-200"
                   >
-                    <ImageIcon size={20} className="mr-2" />
+                    <ImageIcon size={24} className="mr-2" />
                     갤러리에서 선택
                   </button>
                 </div>
                 
-                {/* 기존 파일 업로드 방식도 유지 */}
-                <div className="text-gray-500 dark:text-gray-400 text-sm">
-                  또는
-                </div>
-                <label className="mt-2 cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="sr-only"
-                  />
-                  파일 선택
-                </label>
+                {/* 기존 파일 업로드 방식 제거 */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="sr-only"
+                />
               </div>
             )}
           </div>
