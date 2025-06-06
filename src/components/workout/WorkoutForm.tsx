@@ -1380,96 +1380,102 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">오늘의 컨디션 체크</h2>
           
-          {/* 수면 시간 입력 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              수면 시간 (선택)
-            </label>
-            <div className="flex items-center">
-              <input
-                type="number"
-                min="0"
-                max="24"
-                step="0.5"
-                value={sleepHours === undefined ? '' : sleepHours}
-                onChange={(e) => setSleepHours(e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="시간"
-              />
-              <span className="ml-2 text-gray-600 dark:text-gray-400">시간</span>
+          {/* 첫 번째 행: 수면 시간과 컨디션 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* 수면 시간 입력 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                수면 시간 (선택)
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  value={sleepHours === undefined ? '' : sleepHours}
+                  onChange={(e) => setSleepHours(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="시간"
+                />
+                <span className="ml-2 text-gray-600 dark:text-gray-400">시간</span>
+              </div>
+            </div>
+            
+            {/* 컨디션 체크 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                오늘의 컨디션
+              </label>
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setCondition('bad')}
+                  className={`px-4 py-2 rounded-md ${
+                    condition === 'bad'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  나쁨
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCondition('normal')}
+                  className={`px-4 py-2 rounded-md ${
+                    condition === 'normal'
+                      ? 'bg-yellow-500 text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  보통
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCondition('good')}
+                  className={`px-4 py-2 rounded-md ${
+                    condition === 'good'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  좋음
+                </button>
+              </div>
             </div>
           </div>
           
-          {/* 컨디션 체크 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              오늘의 컨디션
-            </label>
-            <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={() => setCondition('bad')}
-                className={`px-4 py-2 rounded-md ${
-                  condition === 'bad'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
-                }`}
-              >
-                나쁨
-              </button>
-              <button
-                type="button"
-                onClick={() => setCondition('normal')}
-                className={`px-4 py-2 rounded-md ${
-                  condition === 'normal'
-                    ? 'bg-yellow-500 text-white'
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
-                }`}
-              >
-                보통
-              </button>
-              <button
-                type="button"
-                onClick={() => setCondition('good')}
-                className={`px-4 py-2 rounded-md ${
-                  condition === 'good'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
-                }`}
-              >
-                좋음
-              </button>
+          {/* 두 번째 행: 운동 시작 시간과 마지막 식사 시간 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 운동 시작 시간 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                운동 시작 시간
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
             </div>
-          </div>
-          
-          {/* 운동 시작 시간 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              운동 시작 시간
-            </label>
-            <div className="flex items-center">
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
-          
-          {/* 마지막 식사 시간 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              마지막 식사 시간 (선택)
-            </label>
-            <div className="flex items-center">
-              <input
-                type="time"
-                value={lastMealTime}
-                onChange={(e) => setLastMealTime(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="마지막 식사 시간"
-              />
+            
+            {/* 마지막 식사 시간 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                마지막 식사 시간 (선택)
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="time"
+                  value={lastMealTime}
+                  onChange={(e) => setLastMealTime(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="마지막 식사 시간"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -2174,7 +2180,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               value={notes}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)} // e 타입 명시
               className="w-full p-4 min-h-24 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all resize-none"
-              placeholder="이번 운동에 대한 메모를 남겨보세요..."
+              placeholder="이번 운동에 대한 메모를 남겨보세요(Ex. 운동 후 펌핑감/컨디션, 불편감/통증 등)"
             />
           </CardSection>
         </Card>

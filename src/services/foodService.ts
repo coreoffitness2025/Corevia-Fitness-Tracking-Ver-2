@@ -10,9 +10,10 @@ import {
   doc,
   deleteDoc
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase/firebaseConfig';
 import { Food } from '../types';
+import { openDB } from 'idb';
 
 // 로컬 스토리지 키 정의
 const IMAGE_KEY_PREFIX = 'food_image_';
@@ -403,4 +404,80 @@ export const getFoodEntriesByDate = async (userId: string, date: Date): Promise<
     console.error('특정 날짜 식단 기록 조회 오류:', error);
     throw error;
   }
+};
+
+// 식단 이미지 데이터를 IndexedDB에 저장
+export const saveFoodImage = async (imageId: string, userId: string, file: File): Promise<void> => {
+  try {
+    // 이미지 데이터를 IndexedDB에 저장
+    const db = await openFoodImagesDatabase();
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    
+    await new Promise<void>((resolve, reject) => {
+      reader.onload = async () => {
+        try {
+          await db.put('foodImages', {
+            id: imageId,
+            userId,
+            data: reader.result,
+            createdAt: new Date()
+          });
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+    });
+  } catch (error) {
+    console.error('이미지 저장 오류:', error);
+    throw error;
+  }
+};
+
+// 식단 이미지를 Firebase Storage에 업로드
+export const uploadFoodImageToFirebase = async (imageId: string, userId: string, file: File): Promise<string | null> => {
+  try {
+    // Firebase Storage 참조 생성
+    const storageRef = ref(storage, `users/${userId}/food/${imageId}`);
+    
+    // 파일 업로드
+    const snapshot = await uploadBytes(storageRef, file);
+    
+    // 다운로드 URL 가져오기
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Firebase 이미지 업로드 오류:', error);
+    return null;
+  }
+};
+
+// IndexedDB에서 이미지 가져오기
+export const getFoodImage = async (imageId: string): Promise<string | null> => {
+  try {
+    const db = await openFoodImagesDatabase();
+    const image = await db.get('foodImages', imageId);
+    
+    return image ? image.data as string : null;
+  } catch (error) {
+    console.error('이미지 가져오기 오류:', error);
+    return null;
+  }
+};
+
+// IndexedDB 데이터베이스 열기
+const openFoodImagesDatabase = async () => {
+  return openDB('corevia-fitness-food-images', 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains('foodImages')) {
+        const store = db.createObjectStore('foodImages', { keyPath: 'id' });
+        store.createIndex('userId', 'userId', { unique: false });
+        store.createIndex('createdAt', 'createdAt', { unique: false });
+      }
+    }
+  });
 }; 

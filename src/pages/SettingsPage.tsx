@@ -452,14 +452,6 @@ const SettingsPage = () => {
                 variant="secondary"
                 size="lg"
                 className="w-full flex items-center justify-center gap-2"
-                onClick={() => navigate('/info')}
-              >
-              
-              
-              <Button
-                variant="secondary"
-                size="lg"
-                className="w-full flex items-center justify-center gap-2"
                 onClick={handleLogout}
               >
                 <LogOut className="w-5 h-5" />
