@@ -191,6 +191,42 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
   
   const [calculatedMacros, setCalculatedMacros] = useState({ protein: 0, carbs: 0, fat: 0 });
 
+  // userProfile이 변경될 때 상태 업데이트
+  useEffect(() => {
+    if (userProfile) {
+      setHeight(userProfile.height || 170);
+      setWeight(userProfile.weight || 70);
+      setAge(userProfile.age || 25);
+      setGender(userProfile.gender || 'male');
+      setActivityLevel(userProfile.activityLevel || 'moderate');
+      setFitnessGoal(userProfile.fitnessGoal || 'maintain');
+      setTargetCalories(userProfile.targetCalories || 0);
+      
+      // 1RM 데이터 설정
+      setBenchPressMax(userProfile.oneRepMax?.bench || 0);
+      setSquatMax(userProfile.oneRepMax?.squat || 0);
+      setDeadliftMax(userProfile.oneRepMax?.deadlift || 0);
+      setOhpMax(userProfile.oneRepMax?.overheadPress || 0);
+      
+      // 선호 운동 설정
+      if (userProfile.preferredExercises) {
+        setChestExercise(userProfile.preferredExercises.chest as ChestMainExercise || 'benchPress');
+        setBackExercise(userProfile.preferredExercises.back as BackMainExercise || 'deadlift');
+        setShoulderExercise(userProfile.preferredExercises.shoulder as ShoulderMainExercise || 'overheadPress');
+        setLegExercise(userProfile.preferredExercises.leg as LegMainExercise || 'squat');
+        setBicepsExercise(userProfile.preferredExercises.biceps as BicepsMainExercise || 'dumbbellCurl');
+        setTricepsExercise(userProfile.preferredExercises.triceps as TricepsMainExercise || 'cablePushdown');
+      }
+      
+      // 세트 구성 설정
+      if (userProfile.setConfiguration) {
+        setSetConfig(userProfile.setConfiguration.preferredSetup || '5x5');
+        setCustomSets(userProfile.setConfiguration.customSets || 5);
+        setCustomReps(userProfile.setConfiguration.customReps || 5);
+      }
+    }
+  }, [userProfile]);
+
   // BMR 및 목표 칼로리 계산 함수 (calculateBMR)
   const calculateBMRAndMacros = () => {
     let bmr = 0;

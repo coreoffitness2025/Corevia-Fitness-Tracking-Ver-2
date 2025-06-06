@@ -118,10 +118,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [isFormValid, setIsFormValid] = useState(false);
   
   // 웜업 및 스트레칭 완료 상태 관리
-  const [stretchingCompleted, setStretchingCompleted] = useState(false);
-  const [warmupCompleted, setWarmupCompleted] = useState(false);
-  const [stretchingNotes, setStretchingNotes] = useState('');
-
+  const [stretchingCompleted, setStretchingCompleted] = useState<boolean>(false);
+  const [warmupCompleted, setWarmupCompleted] = useState<boolean>(false);
+  const [stretchingNotes, setStretchingNotes] = useState<string>('');
+  
   // 수면 시간 및 컨디션 상태 추가
   const [sleepHours, setSleepHours] = useState<number | undefined>(undefined);
   const [condition, setCondition] = useState<'bad' | 'normal' | 'good' | undefined>(undefined);
@@ -150,9 +150,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const globalTimerRef = useRef<NodeJS.Timeout | null>(null);
   const alarmRef = useRef<HTMLAudioElement | null>(null);
 
-  // 웜업 팁 표시 상태
-  const [showWarmupTips, setShowWarmupTips] = useState(false);
-  
   // 추가 상태 변수 정의
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
   const [preferredExercises, setPreferredExercises] = useState<Record<string, string>>({});
@@ -1171,7 +1168,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         successSets: mainExercise.sets.filter((set: { isSuccess: boolean | null }) => set.isSuccess === true).length, // isSuccess가 true인 세트 수 // set 타입 명시
         accessoryNames: cleanAccessoryExercises.map((ex: { name: string }) => ex.name), // ex 타입 명시
         sleepHours: sleepHours === undefined ? null : sleepHours, // undefined인 경우 null로 설정
-        condition,
+        condition: condition || 'normal', // condition이 undefined인 경우 'normal'로 설정
         startTime,
         lastMealTime: lastMealTime || undefined,
         stretchingCompleted,
@@ -1692,7 +1689,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     size="sm"
                     variant={stretchingCompleted ? 'success' : 'primary'}
                     onClick={() => setStretchingCompleted(!stretchingCompleted)}
-                    className={`h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
+                    className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
                       stretchingCompleted 
                         ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
                         : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
@@ -1715,7 +1712,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     size="sm"
                     variant={warmupCompleted ? 'success' : 'primary'}
                     onClick={() => setWarmupCompleted(!warmupCompleted)}
-                    className={`h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
+                    className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
                       warmupCompleted 
                         ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
                         : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
@@ -1729,47 +1726,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   본 운동 전에 충분한 웜업을 수행해주세요.
                 </p>
 
-                {showWarmupTips && (
-                  <div className="mt-4 p-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-3">
-                      {part} 운동 웜업 추천
-                    </h4>
-                    <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                      {(warmupExercises[part as keyof typeof warmupExercises] || []).map((tip: string, i: number) => (
-                        <li key={i}>{tip}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowWarmupTips(!showWarmupTips)}
-                    className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                {/* 스트레칭/웜업 메모 */}
+                <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800">
+                  <label
+                    htmlFor="stretchingNotes"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                   >
-                    {showWarmupTips ? '웜업 추천 닫기' : '웜업 추천 보기'}
-                  </Button>
+                    스트레칭/웜업 메모 (선택사항)
+                  </label>
+                  <textarea
+                    id="stretchingNotes"
+                    value={stretchingNotes}
+                    onChange={(e) => setStretchingNotes(e.target.value)}
+                    rows={2}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    placeholder="스트레칭/웜업 관련 메모를 남겨보세요..."
+                  />
                 </div>
-              </div>
-
-              {/* 스트레칭/웜업 메모 */}
-              <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800">
-                <label
-                  htmlFor="stretchingNotes"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  스트레칭/웜업 메모 (선택사항)
-                </label>
-                <textarea
-                  id="stretchingNotes"
-                  value={stretchingNotes}
-                  onChange={(e) => setStretchingNotes(e.target.value)}
-                  rows={2}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  placeholder="스트레칭/웜업 관련 메모를 남겨보세요..."
-                />
               </div>
             </div>
           </CardSection>
