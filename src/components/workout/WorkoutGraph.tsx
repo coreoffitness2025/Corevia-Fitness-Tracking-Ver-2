@@ -1013,36 +1013,45 @@ const WorkoutGraph: React.FC = () => {
               {/* 커스텀 범례 */}
               {chartData.datasets && chartData.datasets.length > 0 && (
                 <div className="mb-4 flex flex-wrap gap-4 justify-center">
-                  {chartData.datasets.map((dataset: any, index: number) => (
-                    <div 
-                      key={index} 
-                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded transition-colors"
-                      onClick={() => toggleDatasetVisibility(index)}
-                    >
+                  {chartData.datasets.map((dataset: any, index: number) => {
+                    // 데이터셋 표시 여부 확인
+                    const isVisible = chartRef.current ? chartRef.current.isDatasetVisible(index) : true;
+                    
+                    return (
                       <div 
-                        className="w-3 h-3"
-                        style={{
-                          backgroundColor: dataset.borderColor,
-                          clipPath: dataset.pointStyle === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
-                                   dataset.pointStyle === 'rect' ? 'none' :
-                                   dataset.pointStyle === 'circle' ? 'circle(50%)' :
-                                   dataset.pointStyle === 'rectRounded' ? 'none' : 'none',
-                          borderRadius: dataset.pointStyle === 'circle' ? '50%' : 
-                                      dataset.pointStyle === 'rectRounded' ? '2px' : '0'
-                        }}
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {dataset.label}
-                      </span>
-                    </div>
-                  ))}
+                        key={index} 
+                        className={`flex items-center gap-2 cursor-pointer p-2 rounded transition-colors
+                          ${isVisible 
+                            ? 'hover:bg-gray-100 dark:hover:bg-gray-700' 
+                            : 'bg-gray-100 dark:bg-gray-700 opacity-60'
+                          }`}
+                        onClick={() => toggleDatasetVisibility(index)}
+                      >
+                        <div 
+                          className="w-3 h-3"
+                          style={{
+                            backgroundColor: dataset.borderColor,
+                            clipPath: dataset.pointStyle === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
+                                    dataset.pointStyle === 'rect' ? 'none' :
+                                    dataset.pointStyle === 'circle' ? 'circle(50%)' :
+                                    dataset.pointStyle === 'rectRounded' ? 'none' : 'none',
+                            borderRadius: dataset.pointStyle === 'circle' ? '50%' : 
+                                        dataset.pointStyle === 'rectRounded' ? '2px' : '0',
+                            opacity: isVisible ? 1 : 0.5
+                          }}
+                        />
+                        <span className={`text-sm ${isVisible ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-500'}`}>
+                          {dataset.label}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               
               {/* 같은 날짜 운동 기록 설명 추가 */}
-              <div className="mb-4 px-4 py-3 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
-                <p className="font-medium">그래프 데이터 표시 안내:</p>
-                <p>그래프는 운동 기록에서 같은 운동을 같은 세트로 같은 날짜 기준으로 수행할 경우, 가장 마지막 운동 기록을 기준으로 그래프에 표시됩니다.</p>
+              <div className="mb-4 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 rounded-lg text-sm text-gray-700 dark:text-gray-200">
+                <p>같은 날짜에 동일한 운동을 여러 번 수행한 경우, 마지막으로 기록된 운동만 그래프에 표시됩니다.</p>
               </div>
               
               <div className="relative" style={{ height: '480px' }}>
