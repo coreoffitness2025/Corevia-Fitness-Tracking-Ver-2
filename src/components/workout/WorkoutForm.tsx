@@ -121,19 +121,21 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const [stretchingCompleted, setStretchingCompleted] = useState(false);
   const [warmupCompleted, setWarmupCompleted] = useState(false);
 
+  // 수면 시간 및 컨디션 상태 추가
+  const [sleepHours, setSleepHours] = useState<number | undefined>(undefined);
+  const [condition, setCondition] = useState<'bad' | 'normal' | 'good' | undefined>(undefined);
+
   // 통합 타이머 상태
   const [globalTimer, setGlobalTimer] = useState<{
     sectionId: string | null; 
     timeLeft: number;         
-    // initialTime: number; // initialTime 제거
-    timerMinutes: number;     // 분 상태 추가
-    timerSeconds: number;     // 초 상태 추가
+    timerMinutes: number;     
+    timerSeconds: number;     
     isPaused: boolean;
     isRunning: boolean;       
   }>({
     sectionId: null,
     timeLeft: 120, 
-    // initialTime: 120,
     timerMinutes: 2,
     timerSeconds: 0,
     isPaused: true,
@@ -1168,7 +1170,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         notes: notes || '',
         isAllSuccess: mainExercise.sets.every((set: { isSuccess: boolean | null }) => set.isSuccess === true), // isSuccess가 true인 경우만 전체 성공 // set 타입 명시
         successSets: mainExercise.sets.filter((set: { isSuccess: boolean | null }) => set.isSuccess === true).length, // isSuccess가 true인 세트 수 // set 타입 명시
-        accessoryNames: cleanAccessoryExercises.map((ex: { name: string }) => ex.name) // ex 타입 명시
+        accessoryNames: cleanAccessoryExercises.map((ex: { name: string }) => ex.name), // ex 타입 명시
+        sleepHours,
+        condition
       };
 
       console.log('WorkoutForm: Attempting to save session data to Firestore. Data:', JSON.stringify(sessionData, null, 2));
@@ -1365,6 +1369,73 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">운동 기록</h1>
         
+        {/* 수면 시간 및 컨디션 체크 섹션 */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">오늘의 컨디션 체크</h2>
+          
+          {/* 수면 시간 입력 */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              수면 시간 (선택)
+            </label>
+            <div className="flex items-center">
+              <input
+                type="number"
+                min="0"
+                max="24"
+                step="0.5"
+                value={sleepHours === undefined ? '' : sleepHours}
+                onChange={(e) => setSleepHours(e.target.value ? parseFloat(e.target.value) : undefined)}
+                className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="시간"
+              />
+              <span className="ml-2 text-gray-600 dark:text-gray-400">시간</span>
+            </div>
+          </div>
+          
+          {/* 컨디션 체크 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              오늘의 컨디션
+            </label>
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={() => setCondition('bad')}
+                className={`px-4 py-2 rounded-md ${
+                  condition === 'bad'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                }`}
+              >
+                나쁨
+              </button>
+              <button
+                type="button"
+                onClick={() => setCondition('normal')}
+                className={`px-4 py-2 rounded-md ${
+                  condition === 'normal'
+                    ? 'bg-yellow-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                }`}
+              >
+                보통
+              </button>
+              <button
+                type="button"
+                onClick={() => setCondition('good')}
+                className={`px-4 py-2 rounded-md ${
+                  condition === 'good'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                }`}
+              >
+                좋음
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* 통합 타이머 UI (예시: 화면 하단 고정) */}
         {globalTimer.sectionId && (
           <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-gray-900 to-gray-800 text-white p-4 shadow-xl z-50 border-t border-gray-700">

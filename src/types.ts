@@ -61,6 +61,8 @@ export interface Session {
   isAllSuccess: boolean;
   successSets: number;
   accessoryNames: string[];
+  sleepHours?: number; // 수면 시간 (선택 사항)
+  condition?: 'bad' | 'normal' | 'good'; // 컨디션 상태 (선택 사항)
 }
 
 /* ---------- 일일 운동 기록 ---------- */
