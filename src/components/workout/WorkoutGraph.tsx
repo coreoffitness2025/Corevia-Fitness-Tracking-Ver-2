@@ -1038,6 +1038,13 @@ const WorkoutGraph: React.FC = () => {
                   ))}
                 </div>
               )}
+              
+              {/* 같은 날짜 운동 기록 설명 추가 */}
+              <div className="mb-4 px-4 py-3 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-500 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+                <p className="font-medium">그래프 데이터 표시 안내:</p>
+                <p>그래프는 운동 기록에서 같은 운동을 같은 세트로 같은 날짜 기준으로 수행할 경우, 가장 마지막 운동 기록을 기준으로 그래프에 표시됩니다.</p>
+              </div>
+              
               <div className="relative" style={{ height: '480px' }}>
                 <Line 
                   options={dynamicChartOptions} 

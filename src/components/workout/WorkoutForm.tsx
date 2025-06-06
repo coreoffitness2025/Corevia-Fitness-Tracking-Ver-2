@@ -874,14 +874,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           }
         });
         
-        // 성공 토스트 메시지
-        toast.success(
-          `새로운 ${exerciseKey === 'bench' ? '벤치프레스' : 
-            exerciseKey === 'squat' ? '스쿼트' : 
-            exerciseKey === 'deadlift' ? '데드리프트' : '오버헤드프레스'
-          } 1RM: ${newOneRM}kg!`, 
-          { duration: 3000 }
-        );
+        // 성공 토스트 메시지 - 제거
+        // toast.success(
+        //   `새로운 ${exerciseKey === 'bench' ? '벤치프레스' : 
+        //     exerciseKey === 'squat' ? '스쿼트' : 
+        //     exerciseKey === 'deadlift' ? '데드리프트' : '오버헤드프레스'
+        //   } 1RM: ${newOneRM}kg!`, 
+        //   { duration: 3000 }
+        // );
         
         console.log(`1RM 업데이트 성공: ${exerciseKey} = ${newOneRM}kg`);
       } catch (error) {
