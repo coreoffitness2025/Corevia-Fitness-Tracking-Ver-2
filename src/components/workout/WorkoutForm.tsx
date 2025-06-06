@@ -890,6 +890,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   };
 
+  // 메인 운동 타입에 따른 운동 이름 반환 함수
+  const getMainExerciseName = (exerciseType: MainExerciseType): string => {
+    const exercise = mainExerciseOptions[part].find(ex => ex.value === exerciseType);
+    return exercise?.label || '';
+  };
+
   // 최근 운동 기록 가져오기
   const fetchLatestWorkout = async (
     exercisePart: ExercisePart, 
@@ -906,8 +912,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         workoutsCollection,
         where('userId', '==', userProfile.uid),
         where('part', '==', exercisePart),
-        orderBy('date', 'desc'),
-        limit(1)
+        orderBy('date', 'desc')
+        // limit(1) 제거 - 모든 기록을 가져오도록 수정
       );
       
       const snapshot = await getDocs(q);
