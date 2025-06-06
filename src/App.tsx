@@ -25,6 +25,7 @@ import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 // import OneRmCalculatorPage from './pages/OneRmCalculatorPage';
 import LegalPage from './pages/LegalPage';
+import { BannerAd, AppOpenAd } from './components/ads';
 
 // 플랫폼 독립적인 라우트 설정 (Web/Native 모두 사용 가능한 구조)
 export interface AppRoute {
@@ -179,6 +180,10 @@ const App: React.FC = () => {
     <Router>
       <AppProviders>
         <AppContent />
+        {/* 앱 오픈 광고 */}
+        <AppOpenAd showOnMount={true} />
+        {/* 배너 광고 */}
+        <BannerAd />
       </AppProviders>
     </Router>
   );

@@ -1,5 +1,8 @@
 import { AdMob, BannerAdOptions, BannerAdSize, BannerAdPosition, InterstitialAdOptions, RewardAdOptions } from '@capacitor-community/admob';
 import { isNativePlatform } from './capacitorUtils';
+import { Capacitor } from '@capacitor/core';
+import { RewardAdPluginEvents, AdMobRewardItem, AdLoadInfo, InterstitialAdPluginEvents, BannerAdPluginEvents } from '@capacitor-community/admob';
+import { initializeAdMob as initAdMobService } from '../services/admobService';
 
 // AdMob 설정 (앱 등록 전 테스트용)
 export const ADMOB_CONFIG = {
@@ -20,23 +23,22 @@ export const ADMOB_CONFIG = {
   IS_TESTING: true, // 실제 배포 시 false로 변경
 };
 
-// AdMob 초기화
-export const initializeAdMob = async (): Promise<void> => {
+/**
+ * AdMob 초기화
+ */
+export const initializeAdMob = async (): Promise<boolean> => {
+  if (!Capacitor.isNativePlatform()) {
+    // 웹 환경에서는 초기화를 수행하지 않음
+    return false;
+  }
+
   try {
-    if (!isNativePlatform()) {
-      console.log('AdMob는 네이티브 플랫폼에서만 지원됩니다.');
-      return;
-    }
-
-    await AdMob.initialize({
-      requestTrackingAuthorization: true,
-      testingDevices: ['YOUR_TESTING_DEVICE_ID'], // 테스트용 디바이스 ID
-      initializeForTesting: true, // 개발 중에는 true로 설정
-    });
-
-    console.log('AdMob 초기화 완료');
+    // admobService의 초기화 함수 사용
+    await initAdMobService();
+    return true;
   } catch (error) {
-    console.error('AdMob 초기화 실패:', error);
+    console.error('[AdMobUtils] 초기화 실패:', error);
+    return false;
   }
 };
 
@@ -145,34 +147,54 @@ export const updateAdMobToProduction = (productionIds: {
   console.log('AdMob을 실제 광고 모드로 변경했습니다:', productionIds);
 };
 
-// 광고 이벤트 리스너 설정
+/**
+ * AdMob 이벤트 리스너 설정
+ */
 export const setupAdMobListeners = (): void => {
-  if (!isNativePlatform()) return;
+  if (!Capacitor.isNativePlatform()) {
+    return;
+  }
 
-  // 배너 광고 이벤트
-  AdMob.addListener('bannerAdLoaded', () => {
-    console.log('배너 광고 로드됨');
-  });
+  try {
+    // 배너 광고 이벤트
+    AdMob.addListener(BannerAdPluginEvents.SizeChanged, (info: AdLoadInfo) => {
+      console.log('[AdMobUtils] 배너 크기 변경:', info.size);
+    });
 
-  AdMob.addListener('bannerAdFailedToLoad', (error) => {
-    console.error('배너 광고 로드 실패:', error);
-  });
+    AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+      console.log('[AdMobUtils] 배너 광고 로드됨');
+    });
 
-  // 전면 광고 이벤트
-  AdMob.addListener('interstitialAdLoaded', () => {
-    console.log('전면 광고 로드됨');
-  });
+    AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (info: AdLoadInfo) => {
+      console.error('[AdMobUtils] 배너 광고 로드 실패:', info.error);
+    });
 
-  AdMob.addListener('interstitialAdFailedToLoad', (error) => {
-    console.error('전면 광고 로드 실패:', error);
-  });
+    // 전면 광고 이벤트 (앱 오픈 및 네이티브 광고용)
+    AdMob.addListener(InterstitialAdPluginEvents.Loaded, (info: AdLoadInfo) => {
+      console.log('[AdMobUtils] 전면 광고 로드됨:', info);
+    });
 
-  // 보상형 광고 이벤트
-  AdMob.addListener('rewardedVideoAdLoaded', () => {
-    console.log('보상형 광고 로드됨');
-  });
+    AdMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (info: AdLoadInfo) => {
+      console.error('[AdMobUtils] 전면 광고 로드 실패:', info.error);
+    });
 
-  AdMob.addListener('rewardedVideoAdFailedToLoad', (error) => {
-    console.error('보상형 광고 로드 실패:', error);
-  });
+    AdMob.addListener(InterstitialAdPluginEvents.Showed, () => {
+      console.log('[AdMobUtils] 전면 광고 표시됨');
+    });
+
+    AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
+      console.log('[AdMobUtils] 전면 광고 닫힘');
+    });
+
+    // 보상형 광고 이벤트 (필요한 경우)
+    AdMob.addListener(RewardAdPluginEvents.Loaded, (info: AdLoadInfo) => {
+      console.log('[AdMobUtils] 보상형 광고 로드됨:', info);
+    });
+
+    AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward: AdMobRewardItem) => {
+      console.log('[AdMobUtils] 보상 획득:', reward);
+    });
+  } catch (error) {
+    console.error('[AdMobUtils] 이벤트 리스너 설정 실패:', error);
+  }
 }; 

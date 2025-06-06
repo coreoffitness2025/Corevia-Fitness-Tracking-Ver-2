@@ -48,7 +48,11 @@ const config: CapacitorConfig = {
       initialize: true,
       autoRequestConsent: true,
       tagForChildDirectedTreatment: false,
-      tagForUnderAgeOfConsent: false
+      tagForUnderAgeOfConsent: false,
+      applicationID: {
+        android: 'ca-app-pub-2952925573999681~7155228371',
+        ios: 'ca-app-pub-2952925573999681~7155228371'
+      }
     }
   },
   android: {
