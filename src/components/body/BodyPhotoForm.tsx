@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { saveBodyPhotoRecord, saveFoodImage, BodyPhotoRecord } from '../../utils/indexedDB';
 import Button from '../common/Button';
-import { Camera, User, Scale, Percent, Zap, Plus, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { Plus, X, Camera, Image as ImageIcon } from 'lucide-react';
+import { saveBodyPhotoRecord, BodyPhotoRecord } from '../../services/bodyService';
+import { saveFoodImage } from '../../services/foodService';
+import { takePhoto, pickPhotoFromGallery, triggerHapticFeedback } from '../../utils/capacitorUtils';
 
 interface BodyPhotoFormProps {
   onSuccess?: () => void;
@@ -21,19 +23,75 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
-      if (file.type.startsWith('image/')) {
+      setSelectedFile(file);
+      const fileReader = new FileReader();
+      fileReader.onload = () => {
+        setPreviewUrl(fileReader.result as string);
+      };
+      fileReader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 카메라로 사진 촬영
+  const handleCameraCapture = async () => {
+    try {
+      // 햅틱 피드백
+      await triggerHapticFeedback('light');
+      
+      // Capacitor 네이티브 카메라 또는 웹 카메라 사용
+      const photoDataUrl = await takePhoto();
+      
+      if (photoDataUrl) {
+        setPreviewUrl(photoDataUrl);
+        
+        // dataURL을 Blob으로 변환하여 selectedFile에 저장
+        const response = await fetch(photoDataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
         setSelectedFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setPreviewUrl(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        toast.error('이미지 파일만 선택할 수 있습니다.');
+        
+        toast.success('사진이 촬영되었습니다!');
       }
+    } catch (error) {
+      console.error('카메라 촬영 실패:', error);
+      toast.error('카메라 촬영 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 갤러리에서 사진 선택
+  const handleGallerySelect = async () => {
+    try {
+      // 햅틱 피드백
+      await triggerHapticFeedback('light');
+      
+      // Capacitor 네이티브 갤러리 또는 웹 파일 선택 사용
+      const photoDataUrl = await pickPhotoFromGallery();
+      
+      if (photoDataUrl) {
+        setPreviewUrl(photoDataUrl);
+        
+        // dataURL을 Blob으로 변환하여 selectedFile에 저장
+        const response = await fetch(photoDataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
+        setSelectedFile(file);
+        
+        toast.success('사진이 선택되었습니다!');
+      }
+    } catch (error) {
+      console.error('갤러리 선택 실패:', error);
+      toast.error('갤러리에서 사진 선택 중 오류가 발생했습니다.');
     }
   };
 
@@ -97,153 +155,142 @@ const BodyPhotoForm: React.FC<BodyPhotoFormProps> = ({ onSuccess, onCancel }) =>
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <div className="flex items-center mb-6">
-        <User size={28} className="text-purple-500 mr-3" />
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">바디 체크</h2>
-      </div>
-
-      {/* 중요 안내 */}
-      <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-        <div className="flex items-start">
-          <Info size={20} className="text-purple-600 dark:text-purple-400 mr-2 flex-shrink-0 mt-0.5" />
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">바디 체크 기록</h2>
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <h4 className="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-1">
-              개인정보 보호
-            </h4>
-            <p className="text-sm text-purple-700 dark:text-purple-300">
-              바디 체크 사진은 민감한 개인정보로, <strong>오직 사용자의 기기에만 로컬 저장</strong>됩니다. 
-              서버나 클라우드에 업로드되지 않으며, 다른 기기에서는 확인할 수 없습니다.
-            </p>
+            <label htmlFor="weight" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              체중 (kg)
+            </label>
+            <input
+              type="number"
+              id="weight"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="예: 70.5"
+              step="0.1"
+              min="30"
+              max="200"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="bodyFat" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              체지방률 (%)
+            </label>
+            <input
+              type="number"
+              id="bodyFat"
+              value={bodyFat}
+              onChange={(e) => setBodyFat(e.target.value)}
+              placeholder="예: 15.2"
+              step="0.1"
+              min="3"
+              max="50"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="muscleMass" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              근육량 (kg)
+            </label>
+            <input
+              type="number"
+              id="muscleMass"
+              value={muscleMass}
+              onChange={(e) => setMuscleMass(e.target.value)}
+              placeholder="예: 35.8"
+              step="0.1"
+              min="10"
+              max="100"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
         </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 사진 선택 */}
+        
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            메모 (선택사항)
+          </label>
+          <textarea
+            id="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="오늘 상태, 컨디션, 목표 등을 기록하세요..."
+            rows={3}
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <Camera size={16} className="inline mr-1" />
-            바디 체크 사진 *
+            바디 체크 사진
           </label>
-          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+          
+          {/* 이미지 업로드 영역 */}
+          <div className="mt-2 flex justify-center flex-col items-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
             {previewUrl ? (
-              <div className="space-y-4">
+              <div className="relative w-full">
                 <img 
                   src={previewUrl} 
-                  alt="바디 체크 사진 미리보기" 
-                  className="mx-auto max-h-64 rounded-lg object-cover"
+                  alt="미리보기" 
+                  className="mx-auto h-64 object-contain rounded-lg"
                 />
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                 >
-                  다른 사진 선택
-                </Button>
+                  <X size={20} />
+                </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <Camera size={48} className="mx-auto text-gray-400" />
-                <div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">
-                    바디 체크 사진을 선택해주세요
-                  </p>
-                  <Button
+              <div className="text-center p-4">
+                <div className="flex justify-center mb-4 space-x-4">
+                  {/* 카메라 버튼 */}
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handleCameraCapture}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
                   >
-                    사진 선택
-                  </Button>
+                    <Camera size={20} className="mr-2" />
+                    사진 촬영
+                  </button>
+                  
+                  {/* 갤러리 버튼 */}
+                  <button
+                    type="button"
+                    onClick={handleGallerySelect}
+                    className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center"
+                  >
+                    <ImageIcon size={20} className="mr-2" />
+                    갤러리에서 선택
+                  </button>
                 </div>
+                
+                {/* 기존 파일 업로드 방식도 유지 */}
+                <div className="text-gray-500 dark:text-gray-400 text-sm">
+                  또는
+                </div>
+                <label className="mt-2 cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="sr-only"
+                  />
+                  파일 선택
+                </label>
               </div>
             )}
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
         </div>
-
-        {/* 체중 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <Scale size={16} className="inline mr-1" />
-            체중 (kg) <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
-          </label>
-          <input
-            type="number"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            placeholder="예: 70.5"
-            step="0.1"
-            min="20"
-            max="200"
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        {/* 체지방률 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <Percent size={16} className="inline mr-1" />
-            체지방률 (%) <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
-          </label>
-          <input
-            type="number"
-            value={bodyFat}
-            onChange={(e) => setBodyFat(e.target.value)}
-            placeholder="예: 15.2"
-            step="0.1"
-            min="3"
-            max="50"
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        {/* 근육량 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <Zap size={16} className="inline mr-1" />
-            근육량 (kg) <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
-          </label>
-          <input
-            type="number"
-            value={muscleMass}
-            onChange={(e) => setMuscleMass(e.target.value)}
-            placeholder="예: 35.8"
-            step="0.1"
-            min="10"
-            max="100"
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        {/* 메모 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            메모 <span className="text-gray-500 dark:text-gray-400">(선택사항)</span>
-          </label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="운동 상태, 컨디션, 목표 등을 기록하세요..."
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white resize-none"
-            rows={4}
-            maxLength={500}
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {notes.length}/500자
-          </p>
-        </div>
-
-        {/* 버튼들 */}
+        
         <div className="flex gap-3">
           <Button
             type="submit"

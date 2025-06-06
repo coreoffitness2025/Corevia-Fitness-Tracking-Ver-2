@@ -2,9 +2,11 @@
 import React, { useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initializeAdMob, setupAdMobListeners } from './utils/adMobUtils';
+import { getCloudSyncSettings, syncAllData } from './services/syncService';
+import { toast } from 'react-hot-toast';
 
 // 보호된 라우트 컴포넌트 import
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -112,7 +114,10 @@ const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   );
 };
 
-const App: React.FC = () => {
+// 앱 내부 컴포넌트 - 권한 관련 기능과 자동 동기화 처리
+const AppContent: React.FC = () => {
+  const { currentUser } = useAuth();
+
   useEffect(() => {
     // 앱 시작 시 AdMob 초기화
     const initAds = async () => {
@@ -123,12 +128,41 @@ const App: React.FC = () => {
     initAds();
   }, []);
 
+  // 자동 데이터 동기화 처리
+  useEffect(() => {
+    const checkAndSyncData = async () => {
+      if (currentUser?.uid) {
+        try {
+          // 사용자의 동기화 설정 가져오기
+          const syncSettings = await getCloudSyncSettings(currentUser.uid);
+          
+          // 자동 동기화가 활성화되어 있으면 데이터 동기화 실행
+          if (syncSettings.enabled && syncSettings.autoSync) {
+            toast.loading('데이터 동기화 중...', { id: 'auto-sync' });
+            await syncAllData(currentUser.uid);
+            toast.success('데이터 동기화 완료', { id: 'auto-sync' });
+          }
+        } catch (error) {
+          console.error('자동 동기화 오류:', error);
+        }
+      }
+    };
+    
+    checkAndSyncData();
+  }, [currentUser?.uid]);
+
+  return (
+    <Routes>
+      {renderRoutes(appRoutes)}
+    </Routes>
+  );
+};
+
+const App: React.FC = () => {
   return (
     <Router>
       <AppProviders>
-        <Routes>
-          {renderRoutes(appRoutes)}
-        </Routes>
+        <AppContent />
       </AppProviders>
     </Router>
   );
