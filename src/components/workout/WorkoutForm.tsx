@@ -1681,68 +1681,60 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             <CardTitle className="text-xl font-bold text-gray-900 dark:text-white mb-6">준비 및 웜업</CardTitle>
             
             <div className="space-y-6">
-              {/* 스트레칭 섹션 */}
+              {/* 스트레칭/웜업 통합 섹션 */}
               <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-800 dark:text-white">스트레칭</h3>
-                  <Button
-                    size="sm"
-                    variant={stretchingCompleted ? 'success' : 'primary'}
-                    onClick={() => setStretchingCompleted(!stretchingCompleted)}
-                    className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
-                      stretchingCompleted 
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
-                    }`}
-                    aria-label={stretchingCompleted ? "스트레칭 완료" : "스트레칭 미완료"}
-                  >
-                    {stretchingCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
-                  </Button>
+                  <h3 className="font-semibold text-gray-800 dark:text-white">스트레칭 및 웜업</h3>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant={warmupCompleted ? 'success' : 'primary'}
+                      onClick={() => setWarmupCompleted(!warmupCompleted)}
+                      className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
+                        warmupCompleted 
+                          ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
+                          : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                      }`}
+                      aria-label={warmupCompleted ? "웜업 완료" : "웜업 미완료"}
+                    >
+                      {warmupCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={stretchingCompleted ? 'success' : 'primary'}
+                      onClick={() => setStretchingCompleted(!stretchingCompleted)}
+                      className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
+                        stretchingCompleted 
+                          ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
+                          : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                      }`}
+                      aria-label={stretchingCompleted ? "스트레칭 완료" : "스트레칭 미완료"}
+                    >
+                      {stretchingCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                  운동 전 충분한 스트레칭을 수행해주세요.
+                  본 운동 전 스트레칭과 웜업을 충분히 수행해주세요.
                 </p>
               </div>
 
-              {/* 웜업 섹션 */}
-              <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-800 dark:text-white">웜업</h3>
-                  <Button
-                    size="sm"
-                    variant={warmupCompleted ? 'success' : 'primary'}
-                    onClick={() => setWarmupCompleted(!warmupCompleted)}
-                    className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all duration-200 shadow-lg ${
-                      warmupCompleted 
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transform scale-105'
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
-                    }`}
-                    aria-label={warmupCompleted ? "웜업 완료" : "웜업 미완료"}
-                  >
-                    {warmupCompleted ? <CheckCircle size={24} /> : <Square size={24} />}
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                  본 운동 전에 충분한 웜업을 수행해주세요.
-                </p>
-
-                {/* 스트레칭/웜업 메모 */}
-                <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800">
-                  <label
-                    htmlFor="stretchingNotes"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  >
-                    스트레칭/웜업 메모 (선택사항)
-                  </label>
-                  <textarea
-                    id="stretchingNotes"
-                    value={stretchingNotes}
-                    onChange={(e) => setStretchingNotes(e.target.value)}
-                    rows={2}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="스트레칭/웜업 관련 메모를 남겨보세요..."
-                  />
-                </div>
+              {/* 스트레칭/웜업 메모 - 별도 섹션으로 분리 */}
+              <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800">
+                <label
+                  htmlFor="stretchingNotes"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  스트레칭/웜업 메모 (선택사항)
+                </label>
+                <textarea
+                  id="stretchingNotes"
+                  value={stretchingNotes}
+                  onChange={(e) => setStretchingNotes(e.target.value)}
+                  rows={2}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="스트레칭/웜업 관련 메모를 남겨보세요..."
+                />
               </div>
             </div>
           </CardSection>

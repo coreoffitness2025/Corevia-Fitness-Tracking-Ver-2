@@ -17,6 +17,7 @@ import BodyProgressView from '../components/body/BodyProgressView';
 import { toast } from 'react-hot-toast';
 import WeightRecordForm from '../components/body/WeightRecordForm';
 import { formatDate, isToday } from '../utils/dateUtils';
+import { getBodyPhotoRecords } from '../services/bodyService';
 
 // 어제 날짜 구하기 함수
 const getYesterdayDate = () => {
@@ -103,6 +104,8 @@ const HomePage = () => {
     weight: number;
   }>>([]);
   const [isLoadingWeightHistory, setIsLoadingWeightHistory] = useState(false);
+  const [bodyPhotoRecords, setBodyPhotoRecords] = useState<any[]>([]);
+  const [isLoadingBodyPhotos, setIsLoadingBodyPhotos] = useState(false);
   
   const navigate = useNavigate();
 
@@ -160,8 +163,33 @@ const HomePage = () => {
   // 신체 사진 기록 성공 핸들러
   const handleBodyPhotoSuccess = () => {
     setShowBodyPhotoModal(false);
-    toast.success('바디 체크가 성공적으로 기록되었습니다.');
+    // 토스트 메시지 제거 (이미 BodyPhotoForm 컴포넌트에서 표시됨)
+    // 바디 체크 기록을 다시 불러옴
+    fetchBodyPhotoRecords();
   };
+
+  // 바디 체크 기록 불러오기
+  const fetchBodyPhotoRecords = async () => {
+    if (!userProfile) return;
+    
+    try {
+      setIsLoadingBodyPhotos(true);
+      const records = await getBodyPhotoRecords(userProfile.uid);
+      console.log('바디 체크 기록 로드 완료:', records);
+      setBodyPhotoRecords(records);
+    } catch (error) {
+      console.error('바디 체크 기록 로드 실패:', error);
+    } finally {
+      setIsLoadingBodyPhotos(false);
+    }
+  };
+
+  // 페이지 로드 시 바디 체크 기록 불러오기
+  useEffect(() => {
+    if (userProfile) {
+      fetchBodyPhotoRecords();
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -322,7 +350,7 @@ const HomePage = () => {
           안녕하세요, {userProfile.displayName || '회원님'}!
         </h1>
         <p className="text-primary-100 dark:text-primary-200 text-lg">
-          오늘도 건강한 하루 보내세요. Corevia가 함께합니다.
+          오늘도 건강한 하루 보내세요. Corevia가 함께합니다. 
         </p>
       </div>
 
@@ -434,7 +462,7 @@ const HomePage = () => {
                       userProfile?.fitnessGoal === 'gain' ? '체중 증가' : '설정되지 않음'}
               </p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
-                💡 바디 체크는 로컬 저장소에만 보관되어 개인정보를 안전하게 보호합니다
+                💡 바디 체크는 개인 정보 보호를 위해 외부 저장소가 아닌, 로컬 저장소(사용자 기기)에만 보관됩니다.
               </p>
             </div>
             <div className="flex flex-col gap-3 w-full md:w-auto">

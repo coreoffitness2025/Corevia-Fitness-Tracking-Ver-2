@@ -365,7 +365,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 <option value="male">남성</option>
                 <option value="female">여성</option>
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
+              <div className="absolute right-0 flex items-center px-2 pointer-events-none" style={{top: '50%', transform: 'translateY(-50%)'}}>
                 <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -388,7 +388,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 <option value="moderate">보통 활동 (주 3-5회 운동)</option>
                 <option value="active">활동적 (주 6-7회 운동)</option>
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
+              <div className="absolute right-0 flex items-center px-2 pointer-events-none" style={{top: '50%', transform: 'translateY(-50%)'}}>
                 <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -409,7 +409,7 @@ const PersonalizationModal = ({ isOpen, onClose, onSave, userProfile }: Personal
                 <option value="loss">체중 감소</option>
                 <option value="gain">체중 증가</option>
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none mt-1">
+              <div className="absolute right-0 flex items-center px-2 pointer-events-none" style={{top: '50%', transform: 'translateY(-50%)'}}>
                 <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
