@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -143,6 +143,7 @@ const WorkoutGraph: React.FC = () => {
   const [selectedSetConfig, setSelectedSetConfig] = useState<string>('all');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const chartRef = useRef<any>(null); // Chart.js 인스턴스 참조 추가
   
   // 실제 데이터를 저장할 상태
   const [workoutData, setWorkoutData] = useState<Workout[]>([]);
@@ -185,8 +186,19 @@ const WorkoutGraph: React.FC = () => {
               lineWidth: 2,
               pointStyle: dataset.pointStyle,
               datasetIndex: index,
-              hidden: false
+              hidden: !chart.isDatasetVisible(index) // 현재 데이터셋 표시 상태 반영
             }));
+          }
+        },
+        onClick: (e, legendItem, legend) => {
+          const index = legendItem.datasetIndex;
+          const chart = legend.chart;
+          
+          if (index !== undefined) {
+            // 데이터셋 표시/숨김 토글
+            const meta = chart.getDatasetMeta(index);
+            meta.hidden = meta.hidden === null ? !chart.isDatasetVisible(index) : null;
+            chart.update();
           }
         }
       },
@@ -404,8 +416,9 @@ const WorkoutGraph: React.FC = () => {
         if (hasEightyKg && workout.part === 'leg') {
           console.log(`[WorkoutGraph] 🔍 80kg 데이터 세트 구성 검사 시작: 세트수=${sets.length}, 반복횟수=[${sets.map(s => s.reps).join(', ')}]`);
         }
-        
+
         let setConfig = '';
+        // 원래 코드로 복원 - 표준 세트 구성만 분류
         if (sets.length === 5 && sets.every(set => set.reps === 5)) setConfig = '5x5';
         else if (sets.length === 3 && sets.every(set => set.reps === 6)) setConfig = '6x3';
         else if (sets.length === 5 && sets.every(set => set.reps === 10)) setConfig = '10x5';
@@ -522,7 +535,7 @@ const WorkoutGraph: React.FC = () => {
             pointHoverBackgroundColor: configColor.background, 
             pointHitRadius: 10, 
             id: datasetId, 
-            spanGaps: false 
+            spanGaps: true // 빈 데이터 구간에서도 선 연결
           });
         });
       });
@@ -874,6 +887,16 @@ const WorkoutGraph: React.FC = () => {
     }
   }, [selectedPart, filteredData]);
 
+  // 커스텀 범례 클릭 핸들러 함수 추가
+  const toggleDatasetVisibility = (datasetIndex: number) => {
+    if (!chartRef.current) return;
+    
+    const chart = chartRef.current;
+    const meta = chart.getDatasetMeta(datasetIndex);
+    meta.hidden = meta.hidden === null ? !chart.isDatasetVisible(datasetIndex) : null;
+    chart.update();
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -991,7 +1014,11 @@ const WorkoutGraph: React.FC = () => {
               {chartData.datasets && chartData.datasets.length > 0 && (
                 <div className="mb-4 flex flex-wrap gap-4 justify-center">
                   {chartData.datasets.map((dataset: any, index: number) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div 
+                      key={index} 
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded transition-colors"
+                      onClick={() => toggleDatasetVisibility(index)}
+                    >
                       <div 
                         className="w-3 h-3"
                         style={{
@@ -1012,7 +1039,11 @@ const WorkoutGraph: React.FC = () => {
                 </div>
               )}
               <div className="relative" style={{ height: '480px' }}>
-                <Line options={dynamicChartOptions} data={chartData} />
+                <Line 
+                  options={dynamicChartOptions} 
+                  data={chartData}
+                  ref={chartRef} // Chart.js 인스턴스에 대한 참조 추가
+                />
               </div>
             </div>
           ) : (
