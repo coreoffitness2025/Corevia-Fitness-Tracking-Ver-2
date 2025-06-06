@@ -652,6 +652,13 @@ const WorkoutList: React.FC = () => {
                         <span className="font-medium">{workout.startTime}</span>
                       </div>
                     )}
+                    
+                    {workout.lastMealTime && (
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <span className="mr-1">마지막 식사:</span>
+                        <span className="font-medium">{workout.lastMealTime}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 

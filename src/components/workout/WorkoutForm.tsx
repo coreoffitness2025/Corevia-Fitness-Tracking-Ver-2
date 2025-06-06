@@ -128,6 +128,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     const now = new Date();
     return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   });
+  const [lastMealTime, setLastMealTime] = useState<string>("");
 
   // 통합 타이머 상태
   const [globalTimer, setGlobalTimer] = useState<{
@@ -1177,7 +1178,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         accessoryNames: cleanAccessoryExercises.map((ex: { name: string }) => ex.name), // ex 타입 명시
         sleepHours,
         condition,
-        startTime
+        startTime,
+        lastMealTime: lastMealTime || undefined
       };
 
       console.log('WorkoutForm: Attempting to save session data to Firestore. Data:', JSON.stringify(sessionData, null, 2));
@@ -1441,7 +1443,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           </div>
           
           {/* 운동 시작 시간 */}
-          <div>
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               운동 시작 시간
             </label>
@@ -1451,6 +1453,22 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+          </div>
+          
+          {/* 마지막 식사 시간 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              마지막 식사 시간 (선택)
+            </label>
+            <div className="flex items-center">
+              <input
+                type="time"
+                value={lastMealTime}
+                onChange={(e) => setLastMealTime(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="마지막 식사 시간"
               />
             </div>
           </div>
