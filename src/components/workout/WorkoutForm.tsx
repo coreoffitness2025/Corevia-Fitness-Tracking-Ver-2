@@ -919,8 +919,26 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       const snapshot = await getDocs(q);
       
       if (!snapshot.empty) {
-        const latestWorkout = snapshot.docs[0].data();
-        console.log(`[WorkoutForm] 최근 운동 기록 찾음:`, latestWorkout);
+        // 모든 기록을 배열로 변환
+        const workouts = snapshot.docs.map(doc => doc.data());
+        // 가장 최근 기록 (정렬되어 있으므로 첫 번째 항목)
+        const latestWorkout = workouts[0];
+        console.log(`[WorkoutForm] 최근 운동 기록 ${workouts.length}개 찾음. 첫 번째 기록:`, latestWorkout);
+        
+        // 동일한 운동에 대한 모든 기록을 로그로 출력
+        if (workouts.length > 1) {
+          console.log(`[WorkoutForm] 총 ${workouts.length}개의 기록이 있습니다:`);
+          workouts.forEach((workout, index) => {
+            console.log(`[WorkoutForm] 기록 #${index + 1}:`, 
+              workout.date instanceof Date 
+                ? workout.date.toLocaleString() 
+                : new Date((workout.date as any).seconds * 1000).toLocaleString(),
+              workout.mainExercise?.name,
+              '무게:', workout.mainExercise?.sets[0]?.weight,
+              '결과:', workout.isAllSuccess ? '성공' : '실패'
+            );
+          });
+        }
         
         // 스트레칭/웜업 관련 메모 로드
         if (latestWorkout.stretchingNotes) {
