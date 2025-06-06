@@ -18,12 +18,10 @@ const RegisterPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>(''); // 디버깅 정보
 
   // 인증 상태 변경 감지
   useEffect(() => {
     console.log('Authentication state changed:', isAuthenticated, currentUser?.uid);
-    setDebugInfo(prev => `${prev}\n인증 상태: ${isAuthenticated ? '로그인됨' : '로그인되지 않음'}\n사용자 ID: ${currentUser?.uid || 'none'}`);
     
     // 인증 상태가 변경되고 로그인되었으면 리디렉션
     if (isAuthenticated && currentUser) {
@@ -37,13 +35,11 @@ const RegisterPage: React.FC = () => {
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
-        setDebugInfo('Google 리디렉션 처리 중...');
         const result = await getGoogleRedirectResult();
         
         if (result && result.user) {
           // 사용자가 리디렉션으로 로그인에 성공했을 때
           console.log('Google 리디렉션 회원가입 성공:', result.user);
-          setDebugInfo(prev => `${prev}\nGoogle 로그인 성공: ${result.user.uid}`);
           
           // Firestore에 사용자 정보가 없으면 기본 정보로 저장
           const userDocRef = doc(db, 'users', result.user.uid);
@@ -60,17 +56,13 @@ const RegisterPage: React.FC = () => {
             
             await setDoc(userDocRef, userProfileData);
             toast.success('Google 계정으로 회원가입이 완료되었습니다.');
-            setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
           }
           
           // 여기서는 navigate를 호출하지 않고 인증 상태 변경을 감지하는 useEffect에서 처리
-        } else {
-          setDebugInfo(prev => `${prev}\nGoogle 로그인 결과 없음`);
         }
       } catch (error: any) {
         console.error('리디렉션 결과 처리 오류:', error);
         toast.error('Google 로그인 처리 중 오류가 발생했습니다.');
-        setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
         setLoading(false);
       }
     };
@@ -80,7 +72,6 @@ const RegisterPage: React.FC = () => {
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
-    setDebugInfo('Google 로그인 시작...');
     try {
       await signInWithGoogle();
       // 리디렉션 방식이므로 페이지가 새로고침됨
@@ -88,7 +79,6 @@ const RegisterPage: React.FC = () => {
     } catch (error: any) {
       console.error('Google 회원가입 오류:', error);
       toast.error('Google 계정으로 회원가입 중 오류가 발생했습니다.');
-      setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
       setLoading(false);
     }
   };
@@ -108,17 +98,14 @@ const RegisterPage: React.FC = () => {
 
     try {
       setLoading(true);
-      setDebugInfo('이메일/비밀번호 회원가입 시작...');
       
       // 회원가입
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setDebugInfo(prev => `${prev}\n회원가입 성공: ${userCredential.user.uid}`);
       
       // 사용자 프로필 업데이트
       await updateProfile(userCredential.user, {
         displayName: displayName
       });
-      setDebugInfo(prev => `${prev}\n프로필 업데이트 완료`);
 
       // Firestore에 사용자 기본 정보 저장
       const userProfileData = {
@@ -129,18 +116,15 @@ const RegisterPage: React.FC = () => {
       } as UserProfile;
       
       await setDoc(doc(db, 'users', userCredential.user.uid), userProfileData);
-      setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
 
       toast.success('회원가입이 완료되었습니다.');
       
       // 회원가입 후 명시적으로 다시 로그인하여 인증 상태 확인
       await signInWithEmailAndPassword(auth, email, password);
-      setDebugInfo(prev => `${prev}\n로그인 시도 완료`);
       
       // 인증 상태 변경을 감지하는 useEffect에서 리디렉션 처리
     } catch (error: any) {
       console.error('Error registering user:', error);
-      setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
       
       if (error.code === 'auth/email-already-in-use') {
         toast.error('이미 사용 중인 이메일입니다.');
@@ -170,14 +154,6 @@ const RegisterPage: React.FC = () => {
               </button>
             </p>
           </div>
-          
-          {/* 디버깅 정보 */}
-          {debugInfo && (
-            <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">
-              <h3 className="font-bold mb-1">디버깅 정보:</h3>
-              {debugInfo}
-            </div>
-          )}
           
           {/* 구글 회원가입 버튼 */}
           <div className="mt-6">

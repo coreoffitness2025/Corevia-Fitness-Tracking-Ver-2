@@ -307,12 +307,10 @@ export default function LoginPage() {
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>(''); // 디버깅 정보
 
   // 인증 상태 변경 감지
   useEffect(() => {
     console.log('Authentication state changed:', isAuthenticated, currentUser?.uid);
-    setDebugInfo(prev => `${prev}\n인증 상태: ${isAuthenticated ? '로그인됨' : '로그인되지 않음'}\n사용자 ID: ${currentUser?.uid || 'none'}`);
     
     if (isAuthenticated && currentUser) {
       // 로그인 상태 확인 후 즉시 개인화 필요 여부 확인
@@ -326,13 +324,11 @@ export default function LoginPage() {
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
-        setDebugInfo('Google 리디렉션 처리 중...');
         const result = await getGoogleRedirectResult();
         
         if (result && result.user) {
           // 사용자가 리디렉션으로 로그인에 성공했을 때
           console.log('Google 리디렉션 로그인 성공:', result.user);
-          setDebugInfo(prev => `${prev}\nGoogle 로그인 성공: ${result.user.uid}`);
           
           // Firestore에 사용자 정보가 없으면 기본 정보로 저장
           const userDocRef = doc(db, 'users', result.user.uid);
@@ -348,21 +344,16 @@ export default function LoginPage() {
             } as UserProfile;
             
             await setDoc(userDocRef, userProfileData);
-            setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
           }
           
           // 로그인 성공 메시지
           toast.success('Google 로그인이 완료되었습니다.');
-          setDebugInfo(prev => `${prev}\n로그인 완료 - AuthContext 상태 업데이트 대기 중`);
           
           // 로그인 후 처리는 isAuthenticated가 변경될 때 처리됨
-        } else {
-          setDebugInfo(prev => `${prev}\nGoogle 로그인 결과 없음`);
         }
       } catch (error: any) {
         console.error('리디렉션 결과 처리 오류:', error);
         setError('Google 로그인 처리 중 오류가 발생했습니다.');
-        setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
         setIsLoading(false);
       }
     };
@@ -375,41 +366,34 @@ export default function LoginPage() {
     if (!currentUser) return;
     
     try {
-      setDebugInfo(prev => `${prev}\n개인화 설정 확인 중...`);
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
       
       if (userDoc.exists()) {
         const userData = userDoc.data() as UserProfile;
-        setDebugInfo(prev => `${prev}\n사용자 데이터 로드됨`);
         
         // 중요 필드가 없으면 개인화 필요
         if (!userData.height || !userData.weight || !userData.age) {
           console.log('개인화 필요: 모달 표시됨');
           setUserProfile(userData);
           setIsPersonalizationOpen(true);
-          setDebugInfo(prev => `${prev}\n개인화 필요: 모달 표시됨`);
         } else {
           // 개인화 완료된 사용자는 홈으로
-          setDebugInfo(prev => `${prev}\n개인화 완료: 홈으로 이동`);
           navigate('/');
         }
       } else {
         // 문서가 없으면 개인화 필요
         console.log('사용자 문서 없음: 개인화 모달 표시됨');
         setIsPersonalizationOpen(true);
-        setDebugInfo(prev => `${prev}\n사용자 문서 없음: 개인화 모달 표시됨`);
       }
     } catch (error: any) {
       console.error('Error checking personalization:', error);
       setError('사용자 데이터를 확인하는 중 오류가 발생했습니다.');
-      setDebugInfo(prev => `${prev}\n개인화 확인 오류: ${error.message || '알 수 없는 오류'}`);
     }
   };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
-    setDebugInfo('Google 로그인 시작...');
     
     try {
       // Cross-Origin-Opener-Policy 관련 오류 방지를 위한 설정
@@ -418,7 +402,6 @@ export default function LoginPage() {
       if (result && result.user) {
         // 사용자가 로그인에 성공했을 때
         console.log('Google 로그인 성공:', result.user.uid);
-        setDebugInfo(prev => `${prev}\nGoogle 로그인 성공: ${result.user.uid}`);
         
         try {
           // Firestore에 사용자 정보가 없으면 기본 정보로 저장
@@ -435,24 +418,19 @@ export default function LoginPage() {
             } as UserProfile;
             
             await setDoc(userDocRef, userProfileData);
-            setDebugInfo(prev => `${prev}\nFirestore에 사용자 정보 저장 완료`);
             
             // 사용자 정보가 없으므로 개인화 모달 표시
             setUserProfile(userProfileData);
             setIsPersonalizationOpen(true);
-            setDebugInfo(prev => `${prev}\n개인화 모달 표시됨: ${isPersonalizationOpen}`);
           } else {
             // 이미 정보가 있는 경우 개인화 필요 여부 확인
             const userData = userDoc.data() as UserProfile;
-            setDebugInfo(prev => `${prev}\n사용자 데이터 확인: 키-${userData.height || 'none'}, 몸무게-${userData.weight || 'none'}, 나이-${userData.age || 'none'}`);
             
             if (!userData.height || !userData.weight || !userData.age) {
               setUserProfile(userData);
               setIsPersonalizationOpen(true);
-              setDebugInfo(prev => `${prev}\n개인화 모달 표시됨: ${isPersonalizationOpen}`);
             } else {
               // 모든 데이터가 있으면 홈으로 이동
-              setDebugInfo(prev => `${prev}\n홈으로 이동`);
               navigate('/');
             }
           }
@@ -461,18 +439,15 @@ export default function LoginPage() {
           toast.success('Google 로그인이 완료되었습니다.');
         } catch (firestoreError: any) {
           console.error('Firestore 데이터 처리 중 오류:', firestoreError);
-          setDebugInfo(prev => `${prev}\nFirestore 오류: ${firestoreError.message || '알 수 없는 오류'}`);
           // 오류가 발생해도 사용자는 로그인된 상태이므로 홈으로 이동
           navigate('/');
         }
       } else {
         setError('Google 로그인에 실패했습니다.');
-        setDebugInfo(prev => `${prev}\nGoogle 로그인 결과 없음`);
       }
     } catch (error: any) {
       console.error('Google 로그인 오류:', error);
       setError('Google 로그인 중 오류가 발생했습니다.');
-      setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
     } finally {
       setIsLoading(false);
     }
@@ -481,31 +456,25 @@ export default function LoginPage() {
   const handleEmailLogin = async (email: string, password: string, rememberMe: boolean) => {
     setIsLoading(true);
     setError(null);
-    setDebugInfo('이메일 로그인 시작...');
     
     try {
       await signInWithEmail(email, password);
-      setDebugInfo(prev => `${prev}\n이메일 로그인 완료 - 인증 상태 업데이트 대기 중`);
       // Auth 컨텍스트의 useEffect가 로그인 상태를 감지하고 처리
     } catch (error: any) {
       console.error('이메일 로그인 오류:', error);
       setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-      setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
       setIsLoading(false);
     }
   };
 
   const handlePersonalizationSave = async (profile: Partial<UserProfile>) => {
     try {
-      setDebugInfo(prev => `${prev}\n개인화 정보 저장 중...`);
       await updateProfile(profile);
       setIsPersonalizationOpen(false);
-      setDebugInfo(prev => `${prev}\n개인화 저장 완료: 홈으로 이동`);
       navigate('/');
     } catch (error: any) {
       console.error('프로필 저장 오류:', error);
       setError('프로필 저장 중 오류가 발생했습니다.');
-      setDebugInfo(prev => `${prev}\n오류: ${error.message || '알 수 없는 오류'}`);
     }
   };
 
@@ -517,14 +486,6 @@ export default function LoginPage() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-        
-        {/* 디버깅 정보 */}
-        {debugInfo && (
-          <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">
-            <h3 className="font-bold mb-1">디버깅 정보:</h3>
-            {debugInfo}
           </div>
         )}
         
