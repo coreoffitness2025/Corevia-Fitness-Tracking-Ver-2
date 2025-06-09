@@ -6,7 +6,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../firebase/firebaseConfig';
 import LoadingSpinner, { LoadingScreen } from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
-import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Weight, Settings, X, Scale, Plus, Camera, User, BarChart3 } from 'lucide-react';
+import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Settings, X, Scale, Plus, Camera, User, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutSettings } from '../hooks/useWorkoutSettings';
 import Button from '../components/common/Button';
@@ -536,48 +536,6 @@ const HomePage = () => {
               >
                 변경하기
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 예상 1RM 표시 섹션 */}
-      <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-        <div className="flex items-center mb-4">
-          <Weight size={28} className="text-secondary-500 mr-3" />
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">현재 예상 1RM</h2>
-        </div>
-        <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
-              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">스쿼트</p>
-              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.squat || 0} kg</p>
-            </div>
-            
-            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
-              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">데드리프트</p>
-              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.deadlift || 0} kg</p>
-            </div>
-            
-            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
-              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">벤치프레스</p>
-              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.bench || 0} kg</p>
-            </div>
-            
-            <div className="text-center p-3 rounded-md bg-gray-100 dark:bg-gray-600 transition-all duration-300">
-              <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">오버헤드프레스</p>
-              <p className="text-2xl font-bold text-secondary-600 dark:text-secondary-400">{userProfile?.oneRepMax?.overheadPress || 0} kg</p>
-            </div>
-            
-            {/* 3대 합산 추가 */}
-            <div className="text-center p-3 rounded-md bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-800/40 dark:to-yellow-700/40 border-2 border-yellow-300 dark:border-yellow-600 transition-all duration-300">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200 font-bold">예상 3대</p>
-              <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-                {((userProfile?.oneRepMax?.squat || 0) + 
-                  (userProfile?.oneRepMax?.deadlift || 0) + 
-                  (userProfile?.oneRepMax?.bench || 0))} kg
-              </p>
-              <p className="text-xs text-yellow-700 dark:text-yellow-300">S+D+B</p>
             </div>
           </div>
         </div>
