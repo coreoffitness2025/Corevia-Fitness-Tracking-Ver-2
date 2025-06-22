@@ -19,14 +19,11 @@ const WorkoutList: React.FC = () => {
   const [sessions, setSessions] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [calendarDays, setCalendarDays] = useState<Date[]>([]);
-  const [yearOptions, setYearOptions] = useState<number[]>([]);
-  const [monthOptions, setMonthOptions] = useState<{value: number; label: string}[]>([]);
   const [workoutsByDate, setWorkoutsByDate] = useState<DateWorkoutMap>({});
   const [selectedWorkouts, setSelectedWorkouts] = useState<Workout[]>([]);
+  const captureRef = useRef<HTMLDivElement>(null);
   const [stampImage, setStampImage] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState<boolean>(false);
@@ -35,46 +32,6 @@ const WorkoutList: React.FC = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [dateWorkouts, setDateWorkouts] = useState<DateWorkoutMap>({});
   
-  // 현재 년월이 변경될 때 달력 일자 업데이트
-  useEffect(() => {
-    const days = generateCalendarDays(currentYear, currentMonth);
-    setCalendarDays(days);
-  }, [currentYear, currentMonth]);
-  
-  // 운동 기록 삭제 함수
-  const deleteWorkout = async (workoutId: string) => {
-    if (!currentUser || !workoutId) return;
-
-    try {
-      // Firestore에서 해당 ID의 문서 삭제
-      const sessionRef = doc(db, 'sessions', workoutId);
-      await deleteDoc(sessionRef);
-      
-      // 상태 업데이트
-      setSessions((prev: Workout[]) => prev.filter(session => session.id !== workoutId));
-      setSelectedWorkouts((prev: Workout[]) => prev.filter(workout => workout.id !== workoutId));
-      setWorkoutsByDate((prev: DateWorkoutMap) => {
-        const updated = { ...prev };
-        
-        // 모든 날짜에서 해당 ID의 workout 제거
-        Object.keys(updated).forEach(date => {
-          updated[date] = updated[date].filter((workout: Workout) => workout.id !== workoutId);
-          if (updated[date].length === 0) {
-            delete updated[date];
-          }
-        });
-        
-        return updated;
-      });
-      
-      toast.success('운동 기록이 삭제되었습니다.');
-    } catch (err) {
-      console.error('운동 기록 삭제 실패:', err);
-      toast.error('운동 기록 삭제에 실패했습니다.');
-    }
-  };
-  
-  // Firebase에서 운동 세션 데이터 불러오기
   useEffect(() => {
     const fetchSessions = async () => {
       if (!userProfile?.uid) return;
@@ -83,16 +40,14 @@ const WorkoutList: React.FC = () => {
       setError(null);
       
       try {
-        // 현재 년월의 시작일과 종료일 계산
-        const startDate = new Date(currentYear, currentMonth, 1);
-        const endDate = new Date(currentYear, currentMonth + 1, 0);
+        const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
         
-        // 세션 데이터 쿼리
         const sessionsQuery = query(
           collection(db, 'sessions'),
           where('userId', '==', userProfile.uid),
-          where('date', '>=', startDate),
-          where('date', '<=', endDate),
+          where('date', '>=', firstDayOfMonth),
+          where('date', '<=', lastDayOfMonth),
           orderBy('date', 'desc')
         );
         
@@ -116,62 +71,11 @@ const WorkoutList: React.FC = () => {
     };
     
     fetchSessions();
-  }, [userProfile, currentYear, currentMonth]);
-  
-  // 이전/다음 달 이동 함수
-  const goToPreviousMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-  };
-  
-  const goToNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
-  };
-  
-  // 특정 년도/월로 이동하는 함수
-  const goToSelectedMonth = (year: number, month: number) => {
-    setCurrentYear(year);
-    setCurrentMonth(month);
-  };
-  
-  // 년도 및 월 옵션 생성
-  useEffect(() => {
-    // 년도 옵션 생성 (현재 년도 기준 ±5년)
-    const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
-    setYearOptions(years);
-    
-    // 월 옵션 생성
-    const months = [
-      { value: 0, label: '1월' },
-      { value: 1, label: '2월' },
-      { value: 2, label: '3월' },
-      { value: 3, label: '4월' },
-      { value: 4, label: '5월' },
-      { value: 5, label: '6월' },
-      { value: 6, label: '7월' },
-      { value: 7, label: '8월' },
-      { value: 8, label: '9월' },
-      { value: 9, label: '10월' },
-      { value: 10, label: '11월' },
-      { value: 11, label: '12월' }
-    ];
-    setMonthOptions(months);
-  }, []);
-  
-  // 날짜별 운동 기록 그룹화
+  }, [userProfile, currentDate]);
+
   useEffect(() => {
     const groupedWorkouts = sessions.reduce<DateWorkoutMap>((acc, session) => {
-      const dateObj = parseFirestoreDate(session.date as any);
-      const dateStr = formatDate(dateObj);
+      const dateStr = formatDate(session.date as Date);
       if (!acc[dateStr]) {
         acc[dateStr] = [];
       }
@@ -182,203 +86,28 @@ const WorkoutList: React.FC = () => {
     setWorkoutsByDate(groupedWorkouts);
   }, [sessions]);
 
-  // 선택된 날짜의 운동 기록 가져오기
   useEffect(() => {
     setSelectedWorkouts(workoutsByDate[selectedDate] || []);
   }, [workoutsByDate, selectedDate]);
-
-  // 카메라로 촬영 (모바일 웹앱에서 작동)
-  const handleCameraCapture = () => {
-    setShowCamera(true);
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    // TypeScript에서 HTMLInputElement는 capture 속성을 직접 지원하지 않으므로 attribute로 설정
-    input.setAttribute('capture', 'environment'); // 모바일 기기에서 카메라 활성화
-    input.onchange = (e: Event) => {
-      const fileInput = e.target as HTMLInputElement;
-      if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            setUploadedImage(reader.result);
-            setShowCamera(false);
-          }
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-      } else {
-        setShowCamera(false);
-      }
-    };
-    input.click();
-  };
-
-  // 앨범에서 이미지 선택
-  const handleFileSelect = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e: Event) => {
-      const fileInput = e.target as HTMLInputElement;
-      if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            setUploadedImage(reader.result);
-          }
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-      }
-    };
-    input.click();
-  };
-
-  // 스탬프 캡처 및 다운로드 기능
-  const captureWorkoutStamp = async () => {
-    if (!workoutStampRef.current || selectedWorkouts.length === 0) return;
-    
-    try {
-      const canvas = await html2canvas(workoutStampRef.current, {
-        background: '#ffffff',
-        // @ts-ignore
-        scale: 2,
-        logging: false,
-        allowTaint: true,
-        useCORS: true
-      });
-      
-      const dataUrl = canvas.toDataURL('image/png');
-      setStampImage(dataUrl);
-    } catch (error) {
-      console.error('스탬프 캡처 중 오류:', error);
-    }
-  };
   
-  // 업로드된 이미지에 운동 내용 오버레이 하기
-  const createStampWithImage = async () => {
-    if (!uploadedImage || !workoutStampRef.current || selectedWorkouts.length === 0) return;
-    
+  const deleteWorkout = async (workoutId: string) => {
+    if (!currentUser || !workoutId) return;
+
     try {
-      // 운동 정보 캡처
-      const infoCanvas = await html2canvas(workoutStampRef.current, {
-        background: 'transparent',
-        // @ts-ignore
-        scale: 2,
-        logging: false,
-        allowTaint: true,
-        useCORS: true
-      });
+      await deleteDoc(doc(db, 'sessions', workoutId));
       
-      // 새 캔버스 생성
-      const finalCanvas = document.createElement('canvas');
-      const ctx = finalCanvas.getContext('2d');
+      const updatedSessions = sessions.filter(session => session.id !== workoutId);
+      setSessions(updatedSessions);
       
-      if (!ctx) return;
-      
-      // 업로드된 이미지 로드
-      const img = document.createElement('img');
-      img.crossOrigin = 'anonymous';
-      img.src = uploadedImage;
-      
-      img.onload = () => {
-        // 캔버스 크기 설정
-        finalCanvas.width = img.width;
-        finalCanvas.height = img.height;
-        
-        // 배경 이미지 그리기
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-        
-        // 운동 정보를 반투명하게 오버레이
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        
-        // 오버레이 영역 (이미지 하단 40% 영역)
-        const overlayHeight = img.height * 0.4;
-        ctx.fillRect(0, img.height - overlayHeight, img.width, overlayHeight);
-        
-        // 운동 정보 오버레이
-        ctx.globalAlpha = 1.0;
-        const scale = img.width / infoCanvas.width;
-        const scaledHeight = infoCanvas.height * scale * 0.7; // 70% 크기로 조정
-        
-        ctx.drawImage(
-          infoCanvas, 
-          0, 0, infoCanvas.width, infoCanvas.height,
-          img.width * 0.05, // 좌측 5% 여백
-          img.height - scaledHeight - (img.height * 0.05), // 하단 5% 여백
-          img.width * 0.9, // 90% 너비 사용
-          scaledHeight
-        );
-        
-        // 앱 워터마크 추가
-        ctx.font = `bold ${Math.round(img.width * 0.04)}px Arial`;
-        ctx.fillStyle = '#3B82F6';
-        ctx.textAlign = 'right';
-        ctx.fillText('Corevia Fitness', img.width - (img.width * 0.05), img.height - (img.height * 0.02));
-        
-        // 최종 이미지 설정
-        const finalImage = finalCanvas.toDataURL('image/jpeg', 0.9);
-        setStampImage(finalImage);
-        setUploadedImage(null);
-      };
-    } catch (error) {
-      console.error('스탬프 생성 중 오류:', error);
-    }
-  };
-  
-  // 업로드된 이미지가 있으면 스탬프 생성
-  useEffect(() => {
-    if (uploadedImage && selectedWorkouts.length > 0) {
-      createStampWithImage();
-    }
-  }, [uploadedImage]);
-
-  // 이미지 다운로드
-  const downloadStampImage = () => {
-    if (stampImage) {
-      const link = document.createElement('a');
-      link.href = stampImage;
-      link.download = `운동스탬프_${selectedDate}.png`;
-      link.click();
-    }
-  };
-
-  // 스탬프 공유 기능
-  const shareWorkoutStamp = async () => {
-    if (!stampImage) {
-      if (workoutStampRef.current) {
-        await captureWorkoutStamp();
-      } else {
-        return;
-      }
-    }
-    
-    if (stampImage) {
-      try {
-        // 공유 API 사용 (if supported)
-        if (navigator.share) {
-          const blob = await (await fetch(stampImage)).blob();
-          const file = new File([blob], `운동스탬프_${selectedDate}.png`, { type: 'image/png' });
-          
-          await navigator.share({
-            title: `${selectedDate} 운동 기록`,
-            text: '오늘의 운동 기록입니다!',
-            files: [file]
-          });
-        } else {
-          // 클립보드에 복사 (fallback)
-          await navigator.clipboard.writeText(`${selectedDate} 운동 기록`);
-          alert('이미지 URL이 클립보드에 복사되었습니다.');
-        }
-      } catch (error) {
-        console.error('스탬프 공유 중 오류:', error);
-      }
+      toast.success('운동 기록이 삭제되었습니다.');
+    } catch (err) {
+      console.error('운동 기록 삭제 실패:', err);
+      toast.error('운동 기록 삭제에 실패했습니다.');
     }
   };
 
   const handleDateClick = (date: string) => {
     setSelectedDate(date);
-    setSelectedWorkouts(workoutsByDate[date] || []);
   };
 
   const changeMonth = (amount: number) => {
@@ -390,13 +119,9 @@ const WorkoutList: React.FC = () => {
   };
 
   const calendarDays = generateCalendarDays(currentDate, workoutsByDate);
-
+  
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <LoadingSpinner />
-      </div>
-    );
+    return <LoadingSpinner message="운동 기록을 불러오고 있습니다..." />;
   }
 
   if (error) {
