@@ -12,7 +12,7 @@ import WorkoutWeightGuide from '../components/workout/WorkoutWeightGuide';
 import WorkoutProgram from '../components/workout/WorkoutProgram';
 import { Exercise as ImportedExercise, ExercisePart } from '../types';
 import { exercises as exerciseDataFromFile } from '../data/exerciseData';
-import { BarChart3, Target, Award, Settings, Utensils, Info } from 'lucide-react';
+import { BarChart3, Target, Award, Settings, Utensils, Info, TrendingUp, BookOpen } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
@@ -204,104 +204,138 @@ const QnaPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto max-w-4xl px-2 sm:px-4 py-4 sm:py-8">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
             운동 & 영양 가이드
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            운동, 영양, 건강에 대한 모든 것을 찾아보세요.
+          <p className="text-gray-600 dark:text-gray-400">
+            올바른 운동 정보 및 영양 가이드
           </p>
         </div>
 
-        {/* 탭 네비게이션 */}
-        <div className="flex justify-center border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <button
-            onClick={() => setActiveTab('exercise')}
-            className={`px-4 py-2 text-sm sm:text-base font-semibold transition-colors ${
-              activeTab === 'exercise' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-blue-600'
-            }`}
+            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
           >
-            운동 정보
+            <Info size={20} className="mb-1" />
+            운동 검색
           </button>
+          
           <button
-            onClick={() => setActiveTab('nutrition')}
-            className={`px-4 py-2 text-sm sm:text-base font-semibold transition-colors ${
-              activeTab === 'nutrition' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-blue-600'
-            }`}
+            onClick={() => {setActiveTab('nutrition'); toggleCalculator();}}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
           >
-            영양 정보
+            <BarChart3 size={20} className="mb-1" />
+            목표 칼로리 계산
           </button>
+          
+          <button
+            onClick={() => {setActiveTab('nutrition'); toggleNutritionScout();}}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
+          >
+            <Utensils size={20} className="mb-1" />
+            음식 영양성분 확인
+          </button>
+          
+          <button
+            onClick={() => {setActiveTab('exercise'); setShow1RMCalculator(true); setShowWeightGuide(false); setShowWorkoutSets(false);}}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
+          >
+            <Target size={20} className="mb-1" />
+            1RM 계산기
+          </button>
+           <button
+            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
+          >
+            <TrendingUp size={20} className="mb-1" />
+            운동 무게 추천
+          </button>
+
+          <button
+            onClick={() => {setActiveTab('exercise'); setShowWorkoutSets(true); setShowWeightGuide(false); setShow1RMCalculator(false);}}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
+          >
+            <Award size={20} className="mb-1" />
+            운동 프로그램
+          </button>
+
           <button
             onClick={() => setActiveTab('handbook')}
-            className={`px-4 py-2 text-sm sm:text-base font-semibold transition-colors ${
-              activeTab === 'handbook' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-blue-600'
-            }`}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
           >
+            <BookOpen size={20} className="mb-1" />
             핸드북
           </button>
+          
+          <button
+            onClick={() => {setActiveTab('nutrition'); toggleMealPlans();}}
+            className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
+          >
+            <Settings size={20} className="mb-1" />
+            식단 예시
+          </button>
         </div>
+        
+        {activeTab === 'exercise' && !showWeightGuide && !show1RMCalculator && !showWorkoutSets && (
+          <div className="space-y-4">
+            <Button onClick={() => { setSelectedExercise(null); setShow1RMCalculator(false); setShowWeightGuide(false); }}>운동 검색</Button>
+            <Button onClick={toggle1RMCalculator}>1RM 계산기</Button>
+            <Button onClick={toggleWeightGuide}>운동 무게 추천</Button>
+            <Button onClick={() => setShowWorkoutSets(true)}>운동 프로그램</Button>
 
-        {/* 탭 컨텐츠 */}
-        <div>
-          {activeTab === 'exercise' && (
-            <div className="space-y-4">
-              <Button onClick={() => { setSelectedExercise(null); setShow1RMCalculator(false); setShowWeightGuide(false); }}>운동 검색</Button>
-              <Button onClick={toggle1RMCalculator}>1RM 계산기</Button>
-              <Button onClick={toggleWeightGuide}>운동 무게 추천</Button>
-              <Button onClick={() => setShowWorkoutSets(true)}>운동 프로그램</Button>
+            {show1RMCalculator ? <OneRepMaxCalculator /> :
+             showWeightGuide ? <WorkoutWeightGuide /> :
+             showWorkoutSets ? <WorkoutProgram /> :
+             selectedExercise ? <ExerciseDetail exercise={selectedExercise} onClose={() => setSelectedExercise(null)} /> : 
+             <ExerciseSearch onSelectExercise={handleExerciseSelect} selectedPart={selectedPart} onPartChange={handlePartSelect} />}
+          </div>
+        )}
 
-              {show1RMCalculator ? <OneRepMaxCalculator /> :
-               showWeightGuide ? <WorkoutWeightGuide /> :
-               showWorkoutSets ? <WorkoutProgram /> :
-               selectedExercise ? <ExerciseDetail exercise={selectedExercise} onClose={() => setSelectedExercise(null)} /> : 
-               <ExerciseSearch onSelectExercise={handleExerciseSelect} selectedPart={selectedPart} onPartChange={handlePartSelect} />}
-            </div>
-          )}
+        {activeTab === 'nutrition' && (
+          <div className="space-y-4">
+            <Button onClick={toggleCalculator}>목표 칼로리 계산</Button>
+            <Button onClick={toggleNutritionScout}>음식 영양성분 확인</Button>
+            <Button onClick={toggleMealPlans}>식단 예시</Button>
 
-          {activeTab === 'nutrition' && (
-            <div className="space-y-4">
-              <Button onClick={toggleCalculator}>목표 칼로리 계산</Button>
-              <Button onClick={toggleNutritionScout}>음식 영양성분 확인</Button>
-              <Button onClick={toggleMealPlans}>식단 예시</Button>
+            {showCalculator && <CalorieCalculator userProfile={userProfile} onComplete={async (result) => {
+              try {
+                console.log('칼로리 계산 결과:', result);
+                setCalculatorResults({
+                  bmr: result.bmr,
+                  tdee: result.tdee,
+                  targetCalories: result.targetCalories,
+                  protein: result.macros.protein,
+                  carbs: result.macros.carbs,
+                  fat: result.macros.fat
+                });
+                toast.success('칼로리 계산이 완료되었습니다.');
+                return Promise.resolve();
+              } catch (error) {
+                console.error('에러:', error);
+                toast.error('칼로리 계산 중 오류가 발생했습니다.');
+                return Promise.reject(error);
+              }
+            }} />}
+            {showNutritionScout && <NutritionScout />}
+            {showMealPlans && <MealPlans />}
+          </div>
+        )}
 
-              {showCalculator && <CalorieCalculator userProfile={userProfile} onComplete={async (result) => {
-                try {
-                  console.log('칼로리 계산 결과:', result);
-                  setCalculatorResults({
-                    bmr: result.bmr,
-                    tdee: result.tdee,
-                    targetCalories: result.targetCalories,
-                    protein: result.macros.protein,
-                    carbs: result.macros.carbs,
-                    fat: result.macros.fat
-                  });
-                  toast.success('칼로리 계산이 완료되었습니다.');
-                  return Promise.resolve();
-                } catch (error) {
-                  console.error('에러:', error);
-                  toast.error('칼로리 계산 중 오류가 발생했습니다.');
-                  return Promise.reject(error);
-                }
-              }} />}
-              {showNutritionScout && <NutritionScout />}
-              {showMealPlans && <MealPlans />}
-            </div>
-          )}
-
-          {activeTab === 'handbook' && (
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={handbookSearchTerm}
-                onChange={handleHandbookSearch}
-                placeholder="질문이나 키워드를 입력하세요"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700"
-              />
-              <ExerciseFaq searchTerm={handbookSearchTerm} />
-            </div>
-          )}
-        </div>
+        {activeTab === 'handbook' && (
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={handbookSearchTerm}
+              onChange={handleHandbookSearch}
+              placeholder="질문이나 키워드를 입력하세요"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700"
+            />
+            <ExerciseFaq searchTerm={handbookSearchTerm} />
+          </div>
+        )}
       </div>
     </Layout>
   );
