@@ -29,7 +29,7 @@ const TermsOfService: React.FC = () => {
         <section>
           <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제3조 (회원가입 및 계정 관리)</h2>
           <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-1">
-            <li>회원가입은 Google 계정을 통한 소셜 로그인으로만 가능합니다.</li>
+            <li>회원가입은 Google 계정을 통한 소셜 로그인 또는 이메일 가입으로 가능합니다.</li>
             <li>이용자는 정확하고 최신의 정보를 제공해야 하며, 허위 정보 제공 시 서비스 이용에 제한을 받을 수 있습니다.</li>
             <li>계정의 보안은 이용자 본인의 책임이며, 계정 정보의 무단 사용으로 인한 손해는 이용자가 부담합니다.</li>
             <li>회원 탈퇴 시 모든 개인 데이터는 즉시 삭제되며, 복구가 불가능합니다.</li>
@@ -99,7 +99,7 @@ const TermsOfService: React.FC = () => {
           <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제5조 (데이터 저장 및 보안)</h2>
           <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-1">
             <li>모든 사용자 데이터는 Google Firebase 클라우드 서비스를 통해 안전하게 저장됩니다.</li>
-            <li>사진 및 이미지 파일은 Firebase Storage에 암호화되어 저장됩니다.</li>
+            <li>단, 사진 및 이미지 파일은 local storage에 저장됩니다.</li>
             <li>데이터는 실시간으로 동기화되며, 사용자별로 완전히 분리되어 관리됩니다.</li>
             <li>서비스는 업계 표준 보안 프로토콜을 준수하며, 개인정보보호법을 엄격히 준수합니다.</li>
           </ul>

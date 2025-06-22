@@ -6,8 +6,7 @@ import { Home, Utensils, HelpCircle, Settings, Dumbbell } from 'lucide-react';
 export interface NavItem {
   path: string;
   label: string;
-  icon: React.FC<any>;
-  badgeCount?: number;
+  icon: React.ElementType;
 }
 
 // 네비게이션 구성 설정 - 플랫폼 독립적 데이터
@@ -16,7 +15,7 @@ export const navItems: NavItem[] = [
   { path: '/workout', icon: Dumbbell, label: '운동' },
   { path: '/food', icon: Utensils, label: '식단' },
   { path: '/qna', icon: HelpCircle, label: 'Q&A' },
-  { path: '/settings', icon: Settings, label: '설정' }
+  { path: '/settings', icon: Settings, label: '설정' },
 ];
 
 // UI 표현을 위한 스타일 함수 - 플랫폼별 구현 가능
@@ -38,7 +37,10 @@ export const useNavigation = () => {
   const location = useLocation();
   
   const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
   };
   
   return {
@@ -48,53 +50,51 @@ export const useNavigation = () => {
 };
 
 // NavItem 컴포넌트 - 재사용 가능한 UI 컴포넌트
-const NavItemComponent: React.FC<{
-  item: NavItem;
-  active: boolean;
-  isDarkMode?: boolean;
-}> = ({ item, active, isDarkMode = false }) => {
+const NavItemComponent: React.FC<{ item: NavItem; isActive: boolean }> = ({ item, isActive }) => {
   const { path, icon: Icon, label } = item;
-  const styles = getNavItemStyles(active, isDarkMode);
-
+  const activeClass = isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400';
+  
   return (
-    <Link to={path} className={styles.container}>
-      {active && <span className={styles.indicator} />}
-      <Icon 
-        size={24} 
-        strokeWidth={active ? 2.5 : 1.5} 
-        className={styles.icon}
-      />
-      <span className={styles.label}>{label}</span>
+    <Link to={path} className={`flex flex-col items-center justify-center flex-1 p-1 transition-transform duration-200 ${isActive ? 'scale-110' : 'hover:scale-105'}`}>
+      <Icon size={24} strokeWidth={isActive ? 2.5 : 2} className={`${activeClass} mb-0.5 transition-colors`} />
+      <span className={`text-xs font-medium ${activeClass} transition-colors`}>{label}</span>
     </Link>
   );
 };
 
 // 메인 컴포넌트
 const BottomNavBar: React.FC = () => {
-  const { isActive } = useNavigation();
-  // 실제 구현에서는 useTheme 훅 등을 사용해 가져와야 함
+  const location = useLocation();
   const isDarkMode = document.documentElement.classList.contains('dark');
 
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
-    <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-nav backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 transition-all duration-300 z-40"
-      style={{ 
-        paddingBottom: 'calc(0.75rem + var(--safe-area-inset-bottom, 0px))',
-        paddingLeft: 'var(--safe-area-inset-left, 0px)',
-        paddingRight: 'var(--safe-area-inset-right, 0px)'
-      }}
-    >
-      <div className="container mx-auto max-w-md flex justify-around items-center py-3">
-        {navItems.map(item => (
-          <NavItemComponent 
-            key={item.path} 
-            item={item} 
-            active={isActive(item.path)}
-            isDarkMode={isDarkMode}
-          />
-        ))}
-      </div>
-    </nav>
+    <div className="fixed bottom-0 left-0 right-0 z-50">
+      <nav 
+        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700"
+        style={{ 
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
+        }}
+      >
+        <div className="container mx-auto flex justify-around max-w-lg h-16">
+          {navItems.map(item => (
+            <NavItemComponent 
+              key={item.path} 
+              item={item} 
+              isActive={isActive(item.path)}
+            />
+          ))}
+        </div>
+      </nav>
+    </div>
   );
 };
 

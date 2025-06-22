@@ -354,7 +354,7 @@ const HomePage = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
         {/* 프로필 정보 카드 */} 
         <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-4">
@@ -441,123 +441,103 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 신체 변화 추이 섹션 (기존 체중 변화에서 변경) */}
-      <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+      {/* 신체 변화 추이 섹션 */}
+      <div className="mb-6 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
         <div className="flex items-center mb-4">
-          <User size={28} className="text-purple-500 mr-3" />
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">내 신체 변화</h2>
+          <User size={24} className="text-purple-500 mr-2" />
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">내 신체 변화</h2>
         </div>
-        <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-center md:text-left mb-4 md:mb-0">
-              <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+        <div className="bg-gray-50 dark:bg-gray-700/50 p-3 sm:p-4 rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <h3 className="text-base sm:text-lg font-semibold text-purple-600 dark:text-purple-400">
                 현재 체중
               </h3>
-              <p className="text-3xl font-bold text-gray-800 dark:text-white">
+              <p className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
                 {userProfile?.weight ? `${userProfile.weight} kg` : '기록 없음'}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                목표: {userProfile?.fitnessGoal === 'loss' ? '체중 감소' : 
-                      userProfile?.fitnessGoal === 'maintain' ? '체중 유지' : 
-                      userProfile?.fitnessGoal === 'gain' ? '체중 증가' : '설정되지 않음'}
-              </p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
-                💡 바디 체크는 개인 정보 보호를 위해 외부 저장소가 아닌, 로컬 저장소(사용자 기기)에만 보관됩니다.
-              </p>
             </div>
-            <div className="flex flex-col gap-3 w-full md:w-auto">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Button
-                  variant="outline"
-                  size="md"
-                  onClick={handleBodyPhotoClick}
-                  icon={<Plus size={18} />}
-                  className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
-                >
-                  바디 체크
-                </Button>
-                <Button
-                  variant="outline"
-                  size="md"
-                  onClick={handleWeightRecordClick}
-                  icon={<Plus size={18} />}
-                  className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
-                >
-                  체중 기록
-                </Button>
-                <Button
-                  variant="outline"
-                  size="md"
-                  onClick={handleBodyProgressClick}
-                  icon={<BarChart3 size={18} />}
-                  className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-600 dark:hover:bg-purple-900/20 whitespace-nowrap"
-                >
-                  변화 추이 보기
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 선호하는 세트 구성 표시 섹션 */}
-      <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-        <div className="flex items-center mb-4">
-          <Settings size={28} className="text-primary-500 mr-3" />
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">메인 운동 세트 설정</h2>
-        </div>
-        <div className="bg-light-bg dark:bg-gray-700/50 p-4 rounded-lg">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div>
-              <h3 className="text-lg font-bold text-primary-800 dark:text-primary-300">
-                현재 선호 세트 구성: {workoutSettings?.preferredSetup || '10x5'}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {workoutSettings?.preferredSetup === '5x5' && '근력과 근비대 균형에 최적화된 구성 (5회 5세트)'}
-                {workoutSettings?.preferredSetup === '10x5' && '근비대에 최적화된 구성 (10회 5세트)'}
-                {workoutSettings?.preferredSetup === '15x5' && '근지구력 향상에 최적화된 구성 (15회 5세트)'}
-                {workoutSettings?.preferredSetup === '6x3' && '근력 향상에 중점을 둔 구성 (6회 3세트)'}
-              </p>
-            </div>
-            <div className="flex items-center mt-4 md:mt-0">
-              <div className="mx-4 text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">세트 수</p>
-                <p className="text-xl font-bold text-primary-600 dark:text-primary-400">{workoutSettings?.customSets || 5}</p>
-              </div>
-              <div className="mx-4 text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">반복 횟수</p>
-                <p className="text-xl font-bold text-primary-600 dark:text-primary-400">{workoutSettings?.customReps || 10}</p>
-              </div>
-              <Button 
+            <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
+              <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/settings')}
-                className="ml-6"
+                onClick={handleBodyPhotoClick}
+                icon={<Camera size={16} />}
+                className="text-sm"
               >
-                변경하기
+                바디 체크
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleWeightRecordClick}
+                icon={<Plus size={16} />}
+                className="text-sm"
+              >
+                체중 기록
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBodyProgressClick}
+                icon={<BarChart3 size={16} />}
+                className="text-sm"
+              >
+                변화 추이
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 최근 운동 기록 카드 */} 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center mb-4">
-            <TrendingUp size={28} className="text-primary-500 mr-3" />
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">최근 운동</h2>
+      {/* 선호하는 세트 구성 표시 섹션 */}
+      <div className="mb-6 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
+        <div className="flex items-center mb-4">
+          <Settings size={24} className="text-blue-500 mr-2" />
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">메인 운동 세트 설정</h2>
+        </div>
+        <div className="bg-gray-50 dark:bg-gray-700/50 p-3 sm:p-4 rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <h3 className="text-base sm:text-lg font-bold text-blue-800 dark:text-blue-300">
+                선호 세트: {workoutSettings?.preferredSetup || '10x5'}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-300">
+                {workoutSettings?.preferredSetup === '5x5' && '근력/근비대 균형 (5회 5세트)'}
+                {workoutSettings?.preferredSetup === '10x5' && '근비대 집중 (10회 5세트)'}
+                {workoutSettings?.preferredSetup === '15x5' && '근지구력 집중 (15회 5세트)'}
+                {workoutSettings?.preferredSetup === '6x3' && '근력 집중 (6회 3세트)'}
+              </p>
+            </div>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/settings')}
+              className="w-full md:w-auto"
+            >
+              설정 변경하기
+            </Button>
           </div>
-          <div className="space-y-4">
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {/* 최근 운동 기록 카드 */} 
+        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
+          <div className="flex items-center mb-4">
+            <TrendingUp size={24} className="text-blue-500 mr-2" />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">최근 운동</h2>
+          </div>
+          <div className="space-y-3">
             {recentSessions.length > 0 ? (
               recentSessions.map((session) => (
                 <div 
                   key={session.id} 
-                  className="p-4 bg-light-bg dark:bg-gray-700/50 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   onClick={() => navigate('/workout', { state: { activeTab: 'records', selectedDate: session.date } })}
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <h3 className="font-semibold text-lg text-primary-600 dark:text-primary-400">
+                    <h3 className="font-semibold text-sm sm:text-base text-blue-600 dark:text-blue-400">
                       {session.part === 'chest' ? '가슴' :
                         session.part === 'back' ? '등' :
                         session.part === 'shoulder' ? '어깨' :
@@ -568,89 +548,55 @@ const HomePage = () => {
                     </h3>
                     <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                       <CalendarDays size={14} className="mr-1" />
-                      {session.date.toLocaleDateString('ko-KR')}
+                      {new Date(session.date).toLocaleDateString('ko-KR')}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {session.mainExercise?.name || '메인 운동 정보 없음'}: {session.mainExercise?.sets?.length || 0}세트
-                    {session.mainExercise?.sets?.length > 0 && session.mainExercise.sets[0] && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400"> (대표: {session.mainExercise.sets[0].reps}회 x {session.mainExercise.sets[0].weight}kg)</span>
-                    )}
-                    {/* 디버깅 정보 표시 (개발 모드에서만) */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="text-xs text-red-500 mt-1">
-                        DEBUG: part={session.part}, mainExercise={JSON.stringify(session.mainExercise?.name || 'undefined')}
-                      </div>
-                    )}
+                  <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                    {session.mainExercise?.name || '메인 운동'}: {session.mainExercise?.sets?.length || 0}세트
                   </p>
-                  {session.accessoryExercises?.length > 0 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      보조 운동: {session.accessoryExercises.map(ex => ex.name).join(', ')}
-                    </p>
-                  )}
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">최근 운동 기록이 없습니다.</p>
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">최근 운동 기록이 없습니다.</p>
             )}
           </div>
         </div>
 
         {/* 최근 식단 카드 */} 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg">
           <div className="flex items-center mb-4">
-            <Utensils size={28} className="text-warning-500 mr-3" />
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">최근 식단</h2>
+            <Utensils size={24} className="text-yellow-500 mr-2" />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">최근 식단</h2>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {Object.keys(groupedMeals).length > 0 ? (
               Object.keys(groupedMeals)
-                .sort((a, b) => b.localeCompare(a)) // 최신 날짜순 정렬
+                .sort((a, b) => b.localeCompare(a))
+                .slice(0, 3) // 최근 3일치 기록만 표시
                 .map(dateStr => {
                   const meals = groupedMeals[dateStr];
                   const dateObj = new Date(dateStr);
-                  const photoCount = meals.filter(meal => meal.imageUrl).length;
                   
                   return (
                     <div 
                       key={dateStr} 
-                      className="p-4 bg-light-bg dark:bg-gray-700/50 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                       onClick={() => navigate('/food', { state: { activeTab: 'records', selectedDate: dateObj } })}
                     >
                       <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-lg text-warning-600 dark:text-warning-400">
-                          {dateObj.toLocaleDateString('ko-KR', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric',
-                            weekday: 'long'
-                          })}
+                        <h3 className="font-semibold text-sm sm:text-base text-yellow-600 dark:text-yellow-400">
+                          {dateObj.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
                         </h3>
-                        <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                           <Utensils size={14} className="mr-1" />
-                          식사 기록 {meals.length}개
+                          {meals.length}개 기록
                         </span>
                       </div>
-                      
-                      {photoCount > 0 && (
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                          <span className="bg-warning-100 dark:bg-warning-800/40 text-warning-800 dark:text-warning-200 py-1 px-2 rounded-full text-xs">
-                            사진 {photoCount}개 저장됨
-                          </span>
-                        </p>
-                      )}
-                      
-                      {/* 다른 요약 정보 - 선택적으로 표시 */}
-                      {meals.some(meal => meal.calories > 0 || meal.protein > 0 || meal.carbs > 0 || meal.fat > 0) && (
-                        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                          영양 정보가 포함된 식사 {meals.filter(m => m.calories > 0 || m.protein > 0 || m.carbs > 0 || m.fat > 0).length}개
-                        </div>
-                      )}
                     </div>
                   );
                 })
             ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">최근 식단 기록이 없습니다.</p>
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">최근 식단 기록이 없습니다.</p>
             )}
           </div>
         </div>
@@ -692,4 +638,5 @@ const HomePage = () => {
   );
 };
 
+export default HomePage; 
 export default HomePage; 

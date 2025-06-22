@@ -72,20 +72,40 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
+// 모바일 기기 감지 함수
+const isMobileDevice = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+  return false;
+};
+
 // 인증 관련 함수들
 export const signInWithGoogle = async () => {
   // 브라우저 환경에서만 실행
   if (typeof window !== 'undefined') {
     try {
-      // 팝업 방식 사용 - 브라우저 보안 정책 문제 해결을 위한 설정
-      const result = await signInWithPopup(auth, googleProvider)
-        .catch((error) => {
+      // 모바일 기기 감지
+      const isMobile = isMobileDevice();
+      console.log('기기 유형:', isMobile ? '모바일' : '데스크탑');
+
+      if (isMobile) {
+        // 모바일 기기에서는 항상 리디렉션 방식 사용
+        console.log('모바일 기기에서 리디렉션 방식 사용');
+        await signInWithRedirect(auth, googleProvider);
+        return null; // 리디렉션 후에는 결과를 즉시 반환할 수 없음
+      } else {
+        // 데스크탑에서는 팝업 방식 사용
+        console.log('데스크탑에서 팝업 방식 사용');
+        try {
+          return await signInWithPopup(auth, googleProvider);
+        } catch (error) {
           console.error('팝업 인증 실패, 리디렉션 시도:', error);
-          // 팝업이 실패하면 리디렉션으로 시도 (일부 환경에서는 이 방식이 필요할 수 있음)
-          return signInWithRedirect(auth, googleProvider).then(() => null);
-        });
-      
-      return result;
+          // 팝업이 실패하면 리디렉션으로 시도
+          await signInWithRedirect(auth, googleProvider);
+          return null;
+        }
+      }
     } catch (error: any) {
       console.error('Google 로그인 오류:', error);
       
@@ -93,14 +113,6 @@ export const signInWithGoogle = async () => {
       if (error.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.origin;
         throw new Error(`현재 도메인(${currentDomain})이 Firebase 인증에 허용되지 않았습니다. Firebase 콘솔에서 '인증 > 설정 > 승인된 도메인'에 이 도메인을 추가해주세요.`);
-      }
-      
-      // 창 닫힘 또는 COOP 오류 처리
-      if (error.code === 'auth/popup-closed-by-user' || error.message.includes('Cross-Origin-Opener-Policy')) {
-        // 팝업 문제 발생시 리디렉션 방식 시도
-        console.warn('팝업 방식 실패, 리디렉션 방식으로 재시도합니다.');
-        await signInWithRedirect(auth, googleProvider);
-        return null;
       }
       
       throw error;

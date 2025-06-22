@@ -32,6 +32,8 @@ const WorkoutList: React.FC = () => {
   const [showCamera, setShowCamera] = useState<boolean>(false);
   const workoutStampRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [dateWorkouts, setDateWorkouts] = useState<DateWorkoutMap>({});
   
   // 현재 년월이 변경될 때 달력 일자 업데이트
   useEffect(() => {
@@ -374,6 +376,21 @@ const WorkoutList: React.FC = () => {
     }
   };
 
+  const handleDateClick = (date: string) => {
+    setSelectedDate(date);
+    setSelectedWorkouts(workoutsByDate[date] || []);
+  };
+
+  const changeMonth = (amount: number) => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setMonth(newDate.getMonth() + amount);
+      return newDate;
+    });
+  };
+
+  const calendarDays = generateCalendarDays(currentDate, workoutsByDate);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -391,333 +408,197 @@ const WorkoutList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* 달력 */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">운동 달력</h3>
-          <div className="flex items-center space-x-4">
-            <Button 
-              onClick={goToPreviousMonth} 
-              variant="outline"
-              size="sm"
-              icon={<ChevronLeft size={16} />}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              이전
-            </Button>
-            
-            <div className="flex items-center space-x-2">
-              <select
-                value={currentYear}
-                onChange={(e) => goToSelectedMonth(parseInt(e.target.value), currentMonth)}
-                className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
-              >
-                {yearOptions.map(year => (
-                  <option key={year} value={year}>{year}년</option>
-                ))}
-              </select>
-              <div className="relative inline-block">
-                <select
-                  value={currentMonth}
-                  onChange={(e) => goToSelectedMonth(currentYear, parseInt(e.target.value))}
-                  className="p-1 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white pr-12 appearance-none"
-                >
-                  {monthOptions.map(month => (
-                    <option key={month.value} value={month.value}>{month.label}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700 dark:text-gray-300">
-                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={goToNextMonth} 
-              variant="outline"
-              size="sm"
-              icon={<ChevronRight size={16} />}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              다음
-            </Button>
-          </div>
+    <div className="max-w-4xl mx-auto p-2 sm:p-4">
+      {/* 캡처 영역 시작 */}
+      <div ref={captureRef} className="bg-gray-50 dark:bg-gray-900 p-2 sm:p-6 rounded-lg">
+        {/* 달력 헤더 */}
+        <div className="flex items-center justify-between mb-4">
+          <Button onClick={() => changeMonth(-1)} variant="outline" size="icon" aria-label="이전 달">
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
+            {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+          </h2>
+          <Button onClick={() => changeMonth(1)} variant="outline" size="icon" aria-label="다음 달">
+            <ChevronRight className="h-5 w-5" />
+          </Button>
         </div>
         
-        <div className="mb-4 grid grid-cols-7 gap-1">
-          {/* 요일 헤더 */}
-          {weekdays.map((weekday, i) => (
-            <div 
-              key={`weekday-${i}`} 
-              className={`text-center py-2 text-sm font-medium ${
-                i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
-              }`}
-            >
-              {weekday}
-            </div>
-          ))}
-          
-          {/* 날짜 */}
+        {/* 달력 그리드 */}
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+          {weekdays.map(day => <div key={day}>{day}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {calendarDays.map((day, i) => {
-            const dateStr = formatDate(day);
-            const isCurrentMonth = day.getMonth() === currentMonth;
-            const isToday = dateStr === formatDate(new Date());
-            const isSelected = dateStr === selectedDate;
-            const dayWorkouts = workoutsByDate[dateStr] || [];
-            const hasWorkout = dayWorkouts.length > 0;
-            
-            let workoutPartsLabels: string[] = [];
-            let allSuccessForDay = true; // 해당 날짜의 모든 운동이 성공했는지 여부
-            
-            if (hasWorkout) {
-              const parts = new Set<ExercisePart>();
-              dayWorkouts.forEach(workout => {
-                if (workout.part) {
-                  parts.add(workout.part);
-                }
-                if (!workout.isAllSuccess) { // 하나라도 실패한 운동이 있으면 그날은 전체 성공이 아님
-                  allSuccessForDay = false;
-                }
-              });
-              workoutPartsLabels = Array.from(parts).map(part => getPartLabel(part));
+            if (!day) {
+              return <div key={`empty-${i}`} className="border rounded-lg bg-gray-50 dark:bg-gray-800/20" />;
             }
-            
+            const { dateStr, dayOfMonth, isCurrentMonth, isToday, workouts } = day;
+            const isSelected = selectedDate === dateStr;
+
             return (
-              <div 
-                key={`day-${i}`} 
-                onClick={() => setSelectedDate(dateStr)}
-                className={`relative p-2 min-h-[80px] text-center cursor-pointer border rounded-lg
-                  ${isCurrentMonth ? 'hover:bg-gray-100 dark:hover:bg-gray-700' : 'opacity-40'}
-                  ${isToday ? 'border-primary-500' : 'border-transparent'}
-                  ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : ''}
-                `}
+              <div
+                key={dateStr}
+                onClick={() => handleDateClick(dateStr)}
+                className={`p-1 sm:p-2 text-center cursor-pointer border rounded-lg transition-colors duration-200 ${
+                  isSelected ? 'bg-blue-500 text-white' : 
+                  isToday ? 'bg-blue-100 dark:bg-blue-900/50' : 
+                  isCurrentMonth ? 'bg-white dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800/30 text-gray-400'
+                } ${isCurrentMonth && !isSelected ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30' : ''}`}
               >
-                <span className={`text-sm ${ 
-                  isCurrentMonth ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'
-                }`}>
-                  {day.getDate()}
-                </span>
-                
-                {hasWorkout && (
-                  <div className="mt-1 flex flex-col gap-1">
-                    <div 
-                      className={`text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200 truncate`}
-                      title={workoutPartsLabels.join(' / ') + (allSuccessForDay ? ' ✓' : '')}
-                    >
-                      {workoutPartsLabels.join('/')} {allSuccessForDay ? '✓' : ''}
-                    </div>
-                  </div>
-                )}
+                <div className={`mx-auto mb-1 ${isSelected ? 'font-bold' : isToday ? 'text-blue-600 dark:text-blue-300 font-bold' : ''}`}>
+                  {dayOfMonth}
+                </div>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {workouts.slice(0, 2).map(p => (
+                    <div key={p} className={`w-1.5 h-1.5 rounded-full ${getPartColor(p)}`}></div>
+                  ))}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
       
-      {/* 선택된 날짜 표시 및 기록 삭제 버튼 */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {new Date(selectedDate).toLocaleDateString('ko-KR', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric', 
-            weekday: 'long' 
-          })}
-        </h3>
-        
-        {selectedWorkouts.length > 0 && (
-          <div className="flex space-x-2">
-            <Button
-              onClick={() => {
-                if (window.confirm('선택한 날짜의 모든 운동 기록을 삭제하시겠습니까?')) {
-                  selectedWorkouts.forEach(workout => {
-                    if (workout.id) {
-                      deleteWorkout(workout.id);
-                    }
-                  });
-                }
-              }}
-              variant="outline"
-              size="sm"
-              icon={<Trash size={16} />}
-              className="text-red-500 hover:text-red-700"
-            >
-              기록 삭제
-            </Button>
-          </div>
-        )}
-        
-        {selectedWorkouts.length === 0 && (
-          <span className="text-sm text-gray-500">
-            운동 기록이 없습니다
-          </span>
-        )}
-      </div>
-      
-      {/* 선택된 날짜의 운동 기록 목록 */}
-      <div className="space-y-6">
+      {/* 선택된 날짜의 운동 기록 */}
+      <div className="mt-4 sm:mt-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">
+            {new Date(selectedDate).toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              weekday: 'long',
+            })}
+          </h3>
+
+          {selectedWorkouts.length > 0 && (
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => {
+                  if (window.confirm('선택한 날짜의 모든 운동 기록을 삭제하시겠습니까?')) {
+                    selectedWorkouts.forEach((workout) => {
+                      if (workout.id) {
+                        deleteWorkout(workout.id);
+                      }
+                    });
+                  }
+                }}
+                variant="danger"
+                size="sm"
+                icon={<Trash size={16} />}
+              >
+                전체 삭제
+              </Button>
+            </div>
+          )}
+        </div>
+
         {selectedWorkouts.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 mx-auto text-gray-400 mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
             </svg>
-            <p className="text-gray-500 dark:text-gray-400 mb-2">
-              이 날짜에 기록된 운동이 없습니다.
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              운동 입력 탭에서 운동을 기록해보세요.
-            </p>
+            <p className="text-gray-500 dark:text-gray-400 mb-2">이 날짜에 기록된 운동이 없습니다.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">운동 입력 탭에서 운동을 기록해보세요.</p>
           </div>
         ) : (
-          selectedWorkouts.map((workout) => (
-            <div
-              key={workout.id}
-              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center">
-                  <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 py-1 px-3 rounded-full text-sm mr-2">
-                    {getPartLabel(workout.part)}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-600 dark:text-gray-400 text-sm">
-                    {parseFirestoreDate(workout.date as any).toLocaleTimeString('ko-KR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </span>
+          <div className="space-y-4">
+            {selectedWorkouts.map((workout) => (
+              <div key={workout.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                {/* 카드 헤더 */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-0">
+                    <span
+                      className={`py-1 px-3 rounded-full text-xs sm:text-sm font-semibold text-white ${getPartColor(
+                        workout.part
+                      )}`}
+                    >
+                      {getPartLabel(workout.part)}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+                      {parseFirestoreDate(workout.date as any).toLocaleTimeString('ko-KR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
                   <Button
                     onClick={() => {
                       if (window.confirm('이 운동 기록을 삭제하시겠습니까?')) {
-                        deleteWorkout(workout.id);
+                        if (workout.id) deleteWorkout(workout.id);
                       }
                     }}
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    icon={<Trash size={16} />}
-                    className="text-red-500 hover:text-red-700"
+                    icon={<Trash size={14} />}
+                    className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50"
                   >
                     삭제
                   </Button>
                 </div>
-              </div>
-              
-              {/* 성공/실패 뱃지 */}
-              <div className="mb-4">
-                <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-                  workout.isAllSuccess ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                }`}>
-                  {workout.isAllSuccess ? '성공' : '실패'} ({workout.successSets || 0}/{workout.mainExercise.sets.length} 세트)
-                </span>
-              </div>
-              
-              {/* 메인 운동 세트 정보 */}
-              <div className="mb-6">
-                <h4 className="text-md font-medium mb-2">
-                  메인 운동: {workout.mainExercise.name || '운동 이름 없음'}
-                </h4>
 
-                {/* 수면 시간, 컨디션, 운동 시작 시간 정보 */}
-                {(workout.sleepHours !== undefined || workout.condition !== undefined || workout.startTime) && (
-                  <div className="flex flex-wrap gap-3 mb-3 mt-1 items-center">
-                    {workout.sleepHours !== undefined && (
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <span className="mr-1">수면:</span>
-                        <span className="font-medium">{workout.sleepHours}시간</span>
+                {/* 메인 운동 정보 */}
+                <div className="mb-3">
+                  <p className="font-semibold text-sm sm:text-base text-gray-800 dark:text-gray-200 mb-2">
+                    {workout.mainExercise.name}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {workout.mainExercise.sets.map((set, index) => (
+                      <div
+                        key={index}
+                        className={`px-2 py-1 text-xs sm:text-sm rounded ${
+                          set.isSuccess
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}
+                      >
+                        {set.weight}kg &times; {set.reps}회
                       </div>
-                    )}
-                    
-                    {workout.condition && (
-                      <div className="flex items-center">
-                        <span className="text-sm text-gray-600 dark:text-gray-400 mr-1">컨디션:</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
-                          workout.condition === 'good' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                            : workout.condition === 'normal'
-                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {workout.condition === 'good' ? '좋음' : workout.condition === 'normal' ? '보통' : '나쁨'}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {workout.startTime && (
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <span className="mr-1">시작 시간:</span>
-                        <span className="font-medium">{workout.startTime}</span>
-                      </div>
-                    )}
-                    
-                    {workout.lastMealTime && (
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <span className="mr-1">마지막 식사:</span>
-                        <span className="font-medium">{workout.lastMealTime}</span>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  {workout.mainExercise.sets.map((set, index) => (
-                    <div 
-                      key={index} 
-                      className={`px-3 py-1 rounded text-sm ${
-                        set.isSuccess 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                      }`}
-                    >
-                      {set.weight}kg {set.reps}/10
-                    </div>
-                  ))}
                 </div>
-              </div>
-              
-              {/* 보조 운동 정보 */}
-              {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-md font-medium mb-2">보조 운동</h4>
-                  <div className="space-y-3">
-                    {workout.accessoryExercises.map((exercise, exIndex) => {
-                      const exerciseSets = exercise.sets;
-                      return (
-                        <div key={exIndex} className="ml-2">
-                          <p className="text-gray-700 dark:text-gray-300 mb-1">{exercise.name || '보조운동'}</p>
-                          {typeof exerciseSets === 'number' ? (
-                            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-sm">
-                              {exercise.weight}kg x {exercise.reps}회 x {exerciseSets}세트
-                            </div>
-                          ) : Array.isArray(exerciseSets) && exerciseSets.map((set, setIndex) => (
-                            <div 
-                              key={setIndex} 
-                              className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-sm"
+
+                {/* 보조 운동 정보 */}
+                {workout.accessoryExercises && workout.accessoryExercises.length > 0 && (
+                  <div>
+                    {workout.accessoryExercises.map((accEx, accIndex) => (
+                      <div key={accIndex} className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                        <p className="font-semibold text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-1">
+                          {accEx.name}
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {accEx.sets.map((set, setIndex) => (
+                            <div
+                              key={setIndex}
+                              className={`px-1.5 py-0.5 text-xs rounded ${
+                                set.isSuccess
+                                  ? 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
+                                  : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                              }`}
                             >
-                              {set.weight}kg x {set.reps}회
+                              {set.weight}kg &times; {set.reps}회
                             </div>
                           ))}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
-                </div>
-              )}
-              
-              {/* 메모 */}
-              {workout.notes && (
-                <div className="mt-4">
-                  <h4 className="text-md font-medium mb-2">메모</h4>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm bg-gray-50 dark:bg-gray-700 p-3 rounded">
-                    {workout.notes}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

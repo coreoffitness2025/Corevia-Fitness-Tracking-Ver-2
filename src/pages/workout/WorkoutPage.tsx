@@ -64,22 +64,22 @@ const WorkoutPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
+        <div className="mb-6 sm:mb-8 text-center">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">
             운동 관리
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">오늘도 건강한 운동을 시작하세요</p>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">오늘도 건강한 운동을 시작하세요</p>
         </div>
 
         <div className="flex justify-center mb-6">
-          <div className="inline-flex rounded-md shadow-sm" role="group">
+          <div className="w-full sm:w-auto inline-flex rounded-md shadow-sm" role="group">
             <button
               type="button"
               onClick={() => setActiveTab('input')}
-              className={`px-6 py-2 text-sm font-medium rounded-l-lg transition-colors duration-200 ${
+              className={`w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium rounded-l-lg transition-colors duration-200 ${
                 activeTab === 'input'
-                  ? 'bg-[#4285F4] text-white'
+                  ? 'bg-blue-500 text-white'
                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >
@@ -88,9 +88,9 @@ const WorkoutPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('records')}
-              className={`px-6 py-2 text-sm font-medium transition-colors duration-200 ${
+              className={`w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium transition-colors duration-200 border-t border-b sm:border-t-0 sm:border-b-0 sm:border-l sm:border-r border-gray-200 dark:border-gray-600 ${
                 activeTab === 'records'
-                  ? 'bg-[#4285F4] text-white'
+                  ? 'bg-blue-500 text-white'
                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >
@@ -99,9 +99,9 @@ const WorkoutPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('graph')}
-              className={`px-6 py-2 text-sm font-medium rounded-r-lg transition-colors duration-200 ${
+              className={`w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium rounded-r-lg transition-colors duration-200 ${
                 activeTab === 'graph'
-                  ? 'bg-[#4285F4] text-white'
+                  ? 'bg-blue-500 text-white'
                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >

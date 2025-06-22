@@ -3,6 +3,7 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.corevia.fitness"
     compileSdk rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
     defaultConfig {
         applicationId "com.corevia.fitness"
         minSdkVersion rootProject.ext.minSdkVersion

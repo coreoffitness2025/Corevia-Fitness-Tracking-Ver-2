@@ -455,182 +455,130 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
+    <div className="max-w-2xl mx-auto p-2 sm:p-4">
       {/* 목표 칼로리 및 영양소 가이드 */}
-      <Card className="mb-6 border-l-4 border-primary-400">
-        <div className="flex items-start p-4">
-          <Info className="text-primary-400 mr-3 mt-1 flex-shrink-0" size={24} />
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량(3끼 기준)</h3>
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <div className="bg-success-50 dark:bg-success-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-400">단백질</span>
-                <span className="block text-xl font-bold text-success-700 dark:text-success-400">{Math.round(proteinTarget/3)}g</span>
+      <Card className="mb-6 border-l-4 border-blue-500">
+        <div className="p-4">
+          <div className="flex items-start">
+            <Info className="text-blue-500 mr-3 mt-1 flex-shrink-0" size={24} />
+            <div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량 (3끼 기준)</h3>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
+                <div className="bg-green-50 dark:bg-green-800/30 p-2 sm:p-3 rounded-lg text-center shadow-sm">
+                  <span className="block text-xs sm:text-sm text-gray-600 dark:text-gray-400">단백질</span>
+                  <span className="block text-base sm:text-xl font-bold text-green-700 dark:text-green-400">{Math.round(proteinTarget/3)}g</span>
+                </div>
+                <div className="bg-yellow-50 dark:bg-yellow-800/30 p-2 sm:p-3 rounded-lg text-center shadow-sm">
+                  <span className="block text-xs sm:text-sm text-gray-600 dark:text-gray-400">탄수화물</span>
+                  <span className="block text-base sm:text-xl font-bold text-yellow-700 dark:text-yellow-400">{Math.round(carbsTarget/3)}g</span>
+                </div>
+                <div className="bg-red-50 dark:bg-red-800/30 p-2 sm:p-3 rounded-lg text-center shadow-sm">
+                  <span className="block text-xs sm:text-sm text-gray-600 dark:text-gray-400">지방</span>
+                  <span className="block text-base sm:text-lg font-bold text-red-700 dark:text-red-400">{Math.round(fatTarget/3)}g</span>
+                </div>
               </div>
-              <div className="bg-warning-50 dark:bg-warning-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-400">탄수화물</span>
-                <span className="block text-xl font-bold text-warning-700 dark:text-warning-400">{Math.round(carbsTarget/3)}g</span>
-              </div>
-              <div className="bg-danger-50 dark:bg-danger-800/30 p-3 rounded-lg text-center shadow-sm">
-                <span className="block text-sm text-gray-600 dark:text-gray-400">지방</span>
-                <span className="block text-lg font-bold text-danger-700 dark:text-danger-400">{Math.round(fatTarget/3)}g</span>
-              </div>
-            </div>
-            
-            <div className="mt-3 space-y-1">
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                💡 해당 권장 섭취량은 개인 설정의 목표 칼로리 기반으로 산출되었습니다.
-              </p>
-            </div>
-            
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={navigateToNutritionInfo}
-              >
-                <Info size={16} className="mr-1" />
-                음식별 칼로리 확인하기
-              </Button>
               
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setShowNutritionSources(!showNutritionSources)}
-              >
-                <Info size={16} className="mr-1" />
-                주요 탄/단/지 급원 확인하기
-              </Button>
+              <div className="mt-3 space-y-1">
+                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                  💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  * 개인 설정의 목표 칼로리 기반으로 산출되었습니다.
+                </p>
+              </div>
+              
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToNutritionInfo}
+                >
+                  음식별 칼로리 확인
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNutritionSources(!showNutritionSources)}
+                >
+                  주요 영양소 급원 확인
+                </Button>
+              </div>
             </div>
-            
-            {showNutritionSources && <NutritionSourcesGuide />}
           </div>
+          {showNutritionSources && <NutritionSourcesGuide />}
         </div>
       </Card>
 
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-6">
         식단 입력
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label
-            htmlFor="mealDate"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            날짜
-          </label>
-          <input
-            type="date"
-            id="mealDate"
-            value={mealDate}
-            onChange={(e) => setMealDate(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="intakeTime"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-          >
-            섭취 시간대
-          </label>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <input
-                type="time"
-                id="intakeTime"
-                value={intakeTime}
-                onChange={(e) => setIntakeTime(e.target.value)}
-                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShowTimeSlots(!showTimeSlots)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
-              >
-                알수없음
-              </button>
-            </div>
-            
-            {showTimeSlots && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <h4 className="col-span-full text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">대략적인 시간대를 선택하세요:</h4>
-                {[
-                  '08:00 ~ 12:00',
-                  '12:00 ~ 16:00', 
-                  '16:00 ~ 20:00',
-                  '20:00 ~ 24:00',
-                  '새벽 야식',
-                  '알수없음'
-                ].map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => handleTimeSlotSelect(slot)}
-                    className="px-3 py-2 text-sm font-medium text-center text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md transition-colors border border-gray-300 dark:border-gray-500"
-                  >
-                    {slot}
-                  </button>
-                ))}
-              </div>
-            )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="mealDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              날짜
+            </label>
+            <input
+              type="date"
+              id="mealDate"
+              value={mealDate}
+              onChange={(e) => setMealDate(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+          <div>
+            <label htmlFor="intakeTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              섭취 시간
+            </label>
+            <input
+              type="time"
+              id="intakeTime"
+              value={intakeTime}
+              onChange={(e) => setIntakeTime(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             식사 사진
           </label>
-          
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button 
               type="button"
               onClick={handleCameraCapture}
-              variant="primary" 
-              className="w-full sm:w-auto sm:flex-1 max-w-xs mx-auto"
-              icon={<Camera size={18} className="inline mr-2" />}
+              variant="outline" 
+              className="w-full"
+              icon={<Camera size={16} />}
             >
               카메라로 촬영
             </Button>
-            
             <Button
               type="button"
               onClick={handleGallerySelect}
-              variant="primary"
-              className="w-full sm:w-auto sm:flex-1 max-w-xs mx-auto"
-              icon={<Upload size={18} className="inline mr-2" />}
+              variant="outline"
+              className="w-full"
+              icon={<Upload size={16} />}
             >
               갤러리에서 선택
             </Button>
           </div>
-          
           {imagePreview && (
             <div className="mt-4">
               <img 
                 src={imagePreview} 
                 alt="식사 사진 미리보기" 
-                className="w-full h-64 object-cover rounded-lg"
+                className="w-full h-auto max-h-64 object-cover rounded-lg shadow-md"
               />
             </div>
           )}
-          
-          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            <p>
-              💡 <strong>참고:</strong> 식단 사진은 기기 내부 저장소에 저장됩니다. 기기에서 해당 파일이 삭제되거나 브라우저 데이터가 초기화되면 사진을 볼 수 없게 됩니다.
-            </p>
-          </div>
         </div>
 
         <div>
-          <label
-            htmlFor="foodName"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
+          <label htmlFor="foodName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             음식 이름
           </label>
           <input
@@ -638,37 +586,34 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             id="foodName"
             value={foodName}
             onChange={(e) => setFoodName(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="예: 치킨 샐러드, 김치찌개 등"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="예: 닭가슴살 샐러드, 현미밥"
             required
           />
         </div>
 
         <div>
-          <label
-            htmlFor="notes"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            메모 (선택사항)
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            메모 (선택)
           </label>
           <textarea
             id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            placeholder="이 식사에 대한 메모를 남겨보세요"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="이 식사에 대한 생각이나 느낌을 기록해보세요."
           />
         </div>
 
-        <div className="flex justify-end space-x-4">
+        <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={!imageUrl}
-            variant={imageUrl ? 'success' : 'default'}
-            className={!imageUrl ? 'cursor-not-allowed' : ''}
+            disabled={!imageUrl && !imagePreview}
+            size="lg"
+            className="w-full sm:w-auto"
           >
-            저장
+            식단 기록 저장
           </Button>
         </div>
       </form>

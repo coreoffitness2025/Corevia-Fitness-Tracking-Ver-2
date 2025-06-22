@@ -92,23 +92,23 @@ const FoodPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        <div className="mb-6 text-center">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">
             안녕하세요, {userProfile?.displayName || '회원님'}!
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">{today}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{today}</p>
         </div>
 
         {/* 개선된 4개 탭 네비게이션 */}
         <div className="flex justify-center mb-6">
-          <div className="inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1" role="group">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full sm:w-auto sm:inline-flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1" role="group">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as FoodTab)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                className={`flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 w-full ${
                   activeTab === tab.id
                     ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -117,7 +117,7 @@ const FoodPage: React.FC = () => {
                 <span className={activeTab === tab.id ? tab.color : 'text-gray-400'}>
                   {tab.icon}
                 </span>
-                {tab.label}
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>

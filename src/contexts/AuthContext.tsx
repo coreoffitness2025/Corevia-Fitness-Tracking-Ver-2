@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { auth, db, getUserProfile, updateUserProfile as updateFirebaseProfile } from '../firebase/firebaseConfig';
+import { auth, db, getUserProfile, updateUserProfile as updateFirebaseProfile, getGoogleRedirectResult } from '../firebase/firebaseConfig';
 import { UserProfile, UserSettings } from '../types';
 import { 
   calculateBMR, 
@@ -154,6 +154,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Google 리디렉션 결과 처리
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        console.log('리디렉션 결과 처리 시작');
+        const result = await getGoogleRedirectResult();
+        
+        if (result) {
+          console.log('Google 로그인 리디렉션 성공', result.user.uid);
+          setCurrentUser(result.user);
+          setIsAuthenticated(true);
+          
+          // 사용자 프로필 로드
+          const userDocRef = doc(db, 'users', result.user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (!userDoc.exists()) {
+            // 신규 사용자일 경우 기본 프로필 생성
+            const newProfile: UserProfile = {
+              ...defaultProfile,
+              uid: result.user.uid,
+              displayName: result.user.displayName,
+              email: result.user.email,
+              photoURL: result.user.photoURL
+            };
+            
+            await setDoc(userDocRef, newProfile);
+            setUserProfile(newProfile);
+          } else {
+            setUserProfile(userDoc.data() as UserProfile);
+          }
+        }
+      } catch (error) {
+        console.error('리디렉션 결과 처리 오류:', error);
+        setError('Google 로그인 처리 중 오류가 발생했습니다.');
+      }
+    };
+    
+    handleRedirectResult();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

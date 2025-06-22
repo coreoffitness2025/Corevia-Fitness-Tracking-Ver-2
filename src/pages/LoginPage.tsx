@@ -4,10 +4,11 @@ import { User, sendPasswordResetEmail } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import { useAuth } from '../contexts/AuthContext';
-import { signInWithGoogle, signInWithEmail, getGoogleRedirectResult, auth } from '../firebase/firebaseConfig';
+import { signInWithEmail, auth } from '../firebase/firebaseConfig';
 import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
+import { signInWithGoogleOptimized, handleRedirectResult, logAuthDebugInfo, isMobileDevice } from '../services/authService';
 
 const LoginButton = ({ 
   isLoading, 
@@ -307,6 +308,7 @@ export default function LoginPage() {
   const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // 인증 상태 변경 감지
   useEffect(() => {
@@ -320,45 +322,73 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, currentUser]);
 
+  // 모바일 환경 감지
+  useEffect(() => {
+    const checkMobileDevice = () => {
+      const mobile = isMobileDevice();
+      setIsMobile(mobile);
+      logAuthDebugInfo('모바일 환경 감지', { isMobile: mobile });
+    };
+    
+    checkMobileDevice();
+  }, []);
+
   // 구글 리디렉션 결과 처리
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    const processRedirectResult = async () => {
+      setIsLoading(true);
       try {
-        const result = await getGoogleRedirectResult();
+        logAuthDebugInfo('로그인 페이지에서 리디렉션 결과 처리 시작');
+        const result = await handleRedirectResult();
         
         if (result && result.user) {
           // 사용자가 리디렉션으로 로그인에 성공했을 때
-          console.log('Google 리디렉션 로그인 성공:', result.user);
+          logAuthDebugInfo('리디렉션 로그인 성공', { uid: result.user.uid });
           
-          // Firestore에 사용자 정보가 없으면 기본 정보로 저장
-          const userDocRef = doc(db, 'users', result.user.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          if (!userDoc.exists()) {
-            // 기본 사용자 프로필 데이터 생성 (타입 단언 사용)
-            const userProfileData = {
-              uid: result.user.uid,
-              displayName: result.user.displayName,
-              email: result.user.email,
-              photoURL: result.user.photoURL,
-            } as UserProfile;
+          try {
+            // Firestore에 사용자 정보가 없으면 기본 정보로 저장
+            const userDocRef = doc(db, 'users', result.user.uid);
+            const userDoc = await getDoc(userDocRef);
             
-            await setDoc(userDocRef, userProfileData);
+            if (!userDoc.exists()) {
+              // 기본 사용자 프로필 데이터 생성
+              const userProfileData = {
+                uid: result.user.uid,
+                displayName: result.user.displayName,
+                email: result.user.email,
+                photoURL: result.user.photoURL,
+              } as UserProfile;
+              
+              await setDoc(userDocRef, userProfileData);
+              
+              // 사용자 정보가 없으므로 개인화 모달 표시
+              setUserProfile(userProfileData);
+              setIsPersonalizationOpen(true);
+            }
+            
+            // 로그인 성공 메시지
+            toast.success('Google 로그인이 완료되었습니다.');
+          } catch (firestoreError: any) {
+            console.error('Firestore 데이터 처리 중 오류:', firestoreError);
+            toast.error('사용자 정보 처리 중 오류가 발생했습니다.');
           }
-          
-          // 로그인 성공 메시지
-          toast.success('Google 로그인이 완료되었습니다.');
-          
-          // 로그인 후 처리는 isAuthenticated가 변경될 때 처리됨
         }
       } catch (error: any) {
         console.error('리디렉션 결과 처리 오류:', error);
-        setError('Google 로그인 처리 중 오류가 발생했습니다.');
+        
+        // 오류 처리 개선
+        if (error.code === 'auth/disallowed-useragent') {
+          setError('모바일 브라우저에서는 Google 로그인에 제한이 있습니다. Firebase 콘솔에서 설정을 확인해주세요.');
+          toast.error('모바일 브라우저 제한으로 인해 Google 로그인이 차단되었습니다.');
+        } else {
+          setError('Google 로그인 처리 중 오류가 발생했습니다.');
+        }
+      } finally {
         setIsLoading(false);
       }
     };
 
-    handleRedirectResult();
+    processRedirectResult();
   }, []);
 
   // 사용자가 개인화 설정이 필요한지 확인
@@ -396,12 +426,13 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      // Cross-Origin-Opener-Policy 관련 오류 방지를 위한 설정
-      const result = await signInWithGoogle();
+      logAuthDebugInfo('Google 로그인 시작');
+      
+      // 향상된 Google 로그인 함수 사용
+      const result = await signInWithGoogleOptimized();
       
       if (result && result.user) {
-        // 사용자가 로그인에 성공했을 때
-        console.log('Google 로그인 성공:', result.user.uid);
+        logAuthDebugInfo('Google 로그인 성공', { uid: result.user.uid });
         
         try {
           // Firestore에 사용자 정보가 없으면 기본 정보로 저장
@@ -442,12 +473,27 @@ export default function LoginPage() {
           // 오류가 발생해도 사용자는 로그인된 상태이므로 홈으로 이동
           navigate('/');
         }
+      } else if (isMobile) {
+        // 모바일에서는 리디렉션 후 결과가 null이 예상됨
+        toast.success('로그인 진행 중입니다. 잠시 기다려주세요.');
+        logAuthDebugInfo('모바일에서 리디렉션 후 대기 중');
       } else {
         setError('Google 로그인에 실패했습니다.');
       }
     } catch (error: any) {
       console.error('Google 로그인 오류:', error);
-      setError('Google 로그인 중 오류가 발생했습니다.');
+      logAuthDebugInfo('Google 로그인 오류', error);
+      
+      // 오류 메시지 개선
+      if (error.code === 'auth/unauthorized-domain') {
+        setError(`현재 도메인이 Firebase에 등록되지 않았습니다. Firebase 콘솔에서 '인증 > 설정 > 승인된 도메인'에 ${window.location.origin}을 추가해주세요.`);
+      } else if (error.code === 'auth/disallowed-useragent') {
+        setError('현재 사용 중인 브라우저에서는 Google 로그인이 제한됩니다. 다른 브라우저를 사용하거나 Firebase 설정을 확인해주세요.');
+      } else {
+        setError('Google 로그인 중 오류가 발생했습니다.');
+      }
+      
+      toast.error('로그인에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -486,6 +532,15 @@ export default function LoginPage() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+        
+        {isMobile && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4">
+            <span className="block sm:inline">
+              모바일 환경에서는 Google 로그인에 제한이 있을 수 있습니다. 
+              오류가 발생한다면 데스크탑 브라우저를 사용해보세요.
+            </span>
           </div>
         )}
         
