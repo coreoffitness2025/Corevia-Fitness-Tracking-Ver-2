@@ -214,7 +214,7 @@ const QnaPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <button
             onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
             className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"

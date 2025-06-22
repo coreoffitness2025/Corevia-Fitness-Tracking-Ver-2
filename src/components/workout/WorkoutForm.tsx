@@ -1500,13 +1500,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
               </h2>
               {/* 휴식 타이머 */}
-              <div className="flex items-center gap-1">
-                <Clock size={16} className="text-gray-500" />
-                <input type="number" value={globalTimer.timerMinutes} onChange={(e) => handleTimerInputChange('minutes', e.target.value)} className="w-10 text-center bg-transparent" />
-                <span>:</span>
-                <input type="number" value={globalTimer.timerSeconds} onChange={(e) => handleTimerInputChange('seconds', e.target.value)} className="w-10 text-center bg-transparent" />
-                <button onClick={togglePauseGlobalTimer}><Play size={16} /></button>
-                <button onClick={resetGlobalTimer}><RotateCcw size={16} /></button>
+              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+                <Clock size={18} className="text-gray-500" />
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    value={globalTimer.timerMinutes}
+                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
+                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  />
+                  <span className="font-bold text-lg">:</span>
+                  <input
+                    type="number"
+                    value={globalTimer.timerSeconds}
+                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
+                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={togglePauseGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                    {globalTimer.isRunning && !globalTimer.isPaused ? <Pause size={18} /> : <Play size={18} />}
+                  </button>
+                  <button onClick={resetGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                    <RotateCcw size={18} />
+                  </button>
+                </div>
               </div>
             </div>
 
