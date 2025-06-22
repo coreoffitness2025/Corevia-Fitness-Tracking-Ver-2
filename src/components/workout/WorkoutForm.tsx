@@ -1810,9 +1810,15 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             {accessoryExercises.map((exercise, index) => (
               <AccessoryExerciseComponent
                 key={index}
+                index={index}
                 exercise={exercise}
-                onExerciseChange={(updatedExercise) => handleAccessoryExerciseChange(index, updatedExercise)}
-                onRemove={() => removeAccessoryExercise(index)}
+                onChange={handleAccessoryExerciseChange}
+                onRemove={removeAccessoryExercise}
+                currentExercisePart={part}
+                globalTimer={globalTimer}
+                startGlobalTimer={startGlobalTimer}
+                resetGlobalTimer={resetGlobalTimer}
+                formatTime={formatTimeGlobal}
               />
             ))}
             {previousAccessoryExercises[mainExercise.name] && accessoryExercises.length === 0 && (
