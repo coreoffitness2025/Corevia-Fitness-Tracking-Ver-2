@@ -1381,245 +1381,216 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   }, [part]);
 
   return (
-    <Layout>
-      <div className="container mx-auto max-w-4xl px-2 sm:px-4 py-4 sm:py-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900 dark:text-white">운동 기록</h1>
-        
-        {/* 수면 시간 및 컨디션 체크 섹션 */}
-        <div className="space-y-6">
-          {/* 오늘의 컨디션 체크 */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">오늘의 컨디션</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">수면 시간</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max="24"
-                    step="0.5"
-                    value={sleepHours === undefined ? '' : sleepHours}
-                    onChange={(e) => setSleepHours(e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
-                    placeholder="8"
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">시간</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">컨디션</label>
-                <div className="flex space-x-2">
-                  {['나쁨', '보통', '좋음'].map((c) => (
-                    <Button
-                      key={c}
-                      type="button"
-                      onClick={() => setCondition(c === '나쁨' ? 'bad' : c === '보통' ? 'normal' : 'good')}
-                      variant={condition === (c === '나쁨' ? 'bad' : c === '보통' ? 'normal' : 'good') ? 'primary' : 'outline'}
-                      size="sm"
-                    >
-                      {c}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">운동 시작 시간</label>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
-                />
-              </div>
+    <div className="space-y-6">
+      {/* 오늘의 컨디션 체크 */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">오늘의 컨디션</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">수면 시간</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                max="24"
+                step="0.5"
+                value={sleepHours === undefined ? '' : sleepHours}
+                onChange={(e) => setSleepHours(e.target.value ? parseFloat(e.target.value) : undefined)}
+                className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                placeholder="8"
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">시간</span>
             </div>
           </div>
-
-          {/* 운동 부위 선택 */}
-          <div className="space-y-4">
-            <div>
-              <label className="text-lg font-semibold text-gray-800 dark:text-white mb-2 block">운동 부위</label>
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-                {exercisePartOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setPart(option.value as ExercisePart)}
-                    className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
-                      part === option.value
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 메인 운동 선택 */}
-            {mainExerciseOptions[part] && mainExerciseOptions[part].length > 0 && (
-              <div>
-                <label className="text-lg font-semibold text-gray-800 dark:text-white mb-2 block">메인 운동</label>
-                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-                  {(mainExerciseOptions[part] || []).map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setSelectedMainExercise(option.value)}
-                      className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
-                        selectedMainExercise === option.value
-                          ? 'bg-green-600 text-white shadow-md'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 최근 운동 정보 */}
-          {latestWorkoutInfo.exists && (
-            <div className="bg-blue-50 dark:bg-gray-700/50 p-3 rounded-lg text-sm">
-              <p>
-                <strong>최근 기록:</strong> {latestWorkoutInfo.exerciseName} - {latestWorkoutInfo.weight}kg &times; {latestWorkoutInfo.reps}회 ({latestWorkoutInfo.sets}세트)
-                <span className={latestWorkoutInfo.allSuccess ? 'text-green-500 ml-2' : 'text-red-500 ml-2'}>
-                  ({latestWorkoutInfo.allSuccess ? '성공' : '실패'})
-                </span>
-              </p>
-            </div>
-          )}
-
-          {/* 메인 운동 */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
-              </h2>
-              {/* 휴식 타이머 */}
-              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
-                <Clock size={18} className="text-gray-500" />
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    value={globalTimer.timerMinutes}
-                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
-                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                  />
-                  <span className="font-bold text-lg">:</span>
-                  <input
-                    type="number"
-                    value={globalTimer.timerSeconds}
-                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
-                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={togglePauseGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                    {globalTimer.isRunning && !globalTimer.isPaused ? <Pause size={18} /> : <Play size={18} />}
-                  </button>
-                  <button onClick={resetGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                    <RotateCcw size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {mainExercise.sets.map((set, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
-                  <span className="w-6 text-center font-semibold text-gray-500">{index + 1}</span>
-                  <input
-                    type="number"
-                    value={set.weight}
-                    onChange={(e) => {
-                      const newSets = [...mainExercise.sets];
-                      newSets[index].weight = Number(e.target.value);
-                      setMainExercise({ ...mainExercise, sets: newSets });
-                    }}
-                    className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
-                    placeholder="무게"
-                  />
-                  <span className="text-gray-400">kg</span>
-                  <input
-                    type="number"
-                    value={set.reps}
-                    onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
-                    className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
-                    placeholder="횟수"
-                  />
-                  <span className="text-gray-400">회</span>
-                  <button
-                    onClick={() => handleSetCompletionAndTimer(index, true)}
-                    className={`p-2 rounded-full ${set.isSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}
-                  >
-                    <CheckCircle size={20} />
-                  </button>
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">컨디션</label>
+            <div className="flex space-x-2">
+              {['나쁨', '보통', '좋음'].map((c) => (
+                <Button
+                  key={c}
+                  type="button"
+                  onClick={() => setCondition(c === '나쁨' ? 'bad' : c === '보통' ? 'normal' : 'good')}
+                  variant={condition === (c === '나쁨' ? 'bad' : c === '보통' ? 'normal' : 'good') ? 'primary' : 'outline'}
+                  size="sm"
+                >
+                  {c}
+                </Button>
               ))}
             </div>
           </div>
-          
-          {/* 보조 운동 */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">보조 운동</h2>
-            <div className="space-y-4">
-              {accessoryExercises.map((exercise, index) => (
-                <AccessoryExerciseComponent
-                  key={index}
-                  index={index}
-                  exercise={exercise}
-                  onChange={handleAccessoryExerciseChange}
-                  onRemove={removeAccessoryExercise}
-                  currentExercisePart={part}
-                  globalTimer={globalTimer}
-                  startGlobalTimer={startGlobalTimer}
-                  resetGlobalTimer={resetGlobalTimer}
-                  formatTime={formatTimeGlobal}
-                />
-              ))}
-            </div>
-            <Button
-              onClick={addAccessoryExercise}
-              variant="outline"
-              className="w-full"
-              icon={<Plus size={16} />}
-            >
-              보조 운동 추가
-            </Button>
-          </div>
-
-          {/* 메모 */}
-          <div className="space-y-2">
-            <label htmlFor="notes" className="text-lg font-semibold text-gray-800 dark:text-white">메모</label>
-            <textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700"
-              placeholder="운동 후 느낌, 컨디션, 통증 등 자유롭게 기록하세요."
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">운동 시작 시간</label>
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
             />
-          </div>
-
-          {/* 저장 버튼 */}
-          <div className="mt-6">
-            <Button
-              onClick={handleSubmit}
-              disabled={!isFormValid}
-              size="lg"
-              className="w-full"
-            >
-              <Save size={20} className="mr-2" />
-              운동 기록 저장
-            </Button>
           </div>
         </div>
       </div>
-    </Layout>
+
+      {/* 운동 부위 및 메인 운동 선택 */}
+      <div className="space-y-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        <div>
+          <label className="text-lg font-semibold text-gray-800 dark:text-white mb-2 block">운동 부위</label>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+            {exercisePartOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setPart(option.value as ExercisePart)}
+                className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
+                  part === option.value
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {mainExerciseOptions[part] && mainExerciseOptions[part].length > 0 && (
+          <div>
+            <label className="text-lg font-semibold text-gray-800 dark:text-white mb-2 block">메인 운동</label>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+              {(mainExerciseOptions[part] || []).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSelectedMainExercise(option.value)}
+                  className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
+                    selectedMainExercise === option.value
+                      ? 'bg-green-600 text-white shadow-md'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 최근 운동 정보 및 메인 운동 입력 */}
+      <div className="space-y-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        {latestWorkoutInfo.exists && (
+          <div className="bg-blue-50 dark:bg-gray-700/50 p-3 rounded-lg text-sm">
+            <p>
+              <strong>최근 기록:</strong> {latestWorkoutInfo.exerciseName} - {latestWorkoutInfo.weight}kg &times; {latestWorkoutInfo.reps}회 ({latestWorkoutInfo.sets}세트)
+              <span className={latestWorkoutInfo.allSuccess ? 'text-green-500 ml-2' : 'text-red-500 ml-2'}>
+                ({latestWorkoutInfo.allSuccess ? '성공' : '실패'})
+              </span>
+            </p>
+          </div>
+        )}
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+            메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
+          </h2>
+          {/* 휴식 타이머 */}
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+            <Clock size={18} className="text-gray-500" />
+            <div className="flex items-center">
+              <input
+                type="number"
+                value={globalTimer.timerMinutes}
+                onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
+                className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+              />
+              <span className="font-bold text-lg">:</span>
+              <input
+                type="number"
+                value={globalTimer.timerSeconds}
+                onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
+                className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={togglePauseGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                {globalTimer.isRunning && !globalTimer.isPaused ? <Pause size={18} /> : <Play size={18} />}
+              </button>
+              <button onClick={resetGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                <RotateCcw size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {mainExercise.sets.map((set, index) => (
+            <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
+              <span className="w-6 text-center font-semibold text-gray-500">{index + 1}</span>
+              <input
+                type="number"
+                value={set.weight}
+                onChange={(e) => {
+                  const newSets = [...mainExercise.sets];
+                  newSets[index].weight = Number(e.target.value);
+                  setMainExercise({ ...mainExercise, sets: newSets });
+                }}
+                className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
+                placeholder="무게"
+              />
+              <span className="text-gray-400">kg</span>
+              <input
+                type="number"
+                value={set.reps}
+                onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
+                className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
+                placeholder="횟수"
+              />
+              <span className="text-gray-400">회</span>
+              <button
+                onClick={() => handleSetCompletionAndTimer(index, true)}
+                className={`p-2 rounded-full ${set.isSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}
+              >
+                <CheckCircle size={20} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* 보조 운동 */}
+      <div className="space-y-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">보조 운동</h2>
+        <div className="space-y-4">
+          {accessoryExercises.map((exercise, index) => (
+            <AccessoryExerciseComponent
+              key={index}
+              index={index}
+              exercise={exercise}
+              onChange={handleAccessoryExerciseChange}
+              onRemove={removeAccessoryExercise}
+              currentExercisePart={part}
+              globalTimer={globalTimer}
+              startGlobalTimer={startGlobalTimer}
+              resetGlobalTimer={resetGlobalTimer}
+              formatTime={formatTimeGlobal}
+            />
+          ))}
+        </div>
+        <Button onClick={addAccessoryExercise} variant="outline" className="w-full" icon={<Plus size={16} />}>
+          보조 운동 추가
+        </Button>
+      </div>
+
+      {/* 메모 */}
+      <div className="space-y-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        <label htmlFor="notes" className="text-lg font-semibold text-gray-800 dark:text-white">메모</label>
+        <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700" />
+      </div>
+
+      {/* 저장 버튼 */}
+      <div className="mt-6">
+        <Button onClick={handleSubmit} disabled={!isFormValid} size="lg" className="w-full">
+          <Save size={20} className="mr-2" />
+          운동 기록 저장
+        </Button>
+      </div>
+    </div>
   );
 };
 
