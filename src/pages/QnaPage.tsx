@@ -216,7 +216,7 @@ const QnaPage: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <button
-            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
+            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(false); setShow1RMCalculator(false); setShowWorkoutSets(false); setSelectedExercise(null);}}
             className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
           >
             <Info size={20} className="mb-1" />
@@ -240,14 +240,14 @@ const QnaPage: React.FC = () => {
           </button>
           
           <button
-            onClick={() => {setActiveTab('exercise'); setShow1RMCalculator(true); setShowWeightGuide(false); setShowWorkoutSets(false);}}
+            onClick={() => {setActiveTab('exercise'); toggle1RMCalculator(); setShowWeightGuide(false); setShowWorkoutSets(false);}}
             className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
           >
             <Target size={20} className="mb-1" />
             1RM 계산기
           </button>
            <button
-            onClick={() => {setActiveTab('exercise'); setShowWeightGuide(true); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
+            onClick={() => {setActiveTab('exercise'); toggleWeightGuide(); setShow1RMCalculator(false); setShowWorkoutSets(false);}}
             className="p-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors flex flex-col items-center text-sm"
           >
             <TrendingUp size={20} className="mb-1" />
@@ -279,49 +279,19 @@ const QnaPage: React.FC = () => {
           </button>
         </div>
         
-        {activeTab === 'exercise' && !showWeightGuide && !show1RMCalculator && !showWorkoutSets && (
-          <div className="space-y-4">
-            <Button onClick={() => { setSelectedExercise(null); setShow1RMCalculator(false); setShowWeightGuide(false); }}>운동 검색</Button>
-            <Button onClick={toggle1RMCalculator}>1RM 계산기</Button>
-            <Button onClick={toggleWeightGuide}>운동 무게 추천</Button>
-            <Button onClick={() => setShowWorkoutSets(true)}>운동 프로그램</Button>
-
-            {show1RMCalculator ? <OneRepMaxCalculator /> :
-             showWeightGuide ? <WorkoutWeightGuide /> :
-             showWorkoutSets ? <WorkoutProgram /> :
-             selectedExercise ? <ExerciseDetail exercise={selectedExercise} onClose={() => setSelectedExercise(null)} /> : 
-             <ExerciseSearch onSelectExercise={handleExerciseSelect} selectedPart={selectedPart} onPartChange={handlePartSelect} />}
-          </div>
+        {activeTab === 'exercise' && (
+          show1RMCalculator ? <OneRepMaxCalculator /> :
+          showWeightGuide ? <WorkoutWeightGuide /> :
+          showWorkoutSets ? <WorkoutProgram /> :
+          selectedExercise ? <ExerciseDetail exercise={selectedExercise} onClose={() => setSelectedExercise(null)} /> : 
+          <ExerciseSearch onSelectExercise={handleExerciseSelect} selectedPart={selectedPart} onPartChange={handlePartSelect} />
         )}
 
         {activeTab === 'nutrition' && (
-          <div className="space-y-4">
-            <Button onClick={toggleCalculator}>목표 칼로리 계산</Button>
-            <Button onClick={toggleNutritionScout}>음식 영양성분 확인</Button>
-            <Button onClick={toggleMealPlans}>식단 예시</Button>
-
-            {showCalculator && <CalorieCalculator userProfile={userProfile} onComplete={async (result) => {
-              try {
-                console.log('칼로리 계산 결과:', result);
-                setCalculatorResults({
-                  bmr: result.bmr,
-                  tdee: result.tdee,
-                  targetCalories: result.targetCalories,
-                  protein: result.macros.protein,
-                  carbs: result.macros.carbs,
-                  fat: result.macros.fat
-                });
-                toast.success('칼로리 계산이 완료되었습니다.');
-                return Promise.resolve();
-              } catch (error) {
-                console.error('에러:', error);
-                toast.error('칼로리 계산 중 오류가 발생했습니다.');
-                return Promise.reject(error);
-              }
-            }} />}
-            {showNutritionScout && <NutritionScout />}
-            {showMealPlans && <MealPlans />}
-          </div>
+          showCalculator ? <CalorieCalculator userProfile={userProfile} onComplete={async () => {}} /> :
+          showNutritionScout ? <NutritionScout /> :
+          showMealPlans ? <MealPlans /> :
+          <div className="text-center p-8"><p>영양 관련 기능을 선택해주세요.</p></div>
         )}
 
         {activeTab === 'handbook' && (
