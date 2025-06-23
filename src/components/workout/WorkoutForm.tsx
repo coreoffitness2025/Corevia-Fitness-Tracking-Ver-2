@@ -605,16 +605,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
 
   // 보조 운동 추가
   const addAccessoryExercise = () => {
-    // 보조 운동은 세트 구성 없이 1개의 기본 세트로 시작
+    // 기본 세트 구성을 현재 선택된 세트 구성과 일치시킴
+    const { setsCount, repsCount } = getSetConfiguration(
+      selectedSetConfiguration,
+      customSets,
+      customReps
+    );
+    
+    // 새 보조 운동 생성
     const newExercise = {
       name: '',
       weight: 0,
-      reps: 0,
-      sets: [{
-        reps: 0,
+      reps: repsCount,
+      sets: Array.from({ length: setsCount }, () => ({
+        reps: repsCount,
         weight: 0,
         isSuccess: null
-      }]
+      }))
     };
     
     setAccessoryExercises((prev: typeof accessoryExercises) => [...prev, newExercise]); // prev 타입 명시
@@ -778,17 +785,24 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       if (accessoryIndex >= 0 && accessoryIndex < accessoryExercises.length) {
         const newExercises = [...accessoryExercises];
         
-        // 단순히 체크 표시를 토글합니다 (true <-> false <-> null)
-        const currentStatus = newExercises[accessoryIndex].sets[setIndex].isSuccess;
-        if (currentStatus === true) {
-          newExercises[accessoryIndex].sets[setIndex].isSuccess = false;
-        } else if (currentStatus === false) {
+        // 이미 상태가 있으면 초기 상태로 되돌리기 (토글 기능)
+        if (newExercises[accessoryIndex].sets[setIndex].isSuccess !== null) {
           newExercises[accessoryIndex].sets[setIndex].isSuccess = null;
         } else {
-          newExercises[accessoryIndex].sets[setIndex].isSuccess = true;
+          // 목표 횟수 달성 시 성공, 그렇지 않으면 실패
+          const { repsCount: targetReps } = getSetConfiguration(
+            selectedSetConfiguration, 
+            customSets, 
+            customReps
+          );
+          
+          // 현재 입력된 횟수가 목표 횟수 이상이면 성공, 그렇지 않으면 실패
+          const currentReps = newExercises[accessoryIndex].sets[setIndex].reps;
+          const isSuccess = currentReps >= targetReps;
+          newExercises[accessoryIndex].sets[setIndex].isSuccess = isSuccess;
+          
+          console.log(`보조운동 ${accessoryIndex+1}, 세트 ${setIndex+1} 완료: ${currentReps}/${targetReps}회, 결과: ${isSuccess ? '성공' : '실패'}`);
         }
-        
-        console.log(`보조운동 ${accessoryIndex+1}, 세트 ${setIndex+1} 완료 상태 변경: ${newExercises[accessoryIndex].sets[setIndex].isSuccess}`);
         
         setAccessoryExercises(newExercises);
       } else {
@@ -1372,25 +1386,25 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">오늘의 컨디션</h2>
         <div className="space-y-4">
-            <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">수면 시간</label>
             <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  max="24"
-                  step="0.5"
-                  value={sleepHours === undefined ? '' : sleepHours}
-                  onChange={(e) => setSleepHours(e.target.value ? parseFloat(e.target.value) : undefined)}
+              <input
+                type="number"
+                min="0"
+                max="24"
+                step="0.5"
+                value={sleepHours === undefined ? '' : sleepHours}
+                onChange={(e) => setSleepHours(e.target.value ? parseFloat(e.target.value) : undefined)}
                 className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
                 placeholder="8"
-                />
+              />
               <span className="text-sm text-gray-600 dark:text-gray-400">시간</span>
-              </div>
             </div>
-            <div>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">컨디션</label>
-              <div className="flex space-x-2">
+            <div className="flex space-x-2">
               {['나쁨', '보통', '좋음'].map((c) => (
                 <Button
                   key={c}
@@ -1402,19 +1416,19 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   {c}
                 </Button>
               ))}
-              </div>
-            </div>
-            <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">운동 시작 시간</label>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-              className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
-            />
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">운동 시작 시간</label>
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+            />
+          </div>
         </div>
+      </div>
 
       {/* 운동 부위 및 메인 운동 선택 */}
       <div className="space-y-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
@@ -1422,47 +1436,47 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <label className="text-lg font-semibold text-gray-800 dark:text-white mb-2 block">운동 부위</label>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
             {exercisePartOptions.map((option) => (
-                <button
-                  key={option.value}
+              <button
+                key={option.value}
                 type="button"
                 onClick={() => setPart(option.value as ExercisePart)}
                 className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
-                      part === option.value
+                  part === option.value
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                 }`}
               >
                 {option.label}
-                </button>
-              ))}
-            </div>
-                </div>
+              </button>
+            ))}
+          </div>
+        </div>
         {mainExerciseOptions[part] && mainExerciseOptions[part].length > 0 && (
           <div>
             <label className="text-lg font-semibold text-gray-800 dark:text-white mb-2 block">메인 운동</label>
             <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
               {(mainExerciseOptions[part] || []).map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
+                <button
+                  key={option.value}
+                  type="button"
                   onClick={() => setSelectedMainExercise(option.value)}
                   className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
-                              selectedMainExercise === option.value
+                    selectedMainExercise === option.value
                       ? 'bg-green-600 text-white shadow-md'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
+                  }`}
+                >
+                  {option.label}
+                </button>
               ))}
-                    </div>
+            </div>
           </div>
         )}
-                  </div>
-                  
+      </div>
+
       {/* 최근 운동 정보 및 메인 운동 입력 */}
       <div className="space-y-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-                  {latestWorkoutInfo.exists && (
+        {latestWorkoutInfo.exists && (
           <div className="bg-blue-50 dark:bg-gray-700/50 p-3 rounded-lg text-sm">
             <p>
               <strong>최근 기록:</strong> {latestWorkoutInfo.exerciseName} - {latestWorkoutInfo.weight}kg &times; {latestWorkoutInfo.reps}회 ({latestWorkoutInfo.sets}세트)
@@ -1470,14 +1484,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 ({latestWorkoutInfo.allSuccess ? '성공' : '실패'})
               </span>
             </p>
-                    </div>
-                  )}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          </div>
+        )}
+        <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
             메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
           </h2>
           {/* 휴식 타이머 */}
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg w-full sm:w-auto">
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
             <Clock size={18} className="text-gray-500" />
             <div className="flex items-center">
               <input
@@ -1485,7 +1499,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 value={globalTimer.timerMinutes}
                 onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
                 className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                inputMode="numeric"
               />
               <span className="font-bold text-lg">:</span>
               <input
@@ -1493,67 +1506,47 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 value={globalTimer.timerSeconds}
                 onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
                 className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                inputMode="numeric"
               />
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={togglePauseGlobalTimer} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                {globalTimer.isRunning && !globalTimer.isPaused ? <Pause size={20} /> : <Play size={20} />}
+              <button onClick={togglePauseGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                {globalTimer.isRunning && !globalTimer.isPaused ? <Pause size={18} /> : <Play size={18} />}
               </button>
-              <button onClick={resetGlobalTimer} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                <RotateCcw size={20} />
+              <button onClick={resetGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
+                <RotateCcw size={18} />
               </button>
             </div>
           </div>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {mainExercise.sets.map((set, index) => (
-            <div key={index} className="flex flex-col space-y-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-md">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-600 dark:text-gray-300">세트 {index + 1}</span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    value={set.weight}
-                    onChange={(e) => {
-                      const newSets = [...mainExercise.sets];
-                      newSets[index].weight = Number(e.target.value);
-                      setMainExercise({ ...mainExercise, sets: newSets });
-                    }}
-                    className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
-                    placeholder="무게"
-                    inputMode="decimal"
-                  />
-                  <span className="ml-1 text-gray-400">kg</span>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    value={set.reps}
-                    onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
-                    className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
-                    placeholder="횟수"
-                    inputMode="numeric"
-                  />
-                  <span className="ml-1 text-gray-400">회</span>
-                </div>
-              </div>
-              
+            <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
+              <span className="w-6 text-center font-semibold text-gray-500">{index + 1}</span>
+              <input
+                type="number"
+                value={set.weight}
+                onChange={(e) => {
+                  const newSets = [...mainExercise.sets];
+                  newSets[index].weight = Number(e.target.value);
+                  setMainExercise({ ...mainExercise, sets: newSets });
+                }}
+                className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
+                placeholder="무게"
+              />
+              <span className="text-gray-400">kg</span>
+              <input
+                type="number"
+                value={set.reps}
+                onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
+                className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
+                placeholder="횟수"
+              />
+              <span className="text-gray-400">회</span>
               <button
                 onClick={() => handleSetCompletionAndTimer(index, true)}
-                className={`w-full p-2 rounded-md flex items-center justify-center ${
-                  set.isSuccess === true 
-                    ? 'bg-green-500 text-white' 
-                    : set.isSuccess === false 
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-200 dark:bg-gray-600'
-                }`}
+                className={`p-2 rounded-full ${set.isSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}
               >
-                <CheckCircle size={18} className="mr-1" />
-                {set.isSuccess === true ? '완료' : set.isSuccess === false ? '실패' : '세트 완료 체크'}
+                <CheckCircle size={20} />
               </button>
             </div>
           ))}
@@ -1579,12 +1572,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             />
           ))}
         </div>
-        <Button 
-          onClick={addAccessoryExercise} 
-          variant="outline" 
-          className="w-full py-3 flex items-center justify-center gap-2"
-        >
-          <Plus size={18} />
+        <Button onClick={addAccessoryExercise} variant="outline" className="w-full" icon={<Plus size={16} />}>
           보조 운동 추가
         </Button>
       </div>
@@ -1600,9 +1588,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         <Button onClick={handleSubmit} disabled={!isFormValid} size="lg" className="w-full">
           <Save size={20} className="mr-2" />
           운동 기록 저장
-          </Button>
-        </div>
+        </Button>
       </div>
+    </div>
   );
 };
 
