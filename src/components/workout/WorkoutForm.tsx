@@ -550,6 +550,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           flashTitle();
           
           // 타이머 종료 시 timeLeft를 다시 timerMinutes, timerSeconds 기준으로 설정
+          setShowFloatingTimer(false); // 타이머 UI 숨김
           return { ...prev, sectionId: null, timeLeft: prev.timerMinutes * 60 + prev.timerSeconds, isPaused: true, isRunning: false };
         }
         return { ...prev, timeLeft: prev.timeLeft - 1 };
@@ -1499,7 +1500,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
             메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
           </h2>
-          {/* 휴식 타이머 설정 */}
+          {/* 휴식 타이머 */}
           <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
             <Clock size={18} className="text-gray-500" />
             <div className="flex items-center">

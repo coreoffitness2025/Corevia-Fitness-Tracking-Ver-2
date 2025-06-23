@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
-import { ExercisePart, Set, SetConfiguration } from '../../types';
+import { ExercisePart, Set } from '../../types';
 import { Plus, Trash, X, CheckCircle } from 'lucide-react';
 import { accessoryExercisesByPart } from '../../data/accessoryExerciseData';
 import { toast } from 'react-hot-toast';
-import { getSetConfiguration, getPartLabel } from '../../utils/workoutUtils';
+import { getPartLabel } from '../../utils/workoutUtils';
 
 interface AccessoryExerciseProps {
   index: number;
@@ -99,7 +99,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         <select
           value={exercise.name}
           onChange={handleAccessoryNameSelect}
-          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold"
+          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold flex-grow"
         >
           <option value="">운동 선택</option>
           {filteredAccessoryExercises.map((ex) => (
