@@ -269,10 +269,7 @@ export default function FoodLogPage() {
       </div>
 
       <div className="mb-6 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow">
-        <div className="flex items-start mb-2">
-          <Info className="text-blue-500 mr-2 mt-1 flex-shrink-0" size={20} />
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">1끼당 권장 섭취량 (3끼 기준)</h3>
-        </div>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">1끼당 권장 섭취량</h3>
         <div className="grid grid-cols-3 gap-3 mb-3">
           <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
             <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
@@ -290,6 +287,21 @@ export default function FoodLogPage() {
         <p className="text-sm text-gray-600 dark:text-gray-300">
           💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
         </p>
+        
+        <div className="flex gap-2 mt-3">
+          <button 
+            onClick={() => setShowNutritionGuide(!showNutritionGuide)} 
+            className="flex-1 text-center py-2 px-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium"
+          >
+            음식별 칼로리 확인
+          </button>
+          <button 
+            onClick={() => setShowSourcesModal('protein')} 
+            className="flex-1 text-center py-2 px-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-sm font-medium"
+          >
+            영양소 급원 확인
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-4">

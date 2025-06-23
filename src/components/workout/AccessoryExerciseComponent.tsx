@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
-import { ExercisePart, Set, SetConfiguration } from '../../types';
-import { Plus, Trash, X, Clock, CheckCircle, Square, Play, Pause, RotateCcw } from 'lucide-react';
+import { ExercisePart, Set } from '../../types';
+import { Plus, Trash, X, CheckCircle, Clock } from 'lucide-react';
 import { accessoryExercisesByPart } from '../../data/accessoryExerciseData';
 import { toast } from 'react-hot-toast';
-import { getSetConfiguration, getPartLabel } from '../../utils/workoutUtils';
+import { getPartLabel } from '../../utils/workoutUtils';
 
 interface AccessoryExerciseProps {
   index: number;
@@ -63,56 +63,133 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
 
   const handleAccessorySetCompletion = (setIndex: number) => {
     const newSets = [...exercise.sets];
-    newSets[setIndex].isSuccess = !newSets[setIndex].isSuccess;
+    if (newSets[setIndex].isSuccess === true) {
+      newSets[setIndex].isSuccess = false;
+    } else if (newSets[setIndex].isSuccess === false) {
+      newSets[setIndex].isSuccess = null;
+    } else {
+      newSets[setIndex].isSuccess = true;
+    }
+    onChange(index, { ...exercise, sets: newSets });
+  };
+
+  const handleStartTimer = (setIndex: number) => {
+    const timerId = `accessory_${index}_${setIndex}`;
+    startGlobalTimer(timerId);
+    toast.success(`${exercise.name} 세트 ${setIndex + 1} 타이머 시작`, {
+      duration: 2000,
+      position: 'top-center',
+    });
+  };
+
+  const addSet = () => {
+    const newSets = [...exercise.sets, { reps: 0, weight: 0, isSuccess: null }];
+    onChange(index, { ...exercise, sets: newSets });
+  };
+
+  const removeSet = (setIndex: number) => {
+    if (exercise.sets.length <= 1) {
+      toast.error('최소 1개의 세트가 필요합니다.');
+      return;
+    }
+    const newSets = exercise.sets.filter((_, i) => i !== setIndex);
     onChange(index, { ...exercise, sets: newSets });
   };
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-2">
         <select
           value={exercise.name}
           onChange={handleAccessoryNameSelect}
-          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold"
+          className="p-2 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold flex-grow mr-2"
         >
           <option value="">운동 선택</option>
           {filteredAccessoryExercises.map((ex) => (
             <option key={ex.id} value={ex.name}>{ex.name}</option>
           ))}
         </select>
-        <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
-          <Trash size={16} className="text-red-500" />
+        <Button variant="ghost" size="icon" onClick={() => onRemove(index)} className="p-2">
+          <Trash size={18} className="text-red-500" />
         </Button>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {exercise.sets.map((set, setIndex) => (
-          <div key={setIndex} className="flex items-center gap-2">
-            <span className="w-6 text-center font-semibold text-gray-500">{setIndex + 1}</span>
-            <input
-              type="number"
-              value={set.weight}
-              onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))}
-              className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-800"
-              placeholder="무게"
-            />
-            <span className="text-gray-400">kg</span>
-            <input
-              type="number"
-              value={set.reps}
-              onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))}
-              className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-800"
-              placeholder="횟수"
-            />
-            <span className="text-gray-400">회</span>
-            <button
-              onClick={() => handleAccessorySetCompletion(setIndex)}
-              className={`p-2 rounded-full ${set.isSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}
-            >
-              <CheckCircle size={20} />
-            </button>
+          <div key={setIndex} className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-600 dark:text-gray-300">세트 {setIndex + 1}</span>
+              <button
+                onClick={() => removeSet(setIndex)}
+                className="p-1 text-red-500"
+                aria-label="세트 삭제"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={set.weight}
+                  onChange={(e) => handleSetChange(setIndex, 'weight', Number(e.target.value))}
+                  className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-800"
+                  placeholder="무게"
+                  inputMode="decimal"
+                />
+                <span className="ml-1 text-gray-400">kg</span>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={set.reps}
+                  onChange={(e) => handleSetChange(setIndex, 'reps', Number(e.target.value))}
+                  className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-800"
+                  placeholder="횟수"
+                  inputMode="numeric"
+                />
+                <span className="ml-1 text-gray-400">회</span>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleAccessorySetCompletion(setIndex)}
+                className={`flex-1 p-2 rounded-md flex items-center justify-center ${
+                  set.isSuccess === true 
+                    ? 'bg-green-500 text-white' 
+                    : set.isSuccess === false 
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-600'
+                }`}
+              >
+                <CheckCircle size={18} className="mr-1" />
+                {set.isSuccess === true ? '완료' : set.isSuccess === false ? '실패' : '체크'}
+              </button>
+              
+              <button
+                onClick={() => handleStartTimer(setIndex)}
+                className="p-2 rounded-md bg-blue-500 text-white flex items-center justify-center"
+                aria-label="타이머 시작"
+              >
+                <Clock size={18} />
+              </button>
+            </div>
           </div>
         ))}
+        
+        <div className="flex justify-center mt-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={addSet}
+            className="w-full py-2 flex items-center justify-center gap-1"
+          >
+            <Plus size={18} /> 세트 추가
+          </Button>
+        </div>
       </div>
     </div>
   );
