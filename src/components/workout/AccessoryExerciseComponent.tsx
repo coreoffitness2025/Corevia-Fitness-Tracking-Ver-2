@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import { ExercisePart, Set, SetConfiguration } from '../../types';
-import { Plus, Trash, X, Clock, CheckCircle, Square, Play, Pause, RotateCcw } from 'lucide-react';
+import { Plus, Trash, X, CheckCircle } from 'lucide-react';
 import { accessoryExercisesByPart } from '../../data/accessoryExerciseData';
 import { toast } from 'react-hot-toast';
 import { getSetConfiguration, getPartLabel } from '../../utils/workoutUtils';
@@ -72,7 +72,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     // 세트 완료 처리
     handleAccessorySetCompletion(setIndex);
     
-    // 타이머 시작
+    // 타이머 시작 (플로팅 타이머가 표시됨)
     const timerId = `accessory_${index}_${setIndex}`;
     startGlobalTimer(timerId);
   };
@@ -159,32 +159,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
           <Plus size={16} /> 세트 추가
         </button>
       </div>
-      
-      {/* 타이머 표시 영역 */}
-      {globalTimer.isRunning && globalTimer.sectionId && globalTimer.sectionId.startsWith(`accessory_${index}_`) && (
-        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock size={18} className="text-blue-500" />
-            <span className="font-bold text-lg text-blue-600 dark:text-blue-400">
-              {formatTime(globalTimer.timeLeft)}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => globalTimer.isPaused ? startGlobalTimer(globalTimer.sectionId!) : resetGlobalTimer()}
-              className="p-2 rounded-full bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700"
-            >
-              {globalTimer.isPaused ? <Play size={18} /> : <Pause size={18} />}
-            </button>
-            <button 
-              onClick={resetGlobalTimer}
-              className="p-2 rounded-full bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700"
-            >
-              <RotateCcw size={18} />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

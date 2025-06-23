@@ -446,6 +446,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       isRunning: true,
     }));
 
+    // 타이머 UI를 표시
+    setShowFloatingTimer(true);
+
     const sectionName = sectionId === 'main' ? '메인 운동' : 
       sectionId.startsWith('accessory_') ? 
       `${accessoryExercises[parseInt(sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(sectionId.split('_')[1])+1}` 
@@ -575,6 +578,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       isPaused: true,
       isRunning: false,
     }));
+    
+    // 타이머 UI를 숨김
+    setShowFloatingTimer(false);
   };
 
   const handleTimerInputChange = (type: 'minutes' | 'seconds', value: string) => {
@@ -1380,8 +1386,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     }
   }, [part]);
 
+  // 타이머 UI가 화면에 표시되는지 여부를 제어하는 상태 추가
+  const [showFloatingTimer, setShowFloatingTimer] = useState<boolean>(false);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* 오늘의 컨디션 체크 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">오늘의 컨디션</h2>
@@ -1490,7 +1499,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
             메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
           </h2>
-          {/* 휴식 타이머 */}
+          {/* 휴식 타이머 설정 */}
           <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
             <Clock size={18} className="text-gray-500" />
             <div className="flex items-center">
@@ -1499,6 +1508,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 value={globalTimer.timerMinutes}
                 onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
                 className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                inputMode="numeric"
               />
               <span className="font-bold text-lg">:</span>
               <input
@@ -1506,15 +1516,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 value={globalTimer.timerSeconds}
                 onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
                 className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                inputMode="numeric"
               />
-            </div>
-            <div className="flex items-center gap-1">
-              <button onClick={togglePauseGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                {globalTimer.isRunning && !globalTimer.isPaused ? <Pause size={18} /> : <Play size={18} />}
-              </button>
-              <button onClick={resetGlobalTimer} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600">
-                <RotateCcw size={18} />
-              </button>
             </div>
           </div>
         </div>
@@ -1532,6 +1535,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 }}
                 className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
                 placeholder="무게"
+                inputMode="decimal"
               />
               <span className="text-gray-400">kg</span>
               <input
@@ -1540,6 +1544,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                 onChange={(e) => handleRepsChange(Number(e.target.value), index, true)}
                 className="w-full p-2 text-center border border-gray-300 rounded-md dark:bg-gray-700"
                 placeholder="횟수"
+                inputMode="numeric"
               />
               <span className="text-gray-400">회</span>
               <button
@@ -1590,6 +1595,42 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           운동 기록 저장
         </Button>
       </div>
+      
+      {/* 플로팅 타이머 UI */}
+      {showFloatingTimer && globalTimer.isRunning && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 z-50">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock size={20} className="text-blue-500" />
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {globalTimer.sectionId?.startsWith('accessory_') 
+                    ? `보조 운동 ${parseInt(globalTimer.sectionId.split('_')[1])+1}` 
+                    : '메인 운동'}
+                </span>
+                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  {formatTimeGlobal(globalTimer.timeLeft)}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={togglePauseGlobalTimer}
+                className="p-3 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+              >
+                {globalTimer.isPaused ? <Play size={20} /> : <Pause size={20} />}
+              </button>
+              <button 
+                onClick={resetGlobalTimer}
+                className="p-3 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                <RotateCcw size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
