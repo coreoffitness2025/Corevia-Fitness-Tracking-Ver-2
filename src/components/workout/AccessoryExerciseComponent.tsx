@@ -108,11 +108,11 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         </Button>
       </div>
       
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <select
           value={exercise.name}
           onChange={handleAccessoryNameSelect}
-          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold w-1/2"
+          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold w-full sm:w-1/2"
         >
           <option value="">운동 선택</option>
           {filteredAccessoryExercises.map((ex) => (
@@ -121,8 +121,8 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         </select>
         
         {/* 휴식 타이머 설정 - 메인 운동과 동일한 스타일 */}
-        <div className="flex flex-col items-end">
-          <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">휴식 시간 설정</span>
+        <div className="w-full sm:w-auto">
+          <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정</span>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
               <Clock size={18} className="text-gray-500" />

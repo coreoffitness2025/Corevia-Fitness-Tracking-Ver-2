@@ -20,7 +20,7 @@ const PrivacyPolicy: React.FC = () => {
             <li><strong>서비스 개선</strong>: 신규 서비스 개발, 기존 서비스 개선, 이용 현황 통계</li>
             <li><strong>안전 관리</strong>: 부정 이용 방지, 시스템 보안 유지</li>
             <li><strong>광고 서비스</strong>: 맞춤형 광고 제공, 광고 효과 측정, 서비스 수익화</li>
-            <li><strong>AI 기반 서비스</strong>: 향후 도입예정인 AI 기반 운동/식단 추천, 개인 맞춤형 피드백 제공</li>
+            <li><strong>AI 기반 서비스</strong>: 향후 도입 예정인 AI 기반 운동/식단 추천, 개인 맞춤형 피드백 제공</li>
           </ul>
         </section>
         
@@ -40,7 +40,7 @@ const PrivacyPolicy: React.FC = () => {
               <ul className="list-disc pl-6 space-y-1">
                 <li><strong>신체 정보</strong>: 키, 체중, 나이, 성별, 체지방률, 근육량</li>
                 <li><strong>피트니스 정보</strong>: 피트니스 목표, 활동 수준, 목표 칼로리</li>
-                <li><strong>운동 기록</strong>: 운동 종류, 세트 수, 횟수, 무게, 운동 날짜, 1RM 기록</li>
+                <li><strong>운동 기록</strong>: 운동 전 컨디션(수면,식사,운동 시작 시간 등등) 운동 종류, 세트 수, 횟수, 무게, 운동 날짜, 1RM 기록</li>
                 <li><strong>식단 정보</strong>: 음식 사진, 물 섭취량, 영양제 섭취 기록, 식사 시간</li>
                 <li><strong>신체 사진</strong>: 바디 체크용 사진, 촬영 날짜</li>
                 <li><strong>기타</strong>: 개인 메모, 운동 설정 정보</li>
@@ -61,7 +61,7 @@ const PrivacyPolicy: React.FC = () => {
         <section>
           <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제3조 (개인정보의 수집 방법)</h2>
           <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-1">
-            <li><strong>회원가입</strong>: Google OAuth 2.0을 통한 소셜 로그인</li>
+            <li><strong>회원가입</strong>: Google OAuth 2.0을 통한 소셜 로그인, 이메일을 통한 별도 가입</li>
             <li><strong>서비스 이용</strong>: 웹/앱 내 입력 양식을 통한 직접 입력</li>
             <li><strong>사진 업로드</strong>: 기기 카메라 또는 갤러리를 통한 업로드</li>
             <li><strong>자동 수집</strong>: 서비스 이용 과정에서 자동 생성되는 정보</li>
@@ -239,7 +239,7 @@ const PrivacyPolicy: React.FC = () => {
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
               <p><strong>개인정보보호책임자</strong></p>
               <ul className="space-y-1 mt-2">
-                <li>성명: Corevia 대표</li>
+                <li>개인 정보 보호 주체체: Corevia </li>
                 <li>연락처: coreoffitness2025@gmail.com</li>
                 <li>책임자는 개인정보 처리업무를 총괄하며, 개인정보 처리와 관련한 정보주체의 불만처리 및 피해구제 등을 위하여 노력하고 있습니다.</li>
               </ul>

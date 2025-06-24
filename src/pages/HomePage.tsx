@@ -457,7 +457,7 @@ const HomePage = () => {
                 {userProfile?.weight ? `${userProfile.weight} kg` : '기록 없음'}
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
               <Button
                 variant="outline"
                 size="sm"

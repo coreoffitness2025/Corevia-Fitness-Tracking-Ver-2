@@ -156,19 +156,32 @@ export const saveFoodRecord = async (food: FoodRecord): Promise<number> => {
 };
 
 // 이미지 저장
-export const saveFoodImage = async (imageId: string, userId: string, imageBlob: Blob): Promise<void> => {
+export const saveFoodImage = async (imageId: string, userId: string, imageDataOrPath: Blob | string): Promise<void> => {
   try {
     const db = await initDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([IMAGE_STORE], 'readwrite');
       const store = transaction.objectStore(IMAGE_STORE);
       
-      const request = store.put({
+      // 네이티브 환경의 파일 경로인 경우
+      const isNativePath = typeof imageDataOrPath === 'string' && (
+        imageDataOrPath.startsWith('file://') || 
+        imageDataOrPath.startsWith('content://') ||
+        imageDataOrPath.startsWith('/_capacitor_file_')
+      );
+      
+      const imageRecord = {
         id: imageId,
         userId,
-        blob: imageBlob,
-        createdAt: new Date().toISOString()
-      });
+        createdAt: new Date().toISOString(),
+        // 네이티브 경로이면 filePath 필드에 저장, 아니면 blob 필드에 저장
+        ...(isNativePath 
+          ? { filePath: imageDataOrPath as string, isNativePath: true } 
+          : { blob: imageDataOrPath as Blob, isNativePath: false }
+        )
+      };
+      
+      const request = store.put(imageRecord);
       
       request.onsuccess = () => {
         resolve();
@@ -274,7 +287,7 @@ export const getFoodRecords = async (): Promise<FoodRecord[]> => {
 };
 
 // 이미지 조회
-export const getFoodImage = async (imageId: string): Promise<Blob | null> => {
+export const getFoodImage = async (imageId: string): Promise<{ blob?: Blob, filePath?: string, isNativePath?: boolean } | null> => {
   try {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -285,7 +298,12 @@ export const getFoodImage = async (imageId: string): Promise<Blob | null> => {
       request.onsuccess = (event) => {
         const result = (event.target as IDBRequest).result;
         if (result) {
-          resolve(result.blob);
+          // 조회 결과 반환
+          resolve({
+            blob: result.blob,
+            filePath: result.filePath,
+            isNativePath: result.isNativePath
+          });
         } else {
           resolve(null);
         }

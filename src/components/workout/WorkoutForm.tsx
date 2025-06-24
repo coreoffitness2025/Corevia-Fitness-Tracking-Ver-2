@@ -1526,13 +1526,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             </p>
           </div>
         )}
-        <div className="flex justify-between items-center">
+        
+        {/* 메인 운동 제목과 타이머 - 모바일 반응성 개선 */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
             메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
           </h2>
+          
           {/* 휴식 타이머 설정 */}
-          <div className="flex flex-col items-end">
-            <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">휴식 시간 설정</span>
+          <div className="w-full sm:w-auto">
+            <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정</span>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
                 <Clock size={18} className="text-gray-500" />
