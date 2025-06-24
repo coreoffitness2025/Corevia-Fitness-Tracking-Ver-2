@@ -269,26 +269,26 @@ export default function FoodLogPage() {
       </div>
 
       <div className="mb-6 p-4 border rounded-lg bg-white dark:bg-gray-800 shadow">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">1끼당 권장 섭취량</h3>
-        <div className="grid grid-cols-3 gap-3 mb-3">
-          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-            <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-            <span className="block text-lg font-bold text-green-600 dark:text-green-400">{nutritionGoals.perMeal.protein}g</span>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">1끼당 권장 섭취량</h3>
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center shadow-sm">
+            <span className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">단백질</span>
+            <span className="block text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{nutritionGoals.perMeal.protein}g</span>
           </div>
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
-            <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-            <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{nutritionGoals.perMeal.carbs}g</span>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center shadow-sm">
+            <span className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">탄수화물</span>
+            <span className="block text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{nutritionGoals.perMeal.carbs}g</span>
           </div>
-          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
-            <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-            <span className="block text-lg font-bold text-red-600 dark:text-red-400">{nutritionGoals.perMeal.fat}g</span>
+          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center shadow-sm">
+            <span className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">지방</span>
+            <span className="block text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{nutritionGoals.perMeal.fat}g</span>
           </div>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
           💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
         </p>
         
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-2">
           <button 
             onClick={() => setShowNutritionGuide(!showNutritionGuide)} 
             className="flex-1 text-center py-2 px-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium"

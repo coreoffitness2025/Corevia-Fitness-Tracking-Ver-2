@@ -457,53 +457,50 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
   return (
     <div className="max-w-2xl mx-auto p-2 sm:p-4">
       {/* 목표 칼로리 및 영양소 가이드 */}
-      <Card className="mb-6 border-l-4 border-blue-500">
+      <Card className="mb-6">
         <div className="p-4">
-          <div className="flex items-start">
-            <Info className="text-blue-500 mr-3 mt-1 flex-shrink-0" size={24} />
-            <div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-3 text-gray-800 dark:text-white">1끼당 권장 섭취량 (3끼 기준)</h3>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
-                <div className="bg-green-50 dark:bg-green-800/30 p-2 sm:p-3 rounded-lg text-center shadow-sm">
-                  <span className="block text-xs sm:text-sm text-gray-600 dark:text-gray-400">단백질</span>
-                  <span className="block text-base sm:text-xl font-bold text-green-700 dark:text-green-400">{Math.round(proteinTarget/3)}g</span>
-                </div>
-                <div className="bg-yellow-50 dark:bg-yellow-800/30 p-2 sm:p-3 rounded-lg text-center shadow-sm">
-                  <span className="block text-xs sm:text-sm text-gray-600 dark:text-gray-400">탄수화물</span>
-                  <span className="block text-base sm:text-xl font-bold text-yellow-700 dark:text-yellow-400">{Math.round(carbsTarget/3)}g</span>
-                </div>
-                <div className="bg-red-50 dark:bg-red-800/30 p-2 sm:p-3 rounded-lg text-center shadow-sm">
-                  <span className="block text-xs sm:text-sm text-gray-600 dark:text-gray-400">지방</span>
-                  <span className="block text-base sm:text-lg font-bold text-red-700 dark:text-red-400">{Math.round(fatTarget/3)}g</span>
-                </div>
+          <div>
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-white">1끼당 권장 섭취량 (3끼 기준)</h3>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="bg-green-50 dark:bg-green-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">단백질</span>
+                <span className="block text-xl sm:text-2xl font-bold text-green-700 dark:text-green-400">{Math.round(proteinTarget/3)}g</span>
               </div>
+              <div className="bg-yellow-50 dark:bg-yellow-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">탄수화물</span>
+                <span className="block text-xl sm:text-2xl font-bold text-yellow-700 dark:text-yellow-400">{Math.round(carbsTarget/3)}g</span>
+              </div>
+              <div className="bg-red-50 dark:bg-red-800/30 p-3 rounded-lg text-center shadow-sm">
+                <span className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">지방</span>
+                <span className="block text-xl sm:text-2xl font-bold text-red-700 dark:text-red-400">{Math.round(fatTarget/3)}g</span>
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                * 개인 설정의 목표 칼로리 기반으로 산출되었습니다.
+              </p>
+            </div>
+            
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={navigateToNutritionInfo}
+              >
+                음식별 칼로리 확인
+              </Button>
               
-              <div className="mt-3 space-y-1">
-                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                  💡 하루 총 목표: 단백질 <strong>{proteinTarget}g</strong>, 탄수화물 <strong>{carbsTarget}g</strong>, 지방 <strong>{fatTarget}g</strong>
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  * 개인 설정의 목표 칼로리 기반으로 산출되었습니다.
-                </p>
-              </div>
-              
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={navigateToNutritionInfo}
-                >
-                  음식별 칼로리 확인
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowNutritionSources(!showNutritionSources)}
-                >
-                  주요 영양소 급원 확인
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowNutritionSources(!showNutritionSources)}
+              >
+                주요 영양소 급원 확인
+              </Button>
             </div>
           </div>
           {showNutritionSources && <NutritionSourcesGuide />}
