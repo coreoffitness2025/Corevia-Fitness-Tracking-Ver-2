@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import { ExercisePart, Set } from '../../types';
-import { Plus, Trash, X, CheckCircle } from 'lucide-react';
+import { Plus, Trash, X, CheckCircle, Timer } from 'lucide-react';
 import { accessoryExercisesByPart } from '../../data/accessoryExerciseData';
 import { toast } from 'react-hot-toast';
 import { getPartLabel } from '../../utils/workoutUtils';
@@ -73,7 +73,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     handleAccessorySetCompletion(setIndex);
     
     // 타이머 시작 (플로팅 타이머가 표시됨)
-    const timerId = `accessory_${index}_${setIndex}`;
+    const timerId = `accessory_${index}`;
     startGlobalTimer(timerId);
   };
 
@@ -138,6 +138,14 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
               className={`p-2 rounded-full ${set.isSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}
             >
               <CheckCircle size={20} />
+            </button>
+            <button
+              onClick={() => startGlobalTimer(`accessory_${index}`)}
+              className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
+              title="휴식 타이머 시작"
+            >
+              <Timer size={18} />
+              <span className="text-xs">휴식</span>
             </button>
             <button
               onClick={() => removeSet(setIndex)}

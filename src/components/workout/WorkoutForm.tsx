@@ -411,6 +411,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             // 목표 미달 시 성공으로 처리하지 않음 (사용자가 직접 실패로 변경하거나, 현재는 성공 상태로 유지)
             // currentSet.isSuccess = false; // 필요하다면 주석 해제
         }
+        
+        // 세트 완료 후 자동으로 휴식 타이머 시작
+        startGlobalTimer('main');
 
       } else { // 성공(true) 또는 실패(false, 현재 로직에서는 false 상태가 없음) -> 미완료(null)
         currentSet.isSuccess = null;
@@ -425,6 +428,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         const currentAccessorySet = newExercises[accessoryIndex].sets[setIndex];
         if (currentAccessorySet.isSuccess === null) {
           currentAccessorySet.isSuccess = true;
+          
+          // 세트 완료 후 자동으로 휴식 타이머 시작
+          startGlobalTimer(`accessory_${accessoryIndex}`);
         } else {
           currentAccessorySet.isSuccess = null;
         }
@@ -486,7 +492,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               padding: '16px 24px',
               borderRadius: '12px',
               boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)',
-            }
+            },
+            icon: '⏱️'
           });
           
           // 2. Capacitor 네이티브 알림 (앱에서 더 강력한 알림)
@@ -1500,25 +1507,38 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
             메인 운동: <span className="text-blue-600 dark:text-blue-400">{mainExercise.name}</span>
           </h2>
-          {/* 휴식 타이머 */}
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
-            <Clock size={18} className="text-gray-500" />
-            <div className="flex items-center">
-              <input
-                type="number"
-                value={globalTimer.timerMinutes}
-                onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
-                className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                inputMode="numeric"
-              />
-              <span className="font-bold text-lg">:</span>
-              <input
-                type="number"
-                value={globalTimer.timerSeconds}
-                onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
-                className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                inputMode="numeric"
-              />
+          {/* 휴식 타이머 설정 */}
+          <div className="flex flex-col items-end">
+            <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">휴식 시간 설정</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+                <Clock size={18} className="text-gray-500" />
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    value={globalTimer.timerMinutes}
+                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
+                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                    inputMode="numeric"
+                  />
+                  <span className="font-bold text-lg">:</span>
+                  <input
+                    type="number"
+                    value={globalTimer.timerSeconds}
+                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
+                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                    inputMode="numeric"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={() => startGlobalTimer('main')}
+                className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
+                title="휴식 타이머 시작"
+              >
+                <Timer size={18} />
+                <span className="text-sm font-medium">시작</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1599,34 +1619,32 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       
       {/* 플로팅 타이머 UI */}
       {showFloatingTimer && globalTimer.isRunning && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg p-3 z-50">
-          <div className="container mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Clock size={20} className="text-blue-500" />
-              <div className="flex flex-col">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {globalTimer.sectionId?.startsWith('accessory_') 
-                    ? `보조 운동 ${parseInt(globalTimer.sectionId.split('_')[1])+1}` 
-                    : '메인 운동'}
-                </span>
-                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                  {formatTimeGlobal(globalTimer.timeLeft)}
-                </span>
-              </div>
+        <div className="fixed bottom-16 left-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl rounded-xl p-4 z-50 max-w-md mx-auto">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center justify-center w-full mb-2">
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {globalTimer.sectionId?.startsWith('accessory_') 
+                  ? `보조 운동 ${parseInt(globalTimer.sectionId.split('_')[1])+1} 휴식 시간` 
+                  : '메인 운동 휴식 시간'}
+              </span>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+              {formatTimeGlobal(globalTimer.timeLeft)}
+            </div>
+            
+            <div className="flex items-center gap-4">
               <button 
                 onClick={togglePauseGlobalTimer}
-                className="p-3 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                className="p-4 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors shadow-md"
               >
-                {globalTimer.isPaused ? <Play size={20} /> : <Pause size={20} />}
+                {globalTimer.isPaused ? <Play size={24} /> : <Pause size={24} />}
               </button>
               <button 
                 onClick={resetGlobalTimer}
-                className="p-3 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                className="p-4 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors shadow-md"
               >
-                <RotateCcw size={20} />
+                <RotateCcw size={24} />
               </button>
             </div>
           </div>

@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 
 interface WorkoutTimerProps {
   onComplete?: () => void;
+  initialTime?: number; // 초 단위 초기 시간 (기본값: 120초)
+  title?: string; // 타이머 제목 (기본값: '다음 세트 준비 시간')
 }
 
-const WorkoutTimer: React.FC<WorkoutTimerProps> = ({ onComplete }) => {
-  const [timeLeft, setTimeLeft] = useState(120); // 2분
+const WorkoutTimer: React.FC<WorkoutTimerProps> = ({ 
+  onComplete, 
+  initialTime = 120, 
+  title = '다음 세트 준비 시간' 
+}) => {
+  const [timeLeft, setTimeLeft] = useState(initialTime);
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
@@ -41,40 +48,41 @@ const WorkoutTimer: React.FC<WorkoutTimerProps> = ({ onComplete }) => {
 
   const handleReset = () => {
     setIsRunning(false);
-    setTimeLeft(120);
+    setTimeLeft(initialTime);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg">
-      <div className="text-6xl font-bold mb-4">
+    <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-xs mx-auto">
+      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{title}</h2>
+      <div className="text-6xl font-bold mb-6 text-blue-600 dark:text-blue-400">
         {formatTime(timeLeft)}
       </div>
       <div className="flex gap-4">
         {!isRunning ? (
           <button
             onClick={handleStart}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 shadow-md transition-all"
           >
-            시작
+            <Play size={20} />
+            <span>시작</span>
           </button>
         ) : (
           <button
             onClick={handlePause}
-            className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+            className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center gap-2 shadow-md transition-all"
           >
-            일시정지
+            <Pause size={20} />
+            <span>일시정지</span>
           </button>
         )}
         <button
           onClick={handleReset}
-          className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+          className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2 shadow-md transition-all"
         >
-          리셋
+          <RotateCcw size={20} />
+          <span>리셋</span>
         </button>
       </div>
-      <p className="mt-4 text-gray-600">
-        다음 세트 준비 시간
-      </p>
     </div>
   );
 };
