@@ -69,12 +69,18 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
 
   // 세트 완료 및 타이머 시작 통합 함수
   const handleSetCompletionAndTimer = (setIndex: number) => {
+    // 현재 세트의 상태 확인
+    const currentSet = exercise.sets[setIndex];
+    const isCurrentlyUnchecked = currentSet.isSuccess === null;
+    
     // 세트 완료 처리
     handleAccessorySetCompletion(setIndex);
     
-    // 타이머 시작 (플로팅 타이머가 표시됨)
-    const timerId = `accessory_${index}`;
-    startGlobalTimer(timerId);
+    // 타이머 시작 (초록색으로 변경될 때만)
+    if (isCurrentlyUnchecked) {
+      const timerId = `accessory_${index}`;
+      startGlobalTimer(timerId);
+    }
   };
 
   // 세트 추가 함수

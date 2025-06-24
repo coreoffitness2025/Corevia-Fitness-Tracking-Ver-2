@@ -409,28 +409,29 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       if (currentSet.isSuccess === null) { // 미완료 -> 성공
         currentSet.isSuccess = true;
         
+        // 세트가 성공으로 표시될 때만 타이머 시작
+        startGlobalTimer('main');
+        
         const { repsCount: targetReps } = getSetConfiguration(selectedSetConfiguration, customSets, customReps);
         const currentReps = currentSet.reps;
         if (currentReps >= targetReps) { 
             const weight = currentSet.weight;
             const reps = currentSet.reps;
             if (weight > 0 && reps > 0 && reps < 37) {
+                // 예상 1RM 계산 (Epley 공식)
                 const estimatedOneRM = Math.round(weight * (36 / (37 - reps)));
+                console.log(`세트 완료: 예상 1RM = ${estimatedOneRM}kg`);
+                
+                // 메인 운동 타입에 따라 1RM 업데이트
                 updateOneRMIfHigher(selectedMainExercise, estimatedOneRM);
             }
-        } else {
-            // 목표 미달 시 성공으로 처리하지 않음 (사용자가 직접 실패로 변경하거나, 현재는 성공 상태로 유지)
-            // currentSet.isSuccess = false; // 필요하다면 주석 해제
         }
-        
-        // 세트 완료 후 자동으로 휴식 타이머 시작
-        startGlobalTimer('main');
-
-      } else { // 성공(true) 또는 실패(false, 현재 로직에서는 false 상태가 없음) -> 미완료(null)
+      } else if (currentSet.isSuccess === true) { // 성공 -> 미완료
         currentSet.isSuccess = null;
+        // 세트가 미완료로 변경될 때는 타이머를 시작하지 않음
       }
-      setMainExercise(prev => ({ ...prev, sets: newSets }));
-
+      
+      setMainExercise({ ...mainExercise, sets: newSets });
     } else if (accessoryIndex !== undefined) {
       // 보조 운동 로직은 AccessoryExerciseComponent에서 처리 (타이머 연동 없음)
       const newExercises = [...accessoryExercises];
@@ -444,6 +445,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           startGlobalTimer(`accessory_${accessoryIndex}`);
         } else {
           currentAccessorySet.isSuccess = null;
+          // 세트가 미완료로 변경될 때는 타이머를 시작하지 않음
         }
         setAccessoryExercises(newExercises);
       }
