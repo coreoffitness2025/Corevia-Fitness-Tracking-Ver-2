@@ -1,7 +1,7 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/common/Layout';
-import { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, orderBy, limit, deleteDoc } from 'firebase/firestore';
 import { deleteUser } from 'firebase/auth';
 import { db } from '../firebase/firebaseConfig';
@@ -10,10 +10,9 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { LogOut, Settings, FileText, Info, TrendingUp, X, Trash2, Cloud, Smartphone, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { LogOut, Settings, FileText, Info, TrendingUp, X, Trash2 } from 'lucide-react';
 import WorkoutSetConfig from '../components/settings/WorkoutSetConfig';
 import { toast } from 'react-hot-toast';
-import { getCloudSyncSettings, updateCloudSyncSettings, syncAllData, recoverDataFromCloud } from '../services/syncService';
 import InfoItem from '../components/common/InfoItem';
 import SyncToggle from '../components/common/SyncToggle';
 
@@ -47,33 +46,12 @@ const SettingsPage = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 데이터 동기화 관련 상태
-  const [cloudSyncSettings, setCloudSyncSettings] = useState<{
-    enabled: boolean;
-    lastSyncTime?: number;
-    autoSync: boolean;
-    syncPhotos: boolean;
-    syncData: boolean;
-  }>({
-    enabled: false,
-    autoSync: false,
-    syncPhotos: false,
-    syncData: true
-  });
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isRecovering, setIsRecovering] = useState(false);
-
   useEffect(() => {
     if (authUserProfile) {
       setUserProfileState(authUserProfile);
     }
     if (authUserSettings) {
       setCurrentSettings(authUserSettings);
-    }
-    
-    // 클라우드 동기화 설정 불러오기
-    if (currentUser?.uid) {
-      loadCloudSyncSettings(currentUser.uid);
     }
     
     setIsLoading(false); 
@@ -206,93 +184,6 @@ const SettingsPage = () => {
   const handleWeightTrendClick = () => {
     setShowWeightModal(true);
     fetchWeightHistory();
-  };
-
-  // 클라우드 동기화 설정 로드
-  const loadCloudSyncSettings = async (userId: string) => {
-    try {
-      const settings = await getCloudSyncSettings(userId);
-      setCloudSyncSettings(settings);
-    } catch (error) {
-      console.error('클라우드 동기화 설정 로드 실패:', error);
-    }
-  };
-
-  // 클라우드 동기화 설정 변경
-  const handleSyncSettingChange = async (name: string, value: boolean) => {
-    if (!currentUser?.uid) {
-      toast.error('로그인이 필요합니다.');
-      return;
-    }
-
-    try {
-      const newSettings = {
-        ...cloudSyncSettings,
-        [name]: value
-      };
-      
-      // 동기화가 비활성화되면 모든 하위 설정도 비활성화
-      if (name === 'enabled' && !value) {
-        newSettings.autoSync = false;
-        newSettings.syncPhotos = false;
-      }
-      
-      setCloudSyncSettings(newSettings);
-      await updateCloudSyncSettings(currentUser.uid, newSettings);
-      
-      toast.success('동기화 설정이 저장되었습니다.');
-    } catch (error) {
-      console.error('동기화 설정 업데이트 실패:', error);
-      toast.error('설정 저장 중 오류가 발생했습니다.');
-    }
-  };
-
-  // 즉시 동기화 버튼 클릭
-  const handleSyncNow = async () => {
-    if (!currentUser?.uid) {
-      toast.error('로그인이 필요합니다.');
-      return;
-    }
-
-    setIsSyncing(true);
-    try {
-      await syncAllData(currentUser.uid);
-      
-      // 마지막 동기화 시간 업데이트
-      const newSettings = {
-        ...cloudSyncSettings,
-        lastSyncTime: Date.now()
-      };
-      
-      setCloudSyncSettings(newSettings);
-      await updateCloudSyncSettings(currentUser.uid, newSettings);
-      
-    } catch (error) {
-      console.error('동기화 실패:', error);
-      toast.error('동기화 중 오류가 발생했습니다.');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // 새 기기에서 데이터 복구
-  const handleRecoverData = async () => {
-    if (!currentUser?.uid) {
-      toast.error('로그인이 필요합니다.');
-      return;
-    }
-
-    if (window.confirm('클라우드에서 데이터를 복구하시겠습니까? 이 작업은 현재 기기의 일부 데이터를 덮어쓸 수 있습니다.')) {
-      setIsRecovering(true);
-      try {
-        await recoverDataFromCloud(currentUser.uid);
-      } catch (error) {
-        console.error('데이터 복구 실패:', error);
-        toast.error('데이터 복구 중 오류가 발생했습니다.');
-      } finally {
-        setIsRecovering(false);
-      }
-    }
   };
 
   if (isLoading) {
@@ -466,64 +357,6 @@ const SettingsPage = () => {
           <WorkoutSetConfig />
         </div>
         
-        {/* 데이터 동기화 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
-          <div className="flex items-center mb-4">
-            <Cloud className="text-blue-500 mr-2" size={24} />
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200">
-              데이터 동기화
-            </h3>
-          </div>
-          {userProfile?.isPremium ? (
-            <div className="space-y-4">
-              <SyncToggle
-                id="cloud-sync-toggle"
-                label="클라우드 동기화"
-                description="데이터를 기기 간에 동기화합니다."
-                checked={cloudSyncSettings.enabled}
-                onChange={(e) => handleSyncSettingChange('enabled', e.target.checked)}
-              />
-              {cloudSyncSettings.enabled && (
-                <>
-                  <SyncToggle
-                    id="auto-sync-toggle"
-                    label="자동 동기화"
-                    description="앱 실행 시 자동으로 동기화합니다."
-                    checked={cloudSyncSettings.autoSync}
-                    onChange={(e) => handleSyncSettingChange('autoSync', e.target.checked)}
-                  />
-                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                    <Button
-                      onClick={handleSyncNow}
-                      disabled={isSyncing}
-                      variant="primary"
-                      size="sm"
-                      icon={<RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />}
-                      className="flex-1"
-                    >
-                      {isSyncing ? '동기화 중...' : '지금 동기화'}
-                    </Button>
-                    <Button
-                      onClick={handleRecoverData}
-                      disabled={isRecovering}
-                      variant="outline"
-                      size="sm"
-                      icon={<Smartphone size={16} />}
-                      className="flex-1"
-                    >
-                      {isRecovering ? '복구 중...' : '클라우드에서 복구'}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">데이터 동기화는 프리미엄 기능입니다.</p>
-            </div>
-          )}
-        </div>
-
         {/* 계정 관리 */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
           <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">

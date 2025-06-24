@@ -170,15 +170,15 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
       
       <div className="space-y-4 sm:space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-4 sm:p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-6 h-6 mr-3">
+          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
                 value="5x5"
                 checked={guideInfo.preferredSetConfig === '5x5'}
                 onChange={handleInputChange}
-                className="w-4 h-4"
+                className="w-5 h-5"
               />
             </div>
             <div className="flex-1">
@@ -187,7 +187,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
             </div>
           </label>
           
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
+          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
             <ul className="list-disc pl-5 space-y-1">
               <li>근력과 근비대 균형에 최적화된 구성</li>
               <li>초보자부터 중급자까지 적합한 세트 구성</li>
@@ -199,15 +199,15 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-4 sm:p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-6 h-6 mr-3">
+          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
                 value="10x5"
                 checked={guideInfo.preferredSetConfig === '10x5'}
                 onChange={handleInputChange}
-                className="w-4 h-4"
+                className="w-5 h-5"
               />
             </div>
             <div className="flex-1">
@@ -216,7 +216,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
             </div>
           </label>
           
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
+          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
             <ul className="list-disc pl-5 space-y-1">
               <li>근비대(muscle hypertrophy)에 최적화된 구성</li>
               <li>중량과 볼륨 사이의 균형이 좋음</li>
@@ -227,15 +227,15 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-4 sm:p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-6 h-6 mr-3">
+          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
                 value="6x3"
                 checked={guideInfo.preferredSetConfig === '6x3'}
                 onChange={handleInputChange}
-                className="w-4 h-4"
+                className="w-5 h-5"
               />
             </div>
             <div className="flex-1">
@@ -244,7 +244,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
             </div>
           </label>
           
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
+          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
             <ul className="list-disc pl-5 space-y-1">
               <li>근력 향상에 중점을 둔 구성</li>
               <li>중추신경계 활성화 및 신경근 효율성 개선</li>
@@ -256,15 +256,15 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-4 sm:p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-6 h-6 mr-3">
+          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
                 value="15x5"
                 checked={guideInfo.preferredSetConfig === '15x5'}
                 onChange={handleInputChange}
-                className="w-4 h-4"
+                className="w-5 h-5"
               />
             </div>
             <div className="flex-1">
@@ -273,7 +273,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
             </div>
           </label>
           
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
+          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
             <ul className="list-disc pl-5 space-y-1">
               <li>근지구력 향상에 탁월</li>
               <li>젖산 내성 증가</li>

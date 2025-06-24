@@ -485,7 +485,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               </p>
             </div>
             
-            <div className="mt-4 flex flex-wrap gap-1">
+            <div className="mt-4 flex gap-0.5">
               <Button
                 variant="outline"
                 size="sm"
