@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import { ExercisePart, Set } from '../../types';
-import { Plus, Trash, X, CheckCircle, Timer } from 'lucide-react';
+import { Plus, Trash, X, CheckCircle, Timer, Clock } from 'lucide-react';
 import { accessoryExercisesByPart } from '../../data/accessoryExerciseData';
 import { toast } from 'react-hot-toast';
 import { getPartLabel } from '../../utils/workoutUtils';
@@ -11,18 +11,18 @@ interface AccessoryExerciseProps {
   exercise: {
     name: string;
     sets: Array<Set>;
+    globalTimer: {
+      sectionId: string | null;
+      timeLeft: number;
+      timerMinutes: number;
+      timerSeconds: number;
+      isPaused: boolean;
+      isRunning: boolean;
+    };
   };
   onChange: (index: number, updatedExercise: AccessoryExerciseProps['exercise']) => void;
   onRemove: (index: number) => void;
   currentExercisePart: ExercisePart;
-  globalTimer: {
-    sectionId: string | null;
-    timeLeft: number;
-    timerMinutes: number;
-    timerSeconds: number;
-    isPaused: boolean;
-    isRunning: boolean;
-  };
   startGlobalTimer: (sectionId: string) => void;
   resetGlobalTimer: () => void;
   formatTime: (seconds: number) => string;
@@ -99,7 +99,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         <select
           value={exercise.name}
           onChange={handleAccessoryNameSelect}
-          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold flex-grow"
+          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold w-1/2"
         >
           <option value="">운동 선택</option>
           {filteredAccessoryExercises.map((ex) => (
@@ -108,18 +108,53 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         </select>
         
         {/* 휴식 타이머 설정 - 메인 운동과 동일한 스타일 */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => startGlobalTimer(`accessory_${index}`)}
-            className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
-            title="휴식 타이머 시작"
-          >
-            <Timer size={18} />
-            <span className="text-sm font-medium">시작</span>
-          </button>
-          <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
-            <Trash size={16} className="text-red-500" />
-          </Button>
+        <div className="flex flex-col items-end">
+          <span className="text-sm text-gray-600 dark:text-gray-400 mb-1">휴식 시간 설정</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
+              <Clock size={18} className="text-gray-500" />
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={globalTimer.timerMinutes}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 0) {
+                      const newGlobalTimer = {...globalTimer, timerMinutes: value};
+                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                    }
+                  }}
+                  className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  inputMode="numeric"
+                />
+                <span className="font-bold text-lg">:</span>
+                <input
+                  type="number"
+                  value={globalTimer.timerSeconds}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 0 && value < 60) {
+                      const newGlobalTimer = {...globalTimer, timerSeconds: value};
+                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                    }
+                  }}
+                  className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  inputMode="numeric"
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => startGlobalTimer(`accessory_${index}`)}
+              className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
+              title="휴식 타이머 시작"
+            >
+              <Timer size={18} />
+              <span className="text-sm font-medium">시작</span>
+            </button>
+            <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
+              <Trash size={16} className="text-red-500" />
+            </Button>
+          </div>
         </div>
       </div>
 

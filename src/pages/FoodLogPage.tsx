@@ -288,16 +288,16 @@ export default function FoodLogPage() {
           💡 하루 총 목표: 단백질 <strong>{nutritionGoals.daily.protein}g</strong>, 탄수화물 <strong>{nutritionGoals.daily.carbs}g</strong>, 지방 <strong>{nutritionGoals.daily.fat}g</strong>
         </p>
         
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button 
             onClick={() => setShowNutritionGuide(!showNutritionGuide)} 
-            className="flex-1 text-center py-2 px-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium"
+            className="flex-1 text-center py-3 px-4 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors"
           >
             음식별 칼로리 확인
           </button>
           <button 
             onClick={() => setShowSourcesModal('protein')} 
-            className="flex-1 text-center py-2 px-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-sm font-medium"
+            className="flex-1 text-center py-3 px-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-sm font-medium hover:bg-green-200 dark:hover:bg-green-800/40 transition-colors"
           >
             영양소 급원 확인
           </button>

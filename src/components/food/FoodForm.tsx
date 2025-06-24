@@ -485,10 +485,11 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               </p>
             </div>
             
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-1">
               <Button
                 variant="outline"
                 size="sm"
+                className="flex-1 py-3 px-4 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                 onClick={navigateToNutritionInfo}
               >
                 음식별 칼로리 확인
@@ -497,6 +498,7 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               <Button
                 variant="outline"
                 size="sm"
+                className="flex-1 py-3 px-4 hover:bg-green-50 dark:hover:bg-green-900/20"
                 onClick={() => setShowNutritionSources(!showNutritionSources)}
               >
                 주요 영양소 급원 확인
