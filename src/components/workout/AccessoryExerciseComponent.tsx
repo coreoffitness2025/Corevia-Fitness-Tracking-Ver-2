@@ -95,22 +95,24 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-base font-medium text-gray-800 dark:text-white">보조 운동 {index + 1}</h3>
+        <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
+          <Trash size={16} className="text-red-500" />
+        </Button>
+      </div>
+      
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2 w-3/4">
-          <select
-            value={exercise.name}
-            onChange={handleAccessoryNameSelect}
-            className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold flex-grow"
-          >
-            <option value="">운동 선택</option>
-            {filteredAccessoryExercises.map((ex) => (
-              <option key={ex.id} value={ex.name}>{ex.name}</option>
-            ))}
-          </select>
-          <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
-            <Trash size={16} className="text-red-500" />
-          </Button>
-        </div>
+        <select
+          value={exercise.name}
+          onChange={handleAccessoryNameSelect}
+          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold w-1/2"
+        >
+          <option value="">운동 선택</option>
+          {filteredAccessoryExercises.map((ex) => (
+            <option key={ex.id} value={ex.name}>{ex.name}</option>
+          ))}
+        </select>
         
         {/* 휴식 타이머 설정 - 메인 운동과 동일한 스타일 */}
         <div className="flex flex-col items-end">
