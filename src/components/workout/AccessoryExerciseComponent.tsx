@@ -106,9 +106,21 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
             <option key={ex.id} value={ex.name}>{ex.name}</option>
           ))}
         </select>
-        <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
-          <Trash size={16} className="text-red-500" />
-        </Button>
+        
+        {/* 휴식 타이머 설정 - 메인 운동과 동일한 스타일 */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => startGlobalTimer(`accessory_${index}`)}
+            className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
+            title="휴식 타이머 시작"
+          >
+            <Timer size={18} />
+            <span className="text-sm font-medium">시작</span>
+          </button>
+          <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
+            <Trash size={16} className="text-red-500" />
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -138,14 +150,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
               className={`p-2 rounded-full ${set.isSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}
             >
               <CheckCircle size={20} />
-            </button>
-            <button
-              onClick={() => startGlobalTimer(`accessory_${index}`)}
-              className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
-              title="휴식 타이머 시작"
-            >
-              <Timer size={18} />
-              <span className="text-xs">휴식</span>
             </button>
             <button
               onClick={() => removeSet(setIndex)}
