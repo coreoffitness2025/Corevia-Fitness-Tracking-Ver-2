@@ -1571,7 +1571,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   
                   <input
                     type="number"
-                    value={globalTimer.timerSeconds}
+                    value={globalTimer.timerSeconds.toString().padStart(2, '0')}
                     onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
                     className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                     inputMode="numeric"

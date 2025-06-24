@@ -96,16 +96,21 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3">
       <div className="flex justify-between items-center">
-        <select
-          value={exercise.name}
-          onChange={handleAccessoryNameSelect}
-          className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold w-1/2"
-        >
-          <option value="">운동 선택</option>
-          {filteredAccessoryExercises.map((ex) => (
-            <option key={ex.id} value={ex.name}>{ex.name}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 w-3/4">
+          <select
+            value={exercise.name}
+            onChange={handleAccessoryNameSelect}
+            className="p-1 border-gray-300 rounded-md dark:bg-gray-700 text-sm font-semibold flex-grow"
+          >
+            <option value="">운동 선택</option>
+            {filteredAccessoryExercises.map((ex) => (
+              <option key={ex.id} value={ex.name}>{ex.name}</option>
+            ))}
+          </select>
+          <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
+            <Trash size={16} className="text-red-500" />
+          </Button>
+        </div>
         
         {/* 휴식 타이머 설정 - 메인 운동과 동일한 스타일 */}
         <div className="flex flex-col items-end">
@@ -168,7 +173,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 
                 <input
                   type="number"
-                  value={globalTimer.timerSeconds}
+                  value={globalTimer.timerSeconds.toString().padStart(2, '0')}
                   onChange={(e) => {
                     const value = parseInt(e.target.value);
                     if (!isNaN(value) && value >= 0 && value < 60) {
@@ -201,9 +206,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
               <Timer size={18} />
               <span className="text-sm font-medium">시작</span>
             </button>
-            <Button variant="ghost" size="icon" onClick={() => onRemove(index)}>
-              <Trash size={16} className="text-red-500" />
-            </Button>
           </div>
         </div>
       </div>

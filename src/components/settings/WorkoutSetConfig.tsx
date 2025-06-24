@@ -165,13 +165,13 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
   }
 
   return (
-    <Card className="p-4 sm:p-6">
-      <h2 className="text-xl font-bold mb-4 sm:mb-6">메인 운동 세트 설정</h2>
+    <Card className="p-3 sm:p-5">
+      <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-5">메인 운동 세트 설정</h2>
       
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-3 sm:space-y-5">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-8 h-8 mr-3">
+          <label className="flex items-center w-full p-2 sm:p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-2 sm:mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
@@ -182,13 +182,13 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
               />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-base sm:text-lg">5x5세트 (5회 5세트)</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">근력과 근비대 균형</p>
+              <h3 className="font-semibold text-sm sm:text-base">5x5세트 (5회 5세트)</h3>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">근력과 근비대 균형</p>
             </div>
           </label>
           
-          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
-            <ul className="list-disc pl-5 space-y-1">
+          <div className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-800/50 text-xs sm:text-sm">
+            <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1">
               <li>근력과 근비대 균형에 최적화</li>
               <li>초보자부터 중급자까지 적합</li>
               <li>무게 증가에 집중하기 좋음</li>
@@ -197,8 +197,8 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-8 h-8 mr-3">
+          <label className="flex items-center w-full p-2 sm:p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-2 sm:mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
@@ -209,13 +209,13 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
               />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-base sm:text-lg">10x5세트 (10회 5세트)</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">근비대-보디빌딩 초점</p>
+              <h3 className="font-semibold text-sm sm:text-base">10x5세트 (10회 5세트)</h3>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">근비대-보디빌딩 초점</p>
             </div>
           </label>
           
-          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
-            <ul className="list-disc pl-5 space-y-1">
+          <div className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-800/50 text-xs sm:text-sm">
+            <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1">
               <li>근비대에 최적화된 구성</li>
               <li>중량과 볼륨의 균형</li>
               <li>근육 성장 자극에 효과적</li>
@@ -224,8 +224,8 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-8 h-8 mr-3">
+          <label className="flex items-center w-full p-2 sm:p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-2 sm:mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
@@ -236,13 +236,13 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
               />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-base sm:text-lg">6x3세트 (6회 3세트)</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">근력 향상 - 스트렝스 초점</p>
+              <h3 className="font-semibold text-sm sm:text-base">6x3세트 (6회 3세트)</h3>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">근력 향상 - 스트렝스 초점</p>
             </div>
           </label>
           
-          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
-            <ul className="list-disc pl-5 space-y-1">
+          <div className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-800/50 text-xs sm:text-sm">
+            <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1">
               <li>근력 향상에 중점</li>
               <li>신경근 효율성 개선</li>
               <li>관절 부담이 적음</li>
@@ -251,8 +251,8 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <label className="flex items-center w-full p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-8 h-8 mr-3">
+          <label className="flex items-center w-full p-2 sm:p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center w-8 h-8 mr-2 sm:mr-3">
               <input
                 type="radio"
                 name="preferredSetConfig"
@@ -263,13 +263,13 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
               />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-base sm:text-lg">15x5세트 (15회 5세트)</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">근육 성장 자극</p>
+              <h3 className="font-semibold text-sm sm:text-base">15x5세트 (15회 5세트)</h3>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">근육 성장 자극</p>
             </div>
           </label>
           
-          <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
-            <ul className="list-disc pl-5 space-y-1">
+          <div className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-800/50 text-xs sm:text-sm">
+            <ul className="list-disc pl-4 sm:pl-5 space-y-0.5 sm:space-y-1">
               <li>근지구력 향상에 탁월</li>
               <li>젖산 내성 증가</li>
               <li>느린 근섬유 발달에 효과적</li>
@@ -278,12 +278,12 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
         </div>
       </div>
       
-      <div className="flex justify-center sm:justify-end mt-6">
+      <div className="flex justify-center sm:justify-end mt-4 sm:mt-6">
         <Button 
           variant="primary" 
           onClick={applyToProfile}
           disabled={isUpdating}
-          className="w-full sm:w-auto py-3"
+          className="w-full sm:w-auto py-2 sm:py-3"
         >
           {isUpdating ? (
             <>
