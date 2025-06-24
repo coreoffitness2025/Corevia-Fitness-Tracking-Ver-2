@@ -150,6 +150,17 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
   const globalTimerRef = useRef<NodeJS.Timeout | null>(null);
   const alarmRef = useRef<HTMLAudioElement | null>(null);
 
+  // 알람 사운드 초기화
+  useEffect(() => {
+    alarmRef.current = new Audio('/sounds/timer-alarm.mp3'); // 알람 사운드 파일 경로
+    return () => {
+      if (alarmRef.current) {
+        alarmRef.current.pause();
+        alarmRef.current = null;
+      }
+    };
+  }, []);
+
   // 추가 상태 변수 정의
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<ExercisePart>('chest');
   const [preferredExercises, setPreferredExercises] = useState<Record<string, string>>({});
@@ -466,19 +477,37 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
       position: 'top-center',
     });
 
+    // 타이머 인터벌 설정
     globalTimerRef.current = setInterval(() => {
       setGlobalTimer(prev => {
-        if (prev.isPaused || !prev.isRunning) {
-          if (globalTimerRef.current) clearInterval(globalTimerRef.current);
-          return { ...prev, isRunning: false };
-        }
+        if (prev.isPaused) return prev; // 일시정지 상태면 타이머 유지
+
+        // 시간이 다 되었을 때
         if (prev.timeLeft <= 1) {
-          if (globalTimerRef.current) clearInterval(globalTimerRef.current);
-          
+          // 인터벌 정리
+          if (globalTimerRef.current) {
+            clearInterval(globalTimerRef.current);
+            globalTimerRef.current = null;
+          }
+
+          // 알람 재생
+          if (alarmRef.current) {
+            alarmRef.current.play().catch(e => console.error('알람 재생 실패:', e));
+          }
+
+          // 햅틱 피드백 (모바일)
+          try {
+            if ('vibrate' in navigator) {
+              navigator.vibrate([200, 100, 200, 100, 200]);
+            }
+          } catch (e) {
+            console.error('햅틱 피드백 실패:', e);
+          }
+
           // 🔥 강화된 알림 시스템
-          const sectionName = sectionId === 'main' ? '메인 운동' : 
-            sectionId.startsWith('accessory_') ? 
-            `${accessoryExercises[parseInt(sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(sectionId.split('_')[1])+1}` 
+          const sectionName = prev.sectionId === 'main' ? '메인 운동' : 
+            prev.sectionId?.startsWith('accessory_') ? 
+            `${accessoryExercises[parseInt(prev.sectionId.split('_')[1])]?.name || '보조 운동'} ${parseInt(prev.sectionId.split('_')[1])+1}` 
             : '운동';
           
           // 1. 토스트 알림 (강화된 스타일)
@@ -496,55 +525,22 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             icon: '⏱️'
           });
           
-          // 2. Capacitor 네이티브 알림 (앱에서 더 강력한 알림)
-          scheduleNotification(
-            '🏋️‍♂️ 코어비아 피트니스',
-            `${sectionName} 휴식 시간이 끝났습니다! 다음 세트를 시작하세요! 💪`
-          ).catch(err => {
-            console.warn('네이티브 알림 전송 실패:', err);
-          });
-          
-          // 3. 브라우저 알림 (웹에서 백그라운드에서도 보임)
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('🏋️‍♂️ 코어비아 피트니스', {
-              body: `${sectionName} 휴식 시간이 끝났습니다!\n다음 세트를 시작하세요! 💪`,
-              icon: '/favicon.ico',
-              badge: '/favicon.ico',
-              tag: 'workout-timer',
-              requireInteraction: true // 사용자가 직접 닫을 때까지 표시
-            });
+          // 2. 네이티브 알림 (지원되는 경우)
+          try {
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('휴식 시간 종료', {
+                body: `${sectionName} 다음 세트를 시작하세요!`,
+                icon: '/favicon.ico'
+              });
+            }
+          } catch (e) {
+            console.error('네이티브 알림 실패:', e);
           }
-          
-          // 4. 알람 사운드 재생 (3번 반복)
-          if (alarmRef.current) {
-            let playCount = 0;
-            const playAlarm = () => {
-              if (playCount < 3) {
-                alarmRef.current?.play().catch(err => {
-                  console.error('알람 재생 실패:', err);
-                });
-                playCount++;
-                setTimeout(playAlarm, 800); // 0.8초 간격으로 반복
-              }
-            };
-            playAlarm();
-          }
-          
-          // 5. 강화된 햅틱 피드백 (Capacitor 지원)
-          triggerHapticFeedback('heavy').catch(err => {
-            console.warn('햅틱 피드백 실패:', err);
-          });
-          
-          // 6. 추가 햅틱 패턴 (3초 후)
-          setTimeout(() => {
-            triggerHapticFeedback('medium').catch(err => {
-              console.warn('추가 햅틱 피드백 실패:', err);
-            });
-          }, 3000);
-          
-          // 7. 화면 깜빡임 효과 (페이지 타이틀 변경)
+
+          // 3. 타이틀 깜빡임 효과
           let flashCount = 0;
           const originalTitle = document.title;
+          
           const flashTitle = () => {
             if (flashCount < 10) {
               document.title = flashCount % 2 === 0 ? '🔥 휴식 완료! 🔥' : '💪 다음 세트! 💪';
@@ -603,6 +599,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         newMinutes = Math.min(99, numValue); // 최대 99분
       } else {
         newSeconds = Math.min(59, numValue); // 최대 59초
+      }
+      
+      // 타이머가 실행 중이 아닐 때만 timeLeft도 함께 업데이트
+      const newTimeLeft = !prev.isRunning ? newMinutes * 60 + newSeconds : prev.timeLeft;
+
+      return {
+        ...prev,
+        timerMinutes: newMinutes,
+        timerSeconds: newSeconds,
+        timeLeft: newTimeLeft,
+      };
+    });
+  };
+
+  // 타이머 값 조정 함수 (화살표 버튼용)
+  const adjustTimerValue = (type: 'minutes' | 'seconds', amount: number) => {
+    setGlobalTimer(prev => {
+      let newMinutes = prev.timerMinutes;
+      let newSeconds = prev.timerSeconds;
+
+      if (type === 'minutes') {
+        newMinutes = Math.max(0, Math.min(99, newMinutes + amount));
+      } else {
+        // 초 단위는 10초씩 조정
+        newSeconds = Math.max(0, Math.min(59, newSeconds + amount));
       }
       
       // 타이머가 실행 중이 아닐 때만 timeLeft도 함께 업데이트
@@ -1513,22 +1534,56 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
                 <Clock size={18} className="text-gray-500" />
-                <div className="flex items-center">
+                <div className="flex items-center space-x-1">
+                  {/* 분 감소 버튼 */}
+                  <button 
+                    onClick={() => adjustTimerValue('minutes', -1)}
+                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    -
+                  </button>
+                  
                   <input
                     type="number"
                     value={globalTimer.timerMinutes}
                     onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
-                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                    className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                     inputMode="numeric"
                   />
+                  
+                  {/* 분 증가 버튼 */}
+                  <button 
+                    onClick={() => adjustTimerValue('minutes', 1)}
+                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    +
+                  </button>
+                  
                   <span className="font-bold text-lg">:</span>
+                  
+                  {/* 초 감소 버튼 (10초 단위) */}
+                  <button 
+                    onClick={() => adjustTimerValue('seconds', -10)}
+                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    -
+                  </button>
+                  
                   <input
                     type="number"
                     value={globalTimer.timerSeconds}
                     onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
-                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                    className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                     inputMode="numeric"
                   />
+                  
+                  {/* 초 증가 버튼 (10초 단위) */}
+                  <button 
+                    onClick={() => adjustTimerValue('seconds', 10)}
+                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
               <button

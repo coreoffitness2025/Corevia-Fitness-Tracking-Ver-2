@@ -189,11 +189,9 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
           
           <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
             <ul className="list-disc pl-5 space-y-1">
-              <li>근력과 근비대 균형에 최적화된 구성</li>
-              <li>초보자부터 중급자까지 적합한 세트 구성</li>
-              <li>기초 근력을 키우면서 적절한 부피 확보 가능</li>
-              <li>무게 증가에 집중하기 좋은 반복 횟수</li>
-              <li>주요 복합 운동에 이상적</li>
+              <li>근력과 근비대 균형에 최적화</li>
+              <li>초보자부터 중급자까지 적합</li>
+              <li>무게 증가에 집중하기 좋음</li>
             </ul>
           </div>
         </div>
@@ -218,10 +216,9 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
           
           <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
             <ul className="list-disc pl-5 space-y-1">
-              <li>근비대(muscle hypertrophy)에 최적화된 구성</li>
-              <li>중량과 볼륨 사이의 균형이 좋음</li>
-              <li>근육의 모세혈관화를 촉진</li>
-              <li>대사 스트레스를 적절히 유발하여 근육 성장 자극</li>
+              <li>근비대에 최적화된 구성</li>
+              <li>중량과 볼륨의 균형</li>
+              <li>근육 성장 자극에 효과적</li>
             </ul>
           </div>
         </div>
@@ -246,11 +243,9 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
           
           <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 text-sm">
             <ul className="list-disc pl-5 space-y-1">
-              <li>근력 향상에 중점을 둔 구성</li>
-              <li>중추신경계 활성화 및 신경근 효율성 개선</li>
-              <li>빠른 회복으로 더 자주 같은 운동을 반복할 수 있음</li>
-              <li>관절 부담이 상대적으로 적음</li>
-              <li>근육의 고밀도 섬유 자극에 효과적</li>
+              <li>근력 향상에 중점</li>
+              <li>신경근 효율성 개선</li>
+              <li>관절 부담이 적음</li>
             </ul>
           </div>
         </div>
@@ -277,9 +272,7 @@ const WorkoutSetConfig: React.FC<WorkoutSetConfigProps> = ({ onConfigSaved }) =>
             <ul className="list-disc pl-5 space-y-1">
               <li>근지구력 향상에 탁월</li>
               <li>젖산 내성 증가</li>
-              <li>더 많은 혈류 제한 효과로 인한 근육 성장 자극</li>
               <li>느린 근섬유 발달에 효과적</li>
-              <li>관절과 인대의 강화</li>
             </ul>
           </div>
         </div>

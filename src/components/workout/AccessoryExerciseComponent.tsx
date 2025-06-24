@@ -113,7 +113,19 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
               <Clock size={18} className="text-gray-500" />
-              <div className="flex items-center">
+              <div className="flex items-center space-x-1">
+                {/* 분 감소 버튼 */}
+                <button 
+                  onClick={() => {
+                    const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
+                    const newGlobalTimer = {...globalTimer, timerMinutes: newMinutes};
+                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                  }}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >
+                  -
+                </button>
+                
                 <input
                   type="number"
                   value={globalTimer.timerMinutes}
@@ -124,10 +136,36 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                       onChange(index, {...exercise, globalTimer: newGlobalTimer});
                     }
                   }}
-                  className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                   inputMode="numeric"
                 />
+                
+                {/* 분 증가 버튼 */}
+                <button 
+                  onClick={() => {
+                    const newMinutes = Math.min(99, globalTimer.timerMinutes + 1);
+                    const newGlobalTimer = {...globalTimer, timerMinutes: newMinutes};
+                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                  }}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >
+                  +
+                </button>
+                
                 <span className="font-bold text-lg">:</span>
+                
+                {/* 초 감소 버튼 (10초 단위) */}
+                <button 
+                  onClick={() => {
+                    const newSeconds = Math.max(0, globalTimer.timerSeconds - 10);
+                    const newGlobalTimer = {...globalTimer, timerSeconds: newSeconds};
+                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                  }}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >
+                  -
+                </button>
+                
                 <input
                   type="number"
                   value={globalTimer.timerSeconds}
@@ -138,9 +176,21 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                       onChange(index, {...exercise, globalTimer: newGlobalTimer});
                     }
                   }}
-                  className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                   inputMode="numeric"
                 />
+                
+                {/* 초 증가 버튼 (10초 단위) */}
+                <button 
+                  onClick={() => {
+                    const newSeconds = Math.min(59, globalTimer.timerSeconds + 10);
+                    const newGlobalTimer = {...globalTimer, timerSeconds: newSeconds};
+                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                  }}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >
+                  +
+                </button>
               </div>
             </div>
             <button
