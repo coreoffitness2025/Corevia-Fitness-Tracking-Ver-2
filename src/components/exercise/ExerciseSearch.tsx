@@ -106,7 +106,7 @@ const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               flex flex-col items-center justify-center p-3 rounded-lg transition-all text-sm
               ${
                 internalSelectedPart === partKey
-                  ? 'bg-blue-600 text-white shadow-md transform scale-105'
+                  ? 'bg-blue-500 text-white shadow-md transform scale-105'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }
             `}

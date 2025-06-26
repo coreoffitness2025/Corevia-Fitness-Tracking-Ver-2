@@ -103,55 +103,55 @@ const ExerciseListPage: React.FC = () => {
       {/* 부위별 필터 버튼 */}
       <div className="flex flex-wrap gap-2 mb-8">
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('all')}
         >
           전체
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'chest' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'chest' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('chest')}
         >
           가슴
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'back' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'back' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('back')}
         >
           등
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'shoulder' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'shoulder' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('shoulder')}
         >
           어깨
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'leg' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'leg' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('leg')}
         >
           하체
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'biceps' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'biceps' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('biceps')}
         >
           이두
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'triceps' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'triceps' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('triceps')}
         >
           삼두
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'abs' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'abs' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('abs')}
         >
           복근
         </button>
         <button
-          className={`py-2 px-4 rounded-lg ${selectedPart === 'cardio' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`py-2 px-4 rounded-lg ${selectedPart === 'cardio' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handlePartChange('cardio')}
         >
           유산소

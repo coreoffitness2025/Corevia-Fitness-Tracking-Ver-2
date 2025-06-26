@@ -333,7 +333,7 @@ const ComplexWorkoutForm: React.FC<ComplexWorkoutFormProps> = ({
                 className={`
                   py-2 px-3 text-center text-sm rounded-lg transition-colors
                   ${mainExercisePart === option.value
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }
                 `}
