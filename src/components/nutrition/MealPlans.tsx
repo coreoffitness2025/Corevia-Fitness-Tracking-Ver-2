@@ -367,65 +367,65 @@ const MealPlans: React.FC = () => {
       
       {/* 식단 카테고리 선택 */}
       <div className="mb-6">
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2">
           <button
             onClick={() => setSelectedCategory('diet')}
-            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+            className={`p-2 sm:p-3 rounded-lg flex flex-col items-center justify-center ${
               selectedCategory === 'diet' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
             }`}
           >
             <span className="text-lg mb-1">🥗</span>
-            <span className="text-sm font-medium">다이어트</span>
+            <span className="text-xs sm:text-sm font-medium">다이어트</span>
           </button>
           
           <button
             onClick={() => setSelectedCategory('bulk')}
-            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+            className={`p-2 sm:p-3 rounded-lg flex flex-col items-center justify-center ${
               selectedCategory === 'bulk' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
             }`}
           >
             <span className="text-lg mb-1">💪</span>
-            <span className="text-sm font-medium">벌크업</span>
+            <span className="text-xs sm:text-sm font-medium">벌크업</span>
           </button>
           
           <button
             onClick={() => setSelectedCategory('quickmeal')}
-            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+            className={`p-2 sm:p-3 rounded-lg flex flex-col items-center justify-center ${
               selectedCategory === 'quickmeal' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
             }`}
           >
             <span className="text-lg mb-1">⏱️</span>
-            <span className="text-sm font-medium">간편식</span>
+            <span className="text-xs sm:text-sm font-medium">간편식</span>
           </button>
           
           <button
             onClick={() => setSelectedCategory('highprotein')}
-            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+            className={`p-2 sm:p-3 rounded-lg flex flex-col items-center justify-center ${
               selectedCategory === 'highprotein' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
             }`}
           >
             <span className="text-lg mb-1">🥩</span>
-            <span className="text-sm font-medium">고단백</span>
+            <span className="text-xs sm:text-sm font-medium">고단백</span>
           </button>
           
           <button
             onClick={() => setSelectedCategory('balanced')}
-            className={`p-3 rounded-lg flex flex-col items-center justify-center ${
+            className={`p-2 sm:p-3 rounded-lg flex flex-col items-center justify-center ${
               selectedCategory === 'balanced' 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
             }`}
           >
             <span className="text-lg mb-1">⚖️</span>
-            <span className="text-sm font-medium">균형식단</span>
+            <span className="text-xs sm:text-sm font-medium">균형식단</span>
           </button>
         </div>
       </div>
@@ -438,21 +438,21 @@ const MealPlans: React.FC = () => {
               className="p-4 cursor-pointer"
               onClick={() => toggleMealDetails(meal.id)}
             >
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between gap-2 sm:items-center">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white">{meal.title}</h3>
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-2">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full text-xs">
+                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
                       {meal.calories}kcal
                     </span>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full text-xs">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full text-xs whitespace-nowrap">
                       단백질 {meal.protein}g
                     </span>
                   </div>
                   {selectedMeal === meal.id ? (
-                    <ChevronUp size={20} className="text-gray-500" />
+                    <ChevronUp size={20} className="text-gray-500 ml-2" />
                   ) : (
-                    <ChevronDown size={20} className="text-gray-500" />
+                    <ChevronDown size={20} className="text-gray-500 ml-2" />
                   )}
                 </div>
               </div>
@@ -466,22 +466,22 @@ const MealPlans: React.FC = () => {
                   <div>
                     <div className="mb-4">
                       <h4 className="text-lg font-medium mb-2">영양 정보</h4>
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-center">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-2 sm:p-3 rounded-lg text-center">
                           <span className="block text-xs text-gray-500 dark:text-gray-400">칼로리</span>
-                          <span className="block text-lg font-bold text-blue-600 dark:text-blue-400">{meal.calories}kcal</span>
+                          <span className="block text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400">{meal.calories}kcal</span>
                         </div>
-                        <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                        <div className="bg-green-50 dark:bg-green-900/20 p-2 sm:p-3 rounded-lg text-center">
                           <span className="block text-xs text-gray-500 dark:text-gray-400">단백질</span>
-                          <span className="block text-lg font-bold text-green-600 dark:text-green-400">{meal.protein}g</span>
+                          <span className="block text-sm sm:text-lg font-bold text-green-600 dark:text-green-400">{meal.protein}g</span>
                         </div>
-                        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg text-center">
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 sm:p-3 rounded-lg text-center">
                           <span className="block text-xs text-gray-500 dark:text-gray-400">탄수화물</span>
-                          <span className="block text-lg font-bold text-yellow-600 dark:text-yellow-400">{meal.carbs}g</span>
+                          <span className="block text-sm sm:text-lg font-bold text-yellow-600 dark:text-yellow-400">{meal.carbs}g</span>
                         </div>
-                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
+                        <div className="bg-red-50 dark:bg-red-900/20 p-2 sm:p-3 rounded-lg text-center">
                           <span className="block text-xs text-gray-500 dark:text-gray-400">지방</span>
-                          <span className="block text-lg font-bold text-red-600 dark:text-red-400">{meal.fat}g</span>
+                          <span className="block text-sm sm:text-lg font-bold text-red-600 dark:text-red-400">{meal.fat}g</span>
                         </div>
                       </div>
                     </div>

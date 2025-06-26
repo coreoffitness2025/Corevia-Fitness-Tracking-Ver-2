@@ -243,7 +243,7 @@ const NutritionScout = () => {
       
       {/* 검색 입력 */}
       <div className="relative mb-6">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             ref={inputRef}
             type="text"
@@ -251,7 +251,7 @@ const NutritionScout = () => {
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             placeholder="음식 이름을 입력하세요"
-            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
                      dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 
                      focus:ring-blue-500"
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -259,7 +259,7 @@ const NutritionScout = () => {
           <button
             onClick={() => handleSearch()}
             disabled={isLoading}
-            className={`px-6 py-3 rounded-lg text-white font-medium ${
+            className={`sm:min-w-[80px] px-4 sm:px-6 py-3 rounded-lg text-white font-medium whitespace-nowrap ${
               isLoading 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : 'bg-blue-500 hover:bg-blue-600'
@@ -304,31 +304,31 @@ const NutritionScout = () => {
           
           {/* 데이터 안내 문구 */}
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3 mb-6">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-center mb-2">
-              <span className="mr-2">⚠️</span>
-              음식의 영양 성분과 코멘트는 AI와 웹상에 존재하는 음식 데이터들을 종합하여 산출된 결과물로써, 일부 오류가 있을 수 있어 참고용으로만 활용하는걸 권장합니다.
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start mb-2">
+              <span className="mr-2 flex-shrink-0">⚠️</span>
+              <span>음식의 영양 성분과 코멘트는 AI와 웹상에 존재하는 음식 데이터들을 종합하여 산출된 결과물로써, 일부 오류가 있을 수 있어 참고용으로만 활용하는걸 권장합니다.</span>
             </p>
             <p className="text-sm text-yellow-700 dark:text-yellow-300 ml-6">
               또한 음식의 영양성분은 절대적이지 않고 조리 방법 등에 따라 달라질 수 있습니다.
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">칼로리</p>
-              <p className="text-lg font-bold text-blue-500">{calculateCalories(searchResult)} kcal</p>
+              <p className="text-base sm:text-lg font-bold text-blue-500">{calculateCalories(searchResult)} kcal</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">탄수화물</p>
-              <p className="text-lg font-bold text-yellow-500">{searchResult['탄수화물(g/100g)']}g</p>
+              <p className="text-base sm:text-lg font-bold text-yellow-500">{searchResult['탄수화물(g/100g)']}g</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">단백질</p>
-              <p className="text-lg font-bold text-green-500">{searchResult['단백질(g/100g)']}g</p>
+              <p className="text-base sm:text-lg font-bold text-green-500">{searchResult['단백질(g/100g)']}g</p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">지방</p>
-              <p className="text-lg font-bold text-red-500">{searchResult['지방(g/100g)']}g</p>
+              <p className="text-base sm:text-lg font-bold text-red-500">{searchResult['지방(g/100g)']}g</p>
             </div>
           </div>
 
