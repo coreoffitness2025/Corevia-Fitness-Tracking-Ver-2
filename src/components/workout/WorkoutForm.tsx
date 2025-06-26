@@ -1535,7 +1535,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
           
           {/* 휴식 타이머 설정 */}
           <div className="w-full sm:w-auto">
-            <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정 (세트 완료 체크 시 자동 시작)</span>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
                 <Clock size={18} className="text-gray-500" />
@@ -1591,14 +1591,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   </button>
                 </div>
               </div>
-              <button
-                onClick={() => startGlobalTimer('main')}
-                className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center justify-center shadow-md min-w-[60px]"
-                title="휴식 타이머 시작"
-              >
-                <Timer size={18} className="mr-1" />
-                <span className="text-sm font-medium">시작</span>
-              </button>
             </div>
           </div>
         </div>
@@ -1631,6 +1623,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               <button
                 onClick={() => handleSetCompletionAndTimer(index, true)}
                 className={`p-2 rounded-full ${set.isSuccess ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-600'}`}
+                title="세트 완료 체크 (타이머 자동 시작)"
               >
                 <CheckCircle size={20} />
               </button>
