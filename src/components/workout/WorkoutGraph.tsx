@@ -260,7 +260,16 @@ const WorkoutGraph: React.FC = () => {
         beginAtZero: false,
         position: 'left',
         title: {
-          display: false,
+          display: true,
+          text: '무게(kg)',
+          font: {
+            size: 10,
+            weight: 'normal'
+          },
+          padding: {
+            top: 0,
+            bottom: 5
+          }
         },
         ticks: {
           stepSize: 2.5,
@@ -980,10 +989,10 @@ const WorkoutGraph: React.FC = () => {
                   key={option.value}
                   type="button"
                   onClick={() => setSelectedPart(option.value)}
-                  className={`px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors ${
+                  className={`px-3 py-1.5 text-xs sm:text-sm rounded-md border transition-colors ${
                     selectedPart === option.value 
-                      ? 'bg-blue-600 text-white font-semibold'
-                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      ? 'bg-blue-500 border-blue-600 text-white font-medium'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   {option.label}
@@ -999,10 +1008,10 @@ const WorkoutGraph: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedExercise('all')}
-                className={`px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors ${
+                className={`px-3 py-1.5 text-xs sm:text-sm rounded-md border transition-colors ${
                   selectedExercise === 'all' 
-                    ? 'bg-green-600 text-white font-semibold'
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    ? 'bg-blue-500 border-blue-600 text-white font-medium'
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 전체
@@ -1012,10 +1021,10 @@ const WorkoutGraph: React.FC = () => {
                   key={option.value}
                   type="button"
                   onClick={() => setSelectedExercise(option.value)}
-                  className={`px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors ${
+                  className={`px-3 py-1.5 text-xs sm:text-sm rounded-md border transition-colors ${
                     selectedExercise === option.value 
-                      ? 'bg-green-600 text-white font-semibold'
-                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      ? 'bg-blue-500 border-blue-600 text-white font-medium'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   {option.label}
@@ -1033,10 +1042,42 @@ const WorkoutGraph: React.FC = () => {
                   key={option.value}
                   type="button"
                   onClick={() => setSelectedPeriod(option.value)}
-                  className={`px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors ${
+                  className={`px-3 py-1.5 text-xs sm:text-sm rounded-md border transition-colors ${
                     selectedPeriod === option.value 
-                      ? 'bg-purple-600 text-white font-semibold'
-                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      ? 'bg-blue-500 border-blue-600 text-white font-medium'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* 세트 구성 선택 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">세트 구성</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedSetConfig('all')}
+                className={`px-3 py-1.5 text-xs sm:text-sm rounded-md border transition-colors ${
+                  selectedSetConfig === 'all' 
+                    ? 'bg-blue-500 border-blue-600 text-white font-medium'
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                전체
+              </button>
+              {setConfigOptions.slice(1).map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSelectedSetConfig(option.value)}
+                  className={`px-3 py-1.5 text-xs sm:text-sm rounded-md border transition-colors ${
+                    selectedSetConfig === option.value 
+                      ? 'bg-blue-500 border-blue-600 text-white font-medium'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   {option.label}
