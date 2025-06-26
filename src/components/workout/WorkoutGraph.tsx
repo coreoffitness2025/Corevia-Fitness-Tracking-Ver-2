@@ -172,10 +172,10 @@ const WorkoutGraph: React.FC = () => {
     maintainAspectRatio: false, // 높이 조정 가능하도록
     layout: {
       padding: {
-        left: 5,
-        right: 10,
-        top: 10,
-        bottom: 10
+        left: 0,
+        right: 5,
+        top: 5,
+        bottom: 5
       }
     },
     plugins: {
@@ -257,23 +257,20 @@ const WorkoutGraph: React.FC = () => {
     scales: {
       y: {
         type: 'linear',
-        beginAtZero: false, // 0부터 시작하지 않도록 기본 설정
+        beginAtZero: false,
+        position: 'left',
         title: {
-          display: true,
-          text: '무게 (kg)',
-          font: {
-            size: 14,
-            weight: 'bold'
-          }
+          display: false,
         },
         ticks: {
           stepSize: 2.5,
           callback: function(value: any) {
-            return `${value}kg`;
+            return value;
           },
           font: {
-            size: 12
-          }
+            size: 10
+          },
+          padding: 0,
         },
         grid: {
           display: true,
@@ -282,12 +279,7 @@ const WorkoutGraph: React.FC = () => {
       },
       x: {
         title: {
-          display: true,
-          text: '날짜',
-          font: {
-            size: 14,
-            weight: 'bold'
-          }
+          display: false,
         },
         ticks: {
           font: {
@@ -312,7 +304,8 @@ const WorkoutGraph: React.FC = () => {
     },
     elements: {
       line: {
-        borderWidth: 2,
+        borderWidth: 1.5,
+        tension: 0.2,
         segment: {
           borderColor: (ctx: any) => {
             if (!ctx.p0 || !ctx.p1 || !ctx.p0.dataset) return undefined;
@@ -328,9 +321,9 @@ const WorkoutGraph: React.FC = () => {
         }
       },
       point: {
-        radius: isMobileRef.current ? 4 : 6, // 모바일에서 더 작은 포인트
-        hoverRadius: isMobileRef.current ? 6 : 8,
-        borderWidth: isMobileRef.current ? 1 : 2
+        radius: isMobileRef.current ? 3 : 4,
+        hoverRadius: isMobileRef.current ? 4 : 6,
+        borderWidth: isMobileRef.current ? 1 : 1.5
       }
     },
     onClick: (event, elements, chart) => {
@@ -540,12 +533,12 @@ const WorkoutGraph: React.FC = () => {
             borderColor: configColor.border,
             backgroundColor: configColor.background, 
             tension: 0.2, 
-            pointRadius: isMobileRef.current ? 4 : 6, // 모바일에서 더 작은 포인트
+            pointRadius: isMobileRef.current ? 3 : 4, // 포인트 크기 더 작게
             pointBackgroundColor: uniqueDates.map(date => dateData[date] ? configColor.border : 'transparent'), 
             pointBorderColor: uniqueDates.map(date => dateData[date] ? configColor.border : 'transparent'), 
-            pointHoverRadius: isMobileRef.current ? 6 : 8, // 모바일에서 더 작은 호버 크기
+            pointHoverRadius: isMobileRef.current ? 4 : 6, // 호버 시 크기도 줄임
             pointHoverBackgroundColor: configColor.background, 
-            pointHitRadius: 10, 
+            pointHitRadius: 8, // 히트 영역도 줄임
             id: datasetId, 
             spanGaps: true // 빈 데이터 구간에서도 선 연결
           });
@@ -599,7 +592,7 @@ const WorkoutGraph: React.FC = () => {
           ...updatedOptions.scales.y.ticks,
           stepSize: Math.max(2.5, Math.round((yMax - yMin) / 8)), // 적절한 간격 설정
           callback: function(value: any) {
-            return `${value}kg`;
+            return value;
           }
         };
         
@@ -920,9 +913,9 @@ const WorkoutGraph: React.FC = () => {
       
       // 포인트 크기 조정
       if (updatedOptions.elements?.point) {
-        updatedOptions.elements.point.radius = isMobile ? 4 : 6;
-        updatedOptions.elements.point.hoverRadius = isMobile ? 6 : 8;
-        updatedOptions.elements.point.borderWidth = isMobile ? 1 : 2;
+        updatedOptions.elements.point.radius = isMobile ? 3 : 4;
+        updatedOptions.elements.point.hoverRadius = isMobile ? 4 : 6;
+        updatedOptions.elements.point.borderWidth = isMobile ? 1 : 1.5;
       }
       
       // X축 설정 조정
@@ -1056,25 +1049,25 @@ const WorkoutGraph: React.FC = () => {
         {/* 그래프 */}
         <div className="mt-6">
           {filteredData.length > 0 ? (
-            <div className="h-64 sm:h-80 md:h-96 overflow-x-auto pb-4">
+            <div className="h-72 sm:h-96 md:h-[28rem] overflow-x-auto pb-4">
               {/* 커스텀 범례 */}
               {chartData.datasets && chartData.datasets.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-x-4 gap-y-2 justify-center">
+                <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 justify-center">
                   {chartData.datasets.map((dataset: any, index: number) => {
                     const isVisible = chartRef.current ? chartRef.current.isDatasetVisible(index) : true;
                     return (
                       <div 
                         key={index} 
-                        className={`flex items-center gap-2 cursor-pointer p-1 rounded transition-colors ${
+                        className={`flex items-center gap-1 cursor-pointer p-1 rounded transition-colors ${
                           isVisible ? 'hover:bg-gray-100 dark:hover:bg-gray-700' : 'opacity-50'
                         }`}
                         onClick={() => toggleDatasetVisibility(index)}
                       >
                         <div 
-                          className="w-3 h-3 rounded-full"
+                          className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: dataset.borderColor }}
                         />
-                        <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                        <span className="text-xs text-gray-700 dark:text-gray-300">
                           {dataset.label}
                         </span>
                       </div>
@@ -1083,7 +1076,7 @@ const WorkoutGraph: React.FC = () => {
                 </div>
               )}
               
-              <div className="relative w-full h-full px-1">
+              <div className="relative w-full h-full">
                 <Line 
                   options={dynamicChartOptions} 
                   data={chartData}
@@ -1092,7 +1085,7 @@ const WorkoutGraph: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <div className="h-72 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <p className="text-center text-gray-500 dark:text-gray-400">
                 선택한 조건에 맞는<br/>운동 데이터가 없습니다.
               </p>
