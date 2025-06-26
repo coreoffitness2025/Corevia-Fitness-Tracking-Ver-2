@@ -404,12 +404,13 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
     if (isMainExercise) {
       const newSets = [...mainExercise.sets];
       const currentSet = newSets[setIndex];
+      const previousState = currentSet.isSuccess;
 
       // 1. 세트 상태 토글 (미완료 -> 성공 -> 미완료)
       if (currentSet.isSuccess === null) { // 미완료 -> 성공
         currentSet.isSuccess = true;
         
-        // 세트가 성공으로 표시될 때만 타이머 시작
+        // 세트가 성공으로 표시될 때 타이머 시작
         startGlobalTimer('main');
         
         const { repsCount: targetReps } = getSetConfiguration(selectedSetConfiguration, customSets, customReps);
@@ -428,25 +429,37 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
         }
       } else if (currentSet.isSuccess === true) { // 성공 -> 미완료
         currentSet.isSuccess = null;
-        // 세트가 미완료로 변경될 때는 타이머를 시작하지 않음
+        // 세트가 미완료로 변경될 때 타이머 중지
+        resetGlobalTimer();
+      } else if (currentSet.isSuccess === false) { // 실패 -> 성공
+        currentSet.isSuccess = true;
+        // 실패에서 성공으로 변경될 때도 타이머 시작
+        startGlobalTimer('main');
       }
       
       setMainExercise({ ...mainExercise, sets: newSets });
     } else if (accessoryIndex !== undefined) {
-      // 보조 운동 로직은 AccessoryExerciseComponent에서 처리 (타이머 연동 없음)
+      // 보조 운동 로직
       const newExercises = [...accessoryExercises];
-      // 보조 운동 세트 완료 처리 (AccessoryExerciseComponent 내부 또는 여기서 직접)
+      // 보조 운동 세트 완료 처리
       if (newExercises[accessoryIndex] && newExercises[accessoryIndex].sets[setIndex]) {
         const currentAccessorySet = newExercises[accessoryIndex].sets[setIndex];
-        if (currentAccessorySet.isSuccess === null) {
+        const previousState = currentAccessorySet.isSuccess;
+        
+        if (currentAccessorySet.isSuccess === null) { // 미완료 -> 성공
           currentAccessorySet.isSuccess = true;
-          
           // 세트 완료 후 자동으로 휴식 타이머 시작
           startGlobalTimer(`accessory_${accessoryIndex}`);
-        } else {
+        } else if (currentAccessorySet.isSuccess === true) { // 성공 -> 미완료
           currentAccessorySet.isSuccess = null;
-          // 세트가 미완료로 변경될 때는 타이머를 시작하지 않음
+          // 세트가 미완료로 변경될 때 타이머 중지
+          resetGlobalTimer();
+        } else if (currentAccessorySet.isSuccess === false) { // 실패 -> 성공
+          currentAccessorySet.isSuccess = true;
+          // 실패에서 성공으로 변경될 때도 타이머 시작
+          startGlobalTimer(`accessory_${accessoryIndex}`);
         }
+        
         setAccessoryExercises(newExercises);
       }
     }

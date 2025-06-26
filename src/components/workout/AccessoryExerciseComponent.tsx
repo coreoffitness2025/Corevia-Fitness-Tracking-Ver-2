@@ -61,9 +61,9 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     onChange(index, { ...exercise, sets: newSets });
   };
 
-  const handleAccessorySetCompletion = (setIndex: number) => {
+  const handleAccessorySetCompletion = (setIndex: number, newState: boolean | null) => {
     const newSets = [...exercise.sets];
-    newSets[setIndex].isSuccess = !newSets[setIndex].isSuccess;
+    newSets[setIndex].isSuccess = newState;
     onChange(index, { ...exercise, sets: newSets });
   };
 
@@ -71,15 +71,19 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   const handleSetCompletionAndTimer = (setIndex: number) => {
     // 현재 세트의 상태 확인
     const currentSet = exercise.sets[setIndex];
-    const isCurrentlyUnchecked = currentSet.isSuccess === null;
+    const currentState = currentSet.isSuccess;
     
-    // 세트 완료 처리
-    handleAccessorySetCompletion(setIndex);
-    
-    // 타이머 시작 (초록색으로 변경될 때만)
-    if (isCurrentlyUnchecked) {
+    if (currentState === null || currentState === false) {
+      // null이나 false에서 true로 변경 (체크 활성화)
+      handleAccessorySetCompletion(setIndex, true);
+      // 타이머 시작
       const timerId = `accessory_${index}`;
       startGlobalTimer(timerId);
+    } else {
+      // true에서 null로 변경 (체크 비활성화)
+      handleAccessorySetCompletion(setIndex, null);
+      // 타이머 중지
+      resetGlobalTimer();
     }
   };
 
