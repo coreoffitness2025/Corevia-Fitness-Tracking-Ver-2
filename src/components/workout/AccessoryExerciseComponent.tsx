@@ -127,32 +127,6 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
             <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
               <Clock size={18} className="text-gray-500" />
               <div className="flex items-center space-x-1">
-                {/* 분 감소 버튼 */}
-                <button 
-                  onClick={() => {
-                    const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
-                    const newGlobalTimer = {...globalTimer, timerMinutes: newMinutes};
-                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                  }}
-                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                >
-                  -
-                </button>
-                
-                <input
-                  type="number"
-                  value={globalTimer.timerMinutes}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (!isNaN(value) && value >= 0) {
-                      const newGlobalTimer = {...globalTimer, timerMinutes: value};
-                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                    }
-                  }}
-                  className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                  inputMode="numeric"
-                />
-                
                 {/* 분 증가 버튼 */}
                 <button 
                   onClick={() => {
@@ -165,13 +139,25 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                   +
                 </button>
                 
-                <span className="font-bold text-lg">:</span>
+                <input
+                  type="number"
+                  value={globalTimer.timerMinutes}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 0) {
+                      const newGlobalTimer = {...globalTimer, timerMinutes: value};
+                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                    }
+                  }}
+                  className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  inputMode="numeric"
+                />
                 
-                {/* 초 감소 버튼 (10초 단위) */}
+                {/* 분 감소 버튼 */}
                 <button 
                   onClick={() => {
-                    const newSeconds = Math.max(0, globalTimer.timerSeconds - 10);
-                    const newGlobalTimer = {...globalTimer, timerSeconds: newSeconds};
+                    const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
+                    const newGlobalTimer = {...globalTimer, timerMinutes: newMinutes};
                     onChange(index, {...exercise, globalTimer: newGlobalTimer});
                   }}
                   className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
@@ -179,19 +165,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                   -
                 </button>
                 
-                <input
-                  type="number"
-                  value={globalTimer.timerSeconds.toString().padStart(2, '0')}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (!isNaN(value) && value >= 0 && value < 60) {
-                      const newGlobalTimer = {...globalTimer, timerSeconds: value};
-                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                    }
-                  }}
-                  className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                  inputMode="numeric"
-                />
+                <span className="font-bold text-lg">:</span>
                 
                 {/* 초 증가 버튼 (10초 단위) */}
                 <button 
@@ -204,14 +178,40 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                 >
                   +
                 </button>
+                
+                <input
+                  type="number"
+                  value={globalTimer.timerSeconds.toString().padStart(2, '0')}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 0 && value < 60) {
+                      const newGlobalTimer = {...globalTimer, timerSeconds: value};
+                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                    }
+                  }}
+                  className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  inputMode="numeric"
+                />
+                
+                {/* 초 감소 버튼 (10초 단위) */}
+                <button 
+                  onClick={() => {
+                    const newSeconds = Math.max(0, globalTimer.timerSeconds - 10);
+                    const newGlobalTimer = {...globalTimer, timerSeconds: newSeconds};
+                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
+                  }}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >
+                  -
+                </button>
               </div>
             </div>
             <button
               onClick={() => startGlobalTimer(`accessory_${index}`)}
-              className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
+              className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center justify-center shadow-md min-w-[60px]"
               title="휴식 타이머 시작"
             >
-              <Timer size={18} />
+              <Timer size={18} className="mr-1" />
               <span className="text-sm font-medium">시작</span>
             </button>
           </div>

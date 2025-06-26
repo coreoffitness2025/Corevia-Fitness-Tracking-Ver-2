@@ -1540,22 +1540,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
                 <Clock size={18} className="text-gray-500" />
                 <div className="flex items-center space-x-1">
-                  {/* 분 감소 버튼 */}
-                  <button 
-                    onClick={() => adjustTimerValue('minutes', -1)}
-                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                  >
-                    -
-                  </button>
-                  
-                  <input
-                    type="number"
-                    value={globalTimer.timerMinutes}
-                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
-                    className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                    inputMode="numeric"
-                  />
-                  
                   {/* 분 증가 버튼 */}
                   <button 
                     onClick={() => adjustTimerValue('minutes', 1)}
@@ -1564,23 +1548,23 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     +
                   </button>
                   
-                  <span className="font-bold text-lg">:</span>
+                  <input
+                    type="number"
+                    value={globalTimer.timerMinutes}
+                    onChange={(e) => handleTimerInputChange('minutes', e.target.value)}
+                    className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                    inputMode="numeric"
+                  />
                   
-                  {/* 초 감소 버튼 (10초 단위) */}
+                  {/* 분 감소 버튼 */}
                   <button 
-                    onClick={() => adjustTimerValue('seconds', -10)}
+                    onClick={() => adjustTimerValue('minutes', -1)}
                     className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
                   >
                     -
                   </button>
                   
-                  <input
-                    type="number"
-                    value={globalTimer.timerSeconds.toString().padStart(2, '0')}
-                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
-                    className="w-14 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
-                    inputMode="numeric"
-                  />
+                  <span className="font-bold text-lg">:</span>
                   
                   {/* 초 증가 버튼 (10초 단위) */}
                   <button 
@@ -1589,14 +1573,30 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                   >
                     +
                   </button>
+                  
+                  <input
+                    type="number"
+                    value={globalTimer.timerSeconds.toString().padStart(2, '0')}
+                    onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
+                    className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                    inputMode="numeric"
+                  />
+                  
+                  {/* 초 감소 버튼 (10초 단위) */}
+                  <button 
+                    onClick={() => adjustTimerValue('seconds', -10)}
+                    className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                  >
+                    -
+                  </button>
                 </div>
               </div>
               <button
                 onClick={() => startGlobalTimer('main')}
-                className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-md"
+                className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center justify-center shadow-md min-w-[60px]"
                 title="휴식 타이머 시작"
               >
-                <Timer size={18} />
+                <Timer size={18} className="mr-1" />
                 <span className="text-sm font-medium">시작</span>
               </button>
             </div>
