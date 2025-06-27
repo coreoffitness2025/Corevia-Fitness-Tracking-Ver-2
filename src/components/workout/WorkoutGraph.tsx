@@ -81,6 +81,8 @@ const exerciseOptions: Record<string, { value: string; label: string }[]> = {
 
 // 기간 옵션
 const periodOptions = [
+  { value: 'all', label: '전체' },
+  { value: '1week', label: '1주일' },
   { value: '1month', label: '1개월' },
   { value: '3months', label: '3개월' },
   { value: '6months', label: '6개월' },
@@ -139,7 +141,7 @@ const WorkoutGraph: React.FC = () => {
   const { currentUser } = useAuth();
   const [selectedPart, setSelectedPart] = useState<string>('chest');
   const [selectedExercise, setSelectedExercise] = useState<string>('benchPress');
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('1month');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
   const [selectedSetConfig, setSelectedSetConfig] = useState<string>('all');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -655,68 +657,14 @@ const WorkoutGraph: React.FC = () => {
     try {
       setLoading(true);
       
-      // 기간에 따른 날짜 범위 계산
-      const endDate = new Date();
-      let startDate = new Date();
-      
-      console.log('[WorkoutGraph] loadWorkoutData - selectedPeriod:', selectedPeriod);
-
-      switch (selectedPeriod) {
-        case '1month': startDate.setMonth(startDate.getMonth() - 1); break;
-        case '3months': startDate.setMonth(startDate.getMonth() - 3); break;
-        case '6months': startDate.setMonth(startDate.getMonth() - 6); break;
-        case '1year': startDate.setFullYear(startDate.getFullYear() - 1); break;
-        default: startDate.setMonth(startDate.getMonth() - 1);
-      }
-      console.log('[WorkoutGraph] loadWorkoutData - Firestore 쿼리 날짜 범위:', startDate.toLocaleDateString(), '~', endDate.toLocaleDateString());
-      
-      const sessionsCollection = collection(db, 'sessions');
-      const q = query(sessionsCollection, where('userId', '==', currentUser.uid), where('date', '>=', startDate), where('date', '<=', endDate), orderBy('date', 'asc'));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: parseFirestoreDate(doc.data().date as unknown as FirestoreTimestamp | Date | string),
-      })) as Workout[];
-      
-      console.log(
-        '[WorkoutGraph] loadWorkoutData - Firestore에서 가져온 데이터 (workoutData 첫 5개):\n',
-        JSON.stringify(
-          data.slice(0, 5).map(d => {
-            return {
-              ...d,
-              date: 안전한_날짜_문자열_변환(d.date)
-            };
-          }),
-          null,
-          2
-        )
-      );
-      const shoulderDataLoaded = data.filter(w => w.part === 'shoulder');
-      console.log(`[WorkoutGraph] loadWorkoutData - Firestore 데이터 중 '어깨' 기록 ${shoulderDataLoaded.length}개`);
-      const specificShoulderRecordLoaded = shoulderDataLoaded.find(w => w.mainExercise?.name === '오버헤드 프레스' && w.mainExercise?.sets?.some(s => s.weight === 102.5));
-      if (specificShoulderRecordLoaded) {
-          console.log("[WorkoutGraph] loadWorkoutData - Firestore '어깨' 중 102.5kg 기록:", JSON.stringify({...specificShoulderRecordLoaded, date: 안전한_날짜_문자열_변환(specificShoulderRecordLoaded.date)},null,2));
-      } else {
-          console.log("[WorkoutGraph] loadWorkoutData - Firestore '어깨' 중 102.5kg 기록 없음");
-      }
-
-      setWorkoutData(data);
-      applyFilters(data);
-    } catch (error) { console.error('[WorkoutGraph] loadWorkoutData 오류:', error); setError('운동 데이터를 불러오는 중 오류가 발생했습니다.'); } finally { setLoading(false); }
-  };
-  
-  // 필터링 기능
-  const applyFilters = (dataToFilter = workoutData) => {
-    try {
-      let filtered = [...dataToFilter];
-      console.log(`[WorkoutGraph] applyFilters - 시작, 데이터 ${filtered.length}개, 선택된 부위: ${selectedPart}, 운동: ${selectedExercise}, 세트구성: ${selectedSetConfig}, 기간: ${selectedPeriod}`);
-
-      // 기간별 필터링 추가
       const now = new Date();
-      let startDate: Date;
+      let startDate: Date | null = null;
       
       switch (selectedPeriod) {
+        case '1week':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          break;
         case '1month':
           startDate = new Date(now);
           startDate.setMonth(now.getMonth() - 1);
@@ -733,94 +681,80 @@ const WorkoutGraph: React.FC = () => {
           startDate = new Date(now);
           startDate.setFullYear(now.getFullYear() - 1);
           break;
+        case 'all':
         default:
-          startDate = new Date(now);
-          startDate.setMonth(now.getMonth() - 1);
+          startDate = null; // 'all'인 경우 시작 날짜 제한 없음
+          break;
       }
       
-      filtered = filtered.filter(item => {
-        const itemDate = parseFirestoreDate(item.date as unknown as FirestoreTimestamp | Date | string);
-        return itemDate >= startDate && itemDate <= now;
-      });
-      console.log(`[WorkoutGraph] applyFilters - 기간 필터링 후 (${selectedPeriod}): ${filtered.length}개`);
+      const sessionsCollection = collection(db, 'sessions');
+      let q;
 
+      if (startDate) {
+        q = query(
+          sessionsCollection, 
+          where('userId', '==', currentUser.uid), 
+          where('date', '>=', startDate), 
+          orderBy('date', 'asc')
+        );
+      } else {
+        q = query(
+          sessionsCollection, 
+          where('userId', '==', currentUser.uid), 
+          orderBy('date', 'asc')
+        );
+      }
+      
+      const querySnapshot = await getDocs(q);
+      const data = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: parseFirestoreDate(doc.data().date as unknown as FirestoreTimestamp | Date | string),
+      })) as Workout[];
+      
+      setWorkoutData(data);
+      applyFilters(data); // 데이터를 바로 필터링 함수에 전달
+    } catch (error) { 
+      console.error('[WorkoutGraph] loadWorkoutData 오류:', error); 
+      setError('운동 데이터를 불러오는 중 오류가 발생했습니다.'); 
+    } finally { 
+      setLoading(false); 
+    }
+  };
+  
+  // 필터링 기능
+  const applyFilters = (dataToFilter = workoutData) => {
+    try {
+      let filtered = [...dataToFilter];
+      
       // 부위별 필터링
       filtered = filtered.filter(item => item.part === selectedPart);
-      console.log(`[WorkoutGraph] applyFilters - 부위 필터링 후 (${selectedPart}): ${filtered.length}개`);
       
-      // 스쿼트/하체 데이터 특별 디버깅
-      if (selectedPart === 'leg') {
-        const legExercises = filtered.map(w => ({
-          exercise: w.mainExercise?.name,
-          date: w.date,
-          maxWeight: Math.max(...(w.mainExercise?.sets?.map(s => s.weight) || [0]))
-        }));
-        console.log('[WorkoutGraph] 하체 운동 데이터 목록:', legExercises);
-        
-        const squatData = filtered.filter(w => w.mainExercise?.name?.includes('스쿼트'));
-        console.log(`[WorkoutGraph] 스쿼트 데이터 ${squatData.length}개:`, squatData.map(w => ({
-          name: w.mainExercise?.name,
-          sets: w.mainExercise?.sets?.map(s => `${s.weight}kg x ${s.reps}회`)
-        })));
-      }
-
-      // 운동별 필터링 (선택된 운동이 'all'이 아닌 경우)
+      // 운동별 필터링
       if (selectedExercise !== 'all') {
         const selectedExerciseLabel = exerciseOptions[selectedPart]?.find(opt => opt.value === selectedExercise)?.label;
-        console.log(`[WorkoutGraph] 선택된 운동 라벨: ${selectedExerciseLabel}`);
-        
         if (selectedExerciseLabel) {
-          const beforeCount = filtered.length;
           filtered = filtered.filter(item => 
             item.mainExercise && item.mainExercise.name === selectedExerciseLabel
           );
-          console.log(`[WorkoutGraph] 운동 필터링: "${selectedExerciseLabel}" - ${beforeCount}개 → ${filtered.length}개`);
         } else {
-          console.warn(`[WorkoutGraph] 선택된 운동 라벨을 찾을 수 없음: ${selectedExercise}`);
           filtered = [];
         }
       }
-      console.log(`[WorkoutGraph] applyFilters - 운동 종류 필터링 후 (${selectedExercise}): ${filtered.length}개`);
 
-      // 세트 구성별 필터링 (선택된 구성이 'all'이 아닌 경우)
+      // 세트 구성별 필터링
       if (selectedSetConfig !== 'all') {
-        const beforeCount = filtered.length;
         filtered = filtered.filter(item => {
-          if (!item.mainExercise || !item.mainExercise.sets || item.mainExercise.sets.length === 0) {
-            return false;
-          }
-          
+          if (!item.mainExercise?.sets) return false;
           const sets = item.mainExercise.sets;
-          
-          // 세트 구성 매칭 로직 개선
           switch (selectedSetConfig) {
-            case '5x5':
-              return sets.length === 5 && sets.every(set => set.reps === 5);
-            case '10x5':
-              return sets.length === 5 && sets.every(set => set.reps === 10);
-            case '15x5':
-              return sets.length === 5 && sets.every(set => set.reps === 15);
-            case '6x3':
-              return sets.length === 3 && sets.every(set => set.reps === 6);
-            default:
-              return false;
+            case '5x5': return sets.length === 5 && sets.every(set => set.reps === 5);
+            case '10x5': return sets.length === 5 && sets.every(set => set.reps === 10);
+            case '15x5': return sets.length === 5 && sets.every(set => set.reps === 15);
+            case '6x3': return sets.length === 3 && sets.every(set => set.reps === 6);
+            default: return false;
           }
         });
-        console.log(`[WorkoutGraph] 세트 구성 필터링: "${selectedSetConfig}" - ${beforeCount}개 → ${filtered.length}개`);
-      }
-      console.log(`[WorkoutGraph] applyFilters - 세트 구성 필터링 후 (${selectedSetConfig}): ${filtered.length}개`);
-
-      // 최종 필터링 결과 디버깅
-      if (filtered.length > 0) {
-        const exerciseNames = [...new Set(filtered.map(w => w.mainExercise?.name))];
-        const weightRanges = filtered.map(w => {
-          const weights = w.mainExercise?.sets?.map(s => s.weight) || [0];
-          return { min: Math.min(...weights), max: Math.max(...weights) };
-        });
-        const overallMin = Math.min(...weightRanges.map(r => r.min));
-        const overallMax = Math.max(...weightRanges.map(r => r.max));
-        
-        console.log(`[WorkoutGraph] 최종 필터링 결과 - 운동종류: [${exerciseNames.join(', ')}], 무게범위: ${overallMin}-${overallMax}kg`);
       }
 
       setFilteredData(filtered);
@@ -828,12 +762,7 @@ const WorkoutGraph: React.FC = () => {
       if (filtered.length > 0) {
         prepareChartData(filtered);
       } else {
-        console.log('[WorkoutGraph] 필터링된 데이터가 없어 빈 차트 설정');
-        setChartData({ labels: [], datasets: [] }); 
-        setDateWorkoutMap({}); 
-        setDateAllWorkoutsMap({});
-        
-        // 빈 데이터일 때도 기본 y축 범위 설정
+        setChartData({ labels: [], datasets: [] });
         const emptyOptions = JSON.parse(JSON.stringify(initialChartOptions));
         if (emptyOptions.scales?.y) {
           emptyOptions.scales.y.min = 0;
@@ -848,8 +777,15 @@ const WorkoutGraph: React.FC = () => {
   
   // 필터 변경 시 데이터 재필터링
   useEffect(() => {
+    // selectedPeriod가 변경될 때는 loadWorkoutData가 호출되므로,
+    // 여기서는 다른 필터들에 대해서만 applyFilters를 호출한다.
     applyFilters();
-  }, [selectedPart, selectedExercise, selectedSetConfig, selectedPeriod]);
+  }, [selectedPart, selectedExercise, selectedSetConfig]);
+
+  useEffect(() => {
+    // 기간이 변경될 때만 데이터를 다시 로드
+    loadWorkoutData();
+  }, [currentUser, selectedPeriod]);
   
   // 부위 변경 핸들러
   const handlePartChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
