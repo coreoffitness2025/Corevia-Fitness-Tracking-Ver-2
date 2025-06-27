@@ -133,8 +133,14 @@ const WorkoutList: React.FC = () => {
   };
 
   const handleDateClick = (date: string) => {
-    setSelectedDate(date);
-    if (viewMode !== 'day') {
+    if (viewMode === 'month') {
+      if (selectedDate === date) {
+        setSelectedDate(formatDate(new Date()));
+      } else {
+        setSelectedDate(date);
+      }
+    } else {
+      setSelectedDate(date);
       setViewMode('day');
     }
   };
@@ -272,6 +278,7 @@ const WorkoutList: React.FC = () => {
   // 월간 뷰 렌더링 (기존 달력 뷰)
   const renderMonthlyView = () => {
     const calendarDays = generateCalendarDays(currentDate, workoutsByDate);
+    const dayWorkouts = workoutsByDate[selectedDate] || [];
 
     return (
       <>
@@ -312,7 +319,27 @@ const WorkoutList: React.FC = () => {
         </div>
         
         {/* 선택된 날짜의 운동 기록 (월별 뷰 하단에 표시) */}
-        {selectedDate && <div className="mt-4">{renderDailyView()}</div>}
+        {selectedDate && (
+          <div className="mt-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {new Date(selectedDate).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long',
+              })}
+            </h3>
+            {dayWorkouts.length > 0 ? (
+              <div className="space-y-4">
+                {dayWorkouts.map((workout) => renderWorkoutCard(workout))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <p className="text-gray-500 dark:text-gray-400">이 날짜에 기록된 운동이 없습니다.</p>
+              </div>
+            )}
+          </div>
+        )}
       </>
     );
   };
