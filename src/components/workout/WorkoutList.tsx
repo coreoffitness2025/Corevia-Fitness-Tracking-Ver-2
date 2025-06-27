@@ -11,7 +11,7 @@ import { db } from '../../firebase/firebaseConfig';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 // 유틸리티 함수 import
-import { getPartLabel, getPartColor, generateCalendarDays, parseFirestoreDate } from '../../utils/workoutUtils';
+import { getPartLabel, getPartColor, parseFirestoreDate } from '../../utils/workoutUtils';
 
 // 뷰 모드 타입 정의
 type ViewMode = 'day' | 'week' | 'month';
@@ -30,6 +30,8 @@ const WorkoutList: React.FC = () => {
   
   // 월별 보기에서 클릭된 날짜를 관리할 별도 상태
   const [monthlyViewSelectedDate, setMonthlyViewSelectedDate] = useState<string | null>(null);
+  // 달력 날짜 배열 상태 추가
+  const [calendarDates, setCalendarDates] = useState<Date[]>([]);
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -50,6 +52,41 @@ const WorkoutList: React.FC = () => {
     }, {});
     setWorkoutsByDate(groupedWorkouts);
   }, [sessions]);
+
+  // 월별 뷰일 때 달력 날짜 계산
+  useEffect(() => {
+    if (viewMode === 'month') {
+      const dates = getDatesForCalendar();
+      setCalendarDates(dates);
+    }
+  }, [viewMode, selectedDate]);
+  
+  // FoodLog.tsx에서 가져온 달력 날짜 계산 함수
+  const getDatesForCalendar = () => {
+    const date = new Date(selectedDate);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const firstCalendarDay = new Date(firstDay);
+    firstCalendarDay.setDate(firstCalendarDay.getDate() - firstCalendarDay.getDay());
+    
+    const lastCalendarDay = new Date(lastDay);
+    const remainingDays = 6 - lastCalendarDay.getDay();
+    lastCalendarDay.setDate(lastCalendarDay.getDate() + remainingDays);
+    
+    const dates = [];
+    let currentDate = new Date(firstCalendarDay);
+    
+    while (currentDate <= lastCalendarDay) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
   
   const fetchWorkouts = async () => {
     if (!userProfile?.uid) return;
@@ -156,8 +193,10 @@ const WorkoutList: React.FC = () => {
   };
 
   const renderMonthlyView = () => {
-    const calendarDays = generateCalendarDays(new Date(selectedDate), workoutsByDate);
-    const selectedDayWorkouts = monthlyViewSelectedDate ? workoutsByDate[monthlyViewSelectedDate] || [] : [];
+    const todayCal = new Date();
+    const currentDateCal = new Date(selectedDate);
+    const currentMonth = currentDateCal.getMonth();
+    const currentYear = currentDateCal.getFullYear();
     
     return (
       <>
@@ -165,12 +204,14 @@ const WorkoutList: React.FC = () => {
           {weekdays.map(day => <div key={day}>{day}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {calendarDays.map((day, i) => {
-            if (!day) return <div key={`empty-${i}`} className="border rounded-lg bg-gray-50 dark:bg-gray-800/20 min-h-[6rem]" />;
-            
-            const { dateStr, dayOfMonth, isCurrentMonth, isToday, workouts } = day;
+          {calendarDates.map((date, i) => {
+            const dateStr = formatDate(date);
+            const dayOfMonth = date.getDate();
+            const isCurrentMonth = date.getMonth() === currentMonth;
+            const isToday = date.toDateString() === todayCal.toDateString();
+            const workouts = workoutsByDate[dateStr] || [];
             const isSelected = monthlyViewSelectedDate === dateStr;
-
+            
             return (
               <div
                 key={dateStr}
@@ -186,10 +227,9 @@ const WorkoutList: React.FC = () => {
                   {dayOfMonth}
                 </div>
                 <div className="flex flex-wrap justify-center gap-1 mt-auto">
-                  {workouts.slice(0, 4).map(p => (
-                    <div key={p} className={`w-1.5 h-1.5 rounded-full ${getPartColor(p)}`} title={getPartLabel(p as ExercisePart)}></div>
+                  {workouts.map(workout => (
+                    <div key={workout.id} className={`w-1.5 h-1.5 rounded-full ${getPartColor(workout.part)}`} title={getPartLabel(workout.part)}></div>
                   ))}
-                  {workouts.length > 4 && <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>}
                 </div>
               </div>
             );
@@ -201,9 +241,9 @@ const WorkoutList: React.FC = () => {
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
               {new Date(monthlyViewSelectedDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
             </h3>
-            {selectedDayWorkouts.length > 0 ? (
+            {workoutsByDate[monthlyViewSelectedDate] && workoutsByDate[monthlyViewSelectedDate].length > 0 ? (
               <div className="space-y-4">
-                {selectedDayWorkouts.map((workout) => renderWorkoutCard(workout))}
+                {workoutsByDate[monthlyViewSelectedDate].map((workout) => renderWorkoutCard(workout))}
               </div>
             ) : (
               <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -248,8 +288,6 @@ const WorkoutList: React.FC = () => {
       toast.error('운동 기록 삭제에 실패했습니다.');
     }
   };
-
-  const calendarDays = generateCalendarDays(new Date(selectedDate), workoutsByDate);
   
   // 운동 카드 렌더링 함수 (중복 코드 제거)
   const renderWorkoutCard = (workout: Workout) => {
