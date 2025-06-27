@@ -192,6 +192,27 @@ const WorkoutList: React.FC = () => {
     });
   };
 
+  // 해당 날짜의 운동 부위별 개수를 계산하는 함수
+  const getWorkoutPartCounts = (workouts: Workout[]) => {
+    const partCounts: Record<ExercisePart, number> = {
+      chest: 0,
+      back: 0,
+      shoulder: 0,
+      leg: 0,
+      biceps: 0,
+      triceps: 0,
+      abs: 0,
+      cardio: 0,
+      complex: 0
+    };
+    
+    workouts.forEach(workout => {
+      partCounts[workout.part] = (partCounts[workout.part] || 0) + 1;
+    });
+    
+    return partCounts;
+  };
+
   const renderMonthlyView = () => {
     const todayCal = new Date();
     const currentDateCal = new Date(selectedDate);
@@ -200,36 +221,77 @@ const WorkoutList: React.FC = () => {
     
     return (
       <>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
-          {weekdays.map(day => <div key={day}>{day}</div>)}
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-semibold">
+            {currentDateCal.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+          </h3>
         </div>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {calendarDates.map((date, i) => {
+        
+        <div className="grid grid-cols-7 text-center">
+          {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+            <div key={day} className="py-2 border-b border-gray-200 dark:border-gray-700 font-medium">
+              {day}
+            </div>
+          ))}
+          
+          {calendarDates.map((date, index) => {
             const dateStr = formatDate(date);
-            const dayOfMonth = date.getDate();
             const isCurrentMonth = date.getMonth() === currentMonth;
-            const isToday = date.toDateString() === todayCal.toDateString();
+            const isTodayCal = date.toDateString() === todayCal.toDateString();
             const workouts = workoutsByDate[dateStr] || [];
             const isSelected = monthlyViewSelectedDate === dateStr;
+            const partCounts = getWorkoutPartCounts(workouts);
+            
+            // 운동 부위별 아이콘 또는 텍스트 표시
+            const hasWorkouts = workouts.length > 0;
             
             return (
-              <div
-                key={dateStr}
+              <div 
+                key={index} 
                 onClick={() => handleDateClick(dateStr)}
-                className={`p-1 sm:p-2 text-center border rounded-lg transition-colors duration-200 min-h-[6rem] flex flex-col ${
-                  isCurrentMonth && workouts.length > 0 ? 'cursor-pointer' : 'cursor-default'} ${
-                  isSelected ? 'bg-blue-500 text-white ring-2 ring-blue-500' : 
-                  isToday ? 'bg-blue-100 dark:bg-blue-900/50' : 
-                  isCurrentMonth ? 'bg-white dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800/30 text-gray-400'} ${
-                  isCurrentMonth && !isSelected && workouts.length > 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30' : ''}`}
+                className={`
+                  p-1 min-h-24 border border-gray-100 dark:border-gray-700 transition-colors
+                  ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800/20' : ''}
+                  ${isTodayCal ? 'bg-blue-100 dark:bg-blue-900/20' : ''}
+                  ${isSelected ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-400' : ''}
+                  ${isCurrentMonth && hasWorkouts ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50' : 'cursor-default'}
+                `}
               >
-                <div className={`ml-auto mb-1 ${isSelected ? 'font-bold' : isToday ? 'text-blue-600 dark:text-blue-300 font-bold' : ''}`}>
-                  {dayOfMonth}
-                </div>
-                <div className="flex flex-wrap justify-center gap-1 mt-auto">
-                  {workouts.map(workout => (
-                    <div key={workout.id} className={`w-1.5 h-1.5 rounded-full ${getPartColor(workout.part)}`} title={getPartLabel(workout.part)}></div>
-                  ))}
+                <div className="h-full flex flex-col">
+                  <div className="text-right p-1">
+                    <span className={`text-sm rounded-full w-6 h-6 flex items-center justify-center
+                      ${isTodayCal ? 'bg-blue-500 text-white' : ''}`}>
+                      {date.getDate()}
+                    </span>
+                  </div>
+                  
+                  {hasWorkouts && (
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex flex-wrap gap-1 mt-1 justify-center">
+                        {Object.entries(partCounts).map(([part, count]) => {
+                          if (count > 0) {
+                            return (
+                              <div 
+                                key={part} 
+                                className={`px-1 py-0.5 text-xs rounded-full ${getPartColor(part as ExercisePart)} text-white`}
+                                title={`${getPartLabel(part as ExercisePart)} ${count}개`}
+                              >
+                                {getPartLabel(part as ExercisePart).substring(0, 1)}
+                                {count > 1 ? count : ''}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                      
+                      <div className="mt-auto text-xs text-center">
+                        <span className="text-info-700 dark:text-info-300">
+                          기록 {workouts.length}개
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
