@@ -213,29 +213,14 @@ const WorkoutList: React.FC = () => {
     return partCounts;
   };
 
-  // 색상을 더 진하게 반환하는 함수 추가
-  const getPartColorDarker = (part: ExercisePart): string => {
-    switch (part) {
-      case 'chest':
-        return 'bg-red-600';
-      case 'back':
-        return 'bg-blue-600';
-      case 'shoulder':
-        return 'bg-yellow-600';
-      case 'leg':
-        return 'bg-purple-600';
-      case 'biceps':
-        return 'bg-green-600';
-      case 'triceps':
-        return 'bg-indigo-600';
-      case 'abs':
-        return 'bg-orange-600';
-      case 'cardio':
-        return 'bg-pink-600';
-      case 'complex':
-        return 'bg-gray-600';
-      default:
-        return 'bg-gray-600';
+  // 통일된 파란색 계열 색상 반환 함수
+  const getUnifiedBlueColor = (intensity: number): string => {
+    // 강도에 따라 다른 파란색 음영 반환
+    switch (intensity) {
+      case 1: return 'bg-blue-500';
+      case 2: return 'bg-blue-600';
+      case 3: return 'bg-blue-700';
+      default: return 'bg-blue-600';
     }
   };
 
@@ -279,14 +264,14 @@ const WorkoutList: React.FC = () => {
                   p-1 min-h-24 border border-gray-100 dark:border-gray-700 transition-colors
                   ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800/20' : ''}
                   ${isTodayCal ? 'bg-blue-100 dark:bg-blue-900/20' : ''}
-                  ${isSelected ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-400' : ''}
-                  ${isCurrentMonth && hasWorkouts ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50' : 'cursor-default'}
+                  ${isSelected ? 'bg-blue-200 dark:bg-blue-800 ring-2 ring-blue-500' : ''}
+                  ${isCurrentMonth && hasWorkouts ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/50' : 'cursor-default'}
                 `}
               >
                 <div className="h-full flex flex-col">
                   <div className="text-right p-1">
                     <span className={`text-sm rounded-full w-6 h-6 flex items-center justify-center
-                      ${isTodayCal ? 'bg-blue-500 text-white' : ''}`}>
+                      ${isTodayCal ? 'bg-blue-600 text-white' : ''}`}>
                       {date.getDate()}
                     </span>
                   </div>
@@ -299,7 +284,7 @@ const WorkoutList: React.FC = () => {
                             return (
                               <div 
                                 key={part} 
-                                className={`px-2 py-0.5 text-xs rounded-full ${getPartColorDarker(part as ExercisePart)} text-white font-medium`}
+                                className={`px-2 py-0.5 text-xs rounded-full ${getUnifiedBlueColor(2)} text-white font-medium`}
                                 title={`${getPartLabel(part as ExercisePart)} ${count}개`}
                               >
                                 {getPartLabel(part as ExercisePart)}
@@ -312,7 +297,7 @@ const WorkoutList: React.FC = () => {
                       </div>
                       
                       <div className="mt-auto text-xs text-center">
-                        <span className="text-info-700 dark:text-info-300">
+                        <span className="text-blue-700 dark:text-blue-300">
                           기록 {workouts.length}개
                         </span>
                       </div>
@@ -385,9 +370,7 @@ const WorkoutList: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-2 sm:mb-0">
             <span
-              className={`py-1 px-3 rounded-full text-xs sm:text-sm font-semibold text-white ${getPartColor(
-                workout.part
-              )}`}
+              className={`py-1 px-3 rounded-full text-xs sm:text-sm font-semibold text-white ${getUnifiedBlueColor(2)}`}
             >
               {getPartLabel(workout.part)}
             </span>
@@ -424,8 +407,8 @@ const WorkoutList: React.FC = () => {
                 key={index}
                 className={`px-2 py-1 text-xs sm:text-sm rounded ${
                   set.isSuccess
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                 }`}
               >
                 {set.weight}kg &times; {set.reps}회
@@ -448,8 +431,8 @@ const WorkoutList: React.FC = () => {
                       key={setIndex}
                       className={`px-1.5 py-0.5 text-xs rounded ${
                         set.isSuccess
-                          ? 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-800/50 dark:text-blue-300'
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {set.weight}kg &times; {set.reps}회
@@ -483,7 +466,7 @@ const WorkoutList: React.FC = () => {
         <div className="flex items-center">
           <button 
             onClick={navigatePrevious}
-            className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
+            className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50"
             aria-label="이전"
           >
             <ChevronLeft size={20} />
@@ -508,7 +491,7 @@ const WorkoutList: React.FC = () => {
           
           <button 
             onClick={navigateNext}
-            className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
+            className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50"
             aria-label="다음"
           >
             <ChevronRight size={20} />
