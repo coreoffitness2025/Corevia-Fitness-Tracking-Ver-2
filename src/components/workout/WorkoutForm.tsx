@@ -1591,7 +1591,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
                     type="number"
                     value={globalTimer.timerSeconds.toString().padStart(2, '0')}
                     onChange={(e) => handleTimerInputChange('seconds', e.target.value)}
-                    className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                    className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                     inputMode="numeric"
                   />
                   
@@ -1660,6 +1660,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               timerMinutes={globalTimer.timerMinutes}
               timerSeconds={globalTimer.timerSeconds}
               onTimerChange={handleTimerInputChange}
+              adjustTimerValue={adjustTimerValue}
               startTimer={startGlobalTimer}
               resetTimer={resetGlobalTimer}
             />

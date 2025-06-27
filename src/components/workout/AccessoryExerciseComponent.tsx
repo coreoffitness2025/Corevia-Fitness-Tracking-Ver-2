@@ -18,6 +18,7 @@ interface AccessoryExerciseProps {
   timerMinutes: number;
   timerSeconds: number;
   onTimerChange: (type: 'minutes' | 'seconds', value: string) => void;
+  adjustTimerValue: (type: 'minutes' | 'seconds', amount: number) => void;
   startTimer: (sectionId: string) => void;
   resetTimer: () => void;
 }
@@ -31,6 +32,7 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   timerMinutes,
   timerSeconds,
   onTimerChange,
+  adjustTimerValue,
   startTimer,
   resetTimer,
 }) => {
@@ -118,11 +120,15 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
         
         {/* 휴식 타이머 설정 UI */}
         <div className="w-full sm:w-auto">
-          <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정 (세트 완료 체크 시 자동 시작)</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정</span>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
               <Clock size={18} className="text-gray-500" />
               <div className="flex items-center space-x-1">
+                <button 
+                  onClick={() => adjustTimerValue('minutes', 1)}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >+</button>
                 <input
                   type="number"
                   value={timerMinutes}
@@ -130,7 +136,15 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                   className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                   inputMode="numeric"
                 />
+                <button 
+                  onClick={() => adjustTimerValue('minutes', -1)}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >-</button>
                 <span className="font-bold text-lg">:</span>
+                <button 
+                  onClick={() => adjustTimerValue('seconds', 10)}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >+</button>
                 <input
                   type="number"
                   value={timerSeconds.toString().padStart(2, '0')}
@@ -138,6 +152,10 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
                   className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                   inputMode="numeric"
                 />
+                <button 
+                  onClick={() => adjustTimerValue('seconds', -10)}
+                  className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                >-</button>
               </div>
             </div>
           </div>

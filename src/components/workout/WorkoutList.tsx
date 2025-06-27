@@ -194,37 +194,14 @@ const WorkoutList: React.FC = () => {
   const renderDailyView = () => {
     return (
       <div className="mt-4 sm:mt-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">
-            {new Date(selectedDate).toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              weekday: 'long',
-            })}
-          </h3>
-
-          {selectedWorkouts.length > 0 && (
-            <div className="flex space-x-2">
-              <Button
-                onClick={() => {
-                  if (window.confirm('선택한 날짜의 모든 운동 기록을 삭제하시겠습니까?')) {
-                    selectedWorkouts.forEach((workout) => {
-                      if (workout.id) {
-                        deleteWorkout(workout.id);
-                      }
-                    });
-                  }
-                }}
-                variant="danger"
-                size="sm"
-                icon={<Trash size={16} />}
-              >
-                전체 삭제
-              </Button>
-            </div>
-          )}
-        </div>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          {new Date(selectedDate).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'long',
+          })}
+        </h3>
 
         {selectedWorkouts.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -294,6 +271,8 @@ const WorkoutList: React.FC = () => {
   
   // 월간 뷰 렌더링 (기존 달력 뷰)
   const renderMonthlyView = () => {
+    const calendarDays = generateCalendarDays(currentDate, workoutsByDate);
+
     return (
       <>
         {/* 달력 그리드 */}
@@ -303,7 +282,7 @@ const WorkoutList: React.FC = () => {
         <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {calendarDays.map((day, i) => {
             if (!day) {
-              return <div key={`empty-${i}`} className="border rounded-lg bg-gray-50 dark:bg-gray-800/20" />;
+              return <div key={`empty-${i}`} className="border rounded-lg bg-gray-50 dark:bg-gray-800/20 min-h-[6rem]" />;
             }
             const { dateStr, dayOfMonth, isCurrentMonth, isToday, workouts } = day;
             const isSelected = selectedDate === dateStr;
@@ -312,27 +291,28 @@ const WorkoutList: React.FC = () => {
               <div
                 key={dateStr}
                 onClick={() => handleDateClick(dateStr)}
-                className={`p-1 sm:p-2 text-center cursor-pointer border rounded-lg transition-colors duration-200 ${
+                className={`p-1 sm:p-2 text-center cursor-pointer border rounded-lg transition-colors duration-200 min-h-[6rem] flex flex-col ${
                   isSelected ? 'bg-blue-500 text-white' : 
                   isToday ? 'bg-blue-100 dark:bg-blue-900/50' : 
                   isCurrentMonth ? 'bg-white dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800/30 text-gray-400'
                 } ${isCurrentMonth && !isSelected ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30' : ''}`}
               >
-                <div className={`mx-auto mb-1 ${isSelected ? 'font-bold' : isToday ? 'text-blue-600 dark:text-blue-300 font-bold' : ''}`}>
+                <div className={`ml-auto mb-1 ${isSelected ? 'font-bold' : isToday ? 'text-blue-600 dark:text-blue-300 font-bold' : ''}`}>
                   {dayOfMonth}
                 </div>
-                <div className="flex flex-wrap justify-center gap-1">
-                  {workouts.slice(0, 2).map(p => (
-                    <div key={p} className={`w-1.5 h-1.5 rounded-full ${getPartColor(p)}`}></div>
+                <div className="flex flex-wrap justify-center gap-1 mt-auto">
+                  {workouts.slice(0, 4).map(p => (
+                    <div key={p} className={`w-1.5 h-1.5 rounded-full ${getPartColor(p)}`} title={getPartLabel(p as ExercisePart)}></div>
                   ))}
+                  {workouts.length > 4 && <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>}
                 </div>
               </div>
             );
           })}
         </div>
         
-        {/* 선택된 날짜의 운동 기록 */}
-        {renderDailyView()}
+        {/* 선택된 날짜의 운동 기록 (월별 뷰 하단에 표시) */}
+        {selectedDate && <div className="mt-4">{renderDailyView()}</div>}
       </>
     );
   };
