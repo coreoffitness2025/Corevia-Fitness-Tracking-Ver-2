@@ -1657,10 +1657,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ onSuccess }) => {
               onChange={handleAccessoryExerciseChange}
               onRemove={removeAccessoryExercise}
               currentExercisePart={part}
-              globalTimer={globalTimer}
-              startGlobalTimer={startGlobalTimer}
-              resetGlobalTimer={resetGlobalTimer}
-              formatTime={formatTimeGlobal}
+              timerMinutes={globalTimer.timerMinutes}
+              timerSeconds={globalTimer.timerSeconds}
+              onTimerChange={handleTimerInputChange}
+              startTimer={startGlobalTimer}
+              resetTimer={resetGlobalTimer}
             />
           ))}
         </div>

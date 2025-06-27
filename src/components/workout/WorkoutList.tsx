@@ -438,8 +438,43 @@ const WorkoutList: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-2 sm:p-4">
-      {/* 뷰 모드 선택 버튼 */}
-      <div className="flex justify-center mb-4">
+      {/* 날짜 네비게이션 및 뷰 모드 선택 UI 통합 */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0">
+        <div className="flex items-center">
+          <button 
+            onClick={navigatePrevious}
+            className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
+            aria-label="이전"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          
+          <div className="mx-4 text-center">
+            <h2 className="font-medium text-base sm:text-lg">
+              {viewMode === 'day' && new Date(selectedDate).toLocaleDateString('ko-KR', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+              })}
+              {viewMode === 'week' && (
+                <>
+                  {getWeekDays()[0].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} - {getWeekDays()[6].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                </>
+              )}
+              {viewMode === 'month' && `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`}
+            </h2>
+          </div>
+          
+          <button 
+            onClick={navigateNext}
+            className="p-2 rounded hover:bg-primary-100 dark:hover:bg-primary-700/50"
+            aria-label="다음"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+        
         <div className="flex space-x-2">
           <Button
             size="sm"
@@ -466,25 +501,6 @@ const WorkoutList: React.FC = () => {
             월별
           </Button>
         </div>
-      </div>
-      
-      {/* 날짜 네비게이션 */}
-      <div className="flex items-center justify-between mb-4">
-        <Button onClick={navigatePrevious} variant="outline" size="icon" aria-label="이전">
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
-          {viewMode === 'month' ? (
-            `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`
-          ) : viewMode === 'week' ? (
-            `${getWeekDays()[0].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} - ${getWeekDays()[6].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}`
-          ) : (
-            new Date(selectedDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
-          )}
-        </h2>
-        <Button onClick={navigateNext} variant="outline" size="icon" aria-label="다음">
-          <ChevronRight className="h-5 w-5" />
-        </Button>
       </div>
       
       {/* 캡처 영역 시작 */}
