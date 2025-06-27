@@ -37,9 +37,16 @@ const WorkoutList: React.FC = () => {
   
   // 뷰 모드 상태 추가
   const [viewMode, setViewMode] = useState<ViewMode>('day');
+  // 월별 뷰에서 선택된 날짜를 관리할 별도 상태 추가
+  const [monthlyViewSelectedDate, setMonthlyViewSelectedDate] = useState<string | null>(null);
   
   useEffect(() => {
     fetchWorkouts();
+    // 뷰 모드가 변경되면 월별 선택 날짜 초기화
+    if (viewMode !== 'month') {
+      setSelectedDate(formatDate(new Date()));
+    }
+    setMonthlyViewSelectedDate(null);
   }, [userProfile, currentDate, viewMode]);
 
   const fetchWorkouts = async () => {
@@ -133,13 +140,19 @@ const WorkoutList: React.FC = () => {
   };
 
   const handleDateClick = (date: string) => {
+    // 월별 뷰에서는 뷰를 변경하지 않고 선택된 날짜만 업데이트
+    const dayHasWorkouts = workoutsByDate[date] && workoutsByDate[date].length > 0;
+
     if (viewMode === 'month') {
-      if (selectedDate === date) {
-        setSelectedDate(formatDate(new Date()));
-      } else {
-        setSelectedDate(date);
+      if (dayHasWorkouts) {
+        if (monthlyViewSelectedDate === date) {
+          setMonthlyViewSelectedDate(null); // 같은 날짜 다시 클릭 시 선택 해제
+        } else {
+          setMonthlyViewSelectedDate(date);
+        }
       }
     } else {
+      // 그 외 뷰에서는 날짜를 선택하고 일별 뷰로 전환
       setSelectedDate(date);
       setViewMode('day');
     }
@@ -275,10 +288,9 @@ const WorkoutList: React.FC = () => {
     );
   };
   
-  // 월간 뷰 렌더링 (기존 달력 뷰)
+  // 월간 뷰 렌더링
   const renderMonthlyView = () => {
     const calendarDays = generateCalendarDays(currentDate, workoutsByDate);
-    const dayWorkouts = workoutsByDate[selectedDate] || [];
 
     return (
       <>
@@ -292,17 +304,19 @@ const WorkoutList: React.FC = () => {
               return <div key={`empty-${i}`} className="border rounded-lg bg-gray-50 dark:bg-gray-800/20 min-h-[6rem]" />;
             }
             const { dateStr, dayOfMonth, isCurrentMonth, isToday, workouts } = day;
-            const isSelected = selectedDate === dateStr;
+            const isSelected = monthlyViewSelectedDate === dateStr;
 
             return (
               <div
                 key={dateStr}
                 onClick={() => handleDateClick(dateStr)}
-                className={`p-1 sm:p-2 text-center cursor-pointer border rounded-lg transition-colors duration-200 min-h-[6rem] flex flex-col ${
+                className={`p-1 sm:p-2 text-center border rounded-lg transition-colors duration-200 min-h-[6rem] flex flex-col ${
+                  isCurrentMonth && workouts.length > 0 ? 'cursor-pointer' : 'cursor-default'
+                } ${
                   isSelected ? 'bg-blue-500 text-white' : 
                   isToday ? 'bg-blue-100 dark:bg-blue-900/50' : 
                   isCurrentMonth ? 'bg-white dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800/30 text-gray-400'
-                } ${isCurrentMonth && !isSelected ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30' : ''}`}
+                } ${isCurrentMonth && !isSelected && workouts.length > 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30' : ''}`}
               >
                 <div className={`ml-auto mb-1 ${isSelected ? 'font-bold' : isToday ? 'text-blue-600 dark:text-blue-300 font-bold' : ''}`}>
                   {dayOfMonth}
@@ -319,25 +333,19 @@ const WorkoutList: React.FC = () => {
         </div>
         
         {/* 선택된 날짜의 운동 기록 (월별 뷰 하단에 표시) */}
-        {selectedDate && (
+        {monthlyViewSelectedDate && (
           <div className="mt-4">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              {new Date(selectedDate).toLocaleDateString('ko-KR', {
+              {new Date(monthlyViewSelectedDate).toLocaleDateString('ko-KR', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 weekday: 'long',
               })}
             </h3>
-            {dayWorkouts.length > 0 ? (
-              <div className="space-y-4">
-                {dayWorkouts.map((workout) => renderWorkoutCard(workout))}
-              </div>
-            ) : (
-              <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <p className="text-gray-500 dark:text-gray-400">이 날짜에 기록된 운동이 없습니다.</p>
-              </div>
-            )}
+            <div className="space-y-4">
+              {(workoutsByDate[monthlyViewSelectedDate] || []).map((workout) => renderWorkoutCard(workout))}
+            </div>
           </div>
         )}
       </>
