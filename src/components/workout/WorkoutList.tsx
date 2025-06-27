@@ -213,6 +213,32 @@ const WorkoutList: React.FC = () => {
     return partCounts;
   };
 
+  // 색상을 더 진하게 반환하는 함수 추가
+  const getPartColorDarker = (part: ExercisePart): string => {
+    switch (part) {
+      case 'chest':
+        return 'bg-red-600';
+      case 'back':
+        return 'bg-blue-600';
+      case 'shoulder':
+        return 'bg-yellow-600';
+      case 'leg':
+        return 'bg-purple-600';
+      case 'biceps':
+        return 'bg-green-600';
+      case 'triceps':
+        return 'bg-indigo-600';
+      case 'abs':
+        return 'bg-orange-600';
+      case 'cardio':
+        return 'bg-pink-600';
+      case 'complex':
+        return 'bg-gray-600';
+      default:
+        return 'bg-gray-600';
+    }
+  };
+
   const renderMonthlyView = () => {
     const todayCal = new Date();
     const currentDateCal = new Date(selectedDate);
@@ -273,11 +299,11 @@ const WorkoutList: React.FC = () => {
                             return (
                               <div 
                                 key={part} 
-                                className={`px-1 py-0.5 text-xs rounded-full ${getPartColor(part as ExercisePart)} text-white`}
+                                className={`px-2 py-0.5 text-xs rounded-full ${getPartColorDarker(part as ExercisePart)} text-white font-medium`}
                                 title={`${getPartLabel(part as ExercisePart)} ${count}개`}
                               >
-                                {getPartLabel(part as ExercisePart).substring(0, 1)}
-                                {count > 1 ? count : ''}
+                                {getPartLabel(part as ExercisePart)}
+                                {count > 1 ? ` ${count}` : ''}
                               </div>
                             );
                           }
