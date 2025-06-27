@@ -287,11 +287,6 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
       return;
     }
 
-    if (!imageUrl && !imagePreview) {
-      toast.error('식사 사진이 필요합니다.');
-      return;
-    }
-
     if (!foodName.trim()) {
       toast.error('음식 이름을 입력해주세요.');
       return;
@@ -299,10 +294,13 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
 
     try {
       const mealDateTime = new Date(`${mealDate}T${intakeTime}`);
+      let imageId = null;
       
-      // 이미지 저장 처리 - 네이티브/웹 환경에 따라 다르게 처리
-      if (imageUrl) {
+      // 이미지가 있는 경우에만 이미지 저장 처리
+      if (imageUrl && (localImageFile || localImagePath)) {
         try {
+          imageId = imageUrl; // 이미지 ID 저장
+          
           // 네이티브 앱 환경인 경우 (파일 경로 저장)
           if (isNativePlatform() && localImagePath) {
             console.log('네이티브 환경: 파일 경로 저장:', localImagePath);
@@ -334,71 +332,9 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             
             // IndexedDB에 이미지 저장
             await saveFoodImage(imageUrl, currentUser.uid, imageBlob);
-          } else {
-            toast.error('이미지 데이터가 없습니다.');
-            return;
           }
           
           console.log('이미지 저장 완료:', imageUrl);
-          
-          // 식단 기록 저장
-          const foodRecord: FoodRecord = {
-            userId: currentUser.uid,
-            name: foodName,
-            description: notes || undefined,
-            calories: targetCalories || undefined,
-            protein: proteinTarget || undefined,
-            carbs: carbsTarget || undefined,
-            fat: fatTarget || undefined,
-            date: mealDateTime,
-            imageId: imageUrl,
-            createdAt: new Date()
-          };
-          
-          const recordId = await saveFoodRecord(foodRecord);
-          console.log('식단 기록 저장됨:', recordId);
-          
-          // 성공 메시지
-          toast.success('식단이 저장되었습니다.');
-          
-          // 상태 초기화
-          setImageUrl('');
-          setImagePreview(null);
-          setLocalImageFile(null);
-          setLocalImagePath(null);
-          setNotes('');
-          setFoodName('');
-          
-          // 성공 콜백 호출
-          if (onSuccess) {
-            onSuccess();
-          }
-          
-          // 웹 환경인 경우 로컬 저장 안내 메시지 표시
-          if (!isNativePlatform()) {
-            setTimeout(() => {
-              toast.custom((t: any) => (
-                <div className={`${t.visible ? 'animate-slide-in' : 'animate-slide-out'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto overflow-hidden`}>
-                  <div className="p-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 text-blue-500">
-                        <AlertTriangle size={24} />
-                      </div>
-                      <div className="ml-3 w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          브라우저 로컬 저장소 안내
-                        </p>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          사진은 현재 기기에만 저장됩니다. 브라우저 데이터를 삭제하거나 다른 기기에서는 사진을 볼 수 없습니다.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ), { duration: 5000 });
-            }, 1000);
-          }
-          
         } catch (storageError) {
           console.error('이미지 저장 오류:', storageError);
           
@@ -407,13 +343,68 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
             toast.error('저장 공간이 부족합니다. 일부 오래된 이미지를 삭제하거나 더 작은 이미지를 사용해주세요.');
             return;
           } else {
-            toast.error('이미지 저장 중 오류가 발생했습니다.');
-            return;
+            toast.error('이미지 저장 중 오류가 발생했습니다. 이미지 없이 계속 진행합니다.');
+            imageId = null; // 이미지 ID 초기화
           }
         }
-      } else {
-        toast.error('이미지 데이터가 없습니다.');
-        return;
+      }
+      
+      // 식단 기록 저장
+      const foodRecord: FoodRecord = {
+        userId: currentUser.uid,
+        name: foodName,
+        description: notes || undefined,
+        calories: targetCalories || undefined,
+        protein: proteinTarget || undefined,
+        carbs: carbsTarget || undefined,
+        fat: fatTarget || undefined,
+        date: mealDateTime,
+        imageId: imageId, // 이미지 ID (없으면 null)
+        createdAt: new Date()
+      };
+      
+      const recordId = await saveFoodRecord(foodRecord);
+      console.log('식단 기록 저장됨:', recordId);
+      
+      // 성공 메시지
+      toast.success('식단이 저장되었습니다.');
+      
+      // 상태 초기화
+      setImageUrl('');
+      setImagePreview(null);
+      setLocalImageFile(null);
+      setLocalImagePath(null);
+      setNotes('');
+      setFoodName('');
+      
+      // 성공 콜백 호출
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      // 웹 환경이고 이미지가 저장된 경우 로컬 저장 안내 메시지 표시
+      if (!isNativePlatform() && imageId) {
+        setTimeout(() => {
+          toast.custom((t: any) => (
+            <div className={`${t.visible ? 'animate-slide-in' : 'animate-slide-out'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto overflow-hidden`}>
+              <div className="p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 text-blue-500">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <div className="ml-3 w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      브라우저 로컬 저장소 안내
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      사진은 현재 기기에만 저장됩니다. 브라우저 데이터를 삭제하거나 다른 기기에서는 사진을 볼 수 없습니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ), { duration: 5000 });
+        }, 1000);
       }
     } catch (error) {
       console.error('식단 저장 오류:', error);
@@ -565,6 +556,9 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
               갤러리에서 선택
             </Button>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            사진은 선택사항입니다. 사진 없이도 식단 기록을 저장할 수 있습니다.
+          </p>
           {imagePreview && (
             <div className="mt-4">
               <img 
@@ -608,7 +602,6 @@ const FoodForm: React.FC<FoodFormProps> = ({ onSuccess }) => {
         <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={!imageUrl && !imagePreview}
             size="lg"
             className="w-full sm:w-auto"
           >

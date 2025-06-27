@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useFoodStore } from '../../stores/foodStore';
 import { formatDate, formatDateWithWeekday, isToday } from '../../utils/dateUtils';
 import Card from '../common/Card';
-import { Info, Calendar, CalendarDays, ExternalLink, X, Plus, Droplets, Pill, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Info, Calendar, CalendarDays, ExternalLink, X, Plus, Droplets, Pill, ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -311,7 +311,6 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
 
   const renderFoodsByDate = (dateStr: string, recordsForDate: FoodRecord[]) => {
     const date = new Date(dateStr);
-    const hasPhotos = recordsForDate.some(record => record.imageId);
     
     // 해당 날짜의 물과 영양제 기록 필터링
     const dayWaterRecords = waterRecords.filter(record => 
@@ -327,33 +326,56 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
           {formatDate(date)}
         </h3>
         
-        {/* 기존 음식 사진 */}
-        {hasPhotos && (
-          <div className="mb-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {recordsForDate.filter(record => record.imageId && imageCache[record.imageId]).map((record, idx) => (
-                <div key={record.id} className="overflow-hidden rounded-lg cursor-pointer" 
-                     onClick={() => handleImageClick(imageCache[record.imageId!], record, recordsForDate.indexOf(record) + 1)}>
-                  <img 
-                    src={imageCache[record.imageId!]} 
-                    alt={record.name || '식사 이미지'} 
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-2 bg-gray-100 dark:bg-gray-800">
-                    <p className="font-medium text-sm text-center">
+        {/* 식단 기록 섹션 */}
+        <div className="mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {recordsForDate.map((record, idx) => (
+              <div key={record.id} className="overflow-hidden rounded-lg cursor-pointer" 
+                   onClick={() => record.imageId && imageCache[record.imageId] ? 
+                     handleImageClick(imageCache[record.imageId], record, recordsForDate.indexOf(record) + 1) : null}>
+                {record.imageId && imageCache[record.imageId] ? (
+                  <>
+                    <img 
+                      src={imageCache[record.imageId]} 
+                      alt={record.name || '식사 이미지'} 
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-2 bg-gray-100 dark:bg-gray-800">
+                      <p className="font-medium text-sm text-center">
+                        {record.name && record.name !== '식사' ? record.name : `식사 ${recordsForDate.indexOf(record) + 1}`}
+                      </p>
+                      {record.description && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 text-center mt-1 truncate">
+                          {record.description}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-48 bg-gray-100 dark:bg-gray-800">
+                    <ImageOff className="h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" />
+                    <p className="font-medium text-sm text-center text-gray-600 dark:text-gray-400">
                       {record.name && record.name !== '식사' ? record.name : `식사 ${recordsForDate.indexOf(record) + 1}`}
                     </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-1">
+                      이미지를 불러올 수 없음
+                    </p>
                     {record.description && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 text-center mt-1 truncate">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 text-center mt-1 px-2 truncate">
                         {record.description}
                       </p>
                     )}
+                    {record.calories && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 text-center mt-1">
+                        {record.calories} kcal
+                      </p>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
         
         {/* 물과 영양제 기록 섹션 */}
         {(dayWaterRecords.length > 0 || daySupplementRecords.length > 0) && (
@@ -414,7 +436,7 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
         )}
         
         {/* 기록이 없을 때 */}
-        {!hasPhotos && dayWaterRecords.length === 0 && daySupplementRecords.length === 0 && (
+        {recordsForDate.length === 0 && dayWaterRecords.length === 0 && daySupplementRecords.length === 0 && (
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
             <p className="text-gray-500 dark:text-gray-400">이 날의 기록이 없습니다.</p>
           </div>
@@ -431,7 +453,6 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
         {weekDays.map(day => {
           const dateStr = day.toISOString().split('T')[0];
           const records = foodGroups[dateStr] || [];
-          const hasPhotos = records.some(record => record.imageId);
           
           // 해당 날짜의 물과 영양제 기록
           const dayWaterRecords = waterRecords.filter(record => 
@@ -458,27 +479,35 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
                   </p>
                 ) : (
                   <div>
-                    {/* 음식 사진 */}
-                    {hasPhotos ? (
+                    {/* 음식 기록 */}
+                    {records.length > 0 && (
                       <div className="flex overflow-x-auto space-x-3 pb-2 mb-2">
-                        {records.filter(record => record.imageId && imageCache[record.imageId]).map((record) => (
+                        {records.map((record) => (
                           <div key={record.id} className="flex-shrink-0 w-24 cursor-pointer"
-                               onClick={() => handleImageClick(imageCache[record.imageId!], record, records.indexOf(record) + 1)}>
-                            <img 
-                              src={imageCache[record.imageId!]} 
-                              alt={record.name || '식사 이미지'} 
-                              className="w-24 h-24 object-cover rounded-lg"
-                            />
-                            <p className="text-xs text-center mt-1">
-                              {record.name && record.name !== '식사' ? record.name : `식사 ${records.indexOf(record) + 1}`}
-                            </p>
+                               onClick={() => record.imageId && imageCache[record.imageId] ? 
+                                 handleImageClick(imageCache[record.imageId], record, records.indexOf(record) + 1) : null}>
+                            {record.imageId && imageCache[record.imageId] ? (
+                              <>
+                                <img 
+                                  src={imageCache[record.imageId]} 
+                                  alt={record.name || '식사 이미지'} 
+                                  className="w-24 h-24 object-cover rounded-lg"
+                                />
+                                <p className="text-xs text-center mt-1">
+                                  {record.name && record.name !== '식사' ? record.name : `식사 ${records.indexOf(record) + 1}`}
+                                </p>
+                              </>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                <ImageOff className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                                <p className="text-xs text-center mt-1 text-gray-600 dark:text-gray-400">
+                                  {record.name && record.name !== '식사' ? record.name : `식사 ${records.indexOf(record) + 1}`}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
-                    ) : records.length > 0 && (
-                      <p className="text-gray-500 dark:text-gray-400 text-center py-2 text-sm">
-                        식사 기록 {records.length}개 (사진 없음)
-                      </p>
                     )}
                     
                     {/* 물과 영양제 요약 */}
@@ -534,8 +563,6 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
             const records = recordsByDate[dateStr] || [];
             const isCurrentMonth = date.getMonth() === currentMonth;
             const isTodayCal = date.toDateString() === todayCal.toDateString();
-            const hasRecords = records.length > 0;
-            const hasPhotos = records.some(record => record.imageId && imageCache[record.imageId]);
             
             // 해당 날짜의 물과 영양제 기록
             const dayWaterRecords = waterRecords.filter(record => 
@@ -565,9 +592,10 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
                     </span>
                   </div>
                   
-                  {(hasRecords || hasWaterOrSupplement) && (
+                  {(records.length > 0 || hasWaterOrSupplement) && (
                     <div className="flex-1 flex flex-col">
-                      {hasPhotos && (
+                      {/* 식단 이미지 섹션 */}
+                      {records.length > 0 && (
                         <div className="flex overflow-x-auto space-x-1 py-1">
                           {records
                             .filter(record => record.imageId && imageCache[record.imageId])
@@ -584,6 +612,12 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
                           {records.filter(record => record.imageId && imageCache[record.imageId]).length > 2 && (
                             <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-sm flex items-center justify-center text-xs">
                               +{records.filter(record => record.imageId && imageCache[record.imageId]).length - 2}
+                            </div>
+                          )}
+                          {/* 이미지 없는 식단 기록 표시 */}
+                          {records.filter(record => !record.imageId || !imageCache[record.imageId]).length > 0 && (
+                            <div className="flex-shrink-0 w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-sm flex items-center justify-center">
+                              <ImageOff className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                             </div>
                           )}
                         </div>
