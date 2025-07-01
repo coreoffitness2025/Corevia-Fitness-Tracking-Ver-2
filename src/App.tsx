@@ -9,6 +9,7 @@ import { getCloudSyncSettings, syncAllData } from './services/syncService';
 import { toast } from 'react-hot-toast';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase/firebaseConfig';
+import { FirebaseCrashlytics } from '@capacitor-firebase/crashlytics';
 
 // 보호된 라우트 컴포넌트 import
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -167,6 +168,20 @@ const AppContent: React.FC = () => {
     
     checkAndSyncData();
   }, [currentUser?.uid]);
+
+  useEffect(() => {
+    // Crashlytics 초기화
+    const initCrashlytics = async () => {
+      try {
+        await FirebaseCrashlytics.setEnabled({ enabled: true });
+        console.log('Crashlytics 초기화 완료');
+      } catch (error) {
+        console.error('Crashlytics 초기화 오류:', error);
+      }
+    };
+    
+    initCrashlytics();
+  }, []);
 
   return (
     <Routes>

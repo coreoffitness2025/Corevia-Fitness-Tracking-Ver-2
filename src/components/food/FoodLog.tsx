@@ -151,9 +151,10 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
     for (const record of records) {
       if (record.imageId && !newImageCache[record.imageId]) {
         try {
-          const imageBlob = await getFoodImage(record.imageId);
-          if (imageBlob) {
-            const imageUrl = URL.createObjectURL(imageBlob);
+          const imageResponse = await getFoodImage(record.imageId);
+          // Blob으로 안전하게 변환
+          if (imageResponse && imageResponse.blob) {
+            const imageUrl = URL.createObjectURL(imageResponse.blob);
             newImageCache[record.imageId] = imageUrl;
           }
         } catch (error) {
