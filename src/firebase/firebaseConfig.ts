@@ -27,9 +27,9 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 
-// Firebase 환경 설정 - google-services.json 파일의 정보와 정확히 일치
+// Firebase 환경 설정 - Firebase 콘솔에서 확인한 웹 API 키로 업데이트
 const firebaseConfig = {
-  apiKey: "AIzaSyABwjkF8d83ZLekcV5ZYzamXzaMrBMPIlI",
+  apiKey: "AIzaSyAVTueD8Zu_yWoSH4FLMx-Sd5KZpqzu-dk",
   authDomain: "corevia-fitness-tracking.firebaseapp.com",
   projectId: "corevia-fitness-tracking",
   storageBucket: "corevia-fitness-tracking.appspot.com",
