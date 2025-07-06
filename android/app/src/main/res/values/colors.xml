@@ -4,9 +4,9 @@
     <color name="colorPrimary">#3880ff</color>
     <color name="colorPrimaryDark">#3171e0</color>
     <color name="colorAccent">#3880ff</color>
-ECHO is off.
+    
     <!-- 추가 색상 정의 -->
-    <color name="blue500">#3B82F6</color>
+    <color name="blue500">#3B82F6</color> <!-- Tailwind의 bg-blue-500에 해당하는 색상 -->
     <color name="white">#FFFFFF</color>
     <color name="gray200">#E5E7EB</color>
     <color name="gray700">#374151</color>

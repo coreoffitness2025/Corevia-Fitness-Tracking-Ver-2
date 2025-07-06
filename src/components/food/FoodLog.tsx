@@ -54,6 +54,9 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
   // 달력 모달 관련 상태 추가
   const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false);
   const [calendarCurrentDate, setCalendarCurrentDate] = useState<Date>(new Date(selectedDate));
+  
+  // 월별 뷰에서 선택된 날짜를 관리하기 위한 상태 추가
+  const [monthlyViewSelectedDate, setMonthlyViewSelectedDate] = useState<string | null>(null);
 
   const [nutritionGoals, setNutritionGoals] = useState(() => {
     return calculateNutritionGoals(userProfile || DEFAULT_USER_PROFILE);
@@ -68,6 +71,8 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
     if (userProfile?.uid) {
       loadFoodRecords();
       loadAdditionalRecords();
+      // 뷰 모드나 월이 변경되면 상세 날짜 선택 초기화
+      setMonthlyViewSelectedDate(null);
     }
   }, [userProfile?.uid, selectedDate, viewMode]);
 
@@ -146,9 +151,10 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
     for (const record of records) {
       if (record.imageId && !newImageCache[record.imageId]) {
         try {
-          const imageBlob = await getFoodImage(record.imageId);
-          if (imageBlob) {
-            const imageUrl = URL.createObjectURL(imageBlob);
+          const imageResponse = await getFoodImage(record.imageId);
+          // Blob으로 안전하게 변환
+          if (imageResponse && imageResponse.blob) {
+            const imageUrl = URL.createObjectURL(imageResponse.blob);
             newImageCache[record.imageId] = imageUrl;
           }
         } catch (error) {
@@ -537,6 +543,24 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
     );
   };
 
+  // 월별 뷰에서 날짜 클릭 시 호출될 함수
+  const handleMonthlyDateClick = (dateStr: string) => {
+    // 기록이 있는 날짜만 선택 가능하도록 처리
+    const hasRecords = 
+      (recordsByDate[dateStr] && recordsByDate[dateStr].length > 0) ||
+      waterRecords.some(r => r.date.toISOString().split('T')[0] === dateStr) ||
+      supplementRecords.some(r => r.date.toISOString().split('T')[0] === dateStr);
+
+    if (hasRecords) {
+      // 이미 선택된 날짜를 다시 클릭하면 선택 해제
+      if (monthlyViewSelectedDate === dateStr) {
+        setMonthlyViewSelectedDate(null);
+      } else {
+        setMonthlyViewSelectedDate(dateStr);
+      }
+    }
+  };
+
   const renderMonthlyView = () => {
     const todayCal = new Date();
     const currentDateCal = new Date(selectedDate);
@@ -578,10 +602,13 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
             return (
               <div 
                 key={index} 
+                onClick={() => handleMonthlyDateClick(dateStr)}
                 className={`
-                  p-1 min-h-24 border border-gray-100 dark:border-gray-700 
-                  ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800' : ''} 
+                  p-1 min-h-24 border border-gray-100 dark:border-gray-700 transition-colors
+                  ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800/20' : 'cursor-pointer'} 
                   ${isTodayCal ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
+                  ${monthlyViewSelectedDate === dateStr ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-400' : ''}
+                  ${isCurrentMonth && monthlyViewSelectedDate !== dateStr ? 'hover:bg-gray-100 dark:hover:bg-gray-700/50' : ''}
                 `}
               >
                 <div className="h-full flex flex-col">
@@ -824,7 +851,16 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
             )
           )}
           
-          {viewMode === 'month' && renderMonthlyView()}
+          {viewMode === 'month' && (
+            <>
+              {renderMonthlyView()}
+              {monthlyViewSelectedDate && (
+                <div className="mt-4 p-4 border-t-2 border-gray-200 dark:border-gray-700 animate-fadeIn">
+                  {renderFoodsByDate(monthlyViewSelectedDate, recordsByDate[monthlyViewSelectedDate] || [])}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -921,18 +957,9 @@ const FoodLog: React.FC<FoodLogProps> = ({ selectedDate: propSelectedDate }) => 
                       onClick={() => handleDateSelect(date)}
                       className={`
                         p-2 text-sm rounded-lg transition-colors
-                        ${!isCurrentMonth 
-                          ? 'text-gray-400 dark:text-gray-600' 
-                          : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }
-                        ${isToday 
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                          : ''
-                        }
-                        ${isSelected 
-                          ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                          : ''
-                        }
+                        ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600' : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'}
+                        ${isToday ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''}
+                        ${isSelected ? 'bg-primary-500 text-white hover:bg-primary-600' : ''}
                       `}
                     >
                       {date.getDate()}

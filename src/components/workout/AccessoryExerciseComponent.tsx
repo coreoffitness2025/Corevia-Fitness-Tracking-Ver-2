@@ -11,21 +11,16 @@ interface AccessoryExerciseProps {
   exercise: {
     name: string;
     sets: Array<Set>;
-    globalTimer: {
-      sectionId: string | null;
-      timeLeft: number;
-      timerMinutes: number;
-      timerSeconds: number;
-      isPaused: boolean;
-      isRunning: boolean;
-    };
   };
   onChange: (index: number, updatedExercise: AccessoryExerciseProps['exercise']) => void;
   onRemove: (index: number) => void;
   currentExercisePart: ExercisePart;
-  startGlobalTimer: (sectionId: string) => void;
-  resetGlobalTimer: () => void;
-  formatTime: (seconds: number) => string;
+  timerMinutes: number;
+  timerSeconds: number;
+  onTimerChange: (type: 'minutes' | 'seconds', value: string) => void;
+  adjustTimerValue: (type: 'minutes' | 'seconds', amount: number) => void;
+  startTimer: (sectionId: string) => void;
+  resetTimer: () => void;
 }
 
 const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
@@ -34,10 +29,12 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
   onChange,
   onRemove,
   currentExercisePart,
-  globalTimer,
-  startGlobalTimer,
-  resetGlobalTimer,
-  formatTime,
+  timerMinutes,
+  timerSeconds,
+  onTimerChange,
+  adjustTimerValue,
+  startTimer,
+  resetTimer,
 }) => {
   const [filteredAccessoryExercises, setFilteredAccessoryExercises] = useState<any[]>([]);
   const componentSectionId = `accessory_${index}`;
@@ -74,16 +71,13 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
     const currentState = currentSet.isSuccess;
     
     if (currentState === null || currentState === false) {
-      // null이나 false에서 true로 변경 (체크 활성화)
       handleAccessorySetCompletion(setIndex, true);
-      // 타이머 시작
-      const timerId = `accessory_${index}`;
-      startGlobalTimer(timerId);
+      // 부모로부터 받은 타이머 시작 함수 호출
+      startTimer(`accessory_${index}`);
     } else {
-      // true에서 null로 변경 (체크 비활성화)
       handleAccessorySetCompletion(setIndex, null);
-      // 타이머 중지
-      resetGlobalTimer();
+      // 부모로부터 받은 타이머 리셋 함수 호출
+      resetTimer();
     }
   };
 
@@ -124,90 +118,44 @@ const AccessoryExerciseComponent: React.FC<AccessoryExerciseProps> = ({
           ))}
         </select>
         
-        {/* 휴식 타이머 설정 - 메인 운동과 동일한 스타일 */}
+        {/* 휴식 타이머 설정 UI */}
         <div className="w-full sm:w-auto">
-          <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정 (세트 완료 체크 시 자동 시작)</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">휴식 시간 설정</span>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">
               <Clock size={18} className="text-gray-500" />
               <div className="flex items-center space-x-1">
-                {/* 분 증가 버튼 */}
                 <button 
-                  onClick={() => {
-                    const newMinutes = Math.min(99, globalTimer.timerMinutes + 1);
-                    const newGlobalTimer = {...globalTimer, timerMinutes: newMinutes};
-                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                  }}
+                  onClick={() => adjustTimerValue('minutes', 1)}
                   className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                >
-                  +
-                </button>
-                
+                >+</button>
                 <input
                   type="number"
-                  value={globalTimer.timerMinutes}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (!isNaN(value) && value >= 0) {
-                      const newGlobalTimer = {...globalTimer, timerMinutes: value};
-                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                    }
-                  }}
+                  value={timerMinutes}
+                  onChange={(e) => onTimerChange('minutes', e.target.value)}
                   className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                   inputMode="numeric"
                 />
-                
-                {/* 분 감소 버튼 */}
                 <button 
-                  onClick={() => {
-                    const newMinutes = Math.max(0, globalTimer.timerMinutes - 1);
-                    const newGlobalTimer = {...globalTimer, timerMinutes: newMinutes};
-                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                  }}
+                  onClick={() => adjustTimerValue('minutes', -1)}
                   className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                >
-                  -
-                </button>
-                
+                >-</button>
                 <span className="font-bold text-lg">:</span>
-                
-                {/* 초 증가 버튼 (10초 단위) */}
                 <button 
-                  onClick={() => {
-                    const newSeconds = Math.min(59, globalTimer.timerSeconds + 10);
-                    const newGlobalTimer = {...globalTimer, timerSeconds: newSeconds};
-                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                  }}
+                  onClick={() => adjustTimerValue('seconds', 10)}
                   className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                >
-                  +
-                </button>
-                
+                >+</button>
                 <input
                   type="number"
-                  value={globalTimer.timerSeconds.toString().padStart(2, '0')}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (!isNaN(value) && value >= 0 && value < 60) {
-                      const newGlobalTimer = {...globalTimer, timerSeconds: value};
-                      onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                    }
-                  }}
-                  className="w-10 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
+                  value={timerSeconds.toString().padStart(2, '0')}
+                  onChange={(e) => onTimerChange('seconds', e.target.value)}
+                  className="w-12 p-1 text-center text-lg font-bold bg-transparent focus:outline-none"
                   inputMode="numeric"
                 />
-                
-                {/* 초 감소 버튼 (10초 단위) */}
                 <button 
-                  onClick={() => {
-                    const newSeconds = Math.max(0, globalTimer.timerSeconds - 10);
-                    const newGlobalTimer = {...globalTimer, timerSeconds: newSeconds};
-                    onChange(index, {...exercise, globalTimer: newGlobalTimer});
-                  }}
+                  onClick={() => adjustTimerValue('seconds', -10)}
                   className="w-6 h-6 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                >
-                  -
-                </button>
+                >-</button>
               </div>
             </div>
           </div>

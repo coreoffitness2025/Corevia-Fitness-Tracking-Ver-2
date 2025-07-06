@@ -1,7 +1,8 @@
 // 1단계: App.tsx 라우트 수정
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import './App.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initializeAdMob, setupAdMobListeners } from './utils/adMobUtils';
@@ -9,6 +10,9 @@ import { getCloudSyncSettings, syncAllData } from './services/syncService';
 import { toast } from 'react-hot-toast';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase/firebaseConfig';
+import { FirebaseCrashlytics } from '@capacitor-firebase/crashlytics';
+import { Toast } from '@capacitor/toast';
+import { Device } from '@capacitor/device';
 
 // 보호된 라우트 컴포넌트 import
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -25,7 +29,7 @@ import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 // import OneRmCalculatorPage from './pages/OneRmCalculatorPage';
 import LegalPage from './pages/LegalPage';
-import { BannerAd, AppOpenAd } from './components/ads';
+import { AppOpenAd, BannerAd } from './components/ads';
 
 // 플랫폼 독립적인 라우트 설정 (Web/Native 모두 사용 가능한 구조)
 export interface AppRoute {
@@ -94,16 +98,7 @@ const renderRoutes = (routes: AppRoute[]) => {
 };
 
 // QueryClient 인스턴스 생성
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5분간 데이터 신선함 유지
-      gcTime: 1000 * 60 * 60, // 1시간 가비지 컬렉션 시간 (이전의 cacheTime)
-      retry: 1, // 실패 시 1번만 재시도
-      refetchOnWindowFocus: false, // 창 포커스 시 자동 리페치 비활성화
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 // 앱 환경 설정 및 프로바이더
 const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -120,6 +115,11 @@ const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 // 앱 내부 컴포넌트 - 권한 관련 기능과 자동 동기화 처리
 const AppContent: React.FC = () => {
   const { currentUser } = useAuth();
+
+  // 디버그 모드 상태 추가
+  const [isDebugMode, setIsDebugMode] = useState<boolean>(true);
+  const [initStep, setInitStep] = useState<string>('시작');
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     // 앱 시작 시 AdMob 초기화
@@ -168,6 +168,45 @@ const AppContent: React.FC = () => {
     checkAndSyncData();
   }, [currentUser?.uid]);
 
+  // 앱 초기화 단계별 실행
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        // 디바이스 정보 로깅
+        setInitStep('디바이스 정보 확인 중');
+        const deviceInfo = await Device.getInfo();
+        console.log('디바이스 정보:', deviceInfo);
+        
+        // Crashlytics 초기화
+        setInitStep('Crashlytics 초기화 중');
+        await FirebaseCrashlytics.setEnabled({ enabled: true });
+        await FirebaseCrashlytics.log({ message: '앱 초기화 시작' });
+        
+        // 초기화 완료
+        setInitStep('초기화 완료');
+        
+        // 디버그 모드에서는 토스트 메시지로 초기화 완료 알림
+        if (isDebugMode) {
+          await Toast.show({
+            text: '앱 초기화 완료',
+            duration: 'short'
+          });
+        }
+      } catch (error) {
+        console.error('앱 초기화 오류:', error);
+        setInitError(error instanceof Error ? error.message : String(error));
+        
+        // 오류 발생 시 토스트로 알림
+        await Toast.show({
+          text: '앱 초기화 오류: ' + (error instanceof Error ? error.message : String(error)),
+          duration: 'long'
+        });
+      }
+    };
+    
+    initApp();
+  }, [isDebugMode]);
+
   return (
     <Routes>
       {renderRoutes(appRoutes)}
@@ -176,16 +215,83 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  const [isDebugMode, setIsDebugMode] = useState<boolean>(true);
+  const [initStep, setInitStep] = useState<string>('시작');
+  const [initError, setInitError] = useState<string | null>(null);
+
+  // 앱 초기화 단계별 실행
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        // 디바이스 정보 로깅
+        setInitStep('디바이스 정보 확인 중');
+        const deviceInfo = await Device.getInfo();
+        console.log('디바이스 정보:', deviceInfo);
+        
+        // Crashlytics 초기화
+        setInitStep('Crashlytics 초기화 중');
+        await FirebaseCrashlytics.setEnabled({ enabled: true });
+        await FirebaseCrashlytics.log({ message: '앱 초기화 시작' });
+        
+        // 초기화 완료
+        setInitStep('초기화 완료');
+        
+        // 디버그 모드에서는 토스트 메시지로 초기화 완료 알림
+        if (isDebugMode) {
+          await Toast.show({
+            text: '앱 초기화 완료',
+            duration: 'short'
+          });
+        }
+      } catch (error) {
+        console.error('앱 초기화 오류:', error);
+        setInitError(error instanceof Error ? error.message : String(error));
+        
+        // 오류 발생 시 토스트로 알림
+        await Toast.show({
+          text: '앱 초기화 오류: ' + (error instanceof Error ? error.message : String(error)),
+          duration: 'long'
+        });
+      }
+    };
+    
+    initApp();
+  }, [isDebugMode]);
+
   return (
-    <Router>
-      <AppProviders>
-        <AppContent />
-        {/* 앱 오픈 광고 */}
-        <AppOpenAd showOnMount={true} />
-        {/* 배너 광고 */}
-        <BannerAd />
-      </AppProviders>
-    </Router>
+    <>
+      {isDebugMode && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-100 dark:bg-yellow-900 p-2 text-xs">
+          <div className="flex justify-between items-center">
+            <span>디버그 모드: {initStep}</span>
+            <button 
+              onClick={() => setIsDebugMode(false)}
+              className="px-2 py-1 bg-red-500 text-white rounded-sm"
+            >
+              닫기
+            </button>
+          </div>
+          {initError && (
+            <div className="mt-1 p-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
+              <p>오류: {initError}</p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      <Router>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <Toaster position="top-center" />
+            <AppContent />
+            {/* 앱 오픈 광고 */}
+            <AppOpenAd showOnMount={true} />
+            {/* 배너 광고 */}
+            <BannerAd />
+          </QueryClientProvider>
+        </AuthProvider>
+      </Router>
+    </>
   );
 };
 

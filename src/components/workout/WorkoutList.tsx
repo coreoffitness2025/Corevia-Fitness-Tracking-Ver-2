@@ -11,7 +11,7 @@ import { db } from '../../firebase/firebaseConfig';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { toast } from 'react-hot-toast';
 // 유틸리티 함수 import
-import { getPartLabel, getPartColor, generateCalendarDays, parseFirestoreDate } from '../../utils/workoutUtils';
+import { getPartLabel, getPartColor, parseFirestoreDate } from '../../utils/workoutUtils';
 
 // 뷰 모드 타입 정의
 type ViewMode = 'day' | 'week' | 'month';
@@ -22,26 +22,72 @@ const WorkoutList: React.FC = () => {
   const [sessions, setSessions] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
-  const [workoutsByDate, setWorkoutsByDate] = useState<DateWorkoutMap>({});
-  const [selectedWorkouts, setSelectedWorkouts] = useState<Workout[]>([]);
-  const captureRef = useRef<HTMLDivElement>(null);
-  const [stampImage, setStampImage] = useState<string | null>(null);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [showCamera, setShowCamera] = useState<boolean>(false);
-  const workoutStampRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [dateWorkouts, setDateWorkouts] = useState<DateWorkoutMap>({});
   
-  // 뷰 모드 상태 추가
+  // FoodLog.tsx와 동일한 상태 관리 방식으로 변경
+  const [selectedDate, setSelectedDate] = useState<string>(formatDate(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const [workoutsByDate, setWorkoutsByDate] = useState<DateWorkoutMap>({});
   
-  useEffect(() => {
-    fetchWorkouts();
-  }, [userProfile, currentDate, viewMode]);
+  // 월별 보기에서 클릭된 날짜를 관리할 별도 상태
+  const [monthlyViewSelectedDate, setMonthlyViewSelectedDate] = useState<string | null>(null);
+  // 달력 날짜 배열 상태 추가
+  const [calendarDates, setCalendarDates] = useState<Date[]>([]);
 
+  useEffect(() => {
+    if (userProfile?.uid) {
+      fetchWorkouts();
+      // 뷰 모드가 변경될 때 월별 선택 날짜 초기화
+      setMonthlyViewSelectedDate(null);
+    }
+  }, [userProfile?.uid, selectedDate, viewMode]);
+
+  useEffect(() => {
+    const groupedWorkouts = sessions.reduce<DateWorkoutMap>((acc, session) => {
+      const dateStr = formatDate(session.date as Date);
+      if (!acc[dateStr]) {
+        acc[dateStr] = [];
+      }
+      acc[dateStr].push(session);
+      return acc;
+    }, {});
+    setWorkoutsByDate(groupedWorkouts);
+  }, [sessions]);
+
+  // 월별 뷰일 때 달력 날짜 계산
+  useEffect(() => {
+    if (viewMode === 'month') {
+      const dates = getDatesForCalendar();
+      setCalendarDates(dates);
+    }
+  }, [viewMode, selectedDate]);
+  
+  // FoodLog.tsx에서 가져온 달력 날짜 계산 함수
+  const getDatesForCalendar = () => {
+    const date = new Date(selectedDate);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const firstCalendarDay = new Date(firstDay);
+    firstCalendarDay.setDate(firstCalendarDay.getDate() - firstCalendarDay.getDay());
+    
+    const lastCalendarDay = new Date(lastDay);
+    const remainingDays = 6 - lastCalendarDay.getDay();
+    lastCalendarDay.setDate(lastCalendarDay.getDate() + remainingDays);
+    
+    const dates = [];
+    let currentDate = new Date(firstCalendarDay);
+    
+    while (currentDate <= lastCalendarDay) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+  
   const fetchWorkouts = async () => {
     if (!userProfile?.uid) return;
     
@@ -51,26 +97,23 @@ const WorkoutList: React.FC = () => {
     try {
       let startDate: Date;
       let endDate: Date;
+      const baseDate = new Date(selectedDate);
       
-      // 뷰 모드에 따라 날짜 범위 설정
       if (viewMode === 'day') {
-        startDate = new Date(selectedDate);
-        endDate = new Date(selectedDate);
-        endDate.setHours(23, 59, 59, 999);
+        startDate = new Date(baseDate);
+        endDate = new Date(baseDate);
       } else if (viewMode === 'week') {
-        // 선택된 날짜의 주의 시작일과 종료일 계산
-        startDate = new Date(selectedDate);
-        const dayOfWeek = startDate.getDay();
-        startDate.setDate(startDate.getDate() - dayOfWeek); // 주의 시작일 (일요일)
-        
+        const dayOfWeek = baseDate.getDay();
+        startDate = new Date(baseDate.setDate(baseDate.getDate() - dayOfWeek));
         endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 6); // 주의 마지막일 (토요일)
-        endDate.setHours(23, 59, 59, 999);
-      } else {
-        // 월 단위 뷰 (기존 로직)
-        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+        endDate.setDate(startDate.getDate() + 6);
+      } else { // 'month'
+        startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+        endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
       }
+
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
       
       const sessionsQuery = query(
         collection(db, 'sessions'),
@@ -98,24 +141,211 @@ const WorkoutList: React.FC = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const groupedWorkouts = sessions.reduce<DateWorkoutMap>((acc, session) => {
-      const dateStr = formatDate(session.date as Date);
-      if (!acc[dateStr]) {
-        acc[dateStr] = [];
-      }
-      acc[dateStr].push(session);
-      return acc;
-    }, {});
-    
-    setWorkoutsByDate(groupedWorkouts);
-  }, [sessions]);
-
-  useEffect(() => {
-    setSelectedWorkouts(workoutsByDate[selectedDate] || []);
-  }, [workoutsByDate, selectedDate]);
   
+  const handleDateClick = (date: string) => {
+    const dayHasWorkouts = workoutsByDate[date] && workoutsByDate[date].length > 0;
+
+    if (viewMode === 'month') {
+      if (dayHasWorkouts) {
+        setMonthlyViewSelectedDate(prev => (prev === date ? null : date));
+      }
+    } else {
+      setSelectedDate(date);
+      setViewMode('day');
+    }
+  };
+
+  const navigatePrevious = () => {
+    const date = new Date(selectedDate);
+    if (viewMode === 'day') {
+      date.setDate(date.getDate() - 1);
+    } else if (viewMode === 'week') {
+      date.setDate(date.getDate() - 7);
+    } else if (viewMode === 'month') {
+      date.setMonth(date.getMonth() - 1);
+    }
+    setSelectedDate(formatDate(date));
+  };
+
+  const navigateNext = () => {
+    const date = new Date(selectedDate);
+    if (viewMode === 'day') {
+      date.setDate(date.getDate() + 1);
+    } else if (viewMode === 'week') {
+      date.setDate(date.getDate() + 7);
+    } else if (viewMode === 'month') {
+      date.setMonth(date.getMonth() + 1);
+    }
+    setSelectedDate(formatDate(date));
+  };
+
+  const getWeekDays = () => {
+    const start = new Date(selectedDate);
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    const weekStart = new Date(start.setDate(diff));
+    
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(weekStart);
+      day.setDate(weekStart.getDate() + i);
+      return day;
+    });
+  };
+
+  // 해당 날짜의 운동 부위별 개수를 계산하는 함수
+  const getWorkoutPartCounts = (workouts: Workout[]) => {
+    const partCounts: Record<ExercisePart, number> = {
+      chest: 0,
+      back: 0,
+      shoulder: 0,
+      leg: 0,
+      biceps: 0,
+      triceps: 0,
+      abs: 0,
+      cardio: 0,
+      complex: 0
+    };
+    
+    workouts.forEach(workout => {
+      partCounts[workout.part] = (partCounts[workout.part] || 0) + 1;
+    });
+    
+    return partCounts;
+  };
+
+  // 통일된 파란색 계열 색상 반환 함수
+  const getUnifiedBlueColor = (intensity: number): string => {
+    // 강도에 따라 다른 파란색 음영 반환
+    switch (intensity) {
+      case 1: return 'bg-blue-500';
+      case 2: return 'bg-blue-600';
+      case 3: return 'bg-blue-700';
+      default: return 'bg-blue-600';
+    }
+  };
+
+  const renderMonthlyView = () => {
+    const todayCal = new Date();
+    const currentDateCal = new Date(selectedDate);
+    const currentMonth = currentDateCal.getMonth();
+    const currentYear = currentDateCal.getFullYear();
+    
+    return (
+      <>
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-semibold">
+            {currentDateCal.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-7 text-center">
+          {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+            <div key={day} className="py-2 border-b border-gray-200 dark:border-gray-700 font-medium">
+              {day}
+            </div>
+          ))}
+          
+          {calendarDates.map((date, index) => {
+            const dateStr = formatDate(date);
+            const isCurrentMonth = date.getMonth() === currentMonth;
+            const isTodayCal = date.toDateString() === todayCal.toDateString();
+            const workouts = workoutsByDate[dateStr] || [];
+            const isSelected = monthlyViewSelectedDate === dateStr;
+            const partCounts = getWorkoutPartCounts(workouts);
+            
+            // 운동 부위별 아이콘 또는 텍스트 표시
+            const hasWorkouts = workouts.length > 0;
+            
+            return (
+              <div 
+                key={index} 
+                onClick={() => handleDateClick(dateStr)}
+                className={`
+                  p-1 min-h-24 border border-gray-100 dark:border-gray-700 transition-colors
+                  ${!isCurrentMonth ? 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800/20' : ''}
+                  ${isTodayCal ? 'bg-blue-100 dark:bg-blue-900/20' : ''}
+                  ${isSelected ? 'bg-blue-200 dark:bg-blue-800 ring-2 ring-blue-500' : ''}
+                  ${isCurrentMonth && hasWorkouts ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/50' : 'cursor-default'}
+                `}
+              >
+                <div className="h-full flex flex-col">
+                  <div className="text-right p-1">
+                    <span className={`text-sm rounded-full w-6 h-6 flex items-center justify-center
+                      ${isTodayCal ? 'bg-blue-600 text-white' : ''}`}>
+                      {date.getDate()}
+                    </span>
+                  </div>
+                  
+                  {hasWorkouts && (
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex flex-wrap gap-1 mt-1 justify-center">
+                        {Object.entries(partCounts).map(([part, count]) => {
+                          if (count > 0) {
+                            return (
+                              <div 
+                                key={part} 
+                                className={`px-2 py-0.5 text-xs rounded-full ${getUnifiedBlueColor(2)} text-white font-medium`}
+                                title={`${getPartLabel(part as ExercisePart)} ${count}개`}
+                              >
+                                {getPartLabel(part as ExercisePart)}
+                                {count > 1 ? ` ${count}` : ''}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                      
+                      <div className="mt-auto text-xs text-center">
+                        <span className="text-blue-700 dark:text-blue-300">
+                          기록 {workouts.length}개
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {monthlyViewSelectedDate && (
+          <div className="mt-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {new Date(monthlyViewSelectedDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+            </h3>
+            {workoutsByDate[monthlyViewSelectedDate] && workoutsByDate[monthlyViewSelectedDate].length > 0 ? (
+              <div className="space-y-4">
+                {workoutsByDate[monthlyViewSelectedDate].map((workout) => renderWorkoutCard(workout))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <p className="text-gray-500 dark:text-gray-400">이 날짜에 기록된 운동이 없습니다.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  };
+  
+  const renderDailyView = () => {
+    const dailyWorkouts = workoutsByDate[selectedDate] || [];
+    return (
+      <div className="mt-4 sm:mt-6">
+        {dailyWorkouts.length === 0 ? (
+          <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <p className="text-gray-500 dark:text-gray-400">이 날짜에 기록된 운동이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {dailyWorkouts.map((workout) => renderWorkoutCard(workout))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const deleteWorkout = async (workoutId: string) => {
     if (!currentUser || !workoutId) return;
 
@@ -131,211 +361,6 @@ const WorkoutList: React.FC = () => {
       toast.error('운동 기록 삭제에 실패했습니다.');
     }
   };
-
-  const handleDateClick = (date: string) => {
-    setSelectedDate(date);
-    if (viewMode !== 'day') {
-      setViewMode('day');
-    }
-  };
-
-  const changeMonth = (amount: number) => {
-    setCurrentDate(prevDate => {
-      const newDate = new Date(prevDate);
-      newDate.setMonth(newDate.getMonth() + amount);
-      return newDate;
-    });
-  };
-  
-  const navigatePrevious = () => {
-    const date = new Date(selectedDate);
-    if (viewMode === 'day') {
-      date.setDate(date.getDate() - 1);
-    } else if (viewMode === 'week') {
-      date.setDate(date.getDate() - 7);
-    } else if (viewMode === 'month') {
-      date.setMonth(date.getMonth() - 1);
-    }
-    setSelectedDate(formatDate(date));
-    setCurrentDate(date);
-  };
-
-  const navigateNext = () => {
-    const date = new Date(selectedDate);
-    if (viewMode === 'day') {
-      date.setDate(date.getDate() + 1);
-    } else if (viewMode === 'week') {
-      date.setDate(date.getDate() + 7);
-    } else if (viewMode === 'month') {
-      date.setMonth(date.getMonth() + 1);
-    }
-    setSelectedDate(formatDate(date));
-    setCurrentDate(date);
-  };
-
-  const calendarDays = generateCalendarDays(currentDate, workoutsByDate);
-  
-  // 주간 뷰를 위한 날짜 배열 생성
-  const getWeekDays = () => {
-    const startDate = new Date(selectedDate);
-    const dayOfWeek = startDate.getDay();
-    startDate.setDate(startDate.getDate() - dayOfWeek); // 주의 시작일 (일요일)
-    
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(startDate);
-      day.setDate(day.getDate() + i);
-      weekDays.push(day);
-    }
-    return weekDays;
-  };
-  
-  // 일별 뷰 렌더링
-  const renderDailyView = () => {
-    return (
-      <div className="mt-4 sm:mt-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">
-            {new Date(selectedDate).toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              weekday: 'long',
-            })}
-          </h3>
-
-          {selectedWorkouts.length > 0 && (
-            <div className="flex space-x-2">
-              <Button
-                onClick={() => {
-                  if (window.confirm('선택한 날짜의 모든 운동 기록을 삭제하시겠습니까?')) {
-                    selectedWorkouts.forEach((workout) => {
-                      if (workout.id) {
-                        deleteWorkout(workout.id);
-                      }
-                    });
-                  }
-                }}
-                variant="danger"
-                size="sm"
-                icon={<Trash size={16} />}
-              >
-                전체 삭제
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {selectedWorkouts.length === 0 ? (
-          <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 mx-auto text-gray-400 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            <p className="text-gray-500 dark:text-gray-400 mb-2">이 날짜에 기록된 운동이 없습니다.</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">운동 입력 탭에서 운동을 기록해보세요.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {selectedWorkouts.map((workout) => renderWorkoutCard(workout))}
-          </div>
-        )}
-      </div>
-    );
-  };
-  
-  // 주간 뷰 렌더링
-  const renderWeeklyView = () => {
-    const weekDays = getWeekDays();
-    
-    return (
-      <div className="mt-4 space-y-4">
-        {weekDays.map(day => {
-          const dateStr = formatDate(day);
-          const dayWorkouts = workoutsByDate[dateStr] || [];
-          
-          return (
-            <div key={dateStr} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                <h3 className="font-medium">
-                  {day.toLocaleDateString('ko-KR', { 
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </h3>
-              </div>
-              
-              {dayWorkouts.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  이 날짜에 기록된 운동이 없습니다.
-                </div>
-              ) : (
-                <div className="p-4 space-y-3">
-                  {dayWorkouts.map(workout => renderWorkoutCard(workout))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-  
-  // 월간 뷰 렌더링 (기존 달력 뷰)
-  const renderMonthlyView = () => {
-    return (
-      <>
-        {/* 달력 그리드 */}
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
-          {weekdays.map(day => <div key={day}>{day}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {calendarDays.map((day, i) => {
-            if (!day) {
-              return <div key={`empty-${i}`} className="border rounded-lg bg-gray-50 dark:bg-gray-800/20" />;
-            }
-            const { dateStr, dayOfMonth, isCurrentMonth, isToday, workouts } = day;
-            const isSelected = selectedDate === dateStr;
-
-            return (
-              <div
-                key={dateStr}
-                onClick={() => handleDateClick(dateStr)}
-                className={`p-1 sm:p-2 text-center cursor-pointer border rounded-lg transition-colors duration-200 ${
-                  isSelected ? 'bg-blue-500 text-white' : 
-                  isToday ? 'bg-blue-100 dark:bg-blue-900/50' : 
-                  isCurrentMonth ? 'bg-white dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800/30 text-gray-400'
-                } ${isCurrentMonth && !isSelected ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30' : ''}`}
-              >
-                <div className={`mx-auto mb-1 ${isSelected ? 'font-bold' : isToday ? 'text-blue-600 dark:text-blue-300 font-bold' : ''}`}>
-                  {dayOfMonth}
-                </div>
-                <div className="flex flex-wrap justify-center gap-1">
-                  {workouts.slice(0, 2).map(p => (
-                    <div key={p} className={`w-1.5 h-1.5 rounded-full ${getPartColor(p)}`}></div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* 선택된 날짜의 운동 기록 */}
-        {renderDailyView()}
-      </>
-    );
-  };
   
   // 운동 카드 렌더링 함수 (중복 코드 제거)
   const renderWorkoutCard = (workout: Workout) => {
@@ -345,9 +370,7 @@ const WorkoutList: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-2 sm:mb-0">
             <span
-              className={`py-1 px-3 rounded-full text-xs sm:text-sm font-semibold text-white ${getPartColor(
-                workout.part
-              )}`}
+              className={`py-1 px-3 rounded-full text-xs sm:text-sm font-semibold text-white ${getUnifiedBlueColor(2)}`}
             >
               {getPartLabel(workout.part)}
             </span>
@@ -384,8 +407,8 @@ const WorkoutList: React.FC = () => {
                 key={index}
                 className={`px-2 py-1 text-xs sm:text-sm rounded ${
                   set.isSuccess
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                 }`}
               >
                 {set.weight}kg &times; {set.reps}회
@@ -408,8 +431,8 @@ const WorkoutList: React.FC = () => {
                       key={setIndex}
                       className={`px-1.5 py-0.5 text-xs rounded ${
                         set.isSuccess
-                          ? 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-800/50 dark:text-blue-300'
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {set.weight}kg &times; {set.reps}회
@@ -438,66 +461,76 @@ const WorkoutList: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-2 sm:p-4">
-      {/* 뷰 모드 선택 버튼 */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex rounded-md shadow-sm">
-          <button
+      {/* 날짜 네비게이션 및 뷰 모드 선택 UI 통합 */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0">
+        <div className="flex items-center">
+          <button 
+            onClick={navigatePrevious}
+            className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50"
+            aria-label="이전"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          
+          <div className="mx-4 text-center">
+            <h2 className="font-medium text-base sm:text-lg">
+              {viewMode === 'day' && new Date(selectedDate).toLocaleDateString('ko-KR', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+              })}
+              {viewMode === 'week' && (
+                <>
+                  {getWeekDays()[0].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} - {getWeekDays()[6].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                </>
+              )}
+              {viewMode === 'month' && `${new Date(selectedDate).toLocaleDateString('ko-KR', { month: 'long' })}`}
+            </h2>
+          </div>
+          
+          <button 
+            onClick={navigateNext}
+            className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50"
+            aria-label="다음"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+        
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            variant={viewMode === 'day' ? 'primary' : 'default'}
             onClick={() => setViewMode('day')}
-            className={`px-4 py-2 text-sm font-medium rounded-l-md ${
-              viewMode === 'day'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            } border border-gray-300 dark:border-gray-600`}
+            icon={<Calendar size={16} />}
           >
             일별
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'week' ? 'primary' : 'default'}
             onClick={() => setViewMode('week')}
-            className={`px-4 py-2 text-sm font-medium ${
-              viewMode === 'week'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            } border-t border-b border-gray-300 dark:border-gray-600`}
+            icon={<Calendar size={16} />}
           >
             주별
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'month' ? 'primary' : 'default'}
             onClick={() => setViewMode('month')}
-            className={`px-4 py-2 text-sm font-medium rounded-r-md ${
-              viewMode === 'month'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            } border border-gray-300 dark:border-gray-600`}
+            icon={<CalendarDays size={16} />}
           >
             월별
-          </button>
+          </Button>
         </div>
       </div>
       
-      {/* 날짜 네비게이션 */}
-      <div className="flex items-center justify-between mb-4">
-        <Button onClick={navigatePrevious} variant="outline" size="icon" aria-label="이전">
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
-          {viewMode === 'month' ? (
-            `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`
-          ) : viewMode === 'week' ? (
-            `${getWeekDays()[0].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} - ${getWeekDays()[6].toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}`
-          ) : (
-            new Date(selectedDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
-          )}
-        </h2>
-        <Button onClick={navigateNext} variant="outline" size="icon" aria-label="다음">
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
-      
       {/* 캡처 영역 시작 */}
-      <div ref={captureRef} className="bg-gray-50 dark:bg-gray-900 p-2 sm:p-6 rounded-lg">
+      <div className="bg-gray-50 dark:bg-gray-900 p-2 sm:p-6 rounded-lg">
         {/* 선택된 뷰 모드에 따라 다른 컴포넌트 렌더링 */}
         {viewMode === 'day' && renderDailyView()}
-        {viewMode === 'week' && renderWeeklyView()}
+        {viewMode === 'week' && renderDailyView()}
         {viewMode === 'month' && renderMonthlyView()}
       </div>
     </div>
