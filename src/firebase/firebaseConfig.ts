@@ -27,15 +27,14 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 
-// Firebase 환경 설정 - 웹 앱 형식으로 수정
+// Firebase 환경 설정 - google-services.json 파일의 정보와 정확히 일치
 const firebaseConfig = {
   apiKey: "AIzaSyABwjkF8d83ZLekcV5ZYzamXzaMrBMPIlI",
   authDomain: "corevia-fitness-tracking.firebaseapp.com",
   projectId: "corevia-fitness-tracking",
   storageBucket: "corevia-fitness-tracking.appspot.com",
   messagingSenderId: "118613268034",
-  // 웹 앱 형식의 appId로 수정 (임시값)
-  appId: "1:118613268034:web:31b2ebf68b2b22fef8ffdb"
+  appId: "1:118613268034:android:31b2ebf68b2b22fef8ffdb"
 };
 
 // Firebase 초기화 전 config 확인
