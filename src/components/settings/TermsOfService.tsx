@@ -9,10 +9,10 @@ const TermsOfService: React.FC = () => {
         <section>
           <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제1조 (목적 및 적용범위)</h2>
           <p className="text-gray-700 dark:text-gray-300 mb-2">
-            본 약관은 Corevia에서 제공하는 피트니스 트래킹 서비스(이하 "서비스")의 이용조건 및 절차, 이용자와 회사의 권리, 의무, 책임사항을 규정함을 목적으로 합니다.
+            본 약관은 Corevia(이하 "회사")에서 제공하는 피트니스 트래킹 애플리케이션(이하 "서비스")의 이용조건 및 절차, 이용자와 회사의 권리, 의무, 책임사항을 규정함을 목적으로 합니다. 본 서비스는 광고 지원(Ad Supported) 형태로 제공됩니다.
           </p>
           <p className="text-gray-700 dark:text-gray-300">
-            본 서비스는 웹 애플리케이션 형태로 제공되며, 향후 모바일 앱으로 확장될 수 있습니다.
+            애플리케이션을 다운로드하거나 사용하는 것은 자동적으로 본 약관에 동의하는 것으로 간주됩니다. 애플리케이션을 사용하기 전에 이 약관을 주의 깊게 읽어보시기 바랍니다.
           </p>
         </section>
         
@@ -23,6 +23,7 @@ const TermsOfService: React.FC = () => {
             <li><strong>"이용자"</strong>: 본 약관에 따라 서비스를 이용하는 회원 및 비회원</li>
             <li><strong>"회원"</strong>: Google 계정을 통해 로그인하여 서비스를 이용하는 자</li>
             <li><strong>"콘텐츠"</strong>: 서비스 내에서 이용자가 생성, 업로드하는 모든 정보 (운동 기록, 식단 사진, 신체 사진, 메모 등)</li>
+            <li><strong>"트레이드마크"</strong>: 회사의 로고, 상표, 서비스마크, 애플리케이션 내 모든 지적재산권 요소</li>
           </ul>
         </section>
         
@@ -102,6 +103,8 @@ const TermsOfService: React.FC = () => {
             <li>단, 사진 및 이미지 파일은 local storage에 저장됩니다.</li>
             <li>데이터는 실시간으로 동기화되며, 사용자별로 완전히 분리되어 관리됩니다.</li>
             <li>서비스는 업계 표준 보안 프로토콜을 준수하며, 개인정보보호법을 엄격히 준수합니다.</li>
+            <li>안전한 서비스 이용을 위해 기기의 보안 유지는 이용자의 책임입니다.</li>
+            <li>회사는 이용자가 기기를 루팅/탈옥하여 발생하는 보안 문제나 오작동에 대해 책임지지 않습니다.</li>
           </ul>
         </section>
         
@@ -113,6 +116,8 @@ const TermsOfService: React.FC = () => {
             <li>서비스의 안정적 운영을 방해하는 행위를 금지합니다.</li>
             <li>부적절하거나 불법적인 콘텐츠 업로드를 금지합니다.</li>
             <li>서비스를 상업적 목적으로 무단 이용하는 행위를 금지합니다.</li>
+            <li>앱의 소스코드를 추출하거나, 앱 또는 그 일부를 복제, 수정하는 행위를 금지합니다.</li>
+            <li>회사의 트레이드마크 및 지적재산권을 무단 사용하는 행위를 금지합니다.</li>
           </ul>
         </section>
         
@@ -122,6 +127,7 @@ const TermsOfService: React.FC = () => {
             <li>서비스의 UI/UX 디자인, 소프트웨어, 영양 데이터베이스 등은 Corevia의 지적재산권입니다.</li>
             <li>이용자가 생성한 콘텐츠의 저작권은 이용자에게 있으나, 서비스 제공을 위한 최소한의 이용 권한을 회사에 부여합니다.</li>
             <li>서비스의 무단 복제, 배포, 역공학을 금지합니다.</li>
+            <li>회사의 상표, 로고, 저작권, 데이터베이스 권리 및 기타 지적 재산권은 회사의 소유이며 보호됩니다.</li>
           </ul>
         </section>
         
@@ -144,7 +150,9 @@ const TermsOfService: React.FC = () => {
             <li><strong>영양 정보 면책</strong>: 제공되는 영양 정보는 참고용이며, 조리 방법 등에 따라 실제와 다를 수 있습니다.</li>
             <li><strong>운동 안전 면책</strong>: 운동 시 안전은 이용자 본인의 책임이며, 운동으로 인한 부상에 대해 회사는 책임지지 않습니다.</li>
             <li><strong>데이터 손실 면책</strong>: 천재지변, 시스템 장애 등 불가항력으로 인한 데이터 손실에 대해서는 책임을 지지 않습니다.</li>
-            <li><strong>제3자 서비스</strong>: Google Firebase 등 제3자 서비스의 장애로 인한 손해에 대해서는 해당 제3자의 정책을 따릅니다.</li>
+            <li><strong>제3자 서비스</strong>: Google Firebase, AdMob 등 제3자 서비스의 장애로 인한 손해에 대해서는 해당 제3자의 정책을 따릅니다.</li>
+            <li><strong>네트워크 연결</strong>: 일부 기능은 Wi-Fi나 모바일 데이터 연결이 필요합니다. 인터넷 접속이 제한된 경우 서비스 이용에 제한이 있을 수 있으며, 이에 대한 책임은 회사에 없습니다.</li>
+            <li><strong>모바일 데이터 요금</strong>: 이용자는 서비스 이용 중 발생하는 모바일 데이터 요금(로밍 요금 포함)에 대한 책임이 있습니다.</li>
           </ul>
         </section>
         
@@ -154,11 +162,26 @@ const TermsOfService: React.FC = () => {
             <li>회사는 서비스의 개선을 위해 기능을 변경하거나 추가할 수 있습니다.</li>
             <li>중대한 변경 시에는 30일 전 공지하며, 경미한 변경은 서비스 내 공지로 대체할 수 있습니다.</li>
             <li>서비스 중단 시에는 최소 30일 전 공지하고, 이용자 데이터 백업 기간을 제공합니다.</li>
+            <li>회사는 이용자에게 별도 통지 없이 서비스를 중단하거나 종료할 권리를 보유합니다. 서비스 종료 시 (a) 이용자의 권리 및 라이센스는 종료되며, (b) 앱 사용을 중단하고 필요한 경우 삭제해야 합니다.</li>
           </ul>
         </section>
         
         <section>
-          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제11조 (분쟁해결)</h2>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제11조 (제3자 서비스)</h2>
+          <div className="text-gray-700 dark:text-gray-300">
+            <p className="mb-2">본 애플리케이션은 다음과 같은 제3자 서비스를 사용하며, 해당 서비스들은 자체 이용약관을 가지고 있습니다:</p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li><a href="https://policies.google.com/terms" className="text-blue-500 hover:underline">Google Play Services</a></li>
+              <li><a href="https://developers.google.com/admob/terms" className="text-blue-500 hover:underline">AdMob</a></li>
+              <li><a href="https://firebase.google.com/terms" className="text-blue-500 hover:underline">Google Analytics for Firebase</a></li>
+              <li><a href="https://firebase.google.com/terms/crashlytics" className="text-blue-500 hover:underline">Firebase Crashlytics</a></li>
+            </ul>
+            <p className="mt-2">이러한 서비스 이용 시에는 해당 서비스의 이용약관도 함께 적용됩니다.</p>
+          </div>
+        </section>
+        
+        <section>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제12조 (분쟁해결)</h2>
           <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-1">
             <li>본 약관은 대한민국 법률에 따라 해석되고 적용됩니다.</li>
             <li>서비스 이용과 관련한 분쟁은 서울중앙지방법원을 전속관할법원으로 합니다.</li>
@@ -167,12 +190,21 @@ const TermsOfService: React.FC = () => {
         </section>
         
         <section>
-          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제12조 (약관의 효력 및 변경)</h2>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제13조 (약관의 효력 및 변경)</h2>
           <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-1">
-            <li>본 약관은 2025년 1월 1일부터 적용됩니다.</li>
+            <li>회사는 약관을 정기적으로 업데이트할 수 있으므로 변경사항을 확인하기 위해 이 페이지를 정기적으로 검토하는 것이 좋습니다.</li>
             <li>약관 변경 시 변경 사유와 적용 일자를 명시하여 최소 7일 전에 공지합니다.</li>
             <li>중요한 변경 사항은 30일 전에 공지하며, 이용자가 거부 의사를 표시하지 않으면 동의한 것으로 봅니다.</li>
+            <li>본 약관은 2025년 7월 6일부터 적용됩니다.</li>
           </ul>
+        </section>
+        
+        <section>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제14조 (문의하기)</h2>
+          <div className="text-gray-700 dark:text-gray-300">
+            <p className="mb-2">본 약관에 대해 질문이나 제안사항이 있으시면, 언제든지 다음의 연락처로 문의해 주세요:</p>
+            <p>이메일: coreoffitness2025@gmail.com</p>
+          </div>
         </section>
         
         <section className="border-t pt-4">
@@ -180,7 +212,7 @@ const TermsOfService: React.FC = () => {
             <strong>연락처</strong><br />
             회사명: Corevia<br />
             이메일: coreoffitness2025@gmail.com<br />
-            시행일: 2025년 1월 1일
+            시행일: 2025년 7월 6일
           </p>
         </section>
       </div>

@@ -6,7 +6,7 @@ const PrivacyPolicy: React.FC = () => {
       <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Corevia 피트니스 트래킹 서비스 개인정보처리방침</h1>
       
       <p className="mb-4 text-gray-700 dark:text-gray-300">
-        Corevia(이하 "회사")는 개인정보보호법에 따라 이용자의 개인정보 보호 및 권익을 보호하고 개인정보와 관련한 이용자의 고충을 원활하게 처리할 수 있도록 다음과 같은 처리방침을 두고 있습니다.
+        Corevia(이하 "회사")는 개인정보보호법에 따라 이용자의 개인정보 보호 및 권익을 보호하고 개인정보와 관련한 이용자의 고충을 원활하게 처리할 수 있도록 다음과 같은 처리방침을 두고 있습니다. 본 개인정보처리방침은 Corevia Fitness 앱(이하 "애플리케이션")에 적용되며, 해당 서비스는 Ad Supported 형태로 제공됩니다.
       </p>
       
       <div className="space-y-6">
@@ -20,6 +20,7 @@ const PrivacyPolicy: React.FC = () => {
             <li><strong>서비스 개선</strong>: 신규 서비스 개발, 기존 서비스 개선, 이용 현황 통계</li>
             <li><strong>안전 관리</strong>: 부정 이용 방지, 시스템 보안 유지</li>
             <li><strong>광고 서비스</strong>: 맞춤형 광고 제공, 광고 효과 측정, 서비스 수익화</li>
+            <li><strong>마케팅 및 홍보</strong>: 중요 정보 안내, 필수 공지사항 전달, 마케팅 프로모션 제공</li>
             <li><strong>AI 기반 서비스</strong>: 향후 도입 예정인 AI 기반 운동/식단 추천, 개인 맞춤형 피드백 제공</li>
           </ul>
         </section>
@@ -50,10 +51,15 @@ const PrivacyPolicy: React.FC = () => {
             <div>
               <p className="font-semibold mb-2">2.3 자동 수집 정보</p>
               <ul className="list-disc pl-6 space-y-1">
-                <li>서비스 이용 기록, 접속 로그, 쿠키</li>
-                <li>기기 정보(모델명, OS 버전, 화면 크기 등)</li>
-                <li>네트워크 정보(IP 주소, 접속 위치)</li>
+                <li><strong>기기 정보</strong>: 모바일 기기의 인터넷 프로토콜(IP) 주소, 운영체제</li>
+                <li><strong>서비스 이용 정보</strong>: 방문한 페이지, 방문 시간 및 날짜, 페이지에 머문 시간</li>
+                <li><strong>앱 사용 정보</strong>: 앱에서 보낸 시간, 사용한 기능</li>
+                <li><strong>기타</strong>: 서비스 이용 기록, 접속 로그, 쿠키, 네트워크 정보</li>
               </ul>
+            </div>
+
+            <div className="mt-4">
+              <p className="mb-2"><strong>참고</strong>: 본 애플리케이션은 사용자의 모바일 기기 위치에 대한 정확한 정보를 수집하지 않습니다.</p>
             </div>
           </div>
         </section>
@@ -107,6 +113,7 @@ const PrivacyPolicy: React.FC = () => {
               <li>이용자가 사전에 동의한 경우</li>
               <li>법령의 규정에 의거하거나, 수사 목적으로 법집행기관이 요구하는 경우</li>
               <li>서비스 제공에 따른 요금정산을 위해 필요한 경우</li>
+              <li>이용자의 권리 보호, 안전 또는 타인의 안전을 보호하기 위해 합리적으로 판단되는 경우</li>
             </ul>
           </div>
         </section>
@@ -131,16 +138,37 @@ const PrivacyPolicy: React.FC = () => {
                     <td className="py-2">클라우드 서버 운영, 데이터 저장, 인증 서비스</td>
                     <td className="py-2">회원 탈퇴시 또는 위탁계약 종료시까지</td>
                   </tr>
-                  <tr>
+                  <tr className="border-b dark:border-gray-600">
                     <td className="py-2">Google LLC (Analytics)</td>
                     <td className="py-2">서비스 이용 통계 분석</td>
                     <td className="py-2">수집 후 26개월</td>
+                  </tr>
+                  <tr className="border-b dark:border-gray-600">
+                    <td className="py-2">Google LLC (AdMob)</td>
+                    <td className="py-2">광고 서비스 제공</td>
+                    <td className="py-2">광고 노출 및 성과 측정 기간</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2">Google LLC (Firebase Crashlytics)</td>
+                    <td className="py-2">앱 충돌 분석 및 안정성 개선</td>
+                    <td className="py-2">오류 발생 시점부터 90일</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             
             <p className="text-sm">위탁계약 시 개인정보보호법 제26조에 따라 위탁업무 수행목적 외 개인정보 처리금지, 기술적·관리적 보호조치, 재위탁 제한, 수탁자에 대한 관리·감독, 손해배상 등 책임에 관한 사항을 계약서 등 문서에 명시하고, 수탁자가 개인정보를 안전하게 처리하는지를 감독하고 있습니다.</p>
+            
+            <div className="mt-4">
+              <p className="font-semibold mb-2">제3자 서비스의 개인정보처리방침:</p>
+              <p className="mb-2">본 애플리케이션은 다음과 같은 제3자 서비스를 사용하며, 각 서비스는 자체 개인정보처리방침을 가지고 있습니다:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li><a href="https://policies.google.com/privacy" className="text-blue-500 hover:underline">Google Play Services</a></li>
+                <li><a href="https://support.google.com/admob/answer/6128543" className="text-blue-500 hover:underline">AdMob</a></li>
+                <li><a href="https://firebase.google.com/policies/analytics" className="text-blue-500 hover:underline">Google Analytics for Firebase</a></li>
+                <li><a href="https://firebase.google.com/support/privacy" className="text-blue-500 hover:underline">Firebase Crashlytics</a></li>
+              </ul>
+            </div>
           </div>
         </section>
         
@@ -188,8 +216,15 @@ const PrivacyPolicy: React.FC = () => {
                 <li><strong>이메일</strong>: coreoffitness2025@gmail.com</li>
                 <li><strong>서비스 내</strong>: 설정 메뉴 → 기본 정보 변경</li>
                 <li><strong>회원 탈퇴</strong>: 서비스 내 계정 관리 메뉴</li>
+                <li><strong>앱 제거</strong>: 모바일 기기에서 앱을 제거하면 정보 수집이 중단됩니다.</li>
                 <li>권리 행사 시 본인 확인을 위해 신분증명서를 요구할 수 있습니다.</li>
               </ul>
+            </div>
+
+            <div className="mt-4">
+              <p className="font-semibold mb-2">8.3 어린이 개인정보</p>
+              <p className="mb-2">회사는 만 13세 미만 어린이의 개인정보를 수집하거나 마케팅 목적으로 사용하지 않습니다.</p>
+              <p>만약 만 13세 미만 어린이가 개인정보를 제공한 사실이 확인될 경우, 즉시 해당 정보를 삭제합니다. 부모님이나 보호자가 자녀가 개인정보를 제공했다는 사실을 알게 된 경우 coreoffitness2025@gmail.com으로 연락주시기 바랍니다.</p>
             </div>
           </div>
         </section>
@@ -271,12 +306,18 @@ const PrivacyPolicy: React.FC = () => {
           </div>
         </section>
         
+        <section>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">제13조 (동의)</h2>
+          <div className="text-gray-700 dark:text-gray-300">
+            <p>애플리케이션을 사용함으로써, 귀하는 본 개인정보처리방침에 명시된 개인정보 처리에 동의하는 것으로 간주됩니다.</p>
+          </div>
+        </section>
+        
         <section className="border-t pt-4">
           <div className="text-gray-600 dark:text-gray-400 text-sm space-y-2">
             <p><strong>현행 개인정보 처리방침</strong></p>
-            <p>시행일자: 2025년 1월 1일</p>
-            <p>공고일자: 2025년 1월 1일</p>
-            <p>변경일자: 2025년 1월 1일</p>
+            <p>시행일자: 2025년 7월 6일</p>
+            <p>공고일자: 2025년 7월 6일</p>
             
             <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
               <p><strong>연락처</strong></p>
