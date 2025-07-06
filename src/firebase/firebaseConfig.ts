@@ -27,15 +27,14 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 
-// Firebase 환경 설정 - 하드코딩된 값 사용 (임시 해결책)
+// Firebase 환경 설정 - google-services.json 파일의 정보와 일치하도록 수정
 const firebaseConfig = {
-  apiKey: "AIzaSyDLxrXiRhbvQj1qe4Ys9rCvkGq4nLwQGRc",
-  authDomain: "corevia-fitness.firebaseapp.com",
-  projectId: "corevia-fitness",
-  storageBucket: "corevia-fitness.appspot.com",
-  messagingSenderId: "1005083013880",
-  appId: "1:1005083013880:web:c7b3b2d9a4f8f45a6d0d9a",
-  measurementId: "G-XVPZJJR1JE"
+  apiKey: "AIzaSyABwjkF8d83ZLekcV5ZYzamXzaMrBMPIlI",
+  authDomain: "corevia-fitness-tracking.firebaseapp.com",
+  projectId: "corevia-fitness-tracking",
+  storageBucket: "corevia-fitness-tracking.appspot.com",
+  messagingSenderId: "118613268034",
+  appId: "1:118613268034:android:31b2ebf68b2b22fef8ffdb"
 };
 
 // Firebase 초기화 전 config 확인
