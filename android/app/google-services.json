@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "118613268034",
+    "project_id": "corevia-fitness-tracking",
+    "storage_bucket": "corevia-fitness-tracking.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:118613268034:android:31b2ebf68b2b22fef8ffdb",
+        "android_client_info": {
+          "package_name": "com.corevia.fitness"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "118613268034-6iu4d1dcgm4vivj836jpp7m64tndgfmg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABwjkF8d83ZLekcV5ZYzamXzaMrBMPIlI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "118613268034-6iu4d1dcgm4vivj836jpp7m64tndgfmg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
