@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
 import java.util.ArrayList;
 
@@ -45,12 +46,28 @@ public class MainActivity extends BridgeActivity {
                 // 여기에 필요한 플러그인 추가
             }});
             
+            // Crashlytics 테스트 버튼 추가
+            addCrashlyticsTestButton();
+            
             logEvent("onCreate 완료");
             
         } catch (Exception e) {
             Log.e(TAG, "onCreate에서 예외 발생: ", e);
             showToast("초기화 오류: " + e.getMessage());
         }
+    }
+    
+    private void addCrashlyticsTestButton() {
+        Button crashButton = new Button(this);
+        crashButton.setText("Test Crash");
+        crashButton.setOnClickListener(view -> {
+            FirebaseCrashlytics.getInstance().log("테스트 크래시 버튼이 클릭되었습니다");
+            throw new RuntimeException("Test Crash");
+        });
+
+        addContentView(crashButton, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
     }
     
     private void logEvent(String message) {
