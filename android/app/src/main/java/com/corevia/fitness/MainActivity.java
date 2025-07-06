@@ -9,6 +9,9 @@ import android.widget.Toast;
 
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
+
+import java.util.ArrayList;
 
 public class MainActivity extends BridgeActivity {
     private static final String TAG = "CoreFitDebug";
@@ -36,6 +39,11 @@ public class MainActivity extends BridgeActivity {
             
             Log.d(TAG, "앱 시작됨");
             showToast("앱 초기화 진행 중");
+            
+            // 필요한 플러그인 등록
+            this.registerPlugins(new ArrayList<Class<? extends Plugin>>() {{
+                // 여기에 필요한 플러그인 추가
+            }});
             
             logEvent("onCreate 완료");
             
