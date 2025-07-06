@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 앱의 기본 색상 정의 -->
-    <color name="colorPrimary">#3880ff</color>
-    <color name="colorPrimaryDark">#3171e0</color>
-    <color name="colorAccent">#3880ff</color>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
     
     <!-- 추가 색상 정의 -->
     <color name="blue500">#3B82F6</color> <!-- Tailwind의 bg-blue-500에 해당하는 색상 -->
