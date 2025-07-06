@@ -10,7 +10,7 @@ import { getCloudSyncSettings, syncAllData } from './services/syncService';
 import { toast } from 'react-hot-toast';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase/firebaseConfig';
-import { FirebaseCrashlytics } from '@capacitor-firebase/crashlytics';
+// import { FirebaseCrashlytics } from '@capacitor-firebase/crashlytics';
 import { Toast } from '@capacitor/toast';
 import { Device } from '@capacitor/device';
 
@@ -122,10 +122,16 @@ const AppContent: React.FC = () => {
   const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 앱 시작 시 AdMob 초기화
+    // 앱 시작 시 AdMob 초기화 - 임시로 주석 처리
     const initAds = async () => {
-      await initializeAdMob();
-      setupAdMobListeners();
+      try {
+        console.log('AdMob 초기화 시도...');
+        // await initializeAdMob();
+        // setupAdMobListeners();
+        console.log('AdMob 초기화 완료');
+      } catch (error) {
+        console.error('AdMob 초기화 오류:', error);
+      }
     };
     
     initAds();
@@ -168,45 +174,6 @@ const AppContent: React.FC = () => {
     checkAndSyncData();
   }, [currentUser?.uid]);
 
-  // 앱 초기화 단계별 실행
-  useEffect(() => {
-    const initApp = async () => {
-      try {
-        // 디바이스 정보 로깅
-        setInitStep('디바이스 정보 확인 중');
-        const deviceInfo = await Device.getInfo();
-        console.log('디바이스 정보:', deviceInfo);
-        
-        // Crashlytics 초기화
-        setInitStep('Crashlytics 초기화 중');
-        await FirebaseCrashlytics.setEnabled({ enabled: true });
-        await FirebaseCrashlytics.log({ message: '앱 초기화 시작' });
-        
-        // 초기화 완료
-        setInitStep('초기화 완료');
-        
-        // 디버그 모드에서는 토스트 메시지로 초기화 완료 알림
-        if (isDebugMode) {
-          await Toast.show({
-            text: '앱 초기화 완료',
-            duration: 'short'
-          });
-        }
-      } catch (error) {
-        console.error('앱 초기화 오류:', error);
-        setInitError(error instanceof Error ? error.message : String(error));
-        
-        // 오류 발생 시 토스트로 알림
-        await Toast.show({
-          text: '앱 초기화 오류: ' + (error instanceof Error ? error.message : String(error)),
-          duration: 'long'
-        });
-      }
-    };
-    
-    initApp();
-  }, [isDebugMode]);
-
   return (
     <Routes>
       {renderRoutes(appRoutes)}
@@ -228,10 +195,10 @@ const App: React.FC = () => {
         const deviceInfo = await Device.getInfo();
         console.log('디바이스 정보:', deviceInfo);
         
-        // Crashlytics 초기화
-        setInitStep('Crashlytics 초기화 중');
-        await FirebaseCrashlytics.setEnabled({ enabled: true });
-        await FirebaseCrashlytics.log({ message: '앱 초기화 시작' });
+        // Crashlytics 초기화 - 주석 처리
+        // setInitStep('Crashlytics 초기화 중');
+        // await FirebaseCrashlytics.setEnabled({ enabled: true });
+        // await FirebaseCrashlytics.log({ message: '앱 초기화 시작' });
         
         // 초기화 완료
         setInitStep('초기화 완료');
@@ -284,10 +251,10 @@ const App: React.FC = () => {
           <QueryClientProvider client={queryClient}>
             <Toaster position="top-center" />
             <AppContent />
-            {/* 앱 오픈 광고 */}
-            <AppOpenAd showOnMount={true} />
-            {/* 배너 광고 */}
-            <BannerAd />
+            {/* 앱 오픈 광고 - 임시로 주석 처리 */}
+            {/* <AppOpenAd showOnMount={true} /> */}
+            {/* 배너 광고 - 임시로 주석 처리 */}
+            {/* <BannerAd /> */}
           </QueryClientProvider>
         </AuthProvider>
       </Router>
