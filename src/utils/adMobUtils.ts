@@ -15,12 +15,12 @@ export const ADMOB_CONFIG = {
   },
   // 실제 광고 ID들 (나중에 AdMob 계정에서 발급받은 ID로 교체)
   PRODUCTION_IDS: {
-    APP_ID: 'YOUR_REAL_APP_ID', // 나중에 교체
-    BANNER: 'YOUR_REAL_BANNER_ID', // 나중에 교체
-    INTERSTITIAL: 'YOUR_REAL_INTERSTITIAL_ID', // 나중에 교체
-    REWARD: 'YOUR_REAL_REWARD_ID', // 나중에 교체
+    APP_ID: 'ca-app-pub-2952925573999681~7155228371', // AndroidManifest.xml에 설정된 ID와 일치시킴
+    BANNER: 'ca-app-pub-2952925573999681/6261034822', 
+    INTERSTITIAL: 'ca-app-pub-2952925573999681/1623785812',
+    REWARD: 'YOUR_REAL_REWARD_ID', // 아직 설정되지 않음
   },
-  IS_TESTING: true, // 실제 배포 시 false로 변경
+  IS_TESTING: false, // 실제 배포 시 false로 변경
 };
 
 /**
