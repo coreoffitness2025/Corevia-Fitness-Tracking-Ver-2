@@ -27,24 +27,15 @@ import {
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 
-// 환경 변수 디버깅 - 개발 환경과 GitHub Pages에서 환경 변수가 로드되는지 확인
-if (typeof window !== 'undefined' && (import.meta.env.DEV || (window as any).__IS_GITHUB_PAGES__)) {
-  console.log('Firebase 환경 변수 확인:', {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY ? '설정됨' : '설정안됨',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ? '설정됨' : '설정안됨',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ? '설정됨' : '설정안됨'
-  });
-}
-
-// Firebase 환경 설정 - GitHub Secrets에서 관리되는 환경 변수 사용
+// Firebase 환경 설정 - 하드코딩된 값 사용 (임시 해결책)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || process.env.FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyDLxrXiRhbvQj1qe4Ys9rCvkGq4nLwQGRc",
+  authDomain: "corevia-fitness.firebaseapp.com",
+  projectId: "corevia-fitness",
+  storageBucket: "corevia-fitness.appspot.com",
+  messagingSenderId: "1005083013880",
+  appId: "1:1005083013880:web:c7b3b2d9a4f8f45a6d0d9a",
+  measurementId: "G-XVPZJJR1JE"
 };
 
 // Firebase 초기화 전 config 확인
