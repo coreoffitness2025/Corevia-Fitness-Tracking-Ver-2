@@ -6,11 +6,13 @@ import {
   getRedirectResult,
   UserCredential,
   OAuthProvider,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInWithCredential // signInWithCredential 임포트 추가
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebaseConfig';
 import { UserProfile } from '../types';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication'; // 플러그인 임포트
 
 // 모바일 기기 감지
 export const isMobileDevice = (): boolean => {
@@ -49,6 +51,18 @@ export const logAuthDebugInfo = (message: string, data?: any): void => {
   }
 };
 
+// 네이티브 Google 로그인 처리 함수
+const signInWithGoogleNative = async (): Promise<UserCredential> => {
+  logAuthDebugInfo('네이티브 Google 로그인 시도');
+  // Capacitor 플러그인을 통해 네이티브 로그인 실행
+  const result = await FirebaseAuthentication.signInWithGoogle();
+  // 네이티브 로그인 결과에서 받은 idToken으로 Firebase 자격 증명 생성
+  const credential = GoogleAuthProvider.credential(result.credential.idToken);
+  // 생성된 자격 증명으로 Firebase에 로그인
+  return signInWithCredential(auth, credential);
+};
+
+
 // Google 로그인 프로세스 (모바일 최적화)
 export const signInWithGoogleOptimized = async (): Promise<UserCredential | null> => {
   const provider = new GoogleAuthProvider();
@@ -62,10 +76,9 @@ export const signInWithGoogleOptimized = async (): Promise<UserCredential | null
     logAuthDebugInfo('기기 유형 감지', { isMobile, userAgent: navigator.userAgent });
     
     if (isMobile) {
-      // 모바일에서는 리디렉션 방식 사용
-      logAuthDebugInfo('모바일 기기에서 리디렉션 방식 사용');
-      await signInWithRedirect(auth, provider);
-      return null; // 리디렉션 후에는 결과를 즉시 반환할 수 없음
+      // 모바일에서는 새로 구현한 네이티브 방식 사용
+      logAuthDebugInfo('모바일 기기에서 네이티브 방식 사용');
+      return await signInWithGoogleNative();
     } else {
       // 데스크탑에서는 팝업 방식 시도 후 실패 시 리디렉션
       logAuthDebugInfo('데스크탑에서 팝업 방식 시도');

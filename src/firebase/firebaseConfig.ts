@@ -9,7 +9,9 @@ import {
   signInWithEmailAndPassword,
   signOut, 
   onAuthStateChanged, 
-  User
+  User,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -22,10 +24,13 @@ import {
   getDocs, 
   orderBy, 
   limit, 
-  updateDoc
+  updateDoc,
+  addDoc,
+  serverTimestamp,
+  enableIndexedDbPersistence,
+  connectFirestoreEmulator
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getAnalytics } from 'firebase/analytics';
 
 // Firebase 환경 설정 - Firebase 콘솔에서 확인한 웹 API 키로 업데이트
 const firebaseConfig = {
@@ -33,201 +38,188 @@ const firebaseConfig = {
   authDomain: "corevia-fitness-tracking.firebaseapp.com",
   projectId: "corevia-fitness-tracking",
   storageBucket: "corevia-fitness-tracking.appspot.com",
-  messagingSenderId: "118613268034",
-  appId: "1:118613268034:android:31b2ebf68b2b22fef8ffdb"
+  messagingSenderId: "911855936443",
+  appId: "1:911855936443:web:a074c26f018859ffe1a76b",
+  measurementId: "G-YL2PE4ZJK3"
 };
 
-// Firebase 초기화 전 config 확인
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
-  console.error('Firebase 필수 환경 변수가 누락되었습니다. 인증이 작동하지 않을 수 있습니다.');
-}
-
-// Firebase 초기화
+// Firebase 앱 초기화
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-auth.useDeviceLanguage(); // 브라우저 언어 설정 사용
 
-// CORS 및 쿠키 설정 (Firebase Functions용, 직접적인 효과는 없지만 설정)
-if (typeof window !== 'undefined') {
-  (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-}
-
+// Firestore 초기화
 export const db = getFirestore(app);
-export const storage = getStorage(app);
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// Google 제공자 설정
-const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
-
-// 모바일 기기 감지 함수
-const isMobileDevice = (): boolean => {
-  if (typeof window !== 'undefined') {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  }
-  return false;
-};
-
-// 인증 관련 함수들
-export const signInWithGoogle = async () => {
-  // 브라우저 환경에서만 실행
-  if (typeof window !== 'undefined') {
-    try {
-      // 모바일 기기 감지
-      const isMobile = isMobileDevice();
-      console.log('기기 유형:', isMobile ? '모바일' : '데스크탑');
-
-      if (isMobile) {
-        // 모바일 기기에서는 항상 리디렉션 방식 사용
-        console.log('모바일 기기에서 리디렉션 방식 사용');
-        await signInWithRedirect(auth, googleProvider);
-        return null; // 리디렉션 후에는 결과를 즉시 반환할 수 없음
-      } else {
-        // 데스크탑에서는 팝업 방식 사용
-        console.log('데스크탑에서 팝업 방식 사용');
-        try {
-          return await signInWithPopup(auth, googleProvider);
-        } catch (error) {
-          console.error('팝업 인증 실패, 리디렉션 시도:', error);
-          // 팝업이 실패하면 리디렉션으로 시도
-          await signInWithRedirect(auth, googleProvider);
-          return null;
-        }
-      }
-    } catch (error: any) {
-      console.error('Google 로그인 오류:', error);
-      
-      // 도메인 인증 오류인 경우 더 명확한 오류 메시지
-      if (error.code === 'auth/unauthorized-domain') {
-        const currentDomain = window.location.origin;
-        throw new Error(`현재 도메인(${currentDomain})이 Firebase 인증에 허용되지 않았습니다. Firebase 콘솔에서 '인증 > 설정 > 승인된 도메인'에 이 도메인을 추가해주세요.`);
-      }
-      
-      throw error;
-    }
-  }
-  return null;
-};
-
-// 리디렉션 결과 처리
-export const getGoogleRedirectResult = async () => {
-  if (typeof window !== 'undefined') {
-    try {
-      return await getRedirectResult(auth);
-    } catch (error) {
-      console.error('리디렉션 결과 처리 오류:', error);
-      throw error;
-    }
-  }
-  return null;
-};
-
-export const signInWithEmail = async (email: string, password: string) => {
-  return signInWithEmailAndPassword(auth, email, password);
-};
-
-export const logout = async () => {
-  return signOut(auth);
-};
-
-// 사용자 프로필 관련 함수들
-export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+// 오프라인 지원 활성화
+const enableOfflineSupport = async () => {
   try {
-    const docRef = doc(db, 'users', userId);
+    await enableIndexedDbPersistence(db);
+    console.log('Firestore 오프라인 지원이 활성화되었습니다.');
+  } catch (error: any) {
+    if (error.code === 'failed-precondition') {
+      console.warn('여러 탭에서 실행 중일 때는 오프라인 지원이 활성화되지 않습니다.');
+    } else if (error.code === 'unimplemented') {
+      console.warn('현재 브라우저는 오프라인 지원을 지원하지 않습니다.');
+    } else {
+      console.error('Firestore 오프라인 지원 활성화 오류:', error);
+    }
+  }
+};
+
+// 오프라인 지원 활성화 호출
+enableOfflineSupport();
+
+// Firebase 인증 초기화
+export const auth = getAuth(app);
+
+// 로컬 인증 상태 유지 설정
+const setupLocalPersistence = async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log('로컬 인증 상태 유지가 설정되었습니다.');
+  } catch (error) {
+    console.error('로컬 인증 상태 유지 설정 오류:', error);
+  }
+};
+
+// 로컬 인증 상태 유지 설정 호출
+setupLocalPersistence();
+
+// Firebase 스토리지 초기화
+export const storage = getStorage(app);
+
+// Analytics는 조건부로 초기화 (네트워크 오류 무시)
+export const getAnalyticsInstance = async () => {
+  try {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      try {
+        // Analytics는 필요할 때만 동적으로 임포트
+        const { getAnalytics } = await import('firebase/analytics');
+        const analytics = getAnalytics(app);
+        console.log('Firebase Analytics 초기화 성공');
+        return analytics;
+      } catch (error) {
+        // Analytics 초기화 오류는 무시하고 앱 실행 계속
+        console.warn('Analytics 초기화 실패, 앱은 계속 실행됩니다:', error);
+        return null;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.warn('Analytics 모듈 로드 오류, 앱은 계속 실행됩니다:', error);
+    return null;
+  }
+};
+
+// Google 로그인 설정
+const provider = new GoogleAuthProvider();
+
+// 사용자 로그인 함수
+export const loginWithGoogle = async () => {
+  try {
+    const result = await signInWithRedirect(auth, provider);
+    return result;
+  } catch (error) {
+    console.error("Google 로그인 오류:", error);
+    throw error;
+  }
+};
+
+// 로그인 처리 결과
+export const handleRedirectResult = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    return result;
+  } catch (error) {
+    console.error("리디렉션 처리 오류:", error);
+    throw error;
+  }
+};
+
+// 이메일/비밀번호 로그인
+export const loginWithEmail = async (email: string, password: string) => {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result;
+  } catch (error) {
+    console.error("이메일 로그인 오류:", error);
+    throw error;
+  }
+};
+
+// 로그아웃
+export const logoutUser = async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("로그아웃 오류:", error);
+    throw error;
+  }
+};
+
+// 사용자 프로필 가져오기
+export const getUserProfile = async (userId: string) => {
+  try {
+    const docRef = doc(db, "users", userId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
       return docSnap.data() as UserProfile;
     } else {
+      console.log("프로필이 존재하지 않습니다!");
       return null;
     }
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    return null;
-  }
-};
-
-export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-    
-    if (!userDoc.exists()) {
-      // 새 문서 생성 시 전체 데이터 한번에 저장 (merge 옵션 없음)
-      await setDoc(userRef, profile);
-    } else {
-      // 기존 문서 업데이트 시 merge 옵션 사용
-      console.log('프로필 저장 전:', profile);
-      await setDoc(userRef, profile, { merge: true });
-      console.log('프로필 저장 후 재확인:');
-      const verifyDoc = await getDoc(userRef);
-      console.log(verifyDoc.data());
-    }
-
-    // 업데이트 후 명시적으로 최신 데이터 가져오기
-    const updateAndRefresh = async () => {
-      await setDoc(userRef, profile, { merge: true });
-      // 강제로 최신 데이터 다시 로드
-      const freshData = await getDoc(userRef);
-      return freshData.data() as UserProfile;
-    };
-
-    return updateAndRefresh();
-  } catch (error) {
-    console.error('Error updating user profile:', error);
+    console.error("프로필 가져오기 오류:", error);
     throw error;
   }
 };
 
-// 운동 기록 관련 함수들
-export const getLastSession = async (userId: string): Promise<Session | null> => {
+// 사용자 프로필 저장
+export const saveUserProfile = async (userId: string, profileData: UserProfile) => {
   try {
-    const q = query(
-      collection(db, 'sessions'),
-      where('userId', '==', userId),
-      orderBy('date', 'desc'),
-      limit(1)
-    );
-
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return null;
-    }
-
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
-    return {
-      ...data,
-      date: data.date.toDate(),
-    } as Session;
+    await setDoc(doc(db, "users", userId), profileData, { merge: true });
   } catch (error) {
-    console.error('Error getting last session:', error);
-    return null;
+    console.error("프로필 저장 오류:", error);
+    throw error;
   }
 };
 
-// FAQ 관련 함수들
-export const getFAQs = async (part?: ExercisePart, type?: 'method' | 'sets'): Promise<FAQ[]> => {
+// 인증 상태 모니터링
+export const monitorAuthState = (callback: (user: User | null) => void) => {
+  return onAuthStateChanged(auth, callback);
+};
+
+// 자주 묻는 질문 가져오기
+export const getFAQs = async () => {
   try {
-    const faqsCollection = collection(db, 'faqs');
+    const q = query(collection(db, "faqs"), orderBy("order"));
+    const querySnapshot = await getDocs(q);
+    const faqs: FAQ[] = [];
     
-    let faqQuery;
-    if (part || type) {
-      let conditions = [];
-      if (part) conditions.push(where('part', '==', part));
-      if (type) conditions.push(where('type', '==', type));
-      
-      faqQuery = query(faqsCollection, ...conditions);
-    } else {
-      faqQuery = query(faqsCollection);
-    }
+    querySnapshot.forEach((doc) => {
+      faqs.push({
+        id: doc.id,
+        ...doc.data() as Omit<FAQ, 'id'>
+      });
+    });
     
-    const querySnapshot = await getDocs(faqQuery);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FAQ));
+    return faqs;
   } catch (error) {
-    console.error('Error fetching FAQs:', error);
-    return [];
+    console.error("FAQ 가져오기 오류:", error);
+    throw error;
+  }
+};
+
+// 세션 기록 저장
+export const saveSession = async (userId: string, session: Session) => {
+  try {
+    const sessionsRef = collection(db, "users", userId, "sessions");
+    await addDoc(sessionsRef, {
+      ...session,
+      timestamp: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("세션 저장 오류:", error);
+    throw error;
   }
 };

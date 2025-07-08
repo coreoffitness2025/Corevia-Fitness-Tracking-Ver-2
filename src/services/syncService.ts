@@ -3,6 +3,7 @@ import { doc, setDoc, getDoc, collection, query, where, getDocs, Timestamp } fro
 import { db, storage } from '../firebase/firebaseConfig';
 import { BodyPhotoRecord } from './bodyService';
 import { toast } from 'react-hot-toast';
+import { isNetworkConnected, withNetworkCheck } from './networkService';
 
 /**
  * 클라우드 동기화 설정 타입 정의
@@ -20,28 +21,27 @@ export interface CloudSyncSettings {
  */
 export const getCloudSyncSettings = async (userId: string): Promise<CloudSyncSettings> => {
   try {
-    const docRef = doc(db, 'userSettings', userId);
+    // 네트워크 연결 확인
+    const isConnected = await isNetworkConnected();
+    if (!isConnected) {
+      console.warn('네트워크 연결 없음: 클라우드 동기화 설정을 가져올 수 없습니다.');
+      return { autoSync: false, enabled: false };
+    }
+
+    const docRef = doc(db, 'users', userId, 'settings', 'sync');
     const docSnap = await getDoc(docRef);
     
-    if (docSnap.exists() && docSnap.data().cloudSync) {
-      return docSnap.data().cloudSync as CloudSyncSettings;
+    if (docSnap.exists()) {
+      return docSnap.data();
+    } else {
+      // 기본 설정
+      const defaultSettings = { autoSync: false, enabled: false };
+      await setDoc(docRef, defaultSettings);
+      return defaultSettings;
     }
-    
-    // 기본 설정 반환
-    return {
-      enabled: false,
-      autoSync: false,
-      syncPhotos: false,
-      syncData: true
-    };
   } catch (error) {
-    console.error('클라우드 동기화 설정 로드 실패:', error);
-    return {
-      enabled: false,
-      autoSync: false,
-      syncPhotos: false,
-      syncData: true
-    };
+    console.error('동기화 설정 가져오기 오류:', error);
+    return { autoSync: false, enabled: false };
   }
 };
 
@@ -182,17 +182,45 @@ export const recoverDataFromCloud = async (userId: string): Promise<boolean> => 
  * 3. 충돌 해결 (최신 타임스탬프 우선)
  */
 export const syncAllData = async (userId: string): Promise<boolean> => {
-  try {
-    toast.loading('데이터를 동기화 중입니다...', { id: 'sync' });
-    
-    // 동기화 로직 구현
-    // ...
-    
-    toast.success('데이터 동기화가 완료되었습니다.', { id: 'sync' });
-    return true;
-  } catch (error) {
-    console.error('데이터 동기화 실패:', error);
-    toast.error('데이터 동기화 중 오류가 발생했습니다.', { id: 'sync' });
-    return false;
-  }
+  return withNetworkCheck(
+    async () => {
+      try {
+        toast.loading('데이터 동기화 중...', { id: 'sync' });
+        
+        // 여기에 실제 동기화 로직 구현
+        // 운동 기록, 식단 기록 등 모든 데이터 동기화
+        
+        // 동기화 성공 시 마지막 동기화 시간 업데이트
+        const syncStatusRef = doc(db, 'users', userId, 'settings', 'syncStatus');
+        await setDoc(syncStatusRef, {
+          lastSync: new Date().toISOString(),
+          status: 'success'
+        });
+        
+        toast.success('데이터 동기화가 완료되었습니다.', { id: 'sync' });
+        return true;
+      } catch (error) {
+        console.error('데이터 동기화 오류:', error);
+        toast.error('데이터 동기화 중 오류가 발생했습니다.', { id: 'sync' });
+        
+        // 동기화 실패 시 상태 업데이트
+        try {
+          const syncStatusRef = doc(db, 'users', userId, 'settings', 'syncStatus');
+          await setDoc(syncStatusRef, {
+            lastAttempt: new Date().toISOString(),
+            status: 'failed',
+            error: error instanceof Error ? error.message : '알 수 없는 오류'
+          });
+        } catch (statusError) {
+          console.error('동기화 상태 업데이트 오류:', statusError);
+        }
+        
+        return false;
+      }
+    },
+    async () => {
+      toast.error('네트워크 연결이 없어 데이터를 동기화할 수 없습니다.');
+      return false;
+    }
+  );
 }; 

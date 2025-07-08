@@ -2,25 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Fonts 및 Pretendard 폰트 임포트 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap');
-
-/* Pretendard 폰트 */
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-  font-weight: 400;
-  font-style: normal;
-}
-
-/* 전역 스타일 */
-html {
-  scroll-behavior: smooth;
-}
-
+/* 시스템 폰트 사용 */
 body {
   @apply text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900;
-  font-family: 'Pretendard', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -30,6 +15,11 @@ h1, h2, h3, h4, h5, h6 {
 
 input, select, textarea, button {
   @apply transition-all duration-300 outline-none font-sans;
+}
+
+/* 전역 스타일 */
+html {
+  scroll-behavior: smooth;
 }
 
 /* 모던한 디자인 요소 */

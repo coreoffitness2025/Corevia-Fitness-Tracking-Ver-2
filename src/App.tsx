@@ -1,264 +1,189 @@
-// 1단계: App.tsx 라우트 수정
-import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import './App.css';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { initializeAdMob, setupAdMobListeners } from './utils/adMobUtils';
-import { getCloudSyncSettings, syncAllData } from './services/syncService';
-import { toast } from 'react-hot-toast';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase/firebaseConfig';
-// import { FirebaseCrashlytics } from '@capacitor-firebase/crashlytics';
-import { Toast } from '@capacitor/toast';
-import { Device } from '@capacitor/device';
+import { Redirect, Route } from 'react-router-dom';
+import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import { IonReactRouter } from '@ionic/react-router';
+import { useEffect } from 'react';
 
-// 보호된 라우트 컴포넌트 import
-import ProtectedRoute from './components/auth/ProtectedRoute';
-
-// Pages
+// 페이지 임포트
 import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
-import QnaPage from './pages/QnaPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import WorkoutPage from './pages/workout/WorkoutPage';
 import FoodPage from './pages/food/FoodPage';
-import RegisterPage from './pages/RegisterPage';
-import LoginPage from './pages/LoginPage';
-// import OneRmCalculatorPage from './pages/OneRmCalculatorPage';
 import LegalPage from './pages/LegalPage';
-import { AppOpenAd, BannerAd } from './components/ads';
+import QnaPage from './pages/QnaPage';
+import ExerciseListPage from './pages/exercise/ExerciseListPage';
 
-// 플랫폼 독립적인 라우트 설정 (Web/Native 모두 사용 가능한 구조)
-export interface AppRoute {
-  path: string;
-  component: React.ComponentType<any>;
-  protected: boolean;
-  children?: AppRoute[];
-}
+// 인증 관련 컴포넌트
+import { AuthProvider } from './contexts/AuthContext';
+import PrivateRoute from './components/auth/PrivateRoute';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import PersonalizationModal from './components/auth/PersonalizationModal';
 
-// 앱 라우트 설정을 비즈니스 로직으로부터 분리
-export const appRoutes: AppRoute[] = [
-  // 공개 라우트
-  { path: '/login', component: LoginPage, protected: false },
-  { path: '/register', component: RegisterPage, protected: false },
-  
-  // 보호된 라우트
-  { path: '/', component: HomePage, protected: true },
-  { path: '/profile', component: ProfilePage, protected: true },
-  { path: '/profile/*', component: ProfilePage, protected: true },
-  { path: '/workout/*', component: WorkoutPage, protected: true },
-  { path: '/food/*', component: FoodPage, protected: true },
-  { path: '/qna', component: QnaPage, protected: true },
-  { path: '/settings', component: SettingsPage, protected: true },
-  // { path: '/1rm-calculator', component: OneRmCalculatorPage, protected: true },
-  // 법적 정보 페이지 라우트 추가
-  { path: '/legal', component: LegalPage, protected: true },
-  { path: '/legal/:type', component: LegalPage, protected: true },
-  // WorkoutGuidePage 라우트 제거하고 SettingsPage로 리다이렉트
-  { 
-    path: '/workout/guide', 
-    component: () => <Navigate to="/settings" replace />, 
-    protected: true 
-  },
-  
-  // 404 페이지
-  { path: '*', component: NotFoundPage, protected: false }
-];
+// 테마 관련
+import { ThemeProvider } from './contexts/ThemeContext';
 
-// 웹 환경에서의 라우트 렌더링 (React Router DOM 사용)
-const renderRoutes = (routes: AppRoute[]) => {
-  return routes.map((route) => {
-    const Component = route.component;
+// 스타일시트
+import '@ionic/react/css/core.css';
+import '@ionic/react/css/normalize.css';
+import '@ionic/react/css/structure.css';
+import '@ionic/react/css/typography.css';
+import '@ionic/react/css/padding.css';
+import '@ionic/react/css/float-elements.css';
+import '@ionic/react/css/text-alignment.css';
+import '@ionic/react/css/text-transformation.css';
+import '@ionic/react/css/flex-utils.css';
+import '@ionic/react/css/display.css';
+import './App.css';
+import './index.css';
 
-    if (route.protected) {
-      return (
-        <Route
-          key={route.path}
-          path={route.path}
-          element={
-            <ProtectedRoute>
-              <Component />
-            </ProtectedRoute>
-          }
-        />
-      );
-    }
+// Firebase 설정
+import { Toaster } from 'react-hot-toast';
+import { initNetworkMonitoring } from './services/networkService';
+import { App as CapacitorApp } from '@capacitor/app';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { isPlatform } from '@ionic/react';
 
-    return (
-      <Route
-        key={route.path}
-        path={route.path}
-        element={<Component />}
-      />
-    );
-  });
-};
-
-// QueryClient 인스턴스 생성
-const queryClient = new QueryClient();
-
-// 앱 환경 설정 및 프로바이더
-const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <Toaster position="top-center" />
-        {children}
-      </QueryClientProvider>
-    </AuthProvider>
-  );
-};
-
-// 앱 내부 컴포넌트 - 권한 관련 기능과 자동 동기화 처리
-const AppContent: React.FC = () => {
-  const { currentUser } = useAuth();
-
-  // 디버그 모드 상태 추가
-  const [isDebugMode, setIsDebugMode] = useState<boolean>(true);
-  const [initStep, setInitStep] = useState<string>('시작');
-  const [initError, setInitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // 앱 시작 시 AdMob 초기화 - 임시로 주석 처리
-    const initAds = async () => {
-      try {
-        console.log('AdMob 초기화 시도...');
-        // await initializeAdMob();
-        // setupAdMobListeners();
-        console.log('AdMob 초기화 완료');
-      } catch (error) {
-        console.error('AdMob 초기화 오류:', error);
-      }
-    };
-    
-    initAds();
-  }, []);
-
-  // 자동 데이터 동기화 처리
-  useEffect(() => {
-    const checkAndSyncData = async () => {
-      if (currentUser?.uid) {
-        try {
-          // 사용자 프로필 및 동기화 설정 가져오기
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          const userProfile = userDoc.exists() ? userDoc.data() : null;
-          
-          // 프리미엄 회원인지 확인
-          const isPremium = userProfile?.isPremium === true;
-          
-          // 프리미엄 회원이 아니면 동기화하지 않음
-          if (!isPremium) {
-            console.log('프리미엄 회원이 아니므로 자동 동기화를 건너뜁니다.');
-            return;
-          }
-          
-          // 사용자의 동기화 설정 가져오기
-          const syncSettings = await getCloudSyncSettings(currentUser.uid);
-          
-          // 자동 동기화가 활성화되어 있으면 데이터 동기화 실행
-          if (syncSettings.enabled && syncSettings.autoSync) {
-            toast.loading('데이터 동기화 중...', { id: 'auto-sync' });
-            await syncAllData(currentUser.uid);
-            toast.success('데이터 동기화 완료', { id: 'auto-sync' });
-          }
-        } catch (error) {
-          console.error('자동 동기화 오류:', error);
-        }
-      }
-    };
-    
-    checkAndSyncData();
-  }, [currentUser?.uid]);
-
-  return (
-    <Routes>
-      {renderRoutes(appRoutes)}
-    </Routes>
-  );
-};
+// Ionic 설정
+setupIonicReact({
+  mode: 'md',
+  // 중복 헤더 문제를 방지하기 위한 설정
+  swipeBackEnabled: false,
+});
 
 const App: React.FC = () => {
-  const [isDebugMode, setIsDebugMode] = useState<boolean>(true);
-  const [initStep, setInitStep] = useState<string>('시작');
-  const [initError, setInitError] = useState<string | null>(null);
-
-  // 앱 초기화 단계별 실행
+  // 앱 초기화
   useEffect(() => {
-    const initApp = async () => {
+    // 앱 제목 설정 - 중복 제목 문제 해결
+    document.title = 'Corevia Fitness';
+    
+    // 네이티브 플랫폼 설정
+    const setupNative = async () => {
       try {
-        // 디바이스 정보 로깅
-        setInitStep('디바이스 정보 확인 중');
-        const deviceInfo = await Device.getInfo();
-        console.log('디바이스 정보:', deviceInfo);
-        
-        // Crashlytics 초기화 - 주석 처리
-        // setInitStep('Crashlytics 초기화 중');
-        // await FirebaseCrashlytics.setEnabled({ enabled: true });
-        // await FirebaseCrashlytics.log({ message: '앱 초기화 시작' });
-        
-        // 초기화 완료
-        setInitStep('초기화 완료');
-        
-        // 디버그 모드에서는 토스트 메시지로 초기화 완료 알림
-        if (isDebugMode) {
-          await Toast.show({
-            text: '앱 초기화 완료',
-            duration: 'short'
+        // 안드로이드/iOS 네이티브 앱일 때만 실행
+        if (isPlatform('hybrid')) {
+          // 상태바 설정
+          await StatusBar.setStyle({ style: Style.Light });
+          await StatusBar.setBackgroundColor({ color: '#4285F4' });
+          
+          // 스플래시 스크린 보이기
+          await SplashScreen.show({
+            showDuration: 2000,
+            autoHide: true
           });
+          
+          // 중복 헤더 요소 제거
+          const headerCleanup = () => {
+            // Ionic 헤더와 React Navigation 헤더가 중복되는 문제 해결
+            const ionHeaders = document.querySelectorAll('ion-header:not(:first-child)');
+            if (ionHeaders.length > 1) {
+              for (let i = 1; i < ionHeaders.length; i++) {
+                ionHeaders[i].remove();
+              }
+            }
+            
+            // 타이틀 중복 제거
+            const ionTitles = document.querySelectorAll('ion-title');
+            if (ionTitles.length > 1) {
+              for (let i = 1; i < ionTitles.length; i++) {
+                ionTitles[i].remove();
+              }
+            }
+          };
+          
+          // 페이지 변경 시마다 중복 요소 정리
+          const routeObserver = new MutationObserver(() => {
+            headerCleanup();
+          });
+          
+          // ion-router-outlet 관찰 시작
+          const routerOutlet = document.querySelector('ion-router-outlet');
+          if (routerOutlet) {
+            routeObserver.observe(routerOutlet, { 
+              childList: true, 
+              subtree: true 
+            });
+          }
+          
+          // 컴포넌트 언마운트 시 관찰 중지
+          return () => routeObserver.disconnect();
+        }
+      } catch (error) {
+        console.error('네이티브 설정 오류:', error);
+      }
+    };
+    
+    setupNative();
+    
+    // 네이티브 앱에서 백버튼 처리
+    if (CapacitorApp) {
+      CapacitorApp.addListener('backButton', () => {
+        if (window.location.pathname === '/home' || window.location.pathname === '/') {
+          CapacitorApp.exitApp();
+        } else {
+          window.history.back();
+        }
+      });
+    }
+
+    const initialize = async () => {
+      try {
+        // 네트워크 모니터링 초기화
+        console.log('네트워크 모니터링 초기화 시작...');
+        const networkStatus = await initNetworkMonitoring();
+        console.log('네트워크 모니터링 초기화 완료:', networkStatus);
+        
+        // 앱 초기화 완료 후 스플래시 스크린 숨기기
+        if (isPlatform('hybrid')) {
+          setTimeout(() => {
+            SplashScreen.hide().catch(err => console.error('스플래시 스크린 숨기기 오류:', err));
+          }, 1000);
         }
       } catch (error) {
         console.error('앱 초기화 오류:', error);
-        setInitError(error instanceof Error ? error.message : String(error));
-        
-        // 오류 발생 시 토스트로 알림
-        await Toast.show({
-          text: '앱 초기화 오류: ' + (error instanceof Error ? error.message : String(error)),
-          duration: 'long'
-        });
+        // 오류 발생해도 스플래시 스크린 숨기기
+        if (isPlatform('hybrid')) {
+          SplashScreen.hide().catch(err => console.error('스플래시 스크린 숨기기 오류:', err));
+        }
       }
     };
     
-    initApp();
-  }, [isDebugMode]);
-
+    initialize();
+  }, []);
+  
   return (
-    <>
-      {isDebugMode && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-100 dark:bg-yellow-900 p-2 text-xs">
-          <div className="flex justify-between items-center">
-            <span>디버그 모드: {initStep}</span>
-            <button 
-              onClick={() => setIsDebugMode(false)}
-              className="px-2 py-1 bg-red-500 text-white rounded-sm"
-            >
-              닫기
-            </button>
-          </div>
-          {initError && (
-            <div className="mt-1 p-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
-              <p>오류: {initError}</p>
-            </div>
-          )}
-        </div>
-      )}
-      
-      <Router>
+    <IonApp>
+      <ThemeProvider>
         <AuthProvider>
-          <QueryClientProvider client={queryClient}>
-            <Toaster position="top-center" />
-            <AppContent />
-            {/* 앱 오픈 광고 - 임시로 주석 처리 */}
-            {/* <AppOpenAd showOnMount={true} /> */}
-            {/* 배너 광고 - 임시로 주석 처리 */}
-            {/* <BannerAd /> */}
-          </QueryClientProvider>
+          <IonReactRouter>
+            <IonRouterOutlet>
+              <Route exact path="/home" component={HomePage} />
+              <Route exact path="/login" component={LoginPage} />
+              <Route exact path="/register" component={RegisterPage} />
+              <Route exact path="/legal" component={LegalPage} />
+              <Route exact path="/qna" component={QnaPage} />
+              
+              <PrivateRoute exact path="/profile" component={ProfilePage} />
+              <PrivateRoute exact path="/settings" component={SettingsPage} />
+              <PrivateRoute exact path="/workout" component={WorkoutPage} />
+              <PrivateRoute exact path="/food" component={FoodPage} />
+              <PrivateRoute exact path="/exercises" component={ExerciseListPage} />
+              
+              <Route exact path="/">
+                <Redirect to="/home" />
+              </Route>
+              <Route component={NotFoundPage} />
+            </IonRouterOutlet>
+          </IonReactRouter>
+          
+          <PersonalizationModal />
+          <Toaster position="bottom-center" />
         </AuthProvider>
-      </Router>
-    </>
+      </ThemeProvider>
+    </IonApp>
   );
 };
 

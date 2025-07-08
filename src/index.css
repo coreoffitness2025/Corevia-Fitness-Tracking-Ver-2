@@ -20,15 +20,15 @@
   --google-green: #34a853;
 }
 
-/* Pretendard 폰트 가중치 정의 */
+/* 시스템 폰트 사용 */
 @layer base {
   /* 폰트 일관성 */
   html {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Arial', sans-serif;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Pretendard', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
     font-weight: 600;
   }
   

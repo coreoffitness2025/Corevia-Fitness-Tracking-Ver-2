@@ -2,7 +2,8 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { getGoogleRedirectResult } from '../../firebase/firebaseConfig';
+import { handleRedirectResult } from '../../firebase/firebaseConfig';
+import { LoadingScreen } from '../common/LoadingSpinner';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -18,7 +19,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   useEffect(() => {
     const checkRedirectResult = async () => {
       try {
-        const result = await getGoogleRedirectResult();
+        const result = await handleRedirectResult();
         if (result) {
           toast.success('로그인에 성공했습니다.');
         }
@@ -39,16 +40,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   // 로딩 중이거나 리디렉션 확인 중이면 로딩 상태 표시
   if (loading || isCheckingRedirect) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-center">
-          <div className="text-lg font-semibold mb-4">로딩 중...</div>
-          <div className="w-16 h-16 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mx-auto"></div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <LoadingScreen message="앱을 준비하는 중입니다..." />
       </div>
     );
   }
 
-  // 오류가 있으면 오류 메시지 표시
+  // 리디렉션 오류 발생 시
   if (redirectError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">

@@ -4,4 +4,11 @@
     <string name="title_activity_main">Corevia Fitness</string>
     <string name="package_name">com.corevia.fitness</string>
     <string name="custom_url_scheme">com.corevia.fitness</string>
+    <!-- 
+      This is the WEB CLIENT ID from your Firebase project. It is required for Google Sign-In. 
+      You can find it in the Firebase Console: 
+      Project Settings > General > Your Apps > Web App > Client ID
+      Or, Authentication > Sign-in method > Google > Web SDK configuration > Web client ID
+    -->
+    <string name="default_web_client_id">118613268034-6iu4d1dcgm4vivj836jpp7m64tndgfmg.apps.googleusercontent.com</string>
 </resources>

@@ -1,22 +1,48 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.corevia.fitness',
   appName: 'Corevia Fitness',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'capacitor',
+    cleartext: true,
+    allowNavigation: ['*'],
+  },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: true,
+    initialFocus: true,
   },
   plugins: {
+    SplashScreen: {
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      backgroundColor: "#f5f5f5",
+      androidSplashResourceName: "splash",
+      androidScaleType: "CENTER_CROP",
+      showSpinner: true,
+      spinnerColor: "#1976d2",
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+    LocalNotifications: {
+      smallIcon: "ic_stat_icon_config_sample",
+      iconColor: "#1976d2",
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
+    CapacitorHttp: {
+      enabled: true,
+    },
+    CapacitorCookies: {
+      enabled: true,
+    },
     StatusBar: {
       style: 'light',
       backgroundColor: '#4285F4'
-    },
-    SplashScreen: {
-      launchShowDuration: 2000,
-      backgroundColor: '#4285F4',
-      androidSplashResourceName: 'splash',
-      showSpinner: false
     },
     Keyboard: {
       resize: 'body',
@@ -37,10 +63,6 @@ const config: CapacitorConfig = {
       readIosPhotoLibrary: true,
       presentPickerOnLoad: true
     },
-    LocalNotifications: {
-      smallIcon: "ic_stat_notification",
-      iconColor: "#4285F4"
-    },
     AdMob: {
       appMuted: false,
       appVolume: 1.0,
@@ -54,10 +76,6 @@ const config: CapacitorConfig = {
         ios: 'ca-app-pub-2952925573999681~7155228371'
       }
     }
-  },
-  android: {
-    useLegacyStorage: false,
-    requestPermissions: true
   },
   ios: {
     contentInset: "automatic"

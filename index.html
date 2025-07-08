@@ -2,14 +2,81 @@
 <!DOCTYPE html>
 <html lang="ko">
   <head>
-    <meta charset="UTF-8" />
-    <base href="/Corevia-Fitness-Tracking-Ver-2/" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
     <title>Corevia Fitness</title>
+    
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <link rel="icon" type="image/png" href="/favicon.ico" />
+    
+    <!-- 앱 테마 색상 -->
+    <meta name="theme-color" content="#1976d2" />
+    
+    <!-- 스크립트 오류 처리 -->
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        console.error('전역 오류 발생:', message, 'at', source, ':', lineno, ':', colno);
+        console.error('오류 상세:', error);
+        return false;
+      };
+      
+      // 앱 로딩 상태 확인
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM이 로드되었습니다.');
+      });
+      
+      window.addEventListener('load', function() {
+        console.log('모든 리소스가 로드되었습니다.');
+      });
+    </script>
+    
+    <style>
+      /* 네트워크 상태 표시 스타일 */
+      #network-status {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 5px;
+        background-color: #f44336;
+        color: white;
+        text-align: center;
+        font-size: 14px;
+        z-index: 9998;
+        display: none;
+      }
+    </style>
   </head>
   <body>
+    <!-- 네트워크 상태 표시 -->
+    <div id="network-status">
+      오프라인 모드: 인터넷 연결이 없습니다.
+    </div>
+    
+    <!-- 앱 루트 엘리먼트 -->
     <div id="root"></div>
+    
+    <!-- 네트워크 상태 감지 스크립트 -->
+    <script>
+      function updateNetworkStatus() {
+        var statusElement = document.getElementById('network-status');
+        if (navigator.onLine) {
+          statusElement.style.display = 'none';
+        } else {
+          statusElement.style.display = 'block';
+        }
+      }
+      
+      // 초기 상태 설정
+      window.addEventListener('load', updateNetworkStatus);
+      
+      // 네트워크 상태 변경 감지
+      window.addEventListener('online', updateNetworkStatus);
+      window.addEventListener('offline', updateNetworkStatus);
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

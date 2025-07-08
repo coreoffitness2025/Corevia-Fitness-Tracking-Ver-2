@@ -4,11 +4,12 @@ import { User, sendPasswordResetEmail } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import { useAuth } from '../contexts/AuthContext';
-import { signInWithEmail, auth } from '../firebase/firebaseConfig';
+import { loginWithEmail, auth } from '../firebase/firebaseConfig';
 import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 import { signInWithGoogleOptimized, handleRedirectResult, logAuthDebugInfo, isMobileDevice } from '../services/authService';
+import Layout from '../components/common/Layout';
 
 const LoginButton = ({ 
   isLoading, 
@@ -33,24 +34,6 @@ const LoginButton = ({
   >
     {isLoading ? '로그인 중...' : type === 'google' ? 'Google로 로그인' : '이메일로 로그인'}
   </button>
-);
-
-const LoginHeader = ({ navigate }: { navigate: (path: string) => void }) => (
-  <>
-    <h1 className="text-2xl font-bold mb-4">Corevia Fitness</h1>
-    <p className="text-gray-600 dark:text-gray-300 mb-6">
-      계정으로 로그인하고<br />나만의 운동 기록을 시작하세요.
-    </p>
-    <p className="text-gray-600 dark:text-gray-300 mb-6">
-      계정이 없으신가요?{' '}
-      <button
-        onClick={() => navigate('/register')}
-        className="text-blue-500 hover:text-blue-700 font-medium"
-      >
-        회원가입
-      </button>
-    </p>
-  </>
 );
 
 const EmailLoginForm = ({ 
@@ -504,7 +487,7 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      await signInWithEmail(email, password);
+      await loginWithEmail(email, password);
       // Auth 컨텍스트의 useEffect가 로그인 상태를 감지하고 처리
     } catch (error: any) {
       console.error('이메일 로그인 오류:', error);
@@ -525,18 +508,31 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <LoginHeader navigate={navigate} />
+    <Layout includeBottomNav={false}>
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-center">
+            계정으로 로그인하고<br />나만의 운동 기록을 시작하세요.
+          </h2>
+          <p className="text-center text-gray-600 dark:text-gray-300">
+            계정이 없으신가요?{' '}
+            <button
+              onClick={() => navigate('/register')}
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
+              회원가입
+            </button>
+          </p>
+        </div>
         
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <span className="block sm:inline">{error}</span>
           </div>
         )}
         
         {isMobile && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
             <span className="block sm:inline">
               모바일 환경에서는 Google 로그인에 제한이 있을 수 있습니다. 
               오류가 발생한다면 데스크탑 브라우저를 사용해보세요.
@@ -599,6 +595,6 @@ export default function LoginPage() {
         isOpen={isForgotPasswordOpen}
         onClose={() => setIsForgotPasswordOpen(false)}
       />
-    </div>
+    </Layout>
   );
 }

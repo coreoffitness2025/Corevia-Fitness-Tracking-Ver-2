@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { auth, db, getUserProfile, updateUserProfile as updateFirebaseProfile, getGoogleRedirectResult } from '../firebase/firebaseConfig';
+import { auth, db, getUserProfile, saveUserProfile, handleRedirectResult } from '../firebase/firebaseConfig';
 import { UserProfile, UserSettings } from '../types';
 import { 
   calculateBMR, 
@@ -157,10 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Google 리디렉션 결과 처리
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    const processRedirectResult = async () => {
       try {
         console.log('리디렉션 결과 처리 시작');
-        const result = await getGoogleRedirectResult();
+        const result = await handleRedirectResult();
         
         if (result) {
           console.log('Google 로그인 리디렉션 성공', result.user.uid);
@@ -193,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     
-    handleRedirectResult();
+    processRedirectResult();
   }, []);
 
   useEffect(() => {

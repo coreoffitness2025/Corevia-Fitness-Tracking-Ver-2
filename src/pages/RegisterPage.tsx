@@ -5,7 +5,7 @@ import { auth, db } from '../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/common/Layout';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { signInWithGoogle, getGoogleRedirectResult } from '../firebase/firebaseConfig';
+import { loginWithGoogle, handleRedirectResult } from '../firebase/firebaseConfig';
 import { FcGoogle } from 'react-icons/fc';
 import { UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,9 +33,9 @@ const RegisterPage: React.FC = () => {
 
   // 구글 리디렉션 결과 처리
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    const processRedirectResult = async () => {
       try {
-        const result = await getGoogleRedirectResult();
+        const result = await handleRedirectResult();
         
         if (result && result.user) {
           // 사용자가 리디렉션으로 로그인에 성공했을 때
@@ -67,13 +67,13 @@ const RegisterPage: React.FC = () => {
       }
     };
 
-    handleRedirectResult();
+    processRedirectResult();
   }, []);
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
     try {
-      await signInWithGoogle();
+      await loginWithGoogle();
       // 리디렉션 방식이므로 페이지가 새로고침됨
       // 추가 처리는 useEffect의 handleRedirectResult에서 처리됨
     } catch (error: any) {
