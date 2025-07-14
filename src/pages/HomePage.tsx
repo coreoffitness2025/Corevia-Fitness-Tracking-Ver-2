@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Session, Food } from '../types';
 import Layout from '../components/common/Layout';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+import { Workout, Food, WeightRecord } from '../types';
 import LoadingSpinner, { LoadingScreen } from '../components/common/LoadingSpinner';
 import { UserProfile } from '../types';
 import { TrendingUp, UserCircle, Zap, Target, BookOpen, CalendarDays, Utensils, Activity, Settings, X, Scale, Plus, Camera, User, BarChart3 } from 'lucide-react';
@@ -311,6 +312,30 @@ const HomePage = () => {
       setNutrients({ protein: 0, carbs: 0, fat: 0, proteinPerMeal: 0, carbsPerMeal: 0, fatPerMeal: 0 });
     }
   }, [userProfile]);
+
+  useEffect(() => {
+    console.log('[HOME_DEBUG] HomePage 마운트, 인증 상태:', { 
+      isAuthenticated: userProfile !== null, 
+      currentUser: userProfile?.uid || 'null',
+      loading: authLoading
+    });
+    
+    // 인증 상태에 따라 로딩 상태 업데이트
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      console.log('[HOME_DEBUG] 초기 로딩 완료');
+    }, 1000);
+    
+    return () => clearTimeout(timeout);
+  }, [userProfile, authLoading]);
+  
+  // 인증 상태가 변경되면 로딩 상태도 업데이트
+  useEffect(() => {
+    if (!authLoading) {
+      setLoading(false);
+      console.log('[HOME_DEBUG] 인증 로딩 완료, 상태:', { isAuthenticated: userProfile !== null });
+    }
+  }, [authLoading, userProfile]);
 
   if (authLoading || loading || isLoadingSettings) {
     return (

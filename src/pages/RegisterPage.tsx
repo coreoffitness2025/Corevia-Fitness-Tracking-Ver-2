@@ -1,138 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../firebase/firebaseConfig';
-import { toast } from 'react-hot-toast';
-import Layout from '../components/common/Layout';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { loginWithGoogle, handleRedirectResult } from '../firebase/firebaseConfig';
-import { FcGoogle } from 'react-icons/fc';
-import { UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
+// Firebase 네이티브 플러그인
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+import Layout from '../components/common/Layout';
 
 const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, currentUser } = useAuth(); // AuthContext에서 인증 상태 가져오기
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { updateProfile } = useAuth();
+  const navigate = useNavigate();
 
-  // 인증 상태 변경 감지
-  useEffect(() => {
-    console.log('Authentication state changed:', isAuthenticated, currentUser?.uid);
-    
-    // 인증 상태가 변경되고 로그인되었으면 리디렉션
-    if (isAuthenticated && currentUser) {
-      toast.success('회원가입이 완료되었습니다. 홈페이지로 이동합니다.');
-      // 리디렉션 시점을 지연시켜 중첩 리디렉션 방지
-      setTimeout(() => navigate('/'), 1000);
-    }
-  }, [isAuthenticated, currentUser, navigate]);
-
-  // 구글 리디렉션 결과 처리
-  useEffect(() => {
-    const processRedirectResult = async () => {
-      try {
-        const result = await handleRedirectResult();
-        
-        if (result && result.user) {
-          // 사용자가 리디렉션으로 로그인에 성공했을 때
-          console.log('Google 리디렉션 회원가입 성공:', result.user);
-          
-          // Firestore에 사용자 정보가 없으면 기본 정보로 저장
-          const userDocRef = doc(db, 'users', result.user.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          if (!userDoc.exists()) {
-            // 기본 사용자 프로필 데이터 생성 (타입 단언 사용)
-            const userProfileData = {
-              uid: result.user.uid,
-              displayName: result.user.displayName,
-              email: result.user.email,
-              photoURL: result.user.photoURL,
-            } as UserProfile;
-            
-            await setDoc(userDocRef, userProfileData);
-            toast.success('Google 계정으로 회원가입이 완료되었습니다.');
-          }
-          
-          // 여기서는 navigate를 호출하지 않고 인증 상태 변경을 감지하는 useEffect에서 처리
-        }
-      } catch (error: any) {
-        console.error('리디렉션 결과 처리 오류:', error);
-        toast.error('Google 로그인 처리 중 오류가 발생했습니다.');
-        setLoading(false);
-      }
-    };
-
-    processRedirectResult();
-  }, []);
-
-  const handleGoogleSignUp = async () => {
-    setLoading(true);
-    try {
-      await loginWithGoogle();
-      // 리디렉션 방식이므로 페이지가 새로고침됨
-      // 추가 처리는 useEffect의 handleRedirectResult에서 처리됨
-    } catch (error: any) {
-      console.error('Google 회원가입 오류:', error);
-      toast.error('Google 계정으로 회원가입 중 오류가 발생했습니다.');
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (password !== confirmPassword) {
       toast.error('비밀번호가 일치하지 않습니다.');
       return;
     }
 
-    if (password.length < 6) {
-      toast.error('비밀번호는 6자 이상이어야 합니다.');
-      return;
-    }
-
+    setIsLoading(true);
     try {
-      setLoading(true);
-      
-      // 회원가입
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // 사용자 프로필 업데이트
-      await updateProfile(userCredential.user, {
-        displayName: displayName
+      const userCredential = await FirebaseAuthentication.createUserWithEmailAndPassword({
+        email,
+        password,
       });
+      const user = userCredential.user;
 
-      // Firestore에 사용자 기본 정보 저장
-      const userProfileData = {
-        uid: userCredential.user.uid,
-        displayName: displayName,
-        email: userCredential.user.email,
-        photoURL: userCredential.user.photoURL,
-      } as UserProfile;
-      
-      await setDoc(doc(db, 'users', userCredential.user.uid), userProfileData);
+      if (user) {
+        await FirebaseAuthentication.updateProfile({ displayName });
 
-      toast.success('회원가입이 완료되었습니다.');
-      
-      // 회원가입 후 명시적으로 다시 로그인하여 인증 상태 확인
-      await signInWithEmailAndPassword(auth, email, password);
-      
-      // 인증 상태 변경을 감지하는 useEffect에서 리디렉션 처리
-    } catch (error: any) {
-      console.error('Error registering user:', error);
-      
-      if (error.code === 'auth/email-already-in-use') {
-        toast.error('이미 사용 중인 이메일입니다.');
-      } else {
-        toast.error('회원가입 중 오류가 발생했습니다.');
+        const initialProfile = {
+          uid: user.uid,
+          email: user.email,
+          displayName: displayName,
+          photoURL: user.photoURL,
+        };
+        
+        await FirebaseFirestore.setDocument({
+          collection: 'users',
+          id: user.uid,
+          data: initialProfile,
+        });
+
+        toast.success('회원가입이 완료되었습니다. 로그인해주세요.');
+        navigate('/login');
       }
+    } catch (error: any) {
+      console.error('회원가입 오류:', error);
+      toast.error(error.message || '회원가입 중 오류가 발생했습니다.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -171,11 +93,11 @@ const RegisterPage: React.FC = () => {
             <div className="mt-6">
               <button
                 type="button"
-                onClick={handleGoogleSignUp}
-                disabled={loading}
+                onClick={() => {/* Google sign-up logic removed */}}
+                disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
               >
-                <FcGoogle className="h-5 w-5 mr-2" />
+                {/* Google icon removed */}
                 Google로 회원가입
               </button>
             </div>
@@ -194,7 +116,7 @@ const RegisterPage: React.FC = () => {
             </div>
           </div>
           
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <form className="mt-8 space-y-6" onSubmit={handleRegister}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="display-name" className="sr-only">
@@ -264,10 +186,10 @@ const RegisterPage: React.FC = () => {
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isLoading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
+                {isLoading ? (
                   <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                     <svg
                       className="animate-spin h-5 w-5 text-white"
@@ -291,7 +213,7 @@ const RegisterPage: React.FC = () => {
                     </svg>
                   </span>
                 ) : null}
-                {loading ? '처리 중...' : '회원가입'}
+                {isLoading ? '처리 중...' : '회원가입'}
               </button>
             </div>
           </form>

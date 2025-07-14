@@ -1,19 +1,20 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { LoadingScreen } from '../common/LoadingSpinner';
 
-interface PrivateRouteProps {
-  children: React.ReactNode;
-}
+const PrivateRoute: React.FC = () => {
+  const { currentUser, loading } = useAuth();
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { currentUser } = useAuth();
+  if (loading) {
+    return <LoadingScreen message="인증 정보를 확인 중입니다..." />;
+  }
 
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 };
 
 export default PrivateRoute; 

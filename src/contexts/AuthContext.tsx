@@ -1,16 +1,18 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { auth, db, getUserProfile, saveUserProfile, handleRedirectResult } from '../firebase/firebaseConfig';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { User } from 'firebase/auth';
 import { UserProfile, UserSettings } from '../types';
+import { App } from '@capacitor/app';
 import { 
   calculateBMR, 
-  calculateNutritionGoals,
   activityMultipliers, 
   goalMultipliers,
   ActivityLevel,
   FitnessGoal
 } from '../utils/nutritionUtils';
+// 네이티브 플러그인 import
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+import { isPlatform } from '@ionic/react';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -22,6 +24,7 @@ interface AuthContextType {
   updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  setUserFromInit: (user: User, profile: UserProfile | null) => void; // 새 메소드 추가
 }
 
 const defaultProfile: UserProfile = {
@@ -90,14 +93,13 @@ const deepMerge = (target: any, source: any) => {
 // 개인화 필요 여부 확인 함수
 const checkPersonalizationNeeded = async (uid: string) => {
   try {
-    const userDocRef = doc(db, 'users', uid);
-    const userDoc = await getDoc(userDocRef);
+    const userDoc = await FirebaseFirestore.getDocument({
+      collection: 'users',
+      id: uid,
+    });
     
     // 사용자 정보가 없거나 필수 정보가 없으면 개인화 필요
-    if (!userDoc.exists() || 
-        !userDoc.data().height || 
-        !userDoc.data().weight ||
-        !userDoc.data().setConfiguration) {
+    if (!userDoc.exists) {
       return true;
     }
     return false;
@@ -151,117 +153,158 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // 초기 상태는 로딩 중
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Google 리디렉션 결과 처리
-  useEffect(() => {
-    const processRedirectResult = async () => {
+  // 새로운 메소드: 초기화 서비스에서 가져온 사용자 데이터로 상태 설정
+  const setUserFromInit = useCallback((user: User, profile: UserProfile | null) => {
+    console.log('[AUTH_CONTEXT] setUserFromInit 호출됨', { user: user?.uid, hasProfile: !!profile });
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    
+    if (profile) {
+      setUserProfile(profile);
+    }
+    
+    // 사용자 설정도 함께 가져오기
+    const loadUserSettings = async () => {
       try {
-        console.log('리디렉션 결과 처리 시작');
-        const result = await handleRedirectResult();
+        const settingsDoc = await FirebaseFirestore.getDocument({
+          collection: 'userSettings',
+          id: user.uid,
+        });
         
-        if (result) {
-          console.log('Google 로그인 리디렉션 성공', result.user.uid);
-          setCurrentUser(result.user);
-          setIsAuthenticated(true);
-          
-          // 사용자 프로필 로드
-          const userDocRef = doc(db, 'users', result.user.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          if (!userDoc.exists()) {
-            // 신규 사용자일 경우 기본 프로필 생성
-            const newProfile: UserProfile = {
-              ...defaultProfile,
-              uid: result.user.uid,
-              displayName: result.user.displayName,
-              email: result.user.email,
-              photoURL: result.user.photoURL
-            };
-            
-            await setDoc(userDocRef, newProfile);
-            setUserProfile(newProfile);
-          } else {
-            setUserProfile(userDoc.data() as UserProfile);
-          }
+        if (settingsDoc.exists) {
+          setUserSettings(settingsDoc.data as UserSettings);
+        } else {
+          await FirebaseFirestore.setDocument({
+            collection: 'userSettings',
+            id: user.uid,
+            data: defaultSettings,
+          });
+          setUserSettings(defaultSettings);
         }
-      } catch (error) {
-        console.error('리디렉션 결과 처리 오류:', error);
-        setError('Google 로그인 처리 중 오류가 발생했습니다.');
+      } catch (err) {
+        console.error('사용자 설정 로드 오류:', err);
       }
     };
     
-    processRedirectResult();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      setIsAuthenticated(!!user);
-      
-      if (user) {
-        try {
-          // 여러 데이터 병렬로 가져오기
-          const userDocRef = doc(db, 'users', user.uid);
-          const settingsDocRef = doc(db, 'userSettings', user.uid);
-          
-          // Promise.all을 사용하여 두 요청을 병렬로 실행
-          const [profileDoc, settingsDoc] = await Promise.all([
-            getDoc(userDocRef),
-            getDoc(settingsDocRef)
-          ]);
-          
-          // 사용자 프로필 처리
-          if (profileDoc.exists()) {
-            setUserProfile(profileDoc.data() as UserProfile);
-          } else {
-            // 프로필이 없으면 기본 프로필 생성
-            const newProfile: UserProfile = {
-              ...defaultProfile,
-              uid: user.uid,
-              displayName: user.displayName,
-              email: user.email,
-              photoURL: user.photoURL
-            };
-            
-            // Firestore에 저장
-            await setDoc(userDocRef, newProfile);
-            setUserProfile(newProfile);
-          }
-          
-          // 사용자 설정 처리
-          if (settingsDoc.exists()) {
-            setUserSettings(settingsDoc.data() as UserSettings);
-          } else {
-            // 설정이 없으면 기본 설정 생성
-            await setDoc(settingsDocRef, defaultSettings);
-            setUserSettings(defaultSettings);
-          }
-          
-          // 개인화 필요 여부 확인
-          const needsPersonalization = await checkPersonalizationNeeded(user.uid);
-          if (needsPersonalization) {
-            // PersonalizationModal 표시 신호 설정
-            sessionStorage.setItem('needsPersonalization', 'true');
-          }
-        } catch (err) {
-          console.error('Error fetching user data:', err);
-          setError(err instanceof Error ? err.message : '사용자 데이터를 가져오는 중 오류가 발생했습니다.');
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        // 로그아웃 시 상태 초기화
-        setUserProfile(null);
-        setUserSettings(null);
-        setLoading(false);
+    loadUserSettings();
+    
+    // 개인화 필요 여부 확인
+    checkPersonalizationNeeded(user.uid).then(needed => {
+      if (needed) {
+        sessionStorage.setItem('needsPersonalization', 'true');
       }
     });
     
-    return unsubscribe;
+    setLoading(false);
   }, []);
+
+  const fetchUserData = useCallback(async (user: User) => {
+    try {
+      console.log(`[AUTH_DEBUG] 사용자 확인됨 (${user.uid}). 데이터 가져오기 시작...`);
+      // 사용자 프로필 가져오기 (네이티브 플러그인 사용)
+      const profileDoc = await FirebaseFirestore.getDocument({
+        collection: 'users',
+        id: user.uid,
+      });
+      console.log(`[AUTH_DEBUG] 데이터 가져오기 완료 (${user.uid}). 프로필 존재: ${profileDoc.exists}, 설정 존재: ${profileDoc.exists}`);
+
+      if (profileDoc.exists) {
+        setUserProfile(profileDoc.data as UserProfile);
+      } else {
+        const newProfile: UserProfile = {
+          ...defaultProfile,
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL
+        };
+        await FirebaseFirestore.setDocument({
+          collection: 'users',
+          id: user.uid,
+          data: newProfile,
+        });
+        setUserProfile(newProfile);
+      }
+      
+      // 사용자 설정 가져오기 (네이티브 플러그인 사용)
+      const settingsDoc = await FirebaseFirestore.getDocument({
+        collection: 'userSettings',
+        id: user.uid,
+      });
+
+      if (settingsDoc.exists) {
+        setUserSettings(settingsDoc.data as UserSettings);
+      } else {
+        await FirebaseFirestore.setDocument({
+          collection: 'userSettings',
+          id: user.uid,
+          data: defaultSettings,
+        });
+        setUserSettings(defaultSettings);
+      }
+
+      const needsPersonalization = await checkPersonalizationNeeded(user.uid);
+      console.log(`[AUTH_DEBUG] 개인화 필요 여부 (${user.uid}): ${needsPersonalization}`);
+      if (needsPersonalization) {
+        sessionStorage.setItem('needsPersonalization', 'true');
+      }
+    } catch (err) {
+      console.error(`[AUTH_DEBUG] 사용자 데이터 가져오기 오류 (${user.uid}):`, err);
+      setError(err instanceof Error ? err.message : '사용자 데이터를 가져오는 중 오류가 발생했습니다.');
+    } finally {
+      console.log(`[AUTH_DEBUG] 데이터 처리 블록 종료 (${user.uid}). 로딩 상태 false로 설정.`);
+      setLoading(false);
+    }
+  }, []);
+
+  const clearUserData = useCallback(() => {
+    console.log('[AUTH] 사용자 데이터 초기화. 비로그인 상태로 전환.');
+    setCurrentUser(null);
+    setUserProfile(null);
+    setUserSettings(null);
+    setIsAuthenticated(false);
+    setLoading(false);
+  }, []);
+
+  // 인증 상태 초기화 및 변경 감지 (단순화된 최종 버전)
+  useEffect(() => {
+    const initializeAuth = async () => {
+      setLoading(true);
+      // main.tsx에서 deviceready를 기다리므로, 플러그인은 항상 준비된 상태.
+      try {
+        const result = await FirebaseAuthentication.getCurrentUser();
+        if (result.user) {
+          console.log(`[AUTH] 기존 로그인 세션 발견: ${result.user.uid}`);
+          await fetchUserData(result.user as User);
+        } else {
+          console.log('[AUTH] 로그인된 사용자 없음');
+          clearUserData();
+        }
+      } catch (err) {
+        console.error('[AUTH] 초기 인증 상태 확인 중 오류 발생:', err);
+        clearUserData();
+      }
+    };
+
+    console.log('[AUTH] AuthProvider 마운트, 인증 절차 시작');
+    initializeAuth();
+
+    // 앱이 다시 활성화될 때 인증 상태 재확인
+    const listener = App.addListener('appStateChange', async (state) => {
+      if (state.isActive) {
+        console.log('[AUTH] 앱 활성화, 인증 상태 재확인');
+        await initializeAuth();
+      }
+    });
+
+    return () => {
+      listener.remove();
+    };
+  }, [clearUserData, fetchUserData]);
 
   const updateProfile = async (profile: Partial<UserProfile>) => {
     if (!currentUser) return;
@@ -271,9 +314,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AuthContext: 프로필 업데이트 시작', profile);
       
       // 이전 프로필 데이터 가져오기
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const userDoc = await getDoc(userDocRef);
-      const previousData = userDoc.exists() ? userDoc.data() as UserProfile : null;
+      const userDoc = await FirebaseFirestore.getDocument({
+        collection: 'users',
+        id: currentUser.uid,
+      });
+      const previousData = userDoc.exists ? userDoc.data as UserProfile : null;
       
       console.log('AuthContext: 이전 프로필 데이터', previousData);
       
@@ -286,11 +331,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         try {
           // weightRecords 컬렉션에 새로운 체중 기록 추가
-          await addDoc(collection(db, 'weightRecords'), {
-            userId: currentUser.uid,
-            weight: newWeight,
-            date: new Date(),
-            createdAt: new Date()
+          await FirebaseFirestore.addDocument({
+            collection: 'weightRecords',
+            data: {
+              userId: currentUser.uid,
+              weight: newWeight,
+              date: new Date(),
+              createdAt: new Date()
+            }
           });
           console.log('AuthContext: 체중 기록 저장 완료');
         } catch (weightError) {
@@ -353,7 +401,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AuthContext: 정제된 프로필 데이터 (Firestore 저장 직전)', JSON.stringify(cleanProfile, null, 2));
       
       // Firestore에 전체 업데이트된 프로필 저장 - merge 옵션 추가
-      await setDoc(userDocRef, cleanProfile, { merge: true });
+      await FirebaseFirestore.updateDocument({
+        collection: 'users',
+        id: currentUser.uid,
+        data: cleanProfile,
+        merge: true,
+      });
       console.log('AuthContext: Firestore 저장 완료');
       
       // 로컬 상태 업데이트
@@ -387,7 +440,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...settings
       };
       
-      await updateDoc(doc(db, 'userSettings', currentUser.uid), settings);
+      await FirebaseFirestore.updateDocument({
+        collection: 'userSettings',
+        id: currentUser.uid,
+        data: settings,
+      });
       
       setUserSettings(updatedSettings);
       setError(null);
@@ -401,7 +458,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await auth.signOut();
+      // Capacitor 플러그인에서 로그아웃 처리
+      await FirebaseAuthentication.signOut();
       setCurrentUser(null);
       setUserProfile(null);
       setUserSettings(null);
@@ -421,7 +479,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateProfile,
     updateSettings,
     logout,
-    isAuthenticated
+    isAuthenticated,
+    setUserFromInit: (user: User, profile: UserProfile | null) => { /* 이전 로직, 이제 사용되지 않음 */ }
   };
 
   return (

@@ -1,15 +1,16 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    
+    ext.kotlin_version = '1.8.22' // 코틀린 버전 변수 추가
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.10.1'
+        classpath 'com.android.tools.build:gradle:8.11.1'
         classpath 'com.google.gms:google-services:4.4.2'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // 코틀린 플러그인 추가
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -22,6 +23,35 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+    // 모든 하위 프로젝트에 대해 코틀린 의존성 충돌 해결 전략 추가
+    configurations.all {
+        resolutionStrategy {
+            eachDependency { DependencyResolveDetails details ->
+                if (details.requested.group == 'org.jetbrains.kotlin' && details.requested.name.startsWith('kotlin-stdlib')) {
+                    details.useVersion '1.8.22'
+                }
+            }
+        }
+    }
+    
+    // 모든 Kotlin 컴파일러 옵션을 JVM 17로 강제 설정
+    plugins.withId('org.jetbrains.kotlin.android') {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = '17'
+            }
+        }
+    }
+    
+    // 모든 Java 컴파일러 옵션을 JVM 17로 강제 설정
+    plugins.withId('com.android.library') {
+        android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
     }
 }
 

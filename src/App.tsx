@@ -1,7 +1,6 @@
-import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
-import { useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { IonApp, IonRouterOutlet, setupIonicReact, isPlatform } from '@ionic/react';
+import { useEffect, useState, useCallback } from 'react';
 
 // 페이지 임포트
 import HomePage from './pages/HomePage';
@@ -17,9 +16,8 @@ import QnaPage from './pages/QnaPage';
 import ExerciseListPage from './pages/exercise/ExerciseListPage';
 
 // 인증 관련 컴포넌트
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import PrivateRoute from './components/auth/PrivateRoute';
-import ProtectedRoute from './components/auth/ProtectedRoute';
 import PersonalizationModal from './components/auth/PersonalizationModal';
 
 // 테마 관련
@@ -45,143 +43,179 @@ import { initNetworkMonitoring } from './services/networkService';
 import { App as CapacitorApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
-import { isPlatform } from '@ionic/react';
+import { LoadingScreen } from './components/common/LoadingSpinner';
 
 // Ionic 설정
 setupIonicReact({
   mode: 'md',
-  // 중복 헤더 문제를 방지하기 위한 설정
   swipeBackEnabled: false,
 });
 
-const App: React.FC = () => {
-  // 앱 초기화
-  useEffect(() => {
-    // 앱 제목 설정 - 중복 제목 문제 해결
-    document.title = 'Corevia Fitness';
-    
-    // 네이티브 플랫폼 설정
-    const setupNative = async () => {
-      try {
-        // 안드로이드/iOS 네이티브 앱일 때만 실행
-        if (isPlatform('hybrid')) {
-          // 상태바 설정
-          await StatusBar.setStyle({ style: Style.Light });
-          await StatusBar.setBackgroundColor({ color: '#4285F4' });
-          
-          // 스플래시 스크린 보이기
-          await SplashScreen.show({
-            showDuration: 2000,
-            autoHide: true
-          });
-          
-          // 중복 헤더 요소 제거
-          const headerCleanup = () => {
-            // Ionic 헤더와 React Navigation 헤더가 중복되는 문제 해결
-            const ionHeaders = document.querySelectorAll('ion-header:not(:first-child)');
-            if (ionHeaders.length > 1) {
-              for (let i = 1; i < ionHeaders.length; i++) {
-                ionHeaders[i].remove();
-              }
-            }
-            
-            // 타이틀 중복 제거
-            const ionTitles = document.querySelectorAll('ion-title');
-            if (ionTitles.length > 1) {
-              for (let i = 1; i < ionTitles.length; i++) {
-                ionTitles[i].remove();
-              }
-            }
-          };
-          
-          // 페이지 변경 시마다 중복 요소 정리
-          const routeObserver = new MutationObserver(() => {
-            headerCleanup();
-          });
-          
-          // ion-router-outlet 관찰 시작
-          const routerOutlet = document.querySelector('ion-router-outlet');
-          if (routerOutlet) {
-            routeObserver.observe(routerOutlet, { 
-              childList: true, 
-              subtree: true 
-            });
-          }
-          
-          // 컴포넌트 언마운트 시 관찰 중지
-          return () => routeObserver.disconnect();
-        }
-      } catch (error) {
-        console.error('네이티브 설정 오류:', error);
-      }
-    };
-    
-    setupNative();
-    
-    // 네이티브 앱에서 백버튼 처리
-    if (CapacitorApp) {
-      CapacitorApp.addListener('backButton', () => {
-        if (window.location.pathname === '/home' || window.location.pathname === '/') {
-          CapacitorApp.exitApp();
-        } else {
-          window.history.back();
-        }
-      });
-    }
+const AppContent: React.FC = () => {
+  const { user, loading: authLoading, userProfile, updateProfile, setUserFromInit } = useAuth();
+  const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
+  const [appInitialized, setAppInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
-    const initialize = async () => {
+  // 앱 초기화 및 인증 처리
+  useEffect(() => {
+    console.log('[APP] 앱 초기화 시작');
+    
+    const initializeApp = async () => {
       try {
-        // 네트워크 모니터링 초기화
-        console.log('네트워크 모니터링 초기화 시작...');
-        const networkStatus = await initNetworkMonitoring();
-        console.log('네트워크 모니터링 초기화 완료:', networkStatus);
+        // 1. 네이티브 기기 설정
+        if (isPlatform('hybrid')) {
+          try {
+            await StatusBar.setStyle({ style: Style.Light });
+            await StatusBar.setBackgroundColor({ color: '#4285F4' });
+            // 스플래시 화면은 아직 유지 - 초기화가 완료될 때까지
+          } catch (error) {
+            console.error('네이티브 설정 오류:', error);
+          }
+        }
         
-        // 앱 초기화 완료 후 스플래시 스크린 숨기기
-        if (isPlatform('hybrid')) {
-          setTimeout(() => {
-            SplashScreen.hide().catch(err => console.error('스플래시 스크린 숨기기 오류:', err));
-          }, 1000);
+        // 2. 네트워크 모니터링 초기화
+        await initNetworkMonitoring();
+        
+        // 3. 새 인증 초기화 서비스를 통한 인증 처리
+        console.log('[APP] 인증 초기화 시작');
+        const authResult = await initializeAuth();
+        console.log('[APP] 인증 초기화 결과:', authResult);
+        
+        if (authResult.error) {
+          setInitError(authResult.error);
         }
+        
+        // 4. AuthContext에 초기화된 사용자 설정
+        if (authResult.user) {
+          setUserFromInit(authResult.user, authResult.userProfile);
+        }
+        
+        // 5. 초기화 완료 표시
+        setAppInitialized(true);
       } catch (error) {
-        console.error('앱 초기화 오류:', error);
-        // 오류 발생해도 스플래시 스크린 숨기기
-        if (isPlatform('hybrid')) {
-          SplashScreen.hide().catch(err => console.error('스플래시 스크린 숨기기 오류:', err));
-        }
+        console.error('[APP] 앱 초기화 중 오류:', error);
+        setInitError('앱 초기화 중 오류가 발생했습니다.');
+        setAppInitialized(true);
       }
     };
+
+    initializeApp();
+  }, [setUserFromInit]);
+  
+  // 스플래시 화면 제어 함수 - 오류 복구 메커니즘 추가
+  const hideSplashScreen = useCallback(() => {
+    if (!isPlatform('hybrid')) return;
+
+    console.log('[APP] 스플래시 화면 숨기기 시도');
     
-    initialize();
+    // 안전한 스플래시 화면 숨기기 (오류 복구 포함)
+    const attemptHide = (retries = 2) => {
+      SplashScreen.hide()
+        .then(() => {
+          console.log('[APP] 스플래시 화면 숨김 성공');
+        })
+        .catch(err => {
+          console.error('[APP] 스플래시 화면 숨김 오류:', err);
+          
+          // 재시도 로직 (최대 2회)
+          if (retries > 0) {
+            console.log(`[APP] 스플래시 화면 숨기기 재시도... (남은 시도: ${retries})`);
+            setTimeout(() => attemptHide(retries - 1), 500);
+          } else {
+            console.warn('[APP] 스플래시 화면 숨기기 최대 재시도 횟수 초과');
+          }
+        });
+    };
+    
+    // 약간의 지연 후 숨기기 시도 (UI 렌더링 완료 후)
+    setTimeout(() => {
+      attemptHide();
+    }, 300);
   }, []);
   
+  // 인증 로딩 상태가 변경될 때 스플래시 화면을 제어합니다.
+  useEffect(() => {
+    // 로딩이 완료되었을 때 (성공이든 실패든)
+    if (!authLoading) {
+      // 네이티브 플랫폼에서만 스플래시 화면을 숨깁니다.
+      if (isPlatform('hybrid')) {
+        console.log('[APP] 인증 확인 완료. 스플래시 화면을 숨깁니다.');
+        SplashScreen.hide();
+      }
+    }
+  }, [authLoading]);
+  
+  // 앱 초기화 중이거나 인증 로딩 중일 때 로딩 화면 표시
+  // 이제 authLoading이 확실하게 false로 변경되므로 이 조건이 정상적으로 작동
+  if (authLoading) {
+    return <LoadingScreen message="사용자 정보를 확인 중입니다..." />;
+  }
+  
+  // 사용자 프로필 확인 및 개인화 모달
+  useEffect(() => {
+    if (userProfile && sessionStorage.getItem('needsPersonalization') === 'true') {
+      setIsPersonalizationModalOpen(true);
+    }
+  }, [userProfile]);
+
+  const handleModalClose = useCallback(() => {
+    setIsPersonalizationModalOpen(false);
+    sessionStorage.removeItem('needsPersonalization');
+  }, []);
+
+  const handleModalSave = useCallback(async (profile: any) => {
+    if (updateProfile) {
+      await updateProfile(profile);
+    }
+    handleModalClose();
+  }, [updateProfile, handleModalClose]);
+  
+  return (
+    <>
+      <IonRouterOutlet>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/legal" element={<LegalPage />} />
+          <Route path="/qna" element={<QnaPage />} />
+          
+          <Route element={<PrivateRoute />}>
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/workout" element={<WorkoutPage />} />
+            <Route path="/food" element={<FoodPage />} />
+            <Route path="/exercises" element={<ExerciseListPage />} />
+          </Route>
+          
+          <Route path="/" element={user ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </IonRouterOutlet>
+      
+      {userProfile && (
+        <PersonalizationModal 
+          isOpen={isPersonalizationModalOpen}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
+          userProfile={userProfile}
+        />
+      )}
+      <Toaster position="bottom-center" />
+    </>
+  );
+};
+
+const App: React.FC = () => {
   return (
     <IonApp>
       <ThemeProvider>
-        <AuthProvider>
-          <IonReactRouter>
-            <IonRouterOutlet>
-              <Route exact path="/home" component={HomePage} />
-              <Route exact path="/login" component={LoginPage} />
-              <Route exact path="/register" component={RegisterPage} />
-              <Route exact path="/legal" component={LegalPage} />
-              <Route exact path="/qna" component={QnaPage} />
-              
-              <PrivateRoute exact path="/profile" component={ProfilePage} />
-              <PrivateRoute exact path="/settings" component={SettingsPage} />
-              <PrivateRoute exact path="/workout" component={WorkoutPage} />
-              <PrivateRoute exact path="/food" component={FoodPage} />
-              <PrivateRoute exact path="/exercises" component={ExerciseListPage} />
-              
-              <Route exact path="/">
-                <Redirect to="/home" />
-              </Route>
-              <Route component={NotFoundPage} />
-            </IonRouterOutlet>
-          </IonReactRouter>
-          
-          <PersonalizationModal />
-          <Toaster position="bottom-center" />
-        </AuthProvider>
+        <Router>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </Router>
       </ThemeProvider>
     </IonApp>
   );

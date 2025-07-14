@@ -1,120 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getBodyPhotoRecords, getBodyPhotoImage, BodyPhotoRecord } from '../../services/bodyService';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Camera, Scale, TrendingUp, Calendar, Info, X } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { WeightRecord, getWeightHistory } from '../../services/weightService';
+import { getWeightHistory } from '../../services/weightService'; // 네이티브화된 서비스 사용
+import { WeightRecord } from '../../types';
 
-interface BodyProgressViewProps {
-  onClose?: () => void;
-}
-
-// 날짜 필터 타입 추가
-type DateFilter = 'daily' | 'weekly' | 'monthly';
-type WeightPeriodFilter = '1month' | '3months' | '6months' | '1year' | 'all';
-
-const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
+const BodyProgressView: React.FC = () => {
   const { userProfile } = useAuth();
-  const [bodyPhotos, setBodyPhotos] = useState<BodyPhotoRecord[]>([]);
   const [weightHistory, setWeightHistory] = useState<WeightRecord[]>([]);
-  const [imageCache, setImageCache] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [selectedPhoto, setSelectedPhoto] = useState<{
-    url: string;
-    record: BodyPhotoRecord;
-  } | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('daily');
-  const [weightPeriodFilter, setWeightPeriodFilter] = useState<WeightPeriodFilter>('all');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (userProfile?.uid) {
-      loadBodyProgressData();
-    }
-  }, [userProfile?.uid]);
-
-  const loadBodyProgressData = async () => {
-    if (!userProfile?.uid) return;
-
-    setIsLoading(true);
-    try {
-      // Firebase에서 체중 기록 불러오기
-      await loadWeightHistory();
-      
-      // IndexedDB에서 신체 사진 기록 불러오기
-      await loadBodyPhotos();
-    } catch (error) {
-      console.error('신체 변화 데이터 로드 오류:', error);
-      toast.error('데이터를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadWeightHistory = async () => {
-    if (!userProfile?.uid) return;
-    
-    try {
-      const history = await getWeightHistory(userProfile.uid);
-      setWeightHistory(history);
-      console.log(`${history.length}개의 체중 기록을 로드했습니다.`);
-    } catch (error) {
-      console.error('체중 기록 로드 오류:', error);
-    }
-  };
-
-  const loadBodyPhotos = async () => {
-    if (!userProfile?.uid) return;
-    
-    try {
-      const photos = await getBodyPhotoRecords(userProfile.uid);
-      setBodyPhotos(photos);
-      
-      // 하이브리드 방식으로 이미지 로드
-      const newCache = await loadImages(photos);
-      setImageCache(prevCache => ({ ...prevCache, ...newCache }));
-      
-      console.log(`${photos.length}개의 바디 체크 사진을 로드했습니다.`);
-    } catch (error) {
-      console.error('바디 체크 사진 로드 오류:', error);
-    }
-  };
-
-  const loadImages = async (photos: BodyPhotoRecord[]) => {
-    const newImageCache: Record<string, string> = {};
-    
-    for (const photo of photos) {
-      if (photo.imageId && !newImageCache[photo.imageId]) {
+      const fetchWeightHistory = async () => {
         try {
-          // 하이브리드 방식으로 이미지 로드 (getBodyPhotoImage 사용)
-          const imageDataUrl = await getBodyPhotoImage(photo);
-          if (imageDataUrl) {
-            newImageCache[photo.imageId] = imageDataUrl;
-          }
+          setLoading(true);
+          const history = await getWeightHistory(userProfile.uid);
+          setWeightHistory(history);
         } catch (error) {
-          console.error(`이미지 로드 오류 (ID: ${photo.imageId}):`, error);
+          console.error("체중 기록 로드 실패:", error);
+        } finally {
+          setLoading(false);
         }
-      }
+      };
+      fetchWeightHistory();
     }
-    
-    return newImageCache;
-  };
-
-  const handlePhotoClick = (photo: BodyPhotoRecord) => {
-    if (photo.imageId && imageCache[photo.imageId]) {
-      setSelectedPhoto({
-        url: imageCache[photo.imageId],
-        record: photo
-      });
-    }
-  };
-
-  const closePhotoModal = () => {
-    setSelectedPhoto(null);
-  };
+  }, [userProfile]);
 
   // 체중 기록을 기간별로 필터링하는 함수
   const getFilteredWeightHistory = () => {
@@ -213,7 +124,7 @@ const BodyProgressView: React.FC<BodyProgressViewProps> = ({ onClose }) => {
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <LoadingSpinner size="lg" showText={true} text="신체 변화 데이터를 불러오는 중..." />

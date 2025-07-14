@@ -9,7 +9,8 @@ import {
   onAuthStateChanged,
   signInWithCredential // signInWithCredential 임포트 추가
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { auth, db } from '../firebase/firebaseConfig';
 import { UserProfile } from '../types';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication'; // 플러그인 임포트
@@ -54,12 +55,30 @@ export const logAuthDebugInfo = (message: string, data?: any): void => {
 // 네이티브 Google 로그인 처리 함수
 const signInWithGoogleNative = async (): Promise<UserCredential> => {
   logAuthDebugInfo('네이티브 Google 로그인 시도');
-  // Capacitor 플러그인을 통해 네이티브 로그인 실행
-  const result = await FirebaseAuthentication.signInWithGoogle();
-  // 네이티브 로그인 결과에서 받은 idToken으로 Firebase 자격 증명 생성
-  const credential = GoogleAuthProvider.credential(result.credential.idToken);
-  // 생성된 자격 증명으로 Firebase에 로그인
-  return signInWithCredential(auth, credential);
+  try {
+    // Capacitor 플러그인을 통해 네이티브 로그인 실행
+    logAuthDebugInfo('FirebaseAuthentication.signInWithGoogle 호출');
+    const result = await FirebaseAuthentication.signInWithGoogle();
+    logAuthDebugInfo('네이티브 로그인 성공', { providerId: result.providerId });
+    
+    if (!result.credential?.idToken) {
+      throw new Error('ID 토큰이 없습니다');
+    }
+    
+    // 네이티브 로그인 결과에서 받은 idToken으로 Firebase 자격 증명 생성
+    logAuthDebugInfo('ID 토큰으로 Firebase 자격 증명 생성');
+    const credential = GoogleAuthProvider.credential(result.credential.idToken);
+    
+    // 생성된 자격 증명으로 Firebase에 로그인
+    logAuthDebugInfo('Firebase에 자격 증명으로 로그인 시도');
+    const userCredential = await signInWithCredential(auth, credential);
+    logAuthDebugInfo('Firebase 자격 증명 로그인 성공', { uid: userCredential.user.uid });
+    return userCredential;
+  } catch (error: any) {
+    logAuthDebugInfo('네이티브 Google 로그인 실패', error);
+    console.error('네이티브 Google 로그인 오류:', error);
+    throw error;
+  }
 };
 
 
@@ -131,13 +150,14 @@ export const handleRedirectResult = async (): Promise<UserCredential | null> => 
 
 // 사용자 프로필 생성/확인
 export const ensureUserProfile = async (user: User): Promise<UserProfile> => {
-  const userDocRef = doc(db, 'users', user.uid);
-  
   try {
-    const userDoc = await getDoc(userDocRef);
+    const userDoc = await FirebaseFirestore.getDocument({
+      collection: 'users',
+      id: user.uid,
+    });
     
-    if (userDoc.exists()) {
-      return userDoc.data() as UserProfile;
+    if (userDoc.exists) {
+      return userDoc.data as UserProfile;
     } else {
       // 기본 프로필 생성
       const newProfile: UserProfile = {
@@ -162,7 +182,11 @@ export const ensureUserProfile = async (user: User): Promise<UserProfile> => {
         isPremium: false
       };
       
-      await setDoc(userDocRef, newProfile);
+      await FirebaseFirestore.setDocument({
+        collection: 'users',
+        id: user.uid,
+        data: newProfile,
+      });
       return newProfile;
     }
   } catch (error) {

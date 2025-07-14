@@ -4,11 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.corevia.fitness',
   appName: 'Corevia Fitness',
   webDir: 'dist',
-  server: {
-    androidScheme: 'capacitor',
-    cleartext: true,
-    allowNavigation: ['*'],
-  },
   android: {
     allowMixedContent: true,
     captureInput: true,
@@ -16,17 +11,13 @@ const config: CapacitorConfig = {
     initialFocus: true,
   },
   plugins: {
-    SplashScreen: {
-      launchShowDuration: 3000,
-      launchAutoHide: true,
-      backgroundColor: "#f5f5f5",
-      androidSplashResourceName: "splash",
-      androidScaleType: "CENTER_CROP",
-      showSpinner: true,
-      spinnerColor: "#1976d2",
-      splashFullScreen: true,
-      splashImmersive: true,
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ["google.com"],
     },
+    // 스플래시 화면은 이제 안드로이드 네이티브에서 100% 제어하므로,
+    // Capacitor 설정은 비워두어 충돌을 방지합니다.
+    SplashScreen: {},
     LocalNotifications: {
       smallIcon: "ic_stat_icon_config_sample",
       iconColor: "#1976d2",
@@ -74,6 +65,12 @@ const config: CapacitorConfig = {
       applicationID: {
         android: 'ca-app-pub-2952925573999681~7155228371',
         ios: 'ca-app-pub-2952925573999681~7155228371'
+      }
+    },
+    "assets": {
+      "icon": {
+        "source": "src/assets/Corevia-logo.png",
+        "backgroundColor": "#ffffff"
       }
     }
   },

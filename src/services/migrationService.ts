@@ -1,5 +1,5 @@
-import { collection, query, where, getDocs, updateDoc, doc, getDoc, writeBatch, getFirestore } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+// 네이티브 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 
 /**
  * 데이터 마이그레이션 상태를 추적하는 인터페이스
@@ -34,19 +34,11 @@ export const DB_VERSIONS = {
  */
 export const getMigrationState = async (userId: string): Promise<MigrationState | null> => {
   try {
-    const migrationRef = doc(db, 'migrations', userId);
-    const migrationDoc = await getDoc(migrationRef);
-    
-    if (migrationDoc.exists()) {
-      return migrationDoc.data() as MigrationState;
-    }
-    
-    // 초기 상태 생성
-    const initialState: MigrationState = {
-      userId,
-      versions: {}
-    };
-    return initialState;
+    const { data } = await FirebaseFirestore.getDocument({
+      collection: 'migrations',
+      id: userId,
+    });
+    return data || { userId, versions: {} };
   } catch (error) {
     console.error('마이그레이션 상태 로드 중 오류:', error);
     return null;
@@ -67,34 +59,16 @@ export const updateMigrationState = async (
   details?: string
 ): Promise<void> => {
   try {
-    const migrationRef = doc(db, 'migrations', userId);
-    const migrationDoc = await getDoc(migrationRef);
-    
-    const newVersionData = {
-      completedAt: new Date(),
-      success,
-      details
+    const migrationData = {
+      lastMigration: version,
+      [`versions.${version}`]: { completedAt: new Date(), success, details },
     };
-    
-    if (migrationDoc.exists()) {
-      const currentData = migrationDoc.data() as MigrationState;
-      
-      await updateDoc(migrationRef, {
-        lastMigration: version,
-        [`versions.${version}`]: newVersionData
-      });
-    } else {
-      // 새로운 마이그레이션 문서 생성
-      const initialState: MigrationState = {
-        userId,
-        lastMigration: version,
-        versions: {
-          [version]: newVersionData
-        }
-      };
-      
-      await updateDoc(migrationRef, initialState);
-    }
+    await FirebaseFirestore.updateDocument({
+      collection: 'migrations',
+      id: userId,
+      data: migrationData,
+      merge: true,
+    });
   } catch (error) {
     console.error('마이그레이션 상태 업데이트 중 오류:', error);
   }
@@ -106,20 +80,21 @@ export const updateMigrationState = async (
  */
 export const migrateAddPremiumFlag = async (userId: string): Promise<boolean> => {
   try {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-    
-    if (!userDoc.exists()) {
+    const { data: userData, exists } = await FirebaseFirestore.getDocument({
+      collection: 'users',
+      id: userId,
+    });
+
+    if (!exists) {
       console.error('사용자 프로필을 찾을 수 없습니다.');
       return false;
     }
     
-    const userData = userDoc.data();
-    
-    // isPremium 필드가 없는 경우에만 추가
     if (userData.isPremium === undefined) {
-      await updateDoc(userRef, {
-        isPremium: false
+      await FirebaseFirestore.updateDocument({
+        collection: 'users',
+        id: userId,
+        data: { isPremium: false },
       });
       
       console.log('프리미엄 플래그 마이그레이션 완료:', userId);
@@ -146,10 +121,9 @@ export const runMigrationForAllUsers = async (
   const result = { success: 0, failed: 0 };
   
   try {
-    const usersRef = collection(db, 'users');
-    const querySnapshot = await getDocs(usersRef);
+    const { docs } = await FirebaseFirestore.getCollection({ collection: 'users' });
     
-    for (const userDoc of querySnapshot.docs) {
+    for (const userDoc of docs) {
       const userId = userDoc.id;
       
       try {

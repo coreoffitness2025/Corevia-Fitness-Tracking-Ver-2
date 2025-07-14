@@ -19,40 +19,55 @@ let currentStatus: NetworkStatus = {
   connectionType: 'unknown'
 };
 
+let isInitialStatusChange = true; // 초기 상태 변경 여부를 확인하기 위한 플래그
+let initCount = 0; // 초기화 호출 횟수 추적
+
 /**
  * 네트워크 상태 초기화 및 리스너 설정
  */
 export const initNetworkMonitoring = async (): Promise<NetworkStatus> => {
+  initCount++;
+  console.log(`[NETWORK_DEBUG] initNetworkMonitoring 호출됨. 횟수: ${initCount}`);
+
   try {
     // 현재 네트워크 상태 가져오기
     currentStatus = await Network.getStatus();
     
     // 네트워크 상태 변경 리스너 설정
     Network.addListener('networkStatusChange', (status) => {
+      console.log(`[NETWORK_DEBUG] networkStatusChange 이벤트 발생. 연결 상태: ${status.connected}, 타입: ${status.connectionType}`);
       // 상태 업데이트
       currentStatus = status;
-      
-      // 연결 상태 변경 알림
-      if (status.connected) {
-        try {
-          toast.success('네트워크에 연결되었습니다.');
-        } catch (e) { console.log('네트워크에 연결되었습니다.'); }
-        console.log('네트워크 연결됨:', status.connectionType);
+
+      // 초기 상태 변경 시에는 토스트 메시지를 표시하지 않음
+      if (isInitialStatusChange) {
+        isInitialStatusChange = false;
+        // 초기 연결 상태는 콘솔에만 기록
+        if (status.connected) {
+          console.log('네트워크 초기 연결됨:', status.connectionType);
+        } else {
+          console.warn('네트워크 초기 연결 끊김');
+        }
       } else {
-        try {
-          toast.error('네트워크 연결이 끊어졌습니다. 오프라인 모드로 전환합니다.');
-        } catch (e) { console.log('네트워크 연결이 끊어졌습니다. 오프라인 모드로 전환합니다.'); }
-        console.warn('네트워크 연결 끊김');
+        // 연결 상태 변경 알림
+        if (status.connected) {
+          console.log('네트워크 연결됨:', status.connectionType);
+        } else {
+          try {
+            toast.error('네트워크 연결이 끊어졌습니다. 오프라인 모드로 전환합니다.');
+          } catch (e) { console.log('네트워크 연결이 끊어졌습니다. 오프라인 모드로 전환합니다.'); }
+          console.warn('네트워크 연결 끊김');
+        }
       }
       
       // 등록된 모든 리스너에게 알림
       listeners.forEach(listener => listener(status));
     });
     
-    console.log('네트워크 모니터링이 초기화되었습니다. 현재 상태:', currentStatus);
+    console.log('[NETWORK_DEBUG] 네트워크 모니터링이 초기화되었습니다. 현재 상태:', currentStatus);
     return currentStatus;
   } catch (error) {
-    console.error('네트워크 모니터링 초기화 오류:', error);
+    console.error('[NETWORK_DEBUG] 네트워크 모니터링 초기화 오류:', error);
     return {
       connected: false,
       connectionType: 'none'

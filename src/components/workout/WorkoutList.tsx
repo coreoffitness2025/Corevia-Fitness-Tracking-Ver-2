@@ -6,12 +6,8 @@ import { Camera, Download, Share, Image, ChevronLeft, ChevronRight, X, Trash, Ca
 import html2canvas from 'html2canvas';
 import Button from '../common/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, getDocs, orderBy, Timestamp, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
-import LoadingSpinner from '../common/LoadingSpinner';
-import { toast } from 'react-hot-toast';
-// 유틸리티 함수 import
-import { getPartLabel, getPartColor, parseFirestoreDate } from '../../utils/workoutUtils';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 
 // 뷰 모드 타입 정의
 type ViewMode = 'day' | 'week' | 'month';
@@ -350,7 +346,10 @@ const WorkoutList: React.FC = () => {
     if (!currentUser || !workoutId) return;
 
     try {
-      await deleteDoc(doc(db, 'sessions', workoutId));
+      await FirebaseFirestore.deleteDocument({
+        collection: 'sessions',
+        id: workoutId,
+      });
       
       const updatedSessions = sessions.filter(session => session.id !== workoutId);
       setSessions(updatedSessions);

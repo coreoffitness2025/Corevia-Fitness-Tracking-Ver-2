@@ -1,31 +1,15 @@
 apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
 
 android {
-    signingConfigs {
-        release {
-            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
-                storeFile file(MYAPP_RELEASE_STORE_FILE)
-                storePassword MYAPP_RELEASE_STORE_PASSWORD
-                keyAlias MYAPP_RELEASE_KEY_ALIAS
-                keyPassword MYAPP_RELEASE_KEY_PASSWORD
-            }
-        }
-    }
-
-    androidResources {
-        noCompress 'tflite'
-    }
     namespace "com.corevia.fitness"
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.corevia.fitness"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 7
-        versionName "3.4.0"
+        versionCode 12
+        versionName "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -35,22 +19,9 @@ android {
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-    packagingOptions {
-        resources {
-            excludes += ['**/*.kotlin_module', '**/*.version', '**/kotlin-tooling-metadata.json', 'META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/license.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/notice.txt', 'META-INF/ASL2.0', 'META-INF/INDEX.LIST', 'META-INF/io.netty.versions.properties']
-        }
-        jniLibs {
-            useLegacyPackaging = true
-        }
-    }
-    // Android 15 호환성 - Edge-to-Edge 지원
-    buildFeatures {
-        buildConfig true
     }
 }
 
@@ -65,32 +36,16 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    
+    // 명시적으로 SplashScreen 의존성 버전 확인 (없는 경우를 위한 안전 조치)
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+    
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
-    
-    // 네이티브 Google 로그인을 위한 play-services-auth 추가
-    implementation 'com.google.android.gms:play-services-auth:20.7.0'
-
-    // Android 15+ Edge-to-Edge 지원을 위한 종속성 추가
-    implementation "androidx.window:window:1.2.0"
-    implementation "androidx.core:core:1.15.0"
-    
-    // Import the Firebase BoM
-    implementation platform('com.google.firebase:firebase-bom:33.15.0')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-crashlytics'
 }
 
 apply from: 'capacitor.build.gradle'
-
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}
+apply plugin: 'com.google.gms.google-services'

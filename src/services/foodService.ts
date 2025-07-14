@@ -1,20 +1,11 @@
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy, 
-  addDoc,
-  Timestamp,
-  updateDoc,
-  doc,
-  deleteDoc,
-  runTransaction
-} from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '../firebase/firebaseConfig';
 import { Food } from '../types';
 import { openDB } from 'idb';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+// Storage 플러그인 import
+import { FirebaseStorage, GetDownloadUrlOptions, UploadFileOptions } from '@capacitor-firebase/storage';
+
+// 웹 SDK 관련 import는 모두 제거되었습니다.
 
 // 로컬 스토리지 키 정의
 const IMAGE_KEY_PREFIX = 'food_image_';
@@ -57,10 +48,13 @@ const updateImageIndex = (imageId: string, add: boolean = true) => {
 export const saveImageReference = async (foodId: string, imageId: string): Promise<void> => {
   try {
     // Firebase에 이미지 참조 정보 저장 (음식 ID와 이미지 ID 매핑)
-    await addDoc(collection(db, 'imageReferences'), {
-      foodId,
-      imageId,
-      createdAt: new Date()
+    await FirebaseFirestore.addDocument({
+      collection: 'imageReferences',
+      data: {
+        foodId,
+        imageId,
+        createdAt: new Date()
+      }
     });
     
     console.log(`이미지 참조 저장됨: ${foodId} -> ${imageId}`);
@@ -147,7 +141,7 @@ export const cleanupLocalImages = async (maxAgeDays: number = 30): Promise<numbe
 };
 
 /**
- * 특정 날짜의 식단 기록을 가져옵니다.
+ * 특정 날짜의 식단 기록을 가져옵니다. (플러그인 사용)
  */
 export const fetchFoodsByDate = async (userId: string, date: Date): Promise<Food[]> => {
   const startDate = new Date(date);
@@ -156,38 +150,54 @@ export const fetchFoodsByDate = async (userId: string, date: Date): Promise<Food
   const endDate = new Date(date);
   endDate.setHours(23, 59, 59, 999);
 
-  const q = query(
-    collection(db, 'foods'),
-    where('userId', '==', userId),
-    where('date', '>=', startDate),
-    where('date', '<=', endDate),
-    orderBy('date', 'desc')
-  );
+  const { docs } = await FirebaseFirestore.getCollection({
+    collection: 'foods',
+    queries: [
+      {
+        type: 'where',
+        fieldPath: 'userId',
+        operator: '==',
+        value: userId,
+      },
+      {
+        type: 'where',
+        fieldPath: 'date',
+        operator: '>=',
+        value: startDate,
+      },
+      {
+        type: 'where',
+        fieldPath: 'date',
+        operator: '<=',
+        value: endDate,
+      },
+      {
+        type: 'orderBy',
+        fieldPath: 'date',
+        direction: 'desc',
+      },
+    ],
+  });
 
-  const querySnapshot = await getDocs(q);
-  const foodData: Food[] = [];
-  
-  querySnapshot.forEach((doc) => {
-    const data = doc.data();
-    foodData.push({
+  return docs.map((doc) => {
+    const data = doc.data;
+    return {
       id: doc.id,
       userId: data.userId,
-      date: data.date.toDate(),
+      date: new Date(data.date.seconds * 1000), // Timestamp 변환
       name: data.name,
       calories: data.calories,
       protein: data.protein,
       carbs: data.carbs,
       fat: data.fat,
       imageUrl: data.imageUrl,
-      notes: data.notes
-    });
+      notes: data.notes,
+    };
   });
-  
-  return foodData;
 };
 
 /**
- * 새로운 식단을 저장합니다.
+ * 새로운 식단을 저장합니다. (플러그인 사용)
  */
 export const saveFoodRecord = async (foodData: Omit<Food, 'id'>): Promise<Food> => {
   // 로컬 이미지인 경우 처리
@@ -196,20 +206,23 @@ export const saveFoodRecord = async (foodData: Omit<Food, 'id'>): Promise<Food> 
     console.log(`로컬 이미지 식별자를 사용하여 식단 기록 저장: ${foodData.imageUrl}`);
   }
   
-  const docRef = await addDoc(collection(db, 'foods'), foodData);
+  const result = await FirebaseFirestore.addDocument({
+    collection: 'foods',
+    data: foodData,
+  });
   
   // 이미지 참조 저장 (이미지 ID와 식단 ID 연결)
   if (foodData.imageUrl && foodData.imageUrl.startsWith('local_')) {
-    await saveImageReference(docRef.id, foodData.imageUrl);
+    await saveImageReference(result.id, foodData.imageUrl);
   }
   
   return {
-    id: docRef.id,
+    id: result.id,
     ...foodData
   };
 };
 
-// 식단 기록 저장 함수
+// 식단 기록 저장 함수 (플러그인 사용)
 export const saveFoodEntry = async (
   userId: string,
   foodData: Omit<Food, 'id' | 'imageUrl'> & { imageFile?: File }
@@ -217,21 +230,26 @@ export const saveFoodEntry = async (
   try {
     let imageUrl = '';
     
-    // 이미지 파일이 있으면 스토리지에 업로드
+    // 이미지 파일이 있으면 네이티브 플러그인을 통해 스토리지에 업로드
     if (foodData.imageFile) {
       const timestamp = new Date().getTime();
-      const storageRef = ref(storage, `food-images/${userId}/${timestamp}_${foodData.imageFile.name}`);
+      const path = `food-images/${userId}/${timestamp}_${foodData.imageFile.name}`;
       
-      // 이미지 업로드
-      await uploadBytes(storageRef, foodData.imageFile);
+      // 파일 업로드
+      const uploadOptions: UploadFileOptions = {
+        path,
+        blob: foodData.imageFile,
+      };
+      await FirebaseStorage.uploadFile(uploadOptions);
       
       // 업로드된 이미지 URL 가져오기
-      imageUrl = await getDownloadURL(storageRef);
-      console.log('이미지 업로드 성공:', imageUrl);
+      const urlOptions: GetDownloadUrlOptions = { path };
+      const { url } = await FirebaseStorage.getDownloadUrl(urlOptions);
+      imageUrl = url;
+      console.log('네이티브 플러그인을 통해 이미지 업로드 성공:', imageUrl);
     } else if (foodData.image && typeof foodData.image === 'string' && foodData.image.startsWith('data:image')) {
-      // base64 이미지인 경우 그대로 저장
+      // Base64 이미지는 그대로 사용 (이 부분은 변경 없음)
       imageUrl = foodData.image;
-      console.log('Base64 이미지 저장');
     }
     
     // Firestore에 식단 데이터 저장
@@ -239,14 +257,18 @@ export const saveFoodEntry = async (
       userId,
       name: foodData.name,
       calories: foodData.calories || 0,
-      date: foodData.date || Timestamp.fromDate(new Date()),
+      date: foodData.date || FirebaseFirestore.Timestamp.fromDate(new Date()),
       description: foodData.description || '',
       imageUrl,
       nutrients: foodData.nutrients || null,
       mealType: foodData.mealType || '식사 기록'
     };
     
-    const docRef = await addDoc(collection(db, 'foods'), foodEntry);
+    // Firestore에 기록 저장 (이미 네이티브로 전환됨)
+    const docRef = await FirebaseFirestore.addDocument({
+      collection: 'foods',
+      data: { ...foodEntry, imageUrl },
+    });
     console.log('식단 기록 저장 성공:', docRef.id);
     
     return docRef.id;
@@ -256,85 +278,70 @@ export const saveFoodEntry = async (
   }
 };
 
-// 식단 기록 조회 함수
+// 식단 기록 조회 함수 (플러그인 사용)
 export const getFoodEntries = async (userId: string, startDate?: Date, endDate?: Date): Promise<Food[]> => {
-  try {
-    let foodQuery;
-    
-    if (startDate && endDate) {
-      // 날짜 범위로 필터링
-      foodQuery = query(
-        collection(db, 'foods'),
-        where('userId', '==', userId),
-        where('date', '>=', Timestamp.fromDate(startDate)),
-        where('date', '<=', Timestamp.fromDate(endDate)),
-        orderBy('date', 'desc')
-      );
-    } else {
-      // 모든 데이터 조회
-      foodQuery = query(
-        collection(db, 'foods'),
-        where('userId', '==', userId),
-        orderBy('date', 'desc')
-      );
-    }
-    
-    const querySnapshot = await getDocs(foodQuery);
-    
-    // 결과 데이터 변환
-    const foods: Food[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const food: Food = {
-        id: doc.id,
-        name: data.name,
-        calories: data.calories,
-        date: data.date?.toDate() || new Date(),
-        description: data.description,
-        imageUrl: data.imageUrl,
-        nutrients: data.nutrients,
-        mealType: data.mealType || '식사 기록'
-      };
-      foods.push(food);
-    });
-    
-    console.log(`${foods.length}개의 식단 기록을 로드했습니다.`);
-    
-    // 이미지 URL에 캐시 방지를 위한 타임스탬프 추가
-    for (const food of foods) {
-      if (food.imageUrl && !food.imageUrl.startsWith('data:image')) {
-        const timestamp = new Date().getTime();
-        food.imageUrl = `${food.imageUrl}?t=${timestamp}`;
-      }
-    }
-    
-    return foods;
-  } catch (error) {
-    console.error('식단 기록 조회 오류:', error);
-    throw error;
+  const queries: any[] = [
+    { type: 'where', fieldPath: 'userId', operator: '==', value: userId },
+    { type: 'orderBy', fieldPath: 'date', direction: 'desc' },
+  ];
+
+  if (startDate && endDate) {
+    queries.push({ type: 'where', fieldPath: 'date', operator: '>=', value: startDate });
+    queries.push({ type: 'where', fieldPath: 'date', operator: '<=', value: endDate });
   }
+
+  const { docs } = await FirebaseFirestore.getCollection({
+    collection: 'foods',
+    queries,
+  });
+
+  const foods: Food[] = docs.map((doc) => {
+    const data = doc.data;
+    return {
+      id: doc.id,
+      name: data.name,
+      calories: data.calories,
+      date: data.date?.seconds ? new Date(data.date.seconds * 1000) : new Date(),
+      description: data.description,
+      imageUrl: data.imageUrl,
+      nutrients: data.nutrients,
+      mealType: data.mealType || '식사 기록',
+    };
+  });
+  
+  // 이미지 URL에 캐시 방지를 위한 타임스탬프 추가
+  for (const food of foods) {
+    if (food.imageUrl && !food.imageUrl.startsWith('data:image')) {
+      const timestamp = new Date().getTime();
+      food.imageUrl = `${food.imageUrl}?t=${timestamp}`;
+    }
+  }
+  
+  return foods;
 };
 
-// 식단 기록 삭제 함수
+// 식단 기록 삭제 함수 (플러그인 사용)
 export const deleteFoodEntry = async (userId: string, foodId: string, imageUrl?: string): Promise<void> => {
   try {
     // Firestore에서 기록 삭제
-    const foodRef = doc(db, 'foods', foodId);
-    await deleteDoc(foodRef);
+    await FirebaseFirestore.deleteDocument({
+      collection: 'foods',
+      id: foodId,
+    });
     
     // 이미지가 있고 firebase 스토리지 URL인 경우 이미지도 삭제
-    if (imageUrl && imageUrl.includes('firebase') && !imageUrl.startsWith('data:image')) {
+    if (imageUrl && imageUrl.includes('firebasestorage.googleapis.com')) {
       try {
-        // URL에서 ?t= 파라미터 제거
-        const cleanUrl = imageUrl.split('?')[0];
-        const storageRef = ref(storage, cleanUrl);
-        await deleteObject(storageRef);
-        console.log('이미지 삭제 성공');
+        // URL에서 경로 추출
+        const path = new URL(imageUrl).pathname.split('/o/')[1].split('?')[0];
+        const decodedPath = decodeURIComponent(path);
+        
+        await FirebaseStorage.deleteFile({ path: decodedPath });
+        console.log('네이티브 플러그인을 통해 이미지 삭제 성공');
       } catch (imgError) {
         console.warn('이미지 삭제 실패, 기록은 삭제됨:', imgError);
       }
     }
-    
     console.log('식단 기록 삭제 성공');
   } catch (error) {
     console.error('식단 기록 삭제 오류:', error);
@@ -352,59 +359,47 @@ export const convertImageToBase64 = (file: File): Promise<string> => {
   });
 };
 
-// 특정 날짜의 식단 기록을 가져오는 함수
+// 특정 날짜의 식단 기록을 가져오는 함수 (플러그인 사용)
 export const getFoodEntriesByDate = async (userId: string, date: Date): Promise<Food[]> => {
-  try {
-    // 날짜의 시작과 끝 계산
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    // 쿼리 실행
-    const foodQuery = query(
-      collection(db, 'foods'),
-      where('userId', '==', userId),
-      where('date', '>=', Timestamp.fromDate(startOfDay)),
-      where('date', '<=', Timestamp.fromDate(endOfDay)),
-      orderBy('date', 'asc')
-    );
-    
-    const querySnapshot = await getDocs(foodQuery);
-    
-    // 결과 데이터 변환
-    const foods: Food[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const food: Food = {
-        id: doc.id,
-        name: data.name,
-        calories: data.calories,
-        date: data.date?.toDate() || new Date(),
-        description: data.description,
-        imageUrl: data.imageUrl,
-        nutrients: data.nutrients,
-        mealType: data.mealType || '식사 기록'
-      };
-      foods.push(food);
-    });
-    
-    console.log(`${date.toLocaleDateString()}에 ${foods.length}개의 식단 기록을 로드했습니다.`);
-    
-    // 이미지 URL에 캐시 방지를 위한 타임스탬프 추가
-    for (const food of foods) {
-      if (food.imageUrl && !food.imageUrl.startsWith('data:image')) {
-        const timestamp = new Date().getTime();
-        food.imageUrl = `${food.imageUrl}?t=${timestamp}`;
-      }
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const { docs } = await FirebaseFirestore.getCollection({
+    collection: 'foods',
+    queries: [
+      { type: 'where', fieldPath: 'userId', operator: '==', value: userId },
+      { type: 'where', fieldPath: 'date', operator: '>=', value: startOfDay },
+      { type: 'where', fieldPath: 'date', operator: '<=', value: endOfDay },
+      { type: 'orderBy', fieldPath: 'date', direction: 'asc' },
+    ],
+  });
+
+  const foods: Food[] = docs.map((doc) => {
+    const data = doc.data;
+    return {
+      id: doc.id,
+      name: data.name,
+      calories: data.calories,
+      date: data.date?.seconds ? new Date(data.date.seconds * 1000) : new Date(),
+      description: data.description,
+      imageUrl: data.imageUrl,
+      nutrients: data.nutrients,
+      mealType: data.mealType || '식사 기록',
+    };
+  });
+  
+  // 이미지 URL에 캐시 방지를 위한 타임스탬프 추가
+  for (const food of foods) {
+    if (food.imageUrl && !food.imageUrl.startsWith('data:image')) {
+      const timestamp = new Date().getTime();
+      food.imageUrl = `${food.imageUrl}?t=${timestamp}`;
     }
-    
-    return foods;
-  } catch (error) {
-    console.error('특정 날짜 식단 기록 조회 오류:', error);
-    throw error;
   }
+  
+  return foods;
 };
 
 // 식단 이미지 데이터를 저장 (하이브리드 방식)
@@ -413,13 +408,15 @@ export const saveFoodImage = async (imageId: string, userId: string, file: File,
     // 네이티브 앱 환경이고 파일 경로가 있는 경우 (갤러리 이미지)
     if (imageInfo?.isNative && imageInfo.filePath) {
       // 갤러리 이미지 경로 저장
-      await db.put('foodImages', {
-        id: imageId,
-        userId,
-        filePath: imageInfo.filePath,
-        isNative: true,
-        data: null, // 데이터는 저장하지 않음 (경로만 저장)
-        createdAt: new Date()
+      await openFoodImagesDatabase().then(db => {
+        db.put('foodImages', {
+          id: imageId,
+          userId,
+          filePath: imageInfo.filePath,
+          isNative: true,
+          data: null, // 데이터는 저장하지 않음 (경로만 저장)
+          createdAt: new Date()
+        });
       });
       console.log('갤러리 이미지 경로 저장됨:', imageInfo.filePath);
       return;
@@ -459,13 +456,13 @@ export const saveFoodImage = async (imageId: string, userId: string, file: File,
 export const uploadFoodImageToFirebase = async (imageId: string, userId: string, file: File): Promise<string | null> => {
   try {
     // Firebase Storage 참조 생성
-    const storageRef = ref(storage, `users/${userId}/food/${imageId}`);
+    const storageRef = FirebaseStorage.ref(storage, `users/${userId}/food/${imageId}`);
     
     // 파일 업로드
-    const snapshot = await uploadBytes(storageRef, file);
+    const snapshot = await FirebaseStorage.uploadBytes(storageRef, file);
     
     // 다운로드 URL 가져오기
-    const downloadURL = await getDownloadURL(snapshot.ref);
+    const downloadURL = await FirebaseStorage.getDownloadURL(snapshot.ref);
     
     return downloadURL;
   } catch (error) {
@@ -521,39 +518,12 @@ const openFoodImagesDatabase = async () => {
   });
 };
 
-// 식단 기록 업데이트 함수
+// 식단 기록 업데이트 함수 (플러그인 사용)
 export const updateFoodRecord = async (foodId: string, updatedFood: Partial<Food>): Promise<void> => {
-  try {
-    const db = getFirestore();
-    
-    // 트랜잭션 사용하여 데이터 일관성 유지
-    await runTransaction(db, async (transaction) => {
-      const foodRef = doc(db, 'foods', foodId);
-      const foodDoc = await transaction.get(foodRef);
-      
-      if (!foodDoc.exists()) {
-        throw new Error('식단 기록을 찾을 수 없습니다.');
-      }
-      
-      // 식단 데이터 업데이트
-      transaction.update(foodRef, updatedFood);
-      
-      // 이미지 ID가 있으면 이미지 메타데이터도 함께 업데이트
-      if (updatedFood.imageUrl && updatedFood.userId) {
-        const imageId = foodDoc.data().imageId;
-        if (imageId) {
-          const imageMetaRef = doc(db, `users/${updatedFood.userId}/imageMetadata`, imageId);
-          transaction.update(imageMetaRef, {
-            lastUpdated: new Date(),
-            ...((updatedFood.name) ? { description: updatedFood.name } : {})
-          });
-        }
-      }
+    await FirebaseFirestore.updateDocument({
+        collection: 'foods',
+        id: foodId,
+        data: updatedFood,
     });
-    
     console.log('식단 기록이 성공적으로 업데이트되었습니다.');
-  } catch (error) {
-    console.error('식단 기록 업데이트 중 오류:', error);
-    throw error;
-  }
 }; 

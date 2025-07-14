@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { Scale, Calendar, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Button from '../common/Button';
@@ -45,18 +45,21 @@ const WeightRecordForm: React.FC<WeightRecordFormProps> = ({ onSuccess, onCancel
       console.log('[WeightRecordForm] Firebase 저장 시작...');
       
       // Firebase weightRecords 컬렉션에 저장
-      const weightRecord = {
+      const recordData = { 
         userId: userProfile.uid,
-        weight: weight,
-        date: Timestamp.fromDate(new Date(date)),
+        weight: parseFloat(weight.toString()),
+        date: new Date(date),
         notes: notes.trim(),
-        createdAt: Timestamp.now()
+        createdAt: new Date()
       };
 
-      console.log('[WeightRecordForm] 저장할 데이터:', weightRecord);
+      console.log('[WeightRecordForm] 저장할 데이터:', recordData);
       
-      const docRef = await addDoc(collection(db, 'weightRecords'), weightRecord);
-      console.log('[WeightRecordForm] Firebase 저장 성공, docId:', docRef.id);
+      await FirebaseFirestore.addDocument({
+        collection: 'weightRecords',
+        data: recordData,
+      });
+      console.log('[WeightRecordForm] Firebase 저장 성공');
 
       console.log('[WeightRecordForm] 사용자 프로필 업데이트 시작...');
       

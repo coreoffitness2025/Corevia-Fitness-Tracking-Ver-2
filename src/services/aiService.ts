@@ -2,6 +2,9 @@ import { Session, UserProfile } from '../types';
 import { getDoc, doc, query, collection, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 
+// 네이티브 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+
 // 미래 AI API URL 및 키 설정 (환경 변수에서 가져옴)
 const AI_API_URL = import.meta.env.VITE_AI_API_URL || 'https://api.coreviaai.com';
 const AI_API_KEY = import.meta.env.VITE_AI_API_KEY;

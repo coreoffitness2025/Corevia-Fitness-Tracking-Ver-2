@@ -14,6 +14,30 @@
       },
       "oauth_client": [
         {
+          "client_id": "118613268034-3uuiu4gnrks14hf9l2mffgmug95q4qbl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.corevia.fitness",
+            "certificate_hash": "09043c89a4270dc3585b05ec880f58ff67b07d8e"
+          }
+        },
+        {
+          "client_id": "118613268034-bbfcor613534djkinhhr3dfb98b5mg4l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.corevia.fitness",
+            "certificate_hash": "ad34e90c04ac0ed64fe05e36df22071fd23c6042"
+          }
+        },
+        {
+          "client_id": "118613268034-bsl35gaotavibsqe3ra550fhf68lqtjd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.corevia.fitness",
+            "certificate_hash": "84cd7b2560fd78a385fe65eb9a12f2bac1c7ab3a"
+          }
+        },
+        {
           "client_id": "118613268034-6iu4d1dcgm4vivj836jpp7m64tndgfmg.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
+// 네이티브 플러그인 import 및 웹 SDK import 제거
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import CalorieCalculator from './CalorieCalculator';
 
 interface NutritionGoal {
@@ -71,6 +71,25 @@ const FoodLog = () => {
     } catch (error) {
       console.error('목표 저장 실패:', error);
       alert('목표 저장에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  const handleAddFood = async (food) => {
+    if (!currentUser) {
+      alert('로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.addDocument({
+        collection: 'foodLogs',
+        data: { userId: currentUser.uid, ...food, date: new Date() },
+      });
+      alert('음식 기록이 추가되었습니다.');
+    } catch (error) {
+      console.error('음식 기록 추가 실패:', error);
+      alert('음식 기록 추가에 실패했습니다. 다시 시도해주세요.');
     }
   };
 

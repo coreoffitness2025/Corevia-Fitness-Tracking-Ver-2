@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 1. 배경 색상 -->
+    <item android:drawable="@color/splashBackground"/>
+
+    <!-- 2. 중앙에 표시될 앱 로고 (실제로 존재하는 @mipmap/ic_launcher 사용) -->
+    <item
+        android:width="120dp"
+        android:height="120dp"
+        android:drawable="@mipmap/ic_launcher"
+        android:gravity="center" />
+</layer-list> 

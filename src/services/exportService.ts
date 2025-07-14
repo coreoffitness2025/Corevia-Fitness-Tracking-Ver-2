@@ -1,5 +1,5 @@
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+// 네이티브 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { Food } from '../types';
 
 /**
@@ -8,47 +8,36 @@ import { Food } from '../types';
  * @returns 데이터 객체와 파일명
  */
 export const exportUserData = async (userId: string) => {
-  if (!userId) {
-    throw new Error('유효한 사용자 ID가 필요합니다.');
-  }
-
   try {
-    // 사용자 프로필 가져오기
-    const userProfileRef = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
-    const userProfile = userProfileRef.docs.length > 0 ? userProfileRef.docs[0].data() : null;
+    const collectionsToExport = ['workouts', 'foods', 'weightRecords'];
+    const exportedData: { [key: string]: any[] } = {};
 
-    // 운동 기록 가져오기
-    const workoutsRef = await getDocs(query(collection(db, 'sessions'), where('userId', '==', userId)));
-    const workouts = workoutsRef.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    for (const collectionName of collectionsToExport) {
+      const { docs } = await FirebaseFirestore.getCollection({
+        collection: collectionName,
+        queries: [
+          { type: 'where', fieldPath: 'userId', operator: '==', value: userId }
+        ]
+      });
+      exportedData[collectionName] = docs.map(doc => ({ id: doc.id, ...doc.data }));
+    }
 
-    // 식단 기록 가져오기
-    const foodsRef = await getDocs(query(collection(db, 'foods'), where('userId', '==', userId)));
-    const foods = foodsRef.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // JSON 파일로 변환하여 다운로드 링크 생성
+    const jsonString = JSON.stringify(exportedData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
 
-    // 체중 기록 가져오기
-    const weightRecordsRef = await getDocs(query(collection(db, 'weightRecords'), where('userId', '==', userId)));
-    const weightRecords = weightRecordsRef.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `corevia_fitness_export_${new Date().toISOString()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
-    // 모든 데이터를 하나의 객체로 합치기
-    const exportData = {
-      userProfile,
-      workouts,
-      foods,
-      weightRecords,
-      exportDate: new Date().toISOString(),
-      version: '1.0'
-    };
-
-    // 파일명 생성
-    const fileName = `corevia_data_export_${new Date().toISOString().split('T')[0]}.json`;
-    
-    return {
-      data: exportData,
-      fileName
-    };
   } catch (error) {
-    console.error('데이터 내보내기 중 오류 발생:', error);
-    throw error;
+    console.error("데이터 내보내기 실패:", error);
+    // 사용자에게 오류 알림
   }
 };
 
@@ -82,11 +71,14 @@ export const exportFoodDataToCsv = async (
   endDate: Date = new Date()
 ) => {
   try {
-    const foodsRef = await getDocs(query(collection(db, 'foods'), 
-      where('userId', '==', userId),
-      where('date', '>=', startDate),
-      where('date', '<=', endDate)
-    ));
+    const foodsRef = await FirebaseFirestore.getCollection({
+      collection: 'foods',
+      queries: [
+        { type: 'where', fieldPath: 'userId', operator: '==', value: userId },
+        { type: 'where', fieldPath: 'date', operator: '>=', value: startDate.toISOString() },
+        { type: 'where', fieldPath: 'date', operator: '<=', value: endDate.toISOString() }
+      ]
+    });
     
     const foods = foodsRef.docs.map(doc => doc.data() as Food);
     

@@ -1,59 +1,28 @@
 import { create } from 'zustand';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '../services/firebaseService';
-import { User } from 'firebase/auth';
-
-interface Food {
-  name: string;
-  calories: number;
-  quantity: number;
-}
-
-interface FoodLog {
-  id: string;
-  userId: string;
-  date: string;
-  mealType: string;
-  totalCalories: number;
-  foods: Food[];
-}
+// 네이티브화된 foodService 사용
+import { getFoodEntriesByDate } from '../services/foodService';
+import { Food } from '../types';
 
 interface FoodLogState {
-  recentFoodLogs: FoodLog[];
+  foodLogs: Food[];
   loading: boolean;
   error: string | null;
-  fetchRecentFoodLogs: (currentUser: User | null) => Promise<void>;
+  fetchFoodLogs: (userId: string, date: Date) => Promise<void>;
 }
 
 export const useFoodLogStore = create<FoodLogState>((set) => ({
-  recentFoodLogs: [],
+  foodLogs: [],
   loading: false,
   error: null,
-  fetchRecentFoodLogs: async (currentUser) => {
-    if (!currentUser) return;
-
+  fetchFoodLogs: async (userId, date) => {
     set({ loading: true, error: null });
     try {
-      const foodLogsRef = collection(db, 'foodLogs');
-      const q = query(
-        foodLogsRef,
-        where('userId', '==', currentUser.uid),
-        orderBy('date', 'desc'),
-        limit(5)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const foodLogs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as FoodLog[];
-      
-      set({ recentFoodLogs: foodLogs });
+      // 이제 웹 SDK가 아닌, 네이티브 플러그인을 사용하는 서비스를 호출
+      const logs = await getFoodEntriesByDate(userId, date);
+      set({ foodLogs: logs, loading: false });
     } catch (err) {
-      set({ error: '식단 기록을 불러오는데 실패했습니다.' });
-      console.error('식단 기록 로드 실패:', err);
-    } finally {
-      set({ loading: false });
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch food logs';
+      set({ error: errorMessage, loading: false });
     }
-  }
+  },
 })); 

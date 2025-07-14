@@ -1,14 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { User, sendPasswordResetEmail } from 'firebase/auth';
+import { useState } from 'react';
+import { User } from 'firebase/auth';
 import { UserProfile } from '../types';
 import PersonalizationModal from '../components/auth/PersonalizationModal';
 import { useAuth } from '../contexts/AuthContext';
-import { loginWithEmail, auth } from '../firebase/firebaseConfig';
-import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { resetPassword } from '../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
-import { signInWithGoogleOptimized, handleRedirectResult, logAuthDebugInfo, isMobileDevice } from '../services/authService';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import Layout from '../components/common/Layout';
 
 const LoginButton = ({ 
@@ -135,7 +135,8 @@ const ForgotPasswordModal = ({
 
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      // 새로운 resetPassword 함수 사용
+      await resetPassword(email);
       toast.success('비밀번호 재설정 이메일이 전송되었습니다. 이메일을 확인해주세요.');
       onClose();
     } catch (error: any) {
@@ -163,7 +164,7 @@ const ForgotPasswordModal = ({
     try {
       // 보안상 이유로 직접적인 사용자 존재 확인 대신
       // 비밀번호 재설정 이메일을 보내서 계정 존재 여부를 간접 확인
-      await sendPasswordResetEmail(auth, email);
+      await FirebaseAuthentication.sendPasswordResetEmail({ email });
       toast.success('해당 이메일로 계정이 존재합니다. 비밀번호 재설정 이메일도 함께 전송되었습니다.');
     } catch (error: any) {
       console.error('이메일 확인 오류:', error);
@@ -285,198 +286,72 @@ const ForgotPasswordModal = ({
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { currentUser, updateProfile, isAuthenticated } = useAuth();
+  const { updateProfile } = useAuth();
   const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
+  const [userProfileForModal, setUserProfileForModal] = useState<Partial<UserProfile>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
 
-  // 인증 상태 변경 감지
-  useEffect(() => {
-    console.log('Authentication state changed:', isAuthenticated, currentUser?.uid);
-    
-    if (isAuthenticated && currentUser) {
-      // 로그인 상태 확인 후 즉시 개인화 필요 여부 확인
-      setTimeout(() => {
-        checkIfNeedsPersonalization();
-      }, 500); // 약간의 지연 시간을 두어 다른 상태가 업데이트될 시간을 줌
-    }
-  }, [isAuthenticated, currentUser]);
-
-  // 모바일 환경 감지
-  useEffect(() => {
-    const checkMobileDevice = () => {
-      const mobile = isMobileDevice();
-      setIsMobile(mobile);
-      logAuthDebugInfo('모바일 환경 감지', { isMobile: mobile });
-    };
-    
-    checkMobileDevice();
-  }, []);
-
-  // 구글 리디렉션 결과 처리
-  useEffect(() => {
-    const processRedirectResult = async () => {
-      setIsLoading(true);
-      try {
-        logAuthDebugInfo('로그인 페이지에서 리디렉션 결과 처리 시작');
-        const result = await handleRedirectResult();
-        
-        if (result && result.user) {
-          // 사용자가 리디렉션으로 로그인에 성공했을 때
-          logAuthDebugInfo('리디렉션 로그인 성공', { uid: result.user.uid });
-          
-          try {
-            // Firestore에 사용자 정보가 없으면 기본 정보로 저장
-            const userDocRef = doc(db, 'users', result.user.uid);
-            const userDoc = await getDoc(userDocRef);
-            
-            if (!userDoc.exists()) {
-              // 기본 사용자 프로필 데이터 생성
-              const userProfileData = {
-                uid: result.user.uid,
-                displayName: result.user.displayName,
-                email: result.user.email,
-                photoURL: result.user.photoURL,
-              } as UserProfile;
-              
-              await setDoc(userDocRef, userProfileData);
-              
-              // 사용자 정보가 없으므로 개인화 모달 표시
-              setUserProfile(userProfileData);
-              setIsPersonalizationOpen(true);
-            }
-            
-            // 로그인 성공 메시지
-            toast.success('Google 로그인이 완료되었습니다.');
-          } catch (firestoreError: any) {
-            console.error('Firestore 데이터 처리 중 오류:', firestoreError);
-            toast.error('사용자 정보 처리 중 오류가 발생했습니다.');
-          }
-        }
-      } catch (error: any) {
-        console.error('리디렉션 결과 처리 오류:', error);
-        
-        // 오류 처리 개선
-        if (error.code === 'auth/disallowed-useragent') {
-          setError('모바일 브라우저에서는 Google 로그인에 제한이 있습니다. Firebase 콘솔에서 설정을 확인해주세요.');
-          toast.error('모바일 브라우저 제한으로 인해 Google 로그인이 차단되었습니다.');
-        } else {
-          setError('Google 로그인 처리 중 오류가 발생했습니다.');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    processRedirectResult();
-  }, []);
-
-  // 사용자가 개인화 설정이 필요한지 확인
-  const checkIfNeedsPersonalization = async () => {
-    if (!currentUser) return;
+  const handleSuccessfulLogin = async (user: User) => {
+    if (!user) return;
     
     try {
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      // 네이티브 플러그인으로 사용자 문서 가져오기
+      const userDoc = await FirebaseFirestore.getDocument({
+        collection: 'users',
+        id: user.uid,
+      });
       
-      if (userDoc.exists()) {
-        const userData = userDoc.data() as UserProfile;
-        
-        // 중요 필드가 없으면 개인화 필요
-        if (!userData.height || !userData.weight || !userData.age) {
-          console.log('개인화 필요: 모달 표시됨');
-          setUserProfile(userData);
-          setIsPersonalizationOpen(true);
-        } else {
-          // 개인화 완료된 사용자는 홈으로
-          navigate('/');
-        }
+      let profileData: UserProfile;
+
+      if (userDoc.exists) {
+        profileData = userDoc.data as UserProfile;
       } else {
-        // 문서가 없으면 개인화 필요
-        console.log('사용자 문서 없음: 개인화 모달 표시됨');
-        setIsPersonalizationOpen(true);
+        profileData = {
+          uid: user.uid,
+          displayName: user.displayName || '',
+          email: user.email || '',
+          photoURL: user.photoURL || '',
+          height: 0,
+          weight: 0,
+          age: 0,
+          gender: 'other',
+        };
+        // 네이티브 플러그인으로 새 문서 설정
+        await FirebaseFirestore.setDocument({
+          collection: 'users',
+          id: user.uid,
+          data: profileData,
+        });
       }
-    } catch (error: any) {
-      console.error('Error checking personalization:', error);
-      setError('사용자 데이터를 확인하는 중 오류가 발생했습니다.');
+      
+      if (!profileData.height || !profileData.weight || !profileData.age) {
+        setUserProfileForModal(profileData);
+        setIsPersonalizationOpen(true);
+      } else {
+        navigate('/home', { replace: true });
+      }
+
+    } catch (e) {
+      console.error("Error handling successful login: ", e);
+      setError('사용자 정보를 처리하는 중 오류가 발생했습니다.');
     }
   };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      logAuthDebugInfo('Google 로그인 시작');
-      
-      // 향상된 Google 로그인 함수 사용
-      const result = await signInWithGoogleOptimized();
-      
-      if (result && result.user) {
-        logAuthDebugInfo('Google 로그인 성공', { uid: result.user.uid });
-        
-        try {
-          // Firestore에 사용자 정보가 없으면 기본 정보로 저장
-          const userDocRef = doc(db, 'users', result.user.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          if (!userDoc.exists()) {
-            // 기본 사용자 프로필 데이터 생성
-            const userProfileData = {
-              uid: result.user.uid,
-              displayName: result.user.displayName,
-              email: result.user.email,
-              photoURL: result.user.photoURL,
-            } as UserProfile;
-            
-            await setDoc(userDocRef, userProfileData);
-            
-            // 사용자 정보가 없으므로 개인화 모달 표시
-            setUserProfile(userProfileData);
-            setIsPersonalizationOpen(true);
-          } else {
-            // 이미 정보가 있는 경우 개인화 필요 여부 확인
-            const userData = userDoc.data() as UserProfile;
-            
-            if (!userData.height || !userData.weight || !userData.age) {
-              setUserProfile(userData);
-              setIsPersonalizationOpen(true);
-            } else {
-              // 모든 데이터가 있으면 홈으로 이동
-              navigate('/');
-            }
-          }
-          
-          // 로그인 성공 메시지
-          toast.success('Google 로그인이 완료되었습니다.');
-        } catch (firestoreError: any) {
-          console.error('Firestore 데이터 처리 중 오류:', firestoreError);
-          // 오류가 발생해도 사용자는 로그인된 상태이므로 홈으로 이동
-          navigate('/');
-        }
-      } else if (isMobile) {
-        // 모바일에서는 리디렉션 후 결과가 null이 예상됨
-        toast.success('로그인 진행 중입니다. 잠시 기다려주세요.');
-        logAuthDebugInfo('모바일에서 리디렉션 후 대기 중');
-      } else {
-        setError('Google 로그인에 실패했습니다.');
+      // 네이티브/웹 환경 모두 플러그인이 처리
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      if (result.user) {
+        toast.success('Google 로그인이 완료되었습니다.');
+        await handleSuccessfulLogin(result.user);
       }
-    } catch (error: any) {
-      console.error('Google 로그인 오류:', error);
-      logAuthDebugInfo('Google 로그인 오류', error);
-      
-      // 오류 메시지 개선
-      if (error.code === 'auth/unauthorized-domain') {
-        setError(`현재 도메인이 Firebase에 등록되지 않았습니다. Firebase 콘솔에서 '인증 > 설정 > 승인된 도메인'에 ${window.location.origin}을 추가해주세요.`);
-      } else if (error.code === 'auth/disallowed-useragent') {
-        setError('현재 사용 중인 브라우저에서는 Google 로그인이 제한됩니다. 다른 브라우저를 사용하거나 Firebase 설정을 확인해주세요.');
-      } else {
-        setError('Google 로그인 중 오류가 발생했습니다.');
-      }
-      
-      toast.error('로그인에 실패했습니다.');
+    } catch (e: any) {
+      console.error('Google 로그인 오류:', e);
+      setError('Google 로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -485,13 +360,14 @@ export default function LoginPage() {
   const handleEmailLogin = async (email: string, password: string, rememberMe: boolean) => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      await loginWithEmail(email, password);
-      // Auth 컨텍스트의 useEffect가 로그인 상태를 감지하고 처리
-    } catch (error: any) {
-      console.error('이메일 로그인 오류:', error);
+      // 새로운 loginWithEmail 함수 사용
+      const result = await FirebaseAuthentication.signInWithEmailAndPassword({ email, password });
+      await handleSuccessfulLogin(result.user);
+    } catch (e: any) {
+      console.error('이메일 로그인 오류:', e);
       setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -500,9 +376,9 @@ export default function LoginPage() {
     try {
       await updateProfile(profile);
       setIsPersonalizationOpen(false);
-      navigate('/');
-    } catch (error: any) {
-      console.error('프로필 저장 오류:', error);
+      navigate('/home', { replace: true });
+    } catch (e: any) {
+      console.error('프로필 저장 오류:', e);
       setError('프로필 저장 중 오류가 발생했습니다.');
     }
   };
@@ -528,15 +404,6 @@ export default function LoginPage() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-        
-        {isMobile && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
-            <span className="block sm:inline">
-              모바일 환경에서는 Google 로그인에 제한이 있을 수 있습니다. 
-              오류가 발생한다면 데스크탑 브라우저를 사용해보세요.
-            </span>
           </div>
         )}
         
@@ -585,11 +452,14 @@ export default function LoginPage() {
         </div>
       </div>
       
-      <PersonalizationModal
-        isOpen={isPersonalizationOpen}
-        onClose={() => setIsPersonalizationOpen(false)}
-        onSave={handlePersonalizationSave}
-      />
+      {currentUser && (
+        <PersonalizationModal
+          isOpen={isPersonalizationOpen}
+          onClose={() => setIsPersonalizationOpen(false)}
+          onSave={handlePersonalizationSave}
+          userProfile={userProfileForModal}
+        />
+      )}
       
       <ForgotPasswordModal
         isOpen={isForgotPasswordOpen}

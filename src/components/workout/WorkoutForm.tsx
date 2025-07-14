@@ -32,6 +32,9 @@ import { v4 as uuidv4 } from 'uuid';
 import WorkoutSetConfig from '../settings/WorkoutSetConfig';
 import ExerciseDatabase from '../exercise/ExerciseDatabase';
 import { scheduleNotification, triggerHapticFeedback } from '../../utils/capacitorUtils';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+import { Workout, Exercise } from '../../types';
 
 interface WorkoutFormProps {
   onSuccess?: () => void; // 저장 성공 시 호출될 콜백

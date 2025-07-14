@@ -4,6 +4,9 @@ import { db, storage } from '../firebase/firebaseConfig';
 import { BodyPhotoRecord } from './bodyService';
 import { toast } from 'react-hot-toast';
 import { isNetworkConnected, withNetworkCheck } from './networkService';
+// 네이티브 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+import { FirebaseStorage } from '@capacitor-firebase/storage';
 
 /**
  * 클라우드 동기화 설정 타입 정의

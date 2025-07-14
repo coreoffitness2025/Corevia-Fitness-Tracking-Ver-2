@@ -5,14 +5,14 @@ import {
   MainExerciseType,
   SetConfiguration
 } from '../../types';
-import { addDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
 import { toast } from 'react-hot-toast';
 import Card, { CardSection, CardTitle } from '../common/Card';
 import Button from '../common/Button';
 import { Plus, X, Trash } from 'lucide-react';
 import { getSetConfiguration } from '../../utils/workoutUtils';
 import ComplexWorkoutModal from './ComplexWorkoutModal';
+// Firestore 플러그인 import
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 
 // 운동 부위 옵션 (복합 운동 컴포넌트에서만 사용)
 const exercisePartOptions = [
@@ -110,7 +110,10 @@ const ComplexWorkoutForm: React.FC<ComplexWorkoutFormProps> = ({
       }
 
       // Firestore에 저장
-      await addDoc(collection(db, 'complexWorkouts'), complexWorkoutData);
+      await FirebaseFirestore.addDocument({
+        collection: 'complexWorkouts',
+        data: complexWorkoutData,
+      });
       
       toast.success('복합 운동이 저장되었습니다.');
       fetchComplexWorkouts(); // 목록 새로고침

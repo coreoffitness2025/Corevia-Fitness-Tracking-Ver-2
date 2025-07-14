@@ -1,46 +1,39 @@
 import { create } from 'zustand';
-import { WorkoutSession } from '../types/workout';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '../services/firebaseService';
-import { useAuth } from '../contexts/AuthContext';
+import { Workout } from '../types';
+// 네이티브화된 workoutService를 사용해야 하지만, 현재 workoutService는 Firestore를 직접 호출하지 않음.
+// 따라서, 이 스토어에서 직접 네이티브 플러그인을 호출하도록 수정합니다.
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 
 interface WorkoutState {
-  recentWorkouts: WorkoutSession[];
+  workouts: Workout[];
   loading: boolean;
   error: string | null;
-  fetchRecentWorkouts: () => Promise<void>;
+  fetchWorkouts: (userId: string) => Promise<void>;
 }
 
 export const useWorkoutStore = create<WorkoutState>((set) => ({
-  recentWorkouts: [],
+  workouts: [],
   loading: false,
   error: null,
-  fetchRecentWorkouts: async () => {
-    const { currentUser } = useAuth();
-    if (!currentUser) return;
-
+  fetchWorkouts: async (userId: string) => {
     set({ loading: true, error: null });
     try {
-      const workoutsRef = collection(db, 'workoutSessions');
-      const q = query(
-        workoutsRef,
-        where('userId', '==', currentUser.uid),
-        orderBy('date', 'desc'),
-        limit(5)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const workouts = querySnapshot.docs.map(doc => ({
+      const { docs } = await FirebaseFirestore.getCollection({
+        collection: 'workouts',
+        queries: [
+          { type: 'where', fieldPath: 'userId', operator: '==', value: userId },
+          { type: 'orderBy', fieldPath: 'date', direction: 'desc' },
+        ],
+      });
+      const workouts = docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
-      })) as WorkoutSession[];
-      
-      set({ recentWorkouts: workouts });
+        ...doc.data,
+        date: new Date(doc.data.date.seconds * 1000),
+      })) as Workout[];
+      set({ workouts, loading: false });
     } catch (err) {
-      set({ error: '운동 기록을 불러오는데 실패했습니다.' });
-      console.error('운동 기록 로드 실패:', err);
-    } finally {
-      set({ loading: false });
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch workouts';
+      set({ error: errorMessage, loading: false });
     }
-  }
+  },
 })); 
