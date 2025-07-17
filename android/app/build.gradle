@@ -23,6 +23,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    // 프로젝트 레벨에서 전역으로 설정했으므로,
+    // 앱 레벨의 개별 컴파일 옵션은 제거하여 충돌을 방지합니다.
 }
 
 repositories {
@@ -35,6 +37,11 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    
+    // 명시적으로 core 및 core-ktx 의존성 버전 지정
+    implementation "androidx.core:core:$androidxCoreVersion"
+    implementation "androidx.core:core-ktx:$androidxCoreVersion"
+    
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     
     // 명시적으로 SplashScreen 의존성 버전 확인 (없는 경우를 위한 안전 조치)
